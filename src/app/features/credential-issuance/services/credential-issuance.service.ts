@@ -6,7 +6,7 @@ import { IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-c
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { EMPTY, from, map, Observable, of, startWith, switchMap, tap } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
-import { CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, FORMAT_LABEL_MAP, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -17,6 +17,7 @@ import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/compone
 import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { Router } from '@angular/router';
+import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 
 
 @Injectable() //provided in Issuance Component
@@ -26,9 +27,36 @@ export class CredentialIssuanceService {
   public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]> = ISSUANCE_CREDENTIAL_TYPES_ARRAY;
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
+  // FORMAT SELECTOR
+  // Options derived from the metadata endpoint; falls back to jwt_vc_json if metadata not loaded yet
+  public availableFormats$ = computed<CredentialFormatOption[]>(() => {
+    const type = this.selectedCredentialType$();
+    if (!type) return [];
+    const configs = this.metadataService.getConfigurationsForType(type);
+    if (configs.length === 0) {
+      return [{ configId: type, format: 'jwt_vc_json', labelKey: FORMAT_LABEL_MAP['jwt_vc_json']! }];
+    }
+    return configs.map(({ configId, format }) => ({
+      configId,
+      format: format as CredentialFormatOption['format'],
+      labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
+      disabled: format === 'mso_mdoc'
+    }));
+  });
+
+  // Explicitly selected format option; auto-selects first non-disabled when null
+  public selectedFormatOption$ = signal<CredentialFormatOption | null>(null);
+
+  public effectiveFormatOption$ = computed<CredentialFormatOption | null>(() => {
+    const sel = this.selectedFormatOption$();
+    if (sel) return sel;
+    const avail = this.availableFormats$();
+    return avail.find(f => !f.disabled) ?? avail[0] ?? null;
+  });
+
   // BUILD SCHEMAS FROM CREDENTIAL TYPE
-  public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() => 
-    this.selectedCredentialType$() 
+  public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() =>
+    this.selectedCredentialType$()
     ? this.issuanceViewModelsBuilder(this.selectedCredentialType$()!, this.onBehalf$())
     : null
   );
@@ -46,13 +74,13 @@ export class CredentialIssuanceService {
   // MAIN (FORM SCHEMA AND FORM GROUP)
   public credentialFormSchema$ = computed<CredentialIssuanceViewModelSchemaWithId | null>(() => {
     const schema = this.credentialViewModels$();
-    return schema ? 
+    return schema ?
     schema[0] :
     null
   });
 
-  public form$ = computed<FormGroup>(() => { 
-    return this.credentialFormSchema$() 
+  public form$ = computed<FormGroup>(() => {
+    return this.credentialFormSchema$()
       ? this.formBuilder(this.credentialFormSchema$()!, this.onBehalf$())
       : new FormGroup({})
   });
@@ -86,6 +114,12 @@ export class CredentialIssuanceService {
   private readonly router = inject(Router);
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
+  private readonly metadataService = inject(CredentialIssuerMetadataService);
+
+  constructor() {
+    // Load credential configurations once so format options are available
+    this.metadataService.loadMetadata().subscribe();
+  }
 
   public updateSelectedType(selectedCredentialType: IssuanceCredentialType, select: MatSelect) {
     const currentType = this.selectedCredentialType$();
@@ -100,6 +134,11 @@ export class CredentialIssuanceService {
       }
     }
     this.selectedCredentialType$.set(selectedCredentialType);
+    this.selectedFormatOption$.set(null); // reset format when type changes
+  }
+
+  public updateSelectedFormat(option: CredentialFormatOption): void {
+    this.selectedFormatOption$.set(option);
   }
 
   // if the message is new, add it; otherwise, delete it
@@ -135,7 +174,7 @@ export class CredentialIssuanceService {
     const alertMsg = this.translate.instant("credentialIssuance.unloadAlert");
     const confirm = window.confirm(alertMsg);
     return confirm;
-  }  
+  }
 
   // this is the default dialog to confirm the form submission
   public openSubmitDialog() {
@@ -223,6 +262,7 @@ export class CredentialIssuanceService {
       const formValue = this.formValue$();
       const credentialType = this.selectedCredentialType$();
       const credentialSchema = this.credentialFormSchema$();
+      const formatOption = this.effectiveFormatOption$();
       if(!this.isFormValid$()){
         console.error('Invalid form values! Cannot submit.');
         return of(EMPTY);
@@ -231,15 +271,17 @@ export class CredentialIssuanceService {
         console.error('SubmitCredential: type or schema missing!');
         return of(EMPTY);
       }
-  
-      const rawCredentialPayload: IssuanceRawCredentialPayload = { 
-        formData: formValue, 
+
+      const rawCredentialPayload: IssuanceRawCredentialPayload = {
+        formData: formValue,
         staticData: this.staticData$(),
         onBehalf: this.onBehalf$()
       }
 
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType);
-  
+      const configId = formatOption?.configId ?? credentialType;
+      const format = formatOption?.format ?? 'jwt_vc_json';
+      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, format);
+
       return this.sendCredentialRequest(request).pipe(
         // After submitting credential, show success popup and navigate to dashboard after close
         tap(() => {this.hasSubmitted$.set(true); }),
@@ -252,14 +294,14 @@ export class CredentialIssuanceService {
   private navigateToCredentials(): Promise<boolean> {
     return this.router.navigate(['/organization/credentials']);
   }
-  
+
   private buildCredentialRequest(
-    credentialData: IssuanceRawCredentialPayload, 
+    credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
+    configId: string,
+    format: string,
   ): IssuanceLEARCredentialRequestDto{
-   
-    return this.buildRequestDto(credentialData, credentialType);
-    
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, format);
   }
 
 
@@ -268,15 +310,11 @@ export class CredentialIssuanceService {
     return factory ? factory(...(entry.args ?? [])) : null;
   }
 
-  private buildRequestDto(credentialData: IssuanceRawCredentialPayload, credentialType: IssuanceCredentialType): IssuanceLEARCredentialRequestDto{
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType);
-  }
-
   private sendCredentialRequest(credentialPayload: IssuanceLEARCredentialRequestDto): Observable<void>{
     return this.credentialProcedureService.createProcedure(credentialPayload);
   }
 
-    private openSuccessfulCreateDialog(): Observable<any>{
+  private openSuccessfulCreateDialog(): Observable<any>{
     const dialogData: DialogData = {
       title: this.translate.instant("credentialIssuance.create-success-dialog.title"),
       message: this.translate.instant("credentialIssuance.create-success-dialog.message"),

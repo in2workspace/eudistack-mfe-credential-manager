@@ -84,13 +84,13 @@ export class AuthService{
                       this.authorize();
                     },
                     complete: () => {
-                      window.removeEventListener('online', onlineHandler);
+                      globalThis.removeEventListener('online', onlineHandler);
                     }
                   });
                 
               };
 
-              window.addEventListener('online', onlineHandler);
+              globalThis.addEventListener('online', onlineHandler);
 
             } else {
               console.error('Silent token refresh failed: online mode, proceeding to logout', event);

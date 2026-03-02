@@ -2,7 +2,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CredentialOfferComponent } from '../credential-offer-steps/credential-offer/credential-offer.component';
 import { CredentialOfferOnboardingComponent } from '../credential-offer-steps/credential-offer-onboarding/credential-offer-onboarding.component';
-import { Component, computed, DestroyRef, effect, inject, OnInit, Signal, TemplateRef, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, OnDestroy, OnInit, Signal, TemplateRef, ViewChild, ViewContainerRef } from '@angular/core';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -10,7 +10,6 @@ import { catchError, delayWhen, EMPTY, filter, interval, map, merge, Observable,
 import { ActivatedRoute, Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { HttpErrorResponse } from '@angular/common/http';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import { CredentialOfferResponse } from 'src/app/core/models/dto/credential-offer-response.dto';
@@ -68,7 +67,7 @@ export const undefinedCredentialOfferParamsState: CredentialOfferParamsState = {
     templateUrl: './credential-offer-stepper.component.html',
     styleUrl: './credential-offer-stepper.component.scss'
 })
-export class CredentialOfferStepperComponent implements OnInit{
+export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
   @ViewChild('popupCountdown') popupCountdown!: TemplateRef<any>;
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
@@ -151,7 +150,7 @@ export class CredentialOfferStepperComponent implements OnInit{
   //if user clicks to leave session, user is redirected to home
   private readonly startOrEndFirstCountdown$: Observable<StartOrEnd> = this.fetchedCredentialOffer$
   .pipe(
-    filter(offerState => (offerState.loading === false) && (offerState.error === false)),
+    filter(offerState => !offerState.loading && !offerState.error),
     switchMap(offerParams => {
       const totalAvailableTimeFromBackendInSeconds = offerParams.c_transaction_code_expires_in;
       let totalAvailableTimeInMs: number;
@@ -261,7 +260,7 @@ export class CredentialOfferStepperComponent implements OnInit{
     .subscribe();
   }
 
-  private ngOnDestroy(): void{
+  public ngOnDestroy(): void {
     this.destroy$$.next();
   }
 
@@ -323,7 +322,7 @@ export class CredentialOfferStepperComponent implements OnInit{
       const message = this.translate.instant("error.credentialOffer.invalid-url");
       this.dialog.openErrorInfoDialog(DialogComponent, message);
       this.redirectToHome();
-      return throwError(()=>new Error());
+      return throwError(()=>new Error('Invalid credential offer parameters'));
     }
 
     return this.credentialProcedureService.getCredentialOfferByTransactionCode(transactionCode)
@@ -338,7 +337,7 @@ export class CredentialOfferStepperComponent implements OnInit{
       const message = this.translate.instant("error.credentialOffer.invalid-url");
       this.dialog.openErrorInfoDialog(DialogComponent, message);
       this.redirectToHome();
-      return throwError(()=>new Error());
+      return throwError(()=>new Error('Invalid credential offer parameters'));
     }
 
     return this.credentialProcedureService.getCredentialOfferByCTransactionCode(cCode)

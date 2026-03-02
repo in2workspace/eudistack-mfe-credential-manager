@@ -21,7 +21,7 @@ export class LifeCycleStatusService {
   
     public mapStatusToClass(status: LifeCycleStatus): StatusClass{
       if (this.statusesWithDefinedClass.includes(status as DefinedStatusClass)) {
-        const slug = status.toLowerCase().replace(/_/g, '-'); //for statuses like "PEND_DOWNLOAD"
+        const slug = status.toLowerCase().replaceAll('_', '-'); //for statuses like "PEND_DOWNLOAD"
         return `status-${slug}` as StatusClassFromDefined;
       }
       return 'status-default';

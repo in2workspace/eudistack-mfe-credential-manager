@@ -83,7 +83,7 @@ public static isIP(): ExtendedValidatorFn<"isIP"> {
         return { customEmail: { value: 'error.form.email.main_domain_part_min' }};
       }
     
-      const topLevelDomain = domainParts[domainParts.length - 1];
+      const topLevelDomain = domainParts.at(-1) ?? '';
       if (topLevelDomain.length < 2) {
         return { customEmail: { value: 'error.form.email.top_level_domain_part_min' }};
       }

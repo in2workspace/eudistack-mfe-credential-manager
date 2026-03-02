@@ -6,6 +6,28 @@ import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['LEARCredentialEmployee', 'LEARCredentialMachine'] as const;
 export type IssuanceCredentialType = typeof ISSUANCE_CREDENTIAL_TYPES_ARRAY[number];
 
+export type CredentialFormat = 'jwt_vc_json' | 'dc+sd-jwt' | 'mso_mdoc';
+
+export interface CredentialFormatOption {
+  configId: string;
+  format: CredentialFormat;
+  labelKey: string;
+  disabled?: boolean;
+}
+
+export const FORMAT_LABEL_MAP: Partial<Record<CredentialFormat, string>> = {
+  'jwt_vc_json': 'credentialIssuance.format.w3cVcDm',
+  'dc+sd-jwt':   'credentialIssuance.format.sdJwt',
+  'mso_mdoc':    'credentialIssuance.format.mdoc',
+};
+
+export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
+  configId: 'mso_mdoc',
+  format: 'mso_mdoc',
+  labelKey: 'credentialIssuance.format.mdoc',
+  disabled: true,
+};
+
 export interface BaseCredentialIssuanceViewModelField {
     key: string, //this is used for form models fields names (FormGroup, FormControl) and also as label for transations; i.e. "mandatee" key is used in "credentialIssuance.mandatee"
     classes?: string; //admits a string of separated classes to customize form styles; i.e.: "classOne classTwo"

@@ -88,6 +88,12 @@ describe('Credential Offer Stepper', () => {
     expect(component.loadCredentialOfferOnRefreshClick$$).toBeDefined();
   });
 
+  it('should complete destroy$$ on ngOnDestroy', () => {
+    const nextSpy = jest.spyOn(component.destroy$$, 'next');
+    (component as any).ngOnDestroy();
+    expect(nextSpy).toHaveBeenCalled();
+  });
+
   it('effect should update url params when offer params change', () => {
     const updateSpy = jest.spyOn(component, 'updateUrlParams');
     component.getInitUrlParams$$.next();
@@ -589,7 +595,7 @@ describe('getCredentialOfferByTransactionCode', () => {
     result$.subscribe({
       error: (error) => {
         expect(dialogSpy).toHaveBeenCalledWith(DialogComponent, message);
-        expect(error).toEqual(new Error());
+        expect(error).toBeInstanceOf(Error);
         expect(redirectSpy).toHaveBeenCalled();
         done();
       }
@@ -630,7 +636,7 @@ describe('getCredentialOfferByCTransactionCode', () => {
       error: (error) => {
         expect(dialogSpy).toHaveBeenCalledWith(DialogComponent, message);
         expect(redirectSpy).toHaveBeenCalled();
-        expect(error).toEqual(new Error());
+        expect(error).toBeInstanceOf(Error);
         done();
       }
     });

@@ -59,7 +59,7 @@ export class CustomEmailValidatorDirective implements Validator {
       return { emailMainDomainTooShort: true };
     }
   
-    const topLevelDomain = domainParts[domainParts.length - 1];
+    const topLevelDomain = domainParts.at(-1) ?? '';
     if (topLevelDomain.length < 2) {
       return { emailTopLevelDomainTooShort: true };
     }
