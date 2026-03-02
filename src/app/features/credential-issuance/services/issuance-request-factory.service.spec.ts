@@ -166,6 +166,83 @@ describe('IssuanceRequestFactoryService', () => {
     expect(parsed).toEqual([]);
   });
 
+  it('should return empty payload and log error when employee mandator is null', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: null,
+        mandatee: { id: 'M1', email: 'emp@example.com' }
+      }
+    };
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialEmployee', 'cfg', 'jwt_vc_json');
+    expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
+    expect(result.payload).toEqual({});
+  });
+
+  it('should return empty payload and log error when machine mandator is null', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: null,
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
+        keys: { didKey: 'did:test' }
+      }
+    };
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+    expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
+    expect(result.payload).toEqual({});
+  });
+
+  it('should use authService email and staticData mandator when machine is not onBehalf', () => {
+    const credentialData: any = {
+      onBehalf: false,
+      staticData: {
+        mandator: [
+          { key: 'country', value: 'ES' },
+          { key: 'organizationIdentifier', value: 'VATES-123' },
+          { key: 'organization', value: 'Tech Corp' },
+          { key: 'commonName', value: 'Tech Corp CN' },
+          { key: 'serialNumber', value: 'SN123' },
+          { key: 'email', value: 'mandator@example.com' }
+        ]
+      },
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandatee: { domain: 'machine.com', ipAddress: '10.0.0.1' },
+        keys: { didKey: 'did:key:abc' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+
+    expect(authServiceMock.getMandateeEmail).toHaveBeenCalled();
+    expect(result.email).toBe('mandatee@example.com');
+    expect(result.payload).toMatchObject({
+      mandator: {
+        country: 'ES',
+        organizationIdentifier: 'VATES-123',
+        commonName: 'Tech Corp CN'
+      }
+    });
+  });
+
+  it('should throw when machine is not onBehalf and staticData has no mandator', () => {
+    const credentialData: any = {
+      onBehalf: false,
+      staticData: {},
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
+        keys: { didKey: 'did:key:abc' }
+      }
+    };
+
+    expect(() => service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json'))
+      .toThrow('Could not get valid mandator on behalf');
+  });
+
   it('should parse multiple powers correctly', () => {
     const powerForm: IssuanceRawPowerForm = {
       Onboarding: { Execute: true },
