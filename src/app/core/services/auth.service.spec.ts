@@ -566,6 +566,57 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       consoleError.mockRestore();
     });
 
+    it('online handler: not authenticated after reconnect → logs error and calls authorize', () => {
+      jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const removeListenerSpy = jest.spyOn(globalThis, 'removeEventListener').mockImplementation();
+
+      let capturedHandler: (() => void) | undefined;
+      jest.spyOn(globalThis, 'addEventListener').mockImplementation((event: any, handler: any) => {
+        if (event === 'online') capturedHandler = handler;
+      });
+
+      service.subscribeToAuthEvents();
+      eventSubject.next({ type: EventTypes.SilentRenewFailed });
+      expect(capturedHandler).toBeDefined();
+
+      // trigger the online handler; checkAuth returns isAuthenticated: false
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({ isAuthenticated: false, userData: null, accessToken: null }));
+      capturedHandler!();
+
+      expect(consoleError).toHaveBeenCalledWith('User still not authenticated after reconnect, logging out');
+      expect(service.authorize).toHaveBeenCalled();
+      expect(removeListenerSpy).toHaveBeenCalledWith('online', capturedHandler);
+
+      consoleError.mockRestore();
+      removeListenerSpy.mockRestore();
+    });
+
+    it('online handler: error during reauth → logs error and calls authorize', () => {
+      jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const removeListenerSpy = jest.spyOn(globalThis, 'removeEventListener').mockImplementation();
+
+      let capturedHandler: (() => void) | undefined;
+      jest.spyOn(globalThis, 'addEventListener').mockImplementation((event: any, handler: any) => {
+        if (event === 'online') capturedHandler = handler;
+      });
+
+      service.subscribeToAuthEvents();
+      eventSubject.next({ type: EventTypes.SilentRenewFailed });
+      expect(capturedHandler).toBeDefined();
+
+      const reconnectError = new Error('Network error');
+      jest.spyOn(service, 'checkAuth$').mockReturnValue(throwError(() => reconnectError));
+      capturedHandler!();
+
+      expect(consoleError).toHaveBeenCalledWith('Error while reauthenticating after reconnect:', reconnectError);
+      expect(service.authorize).toHaveBeenCalled();
+
+      consoleError.mockRestore();
+      removeListenerSpy.mockRestore();
+    });
+
     it('gestiona SilentRenewFailed online → authorize()', () => {
       jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
       const consoleError = jest.spyOn(console, 'error').mockImplementation();

@@ -37,6 +37,7 @@ describe('CredentialIssuanceComponent', () => {
       canLeave: jest.fn().mockReturnValue(true),
       canDeactivate: jest.fn().mockReturnValue('canDeactivateReturn'),
       openLeaveConfirm: jest.fn().mockReturnValue(true),
+      updateSelectedFormat: jest.fn(),
       openSubmitDialog: jest.fn(),
       openLEARCredentialMachineSubmitDialog: jest.fn(),
     };
@@ -79,6 +80,14 @@ describe('CredentialIssuanceComponent', () => {
       const matSelect = {} as MatSelect;
       component.onTypeSelectionChange(type as any, matSelect);
       expect(mockService.updateSelectedType).toHaveBeenCalledWith(type, matSelect);
+    });
+  });
+
+  describe('onFormatSelectionChange', () => {
+    it('should call updateSelectedFormat on the service', () => {
+      const option = { format: 'jwt_vc_json', label: 'JWT VC JSON' } as any;
+      component.onFormatSelectionChange(option);
+      expect(mockService.updateSelectedFormat).toHaveBeenCalledWith(option);
     });
   });
 
