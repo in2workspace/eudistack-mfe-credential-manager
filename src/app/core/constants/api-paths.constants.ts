@@ -6,5 +6,6 @@ export const API_PATH = Object.freeze({
     PROCEDURES: '/backoffice/v1/procedures',
     REVOKE: '/w3c/v1/credentials/status/revoke',
     SAVE_CREDENTIAL: '/backoffice/v1/issuances',
-    SIGN_CREDENTIAL: '/backoffice/v1/retry-sign-credential'
+    SIGN_CREDENTIAL: '/backoffice/v1/retry-sign-credential',
+    CREDENTIAL_ISSUER_METADATA: '/.well-known/openid-credential-issuer'
 });

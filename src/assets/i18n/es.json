@@ -260,6 +260,12 @@
     "hint": {
       "organizationIdentifier": "Introduce solo los caracteres que van después de 'VAT...-'. Por ejemplo, si es 'VATEU-123ABC', introduce '123ABC'."
     },
+    "format": {
+      "label": "Formato de credencial",
+      "w3cVcDm": "W3C VC Data Model v2.0",
+      "sdJwt": "SD-JWT VC",
+      "mdoc": "mDOC (próximamente)"
+    },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."
   },

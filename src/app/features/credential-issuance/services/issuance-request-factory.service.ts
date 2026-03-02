@@ -17,11 +17,13 @@ export class IssuanceRequestFactoryService {
     LEARCredentialMachine: (data) => this.createLearCredentialMachineRequest(data)
   }
 
-  public createCredentialRequest(credentialData: IssuanceRawCredentialPayload, 
-      credentialType: IssuanceCredentialType): IssuanceLEARCredentialRequestDto{
+  public createCredentialRequest(credentialData: IssuanceRawCredentialPayload,
+      credentialType: IssuanceCredentialType,
+      configId: string,
+      format: string): IssuanceLEARCredentialRequestDto{
         const payload = this.createCredentialRequestPayload(credentialData, credentialType);
         const credentialEmail = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(credentialType, payload, credentialEmail);
+        return this.buildRequestDto(configId, format, payload, credentialEmail);
       }
 
   public createCredentialRequestPayload(
@@ -185,10 +187,10 @@ private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPaylo
   return credentialData.formData['mandatee'];
 }
 
-  private buildRequestDto(credType:IssuanceCredentialType, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
+  private buildRequestDto(configId: string, format: string, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
     return {
-      schema: credType,
-      format: "jwt_vc_json",
+      schema: configId,
+      format: format,
       payload: payload,
       operation_mode: "S",
       email: credentialEmail

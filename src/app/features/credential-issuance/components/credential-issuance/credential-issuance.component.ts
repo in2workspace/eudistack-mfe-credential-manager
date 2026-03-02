@@ -3,6 +3,7 @@ import { MatButton } from '@angular/material/button';
 import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, WritableSignal, HostListener, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
+import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TitleCasePipe, KeyValuePipe, CommonModule } from '@angular/common';
@@ -11,7 +12,7 @@ import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
-import { CredentialIssuanceViewModelSchemaWithId, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
 /**
  * CredentialIssuanceComponent
@@ -21,19 +22,23 @@ import { CredentialIssuanceViewModelSchemaWithId, IssuanceCredentialType, Issuan
 @Component({
     selector: 'app-credential-issuance',
     providers: [CredentialIssuanceService],
-    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
 export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDeactivate>{
-  
+
   //CREDENTIAL TYPE SELECTOR
   public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]>;
   public selectedCredentialType$: WritableSignal<IssuanceCredentialType | undefined>;
 
+  // FORMAT SELECTOR
+  public availableFormats$: Signal<CredentialFormatOption[]>;
+  public effectiveFormatOption$: Signal<CredentialFormatOption | null>;
+
   // FORM STATE
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
-  
+
   public staticData$: Signal<IssuanceStaticViewModel | null>;
   public form$: Signal <FormGroup<Record<string, FormGroup>>>;
   public formValue$: Signal<Record<string, any>>;
@@ -58,6 +63,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.hasSubmitted$ = this.issuanceService.hasSubmitted$;
     this.credentialTypesArr = this.issuanceService.credentialTypesArr;
     this.selectedCredentialType$ = this.issuanceService.selectedCredentialType$;
+    this.availableFormats$ = this.issuanceService.availableFormats$;
+    this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
     this.form$ = this.issuanceService.form$;
@@ -78,6 +85,10 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.issuanceService.updateSelectedType(selectedCredentialType, select);
   }
 
+  public onFormatSelectionChange(option: CredentialFormatOption): void {
+    this.issuanceService.updateSelectedFormat(option);
+  }
+
   public canLeave(): boolean{
     return this.issuanceService.canLeave();
   }
@@ -93,7 +104,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
       console.error('Invalid form: ');
       console.error(formValue);
       return;
-    } 
+    }
 
     if(this.selectedCredentialType$() === 'LEARCredentialMachine'){
       this.issuanceService.openLEARCredentialMachineSubmitDialog();
