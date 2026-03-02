@@ -30,6 +30,8 @@ describe('CredentialIssuanceComponent', () => {
       formValue$: signal({ foo: 'bar' }) as Signal<Record<string, any>>,
       isFormValid$: signal(false) as Signal<boolean>,
       bottomAlertMessages$: signal([]) as WritableSignal<string[]>,
+      availableFormats$: signal([]) as Signal<any>,
+      effectiveFormatOption$: signal(null) as Signal<any>,
       // Methods
       updateSelectedType: jest.fn(),
       canLeave: jest.fn().mockReturnValue(true),

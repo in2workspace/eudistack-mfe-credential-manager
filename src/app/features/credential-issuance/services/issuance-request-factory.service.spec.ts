@@ -44,7 +44,7 @@ describe('IssuanceRequestFactoryService', () => {
       formData: { mandatee: {} }
     } as unknown as IssuanceRawCredentialPayload;
 
-    expect(() => service.createCredentialRequest(payload, 'UNKNOWN' as any))
+    expect(() => service.createCredentialRequest(payload, 'UNKNOWN' as any, 'cfg', 'jwt_vc_json'))
       .toThrow(TypeError);
   });
 
@@ -65,7 +65,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialEmployee');
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialEmployee', 'cfg', 'jwt_vc_json');
     const emp = result.payload as IssuanceLEARCredentialEmployeePayload;
 
     expect(emp.mandator.commonName).toBe('Beta Common');
@@ -90,7 +90,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine');
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -136,7 +136,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine');
+    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');

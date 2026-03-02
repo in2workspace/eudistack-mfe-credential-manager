@@ -9,6 +9,7 @@ import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wr
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 
 class MockDialogWrapperService {
   openDialogWithCallback = jest.fn((comp, data, cb) => cb());
@@ -42,7 +43,8 @@ describe('CredentialIssuanceService', () => {
         { provide: IssuanceSchemaBuilder, useValue: mockSchemaBuilder },
         IssuanceRequestFactoryService, 
         CountryService, 
-        { provide: CredentialProcedureService, useValue: mockProcedureService }
+        { provide: CredentialProcedureService, useValue: mockProcedureService },
+        { provide: CredentialIssuerMetadataService, useValue: { loadMetadata: jest.fn(() => of(undefined)), getConfigurationsForType: jest.fn(() => []) } }
       ]
     });
     service = TestBed.inject(CredentialIssuanceService);
