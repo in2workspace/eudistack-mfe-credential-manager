@@ -1,0 +1,65 @@
+.title-container{
+    display: flex;
+    gap: 12px;
+    padding-bottom: 20px;
+}
+
+h2{
+    margin: 0px;
+}
+
+.tooltip{
+    display: flex;
+    align-items:center;
+}
+
+.main-container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.keys-container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.generate-button{
+    display: block;
+    width: 100%;
+}
+
+.key-container{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 12px;
+    gap: 12px;
+    border: 1px solid var(--border-default, #D1D5DB);
+    background-color: var(--surface-muted, #E8ECF1);
+    border-radius: var(--radius-sm, 4px);
+}
+
+.key{
+    display:flex;
+    align-items:center;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.copy-button{
+    margin: 0px;
+    border: 1px solid var(--border-strong, #9CA3AF);
+    background-color: var(--action-secondary, #F3F4F6);
+    border-radius: var(--radius-sm, 4px);
+    width: 55px;
+    height: 28px;
+    transition: transform 0.5s ease;
+    cursor: pointer;
+}
+
+.alert{
+    color: var(--status-error, #DC2626);
+    font-weight: 600;
+}

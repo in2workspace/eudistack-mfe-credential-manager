@@ -1,0 +1,5 @@
+// Neutral colors — used as fallbacks when CSS custom properties are not yet loaded.
+// Prefer using var(--surface-*), var(--text-*), var(--border-*) tokens from ThemeService.
+
+$white: #ffffff;
+$bg-neutral-light: whitesmoke;

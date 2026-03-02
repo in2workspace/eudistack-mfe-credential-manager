@@ -1,0 +1,109 @@
+// Navbar uses ONLY brand tokens — this is the tenant-branded chrome area.
+.main-header {
+  position: relative;
+  top: 0;
+  background: var(--brand-primary, var(--primary-color));
+  padding: 1.1rem 0;
+  margin-top: 0;
+  width: 100%;
+
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+
+      .logo {
+        height: 30px;
+        margin-right: 0.5rem;
+        cursor: pointer;
+      }
+
+      span {
+        color: var(--brand-primary-contrast, var(--primary-contrast-color));
+        font-weight: bold;
+        font-size: 1.2rem;
+        padding-bottom: 3.5px;
+      }
+
+      .organization{
+        display: block;
+      }
+    }
+
+    .navbar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: baseline;
+
+      .nav-item {
+        mat-form-field {
+          width: 6.625rem;
+        }
+
+        .nav-link {
+          color: var(--brand-primary-contrast, var(--primary-contrast-color));
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          margin-left: 0.5rem;
+
+          .user{
+            display: flex;
+            flex-direction: column;
+
+            .organization{
+              font-size: 12px;
+            }
+          }
+          mat-icon {
+            color: var(--brand-primary-contrast, var(--primary-contrast-color));
+          }
+
+        }
+      }
+    }
+  }
+}
+
+.mat-mdc-menu-item  {
+  padding-right: 2rem !important ;
+}
+@media(width < 768px){
+  .main-header{
+    .navbar{
+      .navbar-nav{
+        .nav-item{
+          .nav-link{
+            mat-icon{
+              margin-right: 0rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media(width < 600px){
+  .main-header{
+    .navbar{
+      .navbar-nav{
+        .nav-item{
+          .nav-link{
+            .user{
+              display:none;
+            }
+          }
+        }
+      }
+    }
+  }
+}

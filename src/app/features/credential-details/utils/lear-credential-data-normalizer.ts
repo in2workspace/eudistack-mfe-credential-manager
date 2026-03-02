@@ -1,0 +1,144 @@
+import { LEARCredential, EmployeeMandatee, Power, VerifiableCertification, Attester, EmployeeMandator } from './../../../core/models/entity/lear-credential';
+
+// Interfaces for the raw JSON of Mandatee and Power
+interface RawEmployeeMandatee {
+  firstName?: string;
+  first_name?: string;
+  lastName?: string;
+  last_name?: string;
+  email?: string;
+  emailAddress?: string
+}
+
+interface RawEmployeeMandator {
+  email?: string;
+  emailAddress?: string
+}
+
+interface RawPower {
+  action?: string | string[];
+  tmf_action?: string | string[];
+  domain?: string;
+  tmf_domain?: string;
+  function?: string;
+  tmf_function?: string;
+  type?: string;
+  tmf_type?: string;
+}
+
+interface RawVerifiableCertification extends VerifiableCertification{
+  atester?: Attester;
+}
+
+export class LEARCredentialDataNormalizer {
+
+  public normalizeLearCredential(data: LEARCredential): LEARCredential {
+    const normalized: any = { ...data };
+    if (normalized.credentialSubject && typeof normalized.credentialSubject === 'object') {
+      normalized.credentialSubject = { ...normalized.credentialSubject };
+    }
+
+    const types = Array.isArray(normalized?.type) ? normalized.type : [];
+    const isEmployee = types.includes('LEARCredentialEmployee');
+    const isMachine  = types.includes('LEARCredentialMachine');
+    const isVerCert  = types.includes('VerifiableCertification');
+
+    this.normalizeMandateIfNeeded(normalized, isEmployee, isMachine);
+    this.normalizeCertificationIfNeeded(normalized, isVerCert);
+
+    return normalized;
+  }
+
+  private normalizeMandateIfNeeded(
+    data: any,
+    isEmployee: boolean,
+    isMachine: boolean
+  ) {
+    if (!(isEmployee || isMachine)) return;
+    const sub = data.credentialSubject;
+    if (!sub || !('mandate' in sub)) return;
+
+    sub.mandate = { ...sub.mandate };
+    if (isEmployee && sub.mandate.mandatee) {
+      sub.mandate.mandatee = this.normalizeEmployeeMandatee(sub.mandate.mandatee);
+    }
+    if(isEmployee && sub.mandate.mandator){
+      sub.mandate.mandator = this.normalizeEmployeeMandator(sub.mandate.mandator);
+    }
+    if (Array.isArray(sub.mandate.power)) {
+      sub.mandate.power = sub.mandate.power.map((p: RawPower) => this.normalizePower(p));
+    }
+  }
+
+  private normalizeCertificationIfNeeded(
+    data: any,
+    isVerCert: boolean
+  ) {
+    if (!isVerCert || !('atester' in data)) return;
+    const raw = data as RawVerifiableCertification;
+    if (!raw.atester) return;
+    raw.attester = raw.atester;
+    delete raw.atester;
+  }
+
+private normalizeEmployeeMandatee(data: RawEmployeeMandatee): EmployeeMandatee {
+
+  const firstName = data.firstName ?? data.first_name ?? "";
+  const lastName  = data.lastName ?? data.last_name ?? "";
+  const email = data.email ?? data.emailAddress ?? "";
+
+  const copy = { ...data, firstName, lastName, email };
+  delete copy.first_name;
+  delete copy.last_name;
+  delete copy.emailAddress;
+
+  return copy;
+}
+
+private normalizeEmployeeMandator(mandator: RawEmployeeMandator): EmployeeMandator {
+  const copy: RawEmployeeMandator = { ...mandator };
+  copy.email = mandator.email ?? mandator.emailAddress ?? "";
+  delete copy.emailAddress;
+  return copy as EmployeeMandator;
+}
+
+
+private normalizeMandatorEmail(m: RawEmployeeMandator): RawEmployeeMandator {
+  const copy: any = { ...m };
+
+  if (copy.email == null && typeof copy.emailAddress === 'string') {
+    copy.email = copy.emailAddress;
+  }
+  delete copy.emailAddress;
+
+  return copy;
+}
+
+private normalizePower(data: RawPower): Power {
+  const action = data.action   ?? data.tmf_action ?? '';
+  const domain = data.domain   ?? data.tmf_domain ?? '';
+  const func   = data.function ?? data.tmf_function ?? '';
+  const type   = data.type     ?? data.tmf_type ?? '';
+
+  if (!action) {
+    console.warn('Missing power action. Using default: ""');
+  }
+  if (!domain) {
+    console.warn('Missing power domain. Using default:  ""');
+  }
+  if (!func) {
+    console.warn('Missing power function. Using default:  ""');
+  }
+  if (!type) {
+    console.warn('Missing power type. Using default:  ""');
+  }
+
+  return {
+    action,
+    domain,
+    function: func,
+    type
+  };
+}
+
+}
