@@ -18,7 +18,7 @@ export class AddAsteriskDirective implements OnInit {
   public ngOnInit(): void {
     const control = this.formGroup.get(this.controlName);
     if (!control) {
-      console.warn(`Control '${this.controlName}' not found in FormGroup`);
+      console.error(`Control '${this.controlName}' not found in FormGroup`);
       return;
     }
 

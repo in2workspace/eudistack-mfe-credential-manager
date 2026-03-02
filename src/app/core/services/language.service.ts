@@ -48,7 +48,7 @@ private setBrowserLanguage(): string | undefined {
       return shortLang;
     }
   }
-  console.log("Couldn't find any available browser language.");
+  console.error("Couldn't find any available browser language.");
   return undefined;
 }
 

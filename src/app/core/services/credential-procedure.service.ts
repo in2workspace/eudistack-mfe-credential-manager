@@ -94,7 +94,7 @@ export class CredentialProcedureService {
   }
 
   public getCredentialOfferByTransactionCode(transactionCode: string): Observable<CredentialOfferResponse> {
-    console.info('Getting credential offer by transaction code: ' + transactionCode);
+    console.error('Getting credential offer by transaction code: ' + transactionCode);
     return this.http.get<CredentialOfferResponse>(`${this.credentialOfferUrl}/transaction-code/${transactionCode}`).pipe(
       catchError(this.handleError),
       catchError(this.handleCredentialOfferError)
@@ -102,7 +102,7 @@ export class CredentialProcedureService {
   }
 
   public getCredentialOfferByCTransactionCode(cTransactionCode: string): Observable<CredentialOfferResponse> {
-    console.info('Refreshing QR code: getting credential offer by c-transaction code: ' + cTransactionCode);
+    console.error('Refreshing QR code: getting credential offer by c-transaction code: ' + cTransactionCode);
     return this.http.get<CredentialOfferResponse>(`${this.credentialOfferUrl}/c-transaction-code/${cTransactionCode}`).pipe(
       catchError(this.handleError),
       catchError(this.handleCredentialOfferError)
@@ -125,7 +125,7 @@ export class CredentialProcedureService {
       errorDetail = error.message;
     }
 
-    console.info('handleError -> status:', error.status, 'errorDetail:', errorDetail);
+    console.error('handleError -> status:', error.status, 'errorDetail:', errorDetail);
     // this 503 error handling is specific to credential-procedure endpoints
     if (error.status === 503 && errorDetail.trim() === 'Error during communication with the mail server') {
       const errorMessage = this.translate.instant('error.serverMailError.message');

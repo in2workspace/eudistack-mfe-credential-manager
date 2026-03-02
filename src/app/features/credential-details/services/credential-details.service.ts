@@ -266,7 +266,7 @@ private evaluateField(
       ? rawGroup(credential)
       : rawGroup;
   } catch (e) {
-    console.warn(`Error evaluating group "${field.key}":`, e);
+    console.error(`Error evaluating group "${field.key}":`, e);
     children = [];
   }
 
@@ -289,7 +289,7 @@ private evaluateField(
       return val || null;
     } catch (e) {
       const keyPart = fieldKey ? ' "' + fieldKey + '"' : '';
-      console.warn(`Error when mapping${keyPart}:`, e);
+      console.error(`Error when mapping${keyPart}:`, e);
       return null;
     }
   }

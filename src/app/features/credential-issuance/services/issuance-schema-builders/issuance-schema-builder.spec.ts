@@ -64,13 +64,13 @@ describe('IssuanceSchemaBuilder', () => {
   });
 
   describe('formSchemasBuilder()', () => {
-    let consoleWarnSpy: jest.SpyInstance;
+    let consoleErrorSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     });
     afterEach(() => {
-      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
     });
 
     const baseField = (over: Partial<CredentialIssuanceViewModelSchema[0]>) =>
@@ -120,7 +120,7 @@ describe('IssuanceSchemaBuilder', () => {
 
       expect(form).toHaveLength(0);
       expect(stat.mandator).toEqual([{ key: 'x', value: 'y' }]);
-      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it('extracts pref_side only when onBehalf=false', () => {
@@ -161,11 +161,11 @@ describe('IssuanceSchemaBuilder', () => {
 
       expect(form).toHaveLength(0);
       expect(stat).toEqual({});
-      expect(consoleWarnSpy).toHaveBeenCalledTimes(2);
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Could not get static value from field bad1')
       );
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Could not get static value from field bad2')
       );
     });

@@ -49,7 +49,7 @@ export class IssuanceSchemaBuilder {
       if (val && typeof val === 'object') {
         Object.assign(staticSchema, val);
       } else {
-        console.warn(`Could not get static value from field ${field.key ?? field}`);
+        console.error(`Could not get static value from field ${field.key ?? field}`);
       }
     }
 }

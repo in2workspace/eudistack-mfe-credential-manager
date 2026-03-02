@@ -65,12 +65,12 @@ describe('AddAsteriskDirective', () => {
   });
 
   it('warn if cannot find control in group', () => {
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation();
     directive.formGroup = new FormGroup({});
 
     directive.ngOnInit();
 
-    expect(warnSpy).toHaveBeenCalledWith(`Control 'name' not found in FormGroup`);
-    warnSpy.mockRestore();
+    expect(errorSpy).toHaveBeenCalledWith(`Control 'name' not found in FormGroup`);
+    errorSpy.mockRestore();
   });
 });

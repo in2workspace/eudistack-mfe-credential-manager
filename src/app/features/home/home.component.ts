@@ -42,11 +42,9 @@ public scrollToLoginSection(): void {
   const rect = element.getBoundingClientRect();
 
   const navbarHeight = this.header.nativeElement.offsetHeight;
-  console.log('navbar h: ' + navbarHeight);
+  const top = rect.top + globalThis.scrollY - navbarHeight;
 
-  const top = rect.top + window.scrollY - navbarHeight;
-
-  window.scrollTo({
+  globalThis.scrollTo({
     top,
     behavior: 'smooth'
   });

@@ -58,25 +58,23 @@ export class AuthService{
 
         switch (event.type) {
           case EventTypes.SilentRenewStarted:
-            console.info('Silent renew started: ' + Date.now());
             break;
 
           // before this happens, the library cleans up the local auth data
           case EventTypes.SilentRenewFailed:
-            
+
             if (isOffline) {
-              console.warn('Silent token refresh failed: offline mode', event);
+              console.error('Silent token refresh failed: offline mode', event);
 
               const onlineHandler = () => {
-                console.info('Connection restored. Retrying to authenticate...');
                 this.checkAuth$().subscribe(
                   {
                     next: ({ isAuthenticated }) => {
-                      if (!isAuthenticated) {
-                        console.warn('User still not authenticated after reconnect, logging out');
-                        this.authorize();
+                      if (isAuthenticated) {
+                        // reauthenticated successfully after reconnect
                       } else {
-                        console.info('User reauthenticated successfully after reconnect');
+                        console.error('User still not authenticated after reconnect, logging out');
+                        this.authorize();
                       }
                     },
                     error: (err) => {
@@ -100,8 +98,7 @@ export class AuthService{
 
           case EventTypes.IdTokenExpired:
           case EventTypes.TokenExpired:
-            console.warn('Session expired:', event);
-            console.warn('At: ' + Date.now());
+            console.error('Session expired at: ' + Date.now(), event);
             break;
         }
       });
@@ -122,7 +119,7 @@ export class AuthService{
           this.router.navigate([IAM_POST_LOGIN_ROUTE]);
         }
       }else{
-          console.warn('Checking authentication: not authenticated.');
+          console.error('Checking authentication: not authenticated.');
       }
     }),
     catchError((err:Error)=>{
@@ -133,7 +130,6 @@ export class AuthService{
 
 
   public logout(): void {
-    console.info('Logout: clearing local session.');
     this.oidcSecurityService.logoffLocal();
     this.isAuthenticatedSubject.next(false);
     this.userDataSubject.next(null);
@@ -147,7 +143,6 @@ export class AuthService{
   }
 
   public authorize(){
-    console.info('Authorize.');
     this.oidcSecurityService.authorize();
   }
 
@@ -155,11 +150,8 @@ export class AuthService{
      //Future work: when accessing with certificate update signal role LER and  handleCertificateLogin
       try{
         const learCredential = this.extractVCFromUserData(userData);
-        console.debug('[AUTH] Extracted VC:', JSON.stringify(learCredential, null, 2));
         const normalizedCredential = this.normalizer.normalizeLearCredential(learCredential) as LEARCredentialEmployee;
-        console.debug('[AUTH] Normalized VC:', JSON.stringify(normalizedCredential, null, 2));
         this.handleVCLogin(normalizedCredential);
-        console.debug('[AUTH] User powers after handleVCLogin:', JSON.stringify(this.userPowers, null, 2));
       }
       catch(error){
         console.error(error);

@@ -121,16 +121,16 @@ private normalizePower(data: RawPower): Power {
   const type   = data.type     ?? data.tmf_type ?? '';
 
   if (!action) {
-    console.warn('Missing power action. Using default: ""');
+    console.error('Missing power action. Using default: ""');
   }
   if (!domain) {
-    console.warn('Missing power domain. Using default:  ""');
+    console.error('Missing power domain. Using default:  ""');
   }
   if (!func) {
-    console.warn('Missing power function. Using default:  ""');
+    console.error('Missing power function. Using default:  ""');
   }
   if (!type) {
-    console.warn('Missing power type. Using default:  ""');
+    console.error('Missing power type. Using default:  ""');
   }
 
   return {

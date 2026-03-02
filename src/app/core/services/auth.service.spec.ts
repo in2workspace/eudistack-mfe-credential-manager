@@ -546,29 +546,24 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
     });
 
     it('gestiona SilentRenewStarted', () => {
-      const consoleSpy = jest.spyOn(console, 'info').mockImplementation();
-
       service.subscribeToAuthEvents();
       eventSubject.next({ type: EventTypes.SilentRenewStarted });
-
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/Silent renew started/));
-      consoleSpy.mockRestore();
+      // SilentRenewStarted only advances the stream; no side-effects to verify
+      expect(service.authorize).not.toHaveBeenCalled();
     });
 
     it('gestiona SilentRenewFailed offline', () => {
       jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
-      const consoleWarn = jest.spyOn(console, 'warn').mockImplementation();
-      const consoleInfo = jest.spyOn(console, 'info').mockImplementation();
-      const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const addEventListenerSpy = jest.spyOn(globalThis, 'addEventListener');
 
       service.subscribeToAuthEvents();
       eventSubject.next({ type: EventTypes.SilentRenewFailed });
 
-      expect(consoleWarn).toHaveBeenCalledWith(expect.stringContaining('offline mode'), expect.anything());
+      expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('offline mode'), expect.anything());
       expect(addEventListenerSpy).toHaveBeenCalledWith('online', expect.any(Function));
 
-      consoleWarn.mockRestore();
-      consoleInfo.mockRestore();
+      consoleError.mockRestore();
     });
 
     it('gestiona SilentRenewFailed online → authorize()', () => {
@@ -585,19 +580,19 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
     });
 
     it('gestiona IdTokenExpired', () => {
-      const consoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
       service.subscribeToAuthEvents();
       eventSubject.next({ type: EventTypes.IdTokenExpired });
-      expect(consoleWarn).toHaveBeenCalledWith('Session expired:', expect.anything());
-      consoleWarn.mockRestore();
+      expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Session expired'), expect.anything());
+      consoleError.mockRestore();
     });
 
     it('gestiona TokenExpired', () => {
-      const consoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
       service.subscribeToAuthEvents();
       eventSubject.next({ type: EventTypes.TokenExpired });
-      expect(consoleWarn).toHaveBeenCalledWith('Session expired:', expect.anything());
-      consoleWarn.mockRestore();
+      expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Session expired'), expect.anything());
+      consoleError.mockRestore();
     });
   });
 

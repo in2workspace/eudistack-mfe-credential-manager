@@ -154,11 +154,11 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
     switchMap(offerParams => {
       const totalAvailableTimeFromBackendInSeconds = offerParams.c_transaction_code_expires_in;
       let totalAvailableTimeInMs: number;
-      if(!totalAvailableTimeFromBackendInSeconds){
+      if(totalAvailableTimeFromBackendInSeconds){
+        totalAvailableTimeInMs = (totalAvailableTimeFromBackendInSeconds * 1000);
+      }else{
         console.error('Offer expiration time not received from API; using default: ' + defaultTotalAvailableTimeInMs + ' - ' + loadingBufferTimeInMs);
         totalAvailableTimeInMs = defaultTotalAvailableTimeInMs;
-      }else{
-        totalAvailableTimeInMs = (totalAvailableTimeFromBackendInSeconds * 1000);
       }
       return timer(totalAvailableTimeInMs - (popupTimeInSeconds * 1000) - loadingBufferTimeInMs).pipe(
         map(() => 'END' as StartOrEnd),
@@ -201,13 +201,13 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
       filter(val => val === false),
       switchMap(cancelCallback)).subscribe({
       next: () => { 
-        console.info('Cancel callback completed');
+        console.error('Cancel callback completed');
       },
       error: err => {
         console.error(err);
       },
       complete: () => {
-        console.info('Cancel callback completed');
+        console.error('Cancel callback completed');
       }
     });
 

@@ -146,7 +146,7 @@ export class DialogWrapperService {
       asyncOperation(formValue).subscribe({
         next: res => {
           if (res?.noChanges) {
-            console.info('No changes to update.');
+            console.error('No changes to update.');
           }
           dialogRef.close();
           this.loader.updateIsLoading(false);

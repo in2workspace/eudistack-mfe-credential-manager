@@ -92,8 +92,8 @@ public onMouseLeave() {
 
     const hostPos = this.el.nativeElement.getBoundingClientRect();
     const scrollPos = {
-      top: window.scrollY,
-      left: window.scrollX,
+      top: globalThis.scrollY,
+      left: globalThis.scrollX,
     };
 
     this.renderer.setStyle(

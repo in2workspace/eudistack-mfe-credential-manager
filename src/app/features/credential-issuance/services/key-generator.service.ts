@@ -37,7 +37,7 @@ export class KeyGeneratorService {
       }
 
   private async generateP256KeyPair(): Promise<CryptoKeyPair> {
-      return await window.crypto.subtle.generateKey(
+      return await globalThis.crypto.subtle.generateKey(
         {
           name: "ECDSA",
           namedCurve: "P-256"
@@ -48,7 +48,7 @@ export class KeyGeneratorService {
   }
 
   private async generateP256PrivateKeyHex(keyPair: CryptoKeyPair): Promise<string> {
-    const privateKeyPkcs8: ArrayBuffer = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const privateKeyPkcs8: ArrayBuffer = await globalThis.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
 
     const privateKeyPkcs8Bytes: Uint8Array = new Uint8Array(privateKeyPkcs8);
 
@@ -75,7 +75,7 @@ export class KeyGeneratorService {
       if (!matchResult) {
         throw new Error('Invalid multicodecHex string');
       }
-      const multicodecBytes = new Uint8Array(matchResult.map(byte => parseInt(byte, 16)));
+      const multicodecBytes = new Uint8Array(matchResult.map(byte => Number.parseInt(byte, 16)));
       const MAP = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
       const multicodecBase58 = this.base58encode(multicodecBytes, MAP);
 
@@ -83,7 +83,7 @@ export class KeyGeneratorService {
   }
 
   private async generateP256PublicKeyHex(keyPair: CryptoKeyPair): Promise<string> {
-      const publicKey: ArrayBuffer = await window.crypto.subtle.exportKey("raw", keyPair.publicKey);
+      const publicKey: ArrayBuffer = await globalThis.crypto.subtle.exportKey("raw", keyPair.publicKey);
 
       const publicKeyBytes: Uint8Array = new Uint8Array(publicKey);
 
@@ -99,7 +99,7 @@ export class KeyGeneratorService {
       const stringNumber: string = decimalNumber.toString();
 
       const lastNumPosition: number = stringNumber.length - 1;
-      const lastNumDecimal: number = parseInt(stringNumber[lastNumPosition]);
+      const lastNumDecimal: number = Number.parseInt(stringNumber[lastNumPosition]);
 
       const isEven: boolean = lastNumDecimal % 2 === 0;
       return isEven;

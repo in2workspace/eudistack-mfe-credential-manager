@@ -126,7 +126,7 @@ export class CredentialIssuanceService {
     const hasChangedType = currentType !== undefined && currentType !== selectedCredentialType
     if (hasChangedType && !this.canLeave()) {
       const alertMsg = this.translate.instant("credentialIssuance.changeCredentialAlert");
-      const shouldChange = window.confirm(alertMsg);
+      const shouldChange = globalThis.confirm(alertMsg);
 
       if (!shouldChange) {
         select.value = currentType;
@@ -172,7 +172,7 @@ export class CredentialIssuanceService {
 
   public openLeaveConfirm(): boolean{
     const alertMsg = this.translate.instant("credentialIssuance.unloadAlert");
-    const confirm = window.confirm(alertMsg);
+    const confirm = globalThis.confirm(alertMsg);
     return confirm;
   }
 

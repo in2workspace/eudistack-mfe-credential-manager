@@ -1,7 +1,5 @@
-/**
- * @deprecated Theme loading is now handled by ThemeService via APP_INITIALIZER.
- * This module is kept for backward compatibility but is no longer used at startup.
- */
+// deprecated: Theme loading is now handled by ThemeService via APP_INITIALIZER.
+// This module is kept for backward compatibility but is no longer used at startup.
 
 const DEFAULT_THEME_NAME = 'default-theme';
 const THEME_LINK_ID = 'runtime-theme';
