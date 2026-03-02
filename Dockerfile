@@ -4,9 +4,7 @@ WORKDIR /app
 #Copy package.json and package-lock.json
 COPY package*.json /app/
 #The npm ci command is used to install a project with a clean slate. The npm ci command can only be used inside a project directory where a package-lock.json file is present.
-RUN npm config set registry https://registry.npmmirror.com &&  \
-    npm ci --ignore-scripts
-COPY package.json package-lock.json /app/
+RUN npm ci --ignore-scripts
 COPY src /app/src
 COPY angular.json /app/angular.json
 COPY tsconfig.json /app/tsconfig.json
