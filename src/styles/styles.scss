@@ -1,0 +1,38 @@
+@use '@angular/material' as mat;
+@use './variables';
+@import './ng-material/ng-index.scss';
+@import './status.scss';
+
+
+html,
+body {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0; //apply font stack to non-angular-material text
+}
+
+h1{
+  margin: 0 0 16px;
+}
+
+p{
+  margin: 0 0 12px;
+}
+
+.margin-top-none{
+  margin-top:0px;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+.dense-1 {
+  @include mat.all-component-densities(-3);
+}
+
+.ml-2{
+  margin-left:2rem ;
+}
