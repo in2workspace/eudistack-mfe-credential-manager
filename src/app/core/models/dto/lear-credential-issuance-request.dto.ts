@@ -1,13 +1,12 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
 
+export type IssuanceDelivery = 'email' | 'ui';
+
 export interface IssuanceLEARCredentialRequestDto {
-    schema: string,
-    format: string,
-    payload: IssuanceLEARCredentialPayload,
-    operation_mode: string,
-    validity_period?: number,
-    response_uri?: string,
-    email?: string
+    credential_configuration_id: string;
+    payload: IssuanceLEARCredentialPayload;
+    delivery: IssuanceDelivery;
+    email: string;
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;

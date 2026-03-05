@@ -125,8 +125,7 @@ describe('CredentialProcedureService', () => {
 
   // todo test it('should save credential procedure successfully', () => {
   //   const IssuanceRequestMock:IssuanceLEARCredentialRequestDto = {
-  //     schema: "LEARCredentialEmployee",
-  //     format: "jwt_vc_json",
+  //     credential_configuration_id: "learcredential.employee.w3c.4",
   //     payload: {
   //       mandatee: {
   //         firstName: '',
@@ -142,7 +141,8 @@ describe('CredentialProcedureService', () => {
   //         country: ''
   //       }, power: []
   //     },
-  //     operation_mode: "S"
+  //     delivery: "email",
+  //     email: "test@example.com"
   //   };
   //   service.createProcedure(IssuanceRequestMock).subscribe(data => {
   //     expect(data).toEqual(IssuanceRequestMock);
@@ -155,8 +155,7 @@ describe('CredentialProcedureService', () => {
 
   // todo test it('should handle error when saving credential procedure', () => {
   //   const IssuanceRequestMock:IssuanceLEARCredentialRequestDto = {
-  //     schema: "LEARCredentialEmployee",
-  //     format: "jwt_vc_json",
+  //     credential_configuration_id: "learcredential.employee.w3c.4",
   //     payload: {
   //       mandatee: {
   //         firstName: '',
@@ -172,7 +171,8 @@ describe('CredentialProcedureService', () => {
   //         country: ''
   //       }, power: []
   //     },
-  //     operation_mode: "S"
+  //     delivery: "email",
+  //     email: "test@example.com"
   //   };
   //   const errorResponse = new HttpErrorResponse({
   //     error: '500 error',

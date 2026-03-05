@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
 import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
@@ -17,13 +17,15 @@ export class IssuanceRequestFactoryService {
     LEARCredentialMachine: (data) => this.createLearCredentialMachineRequest(data)
   }
 
-  public createCredentialRequest(credentialData: IssuanceRawCredentialPayload,
+  public createCredentialRequest(
+      credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      format: string): IssuanceLEARCredentialRequestDto{
+      delivery: IssuanceDelivery = 'email'
+  ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType);
-        const credentialEmail = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, format, payload, credentialEmail);
+        const email = this.getCredentialEmail(credentialData, credentialType);
+        return this.buildRequestDto(configId, delivery, payload, email);
       }
 
   public createCredentialRequestPayload(
@@ -117,12 +119,15 @@ export class IssuanceRequestFactoryService {
     return payload;
   }
 
-  private getCredentialEmail(credentialData: IssuanceRawCredentialPayload, 
-    credentialType: IssuanceCredentialType): string | undefined{
-      if(credentialType === 'LEARCredentialMachine' && !credentialData.onBehalf){
+  private getCredentialEmail(credentialData: IssuanceRawCredentialPayload,
+    credentialType: IssuanceCredentialType): string {
+      if (credentialType === 'LEARCredentialEmployee') {
+        return credentialData.formData['mandatee']?.['email'] ?? '';
+      }
+      if (!credentialData.onBehalf) {
         return this.authService.getMandateeEmail();
       }
-      return undefined;
+      return credentialData.formData['mandatee']?.['email'] ?? '';
   }
 
   private buildDidElsi(orgId: string): string{
@@ -187,14 +192,13 @@ private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPaylo
   return credentialData.formData['mandatee'];
 }
 
-  private buildRequestDto(configId: string, format: string, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
+  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string): IssuanceLEARCredentialRequestDto {
     return {
-      schema: configId,
-      format: format,
-      payload: payload,
-      operation_mode: "S",
-      email: credentialEmail
-    }
+      credential_configuration_id: configId,
+      payload,
+      delivery,
+      email
+    };
   }
 }
 

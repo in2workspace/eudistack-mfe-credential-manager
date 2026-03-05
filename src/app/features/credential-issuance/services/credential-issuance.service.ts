@@ -279,8 +279,7 @@ export class CredentialIssuanceService {
       }
 
       const configId = formatOption?.configId ?? credentialType;
-      const format = formatOption?.format ?? 'jwt_vc_json';
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, format);
+      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId);
 
       return this.sendCredentialRequest(request).pipe(
         // After submitting credential, show success popup and navigate to dashboard after close
@@ -299,9 +298,8 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
-    format: string,
-  ): IssuanceLEARCredentialRequestDto{
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, format);
+  ): IssuanceLEARCredentialRequestDto {
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId);
   }
 
 

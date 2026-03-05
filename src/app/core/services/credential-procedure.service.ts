@@ -1,6 +1,6 @@
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -68,8 +68,10 @@ export class CredentialProcedureService {
   }
 
   public createProcedure(procedureRequest: IssuanceLEARCredentialRequestDto): Observable<void> {
-
-    return this.http.post<void>(this.saveCredential, procedureRequest).pipe(
+    const headers = new HttpHeaders({
+      'X-Idempotency-Key': crypto.randomUUID()
+    });
+    return this.http.post<void>(this.saveCredential, procedureRequest, { headers }).pipe(
       catchError(this.handleError)
     );
   }
@@ -117,7 +119,17 @@ export class CredentialProcedureService {
 
   private readonly handleError = (error: HttpErrorResponse) => {
     let errorDetail: string;
-    if (error.error && typeof error.error === 'object' && error.error.message) {
+
+    // RFC 7807 Problem Details format
+    if (error.error && typeof error.error === 'object' && error.error.detail) {
+      errorDetail = error.error.detail;
+      if (error.error.violations?.length) {
+        const violationMessages = error.error.violations
+          .map((v: { field: string; message: string }) => `${v.field}: ${v.message}`)
+          .join(', ');
+        errorDetail += ` (${violationMessages})`;
+      }
+    } else if (error.error && typeof error.error === 'object' && error.error.message) {
       errorDetail = error.error.message;
     } else if (error.error && typeof error.error === 'string') {
       errorDetail = error.error;
@@ -126,8 +138,8 @@ export class CredentialProcedureService {
     }
 
     console.error('handleError -> status:', error.status, 'errorDetail:', errorDetail);
-    // this 503 error handling is specific to credential-procedure endpoints
-    if (error.status === 503 && errorDetail.trim() === 'Error during communication with the mail server') {
+
+    if (error.status === 503 && errorDetail.includes('mail server')) {
       const errorMessage = this.translate.instant('error.serverMailError.message');
       const errorTitle = this.translate.instant('error.serverMailError.title');
 
