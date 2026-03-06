@@ -32,7 +32,7 @@ export class CredentialIssuanceService {
   public availableFormats$ = computed<CredentialFormatOption[]>(() => {
     const type = this.selectedCredentialType$();
     if (!type) return [];
-    const configs = this.metadataService.getConfigurationsForType(type);
+    const configs = this.metadataService.findConfigurationsForType(type);
     if (configs.length === 0) {
       return [{ configId: type, format: 'jwt_vc_json', labelKey: FORMAT_LABEL_MAP['jwt_vc_json']! }];
     }

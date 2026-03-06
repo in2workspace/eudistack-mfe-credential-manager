@@ -81,15 +81,15 @@ describe('CredentialIssuerMetadataService', () => {
     });
   });
 
-  describe('getConfigurationsForType()', () => {
+  describe('findConfigurationsForType()', () => {
     it('should return empty array when metadata not loaded', () => {
-      const result = service.getConfigurationsForType('LEARCredentialEmployee');
+      const result = service.findConfigurationsForType('LEARCredentialEmployee');
       expect(result).toEqual([]);
     });
 
     it('should return matching configurations after metadata loaded', (done) => {
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('LEARCredentialEmployee');
+        const result = service.findConfigurationsForType('LEARCredentialEmployee');
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({ configId: 'LEARCredentialEmployee_jwt', format: 'jwt_vc_json' });
         expect(result).toContainEqual({ configId: 'LEARCredentialEmployee_mdoc', format: 'mso_mdoc' });
@@ -100,9 +100,9 @@ describe('CredentialIssuerMetadataService', () => {
 
     it('should return empty array for type with no matching configurations', (done) => {
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('LEARCredentialEmployee' as any);
+        const result = service.findConfigurationsForType('LEARCredentialEmployee' as any);
         // OtherCredential has no credential_definition, so won't match
-        const machineResult = service.getConfigurationsForType('LEARCredentialMachine');
+        const machineResult = service.findConfigurationsForType('LEARCredentialMachine');
         expect(machineResult).toHaveLength(1);
         expect(machineResult[0]).toEqual({ configId: 'LEARCredentialMachine_jwt', format: 'jwt_vc_json' });
         done();
@@ -118,7 +118,7 @@ describe('CredentialIssuerMetadataService', () => {
         }
       };
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('LEARCredentialEmployee');
+        const result = service.findConfigurationsForType('LEARCredentialEmployee');
         expect(result).toEqual([]);
         done();
       });

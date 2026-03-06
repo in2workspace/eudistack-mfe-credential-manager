@@ -167,7 +167,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   private loadCredentialData(): void {
-    this.credentialProcedureService.getCredentialProcedures()
+    this.credentialProcedureService.fetchCredentialProcedures()
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {

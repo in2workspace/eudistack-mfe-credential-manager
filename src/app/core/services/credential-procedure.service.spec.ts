@@ -70,7 +70,7 @@ describe('CredentialProcedureService', () => {
       { credential_procedure: { procedure_id: '2', status: {} as LifeCycleStatus, subject: 'Jane Doe', updated: '2023-01-02', credential_type: 'VERIFIABLE_CERTIFICATION', email: "aa@bb.com", organization_identifier: "VATES-000000"}}
     ]};
 
-    service.getCredentialProcedures().subscribe(data => {
+    service.fetchCredentialProcedures().subscribe(data => {
       expect(data.credential_procedures.length).toBe(2);
       expect(data).toEqual(mockData);
     });
@@ -83,7 +83,7 @@ describe('CredentialProcedureService', () => {
   it('should handle error when fetching credential procedures', () => {
     const errorResponse = notFoundErrorResp;
 
-    service.getCredentialProcedures().subscribe({
+    service.fetchCredentialProcedures().subscribe({
       next: data => fail('should have failed with 404 error'),
       error: (error: string) => {
         expect(error).toContain('Server-side error: 404');
@@ -100,7 +100,7 @@ describe('CredentialProcedureService', () => {
       { procedure_id: '1', lifeCycleStatus: {} as LifeCycleStatus, credential: { mandatee: {}, mandator: {}, power: [] } as any, email: "email" }
     ;
 
-    service.getCredentialProcedureById(procedureId).subscribe(data => {
+    service.fetchCredentialProcedureById(procedureId).subscribe(data => {
       expect(data).toEqual(mockData);
     });
     const req = httpMock.expectOne(`${proceduresURL}/${procedureId}/credential-decoded`);
@@ -112,7 +112,7 @@ describe('CredentialProcedureService', () => {
     const procedureId = '1';
     const errorResponse = notFoundErrorResp;
 
-    service.getCredentialProcedureById(procedureId).subscribe(
+    service.fetchCredentialProcedureById(procedureId).subscribe(
       data => fail('should have failed with 404 error'),
       (error: string) => {
         expect(error).toContain('Server-side error: 404');
@@ -278,7 +278,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const mockResponse = JSON.stringify({ qrCode: 'mockQRCode' });
 
-    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe('mockQRCode');
     });
 
@@ -291,7 +291,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const mockResponse = JSON.stringify({});
 
-    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe(mockResponse);
     });
 
@@ -304,7 +304,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const invalidJSONResponse = 'Invalid JSON string';
 
-    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe(invalidJSONResponse);
     });
 
@@ -321,7 +321,7 @@ describe('get credential offer by c-code', () => {
     const transactionCode = 'abc123';
     const errorResponse = serverErrorResp;
 
-    service.getCredentialOfferByCTransactionCode(transactionCode).subscribe(
+    service.fetchCredentialOfferByCTransactionCode(transactionCode).subscribe(
       () => fail('should have failed with 500 error'),
       (error: string) => {
         expect(error).toContain('Server-side error: 500');
@@ -336,7 +336,7 @@ describe('get credential offer by c-code', () => {
     const transactionCode = 'abc123';
     const mockResponse = 'raw response';
 
-    service.getCredentialOfferByCTransactionCode(transactionCode).subscribe(data => {
+    service.fetchCredentialOfferByCTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe(mockResponse);
     });
 
@@ -447,12 +447,12 @@ describe('get credential offer by c-code', () => {
     });
   });
 
-  describe('getCredentialOfferByTransactionCode', () => {
+  describe('fetchCredentialOfferByTransactionCode', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const transactionCode = 'test-code';
       const error = new HttpErrorResponse({ status: 404, error: {} });
   
-      service.getCredentialOfferByTransactionCode(transactionCode).subscribe({
+      service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe({
         next: () => fail('Expected error'),
         error: err => {
           expect(err).toBe(error);
@@ -464,12 +464,12 @@ describe('get credential offer by c-code', () => {
     });
   });
   
-  describe('getCredentialOfferByCTransactionCode', () => {
+  describe('fetchCredentialOfferByCTransactionCode', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const cTransactionCode = 'test-code';
       const error = new HttpErrorResponse({ status: 409, error: {} });
   
-      service.getCredentialOfferByCTransactionCode(cTransactionCode).subscribe({
+      service.fetchCredentialOfferByCTransactionCode(cTransactionCode).subscribe({
         next: () => fail('Expected error'),
         error: err => {
           expect(err).toBe(error);

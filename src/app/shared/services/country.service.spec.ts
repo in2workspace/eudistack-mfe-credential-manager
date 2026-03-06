@@ -30,8 +30,8 @@ describe('CountryService', () => {
     });
 
     // A couple of concrete examples derived from the provided COUNTRIES
-    expect(service.getCountryFromIsoCode('ES')?.name).toBe('countries.spain');
-    expect(service.getCountryFromIsoCode('GB')?.name).toBe('countries.unitedkingdom'); // original was "unitedKingdom"
+    expect(service.findCountryByIsoCode('ES')?.name).toBe('countries.spain');
+    expect(service.findCountryByIsoCode('GB')?.name).toBe('countries.unitedkingdom'); // original was "unitedKingdom"
   });
 
   it('should return the list of countries (already mapped)', () => {
@@ -63,7 +63,7 @@ describe('CountryService', () => {
   });
 
   it('should return the correct country for a given ISO country code', () => {
-    const result = service.getCountryFromIsoCode('ES');
+    const result = service.findCountryByIsoCode('ES');
     expect(result).toEqual<Country>({
       name: 'countries.spain',
       phoneCode: '34',
@@ -72,13 +72,13 @@ describe('CountryService', () => {
   });
 
   it('should return undefined for an invalid ISO country code', () => {
-    const result = service.getCountryFromIsoCode('INVALID');
+    const result = service.findCountryByIsoCode('INVALID');
     expect(result).toBeUndefined();
   });
 
   it('should find a country by its translation key name, case-insensitive', () => {
     // The service now stores names as "countries.xxx"
-    const result = service.getCountryFromName('CoUnTrIeS.SpAiN');
+    const result = service.findCountryByName('CoUnTrIeS.SpAiN');
     expect(result).toEqual<Country>({
       name: 'countries.spain',
       phoneCode: '34',
@@ -87,22 +87,22 @@ describe('CountryService', () => {
   });
 
   it('should return the correct translation-key name for a valid ISO country code', () => {
-    const result = service.getCountryNameFromIsoCountryCode('ES');
+    const result = service.resolveCountryNameFromIsoCode('ES');
     expect(result).toBe('countries.spain');
   });
 
   it('should return an empty string for an invalid ISO country code when fetching name', () => {
-    const result = service.getCountryNameFromIsoCountryCode('INVALID');
+    const result = service.resolveCountryNameFromIsoCode('INVALID');
     expect(result).toBe('');
   });
 
   it('should return the correct phone code for a valid ISO country code', () => {
-    const result = service.getCountryPhoneFromIsoCountryCode('ES');
+    const result = service.resolveCountryPhoneFromIsoCode('ES');
     expect(result).toBe('34');
   });
 
   it('should return an empty string for an invalid ISO country code when fetching phone code', () => {
-    const result = service.getCountryPhoneFromIsoCountryCode('INVALID');
+    const result = service.resolveCountryPhoneFromIsoCode('INVALID');
     expect(result).toBe('');
   });
 

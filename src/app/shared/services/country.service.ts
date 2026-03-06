@@ -33,15 +33,15 @@ export class CountryService {
     return [...this.countries].sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  public getCountryFromIsoCode(isoCode: string): Country | undefined {
+  public findCountryByIsoCode(isoCode: string): Country | undefined {
     return this.countries.find(c => c.isoCountryCode === isoCode);
   }
 
-  public getCountryFromName(name: string): Country | undefined {
+  public findCountryByName(name: string): Country | undefined {
     return this.countries.find(c => c.name.toLowerCase() === name.toLowerCase());
   }
 
-  public getCountryNameFromIsoCountryCode(isoCode: string): string {
+  public resolveCountryNameFromIsoCode(isoCode: string): string {
     const country = this.countries.find(c => c.isoCountryCode === isoCode);
     if(country){
       return country.name;
@@ -50,7 +50,7 @@ export class CountryService {
     }
   }
 
-  public getCountryPhoneFromIsoCountryCode(isoCode: string): string {
+  public resolveCountryPhoneFromIsoCode(isoCode: string): string {
     const country = this.countries.find(c => c.isoCountryCode === isoCode);
     if(country){
       return country.phoneCode;

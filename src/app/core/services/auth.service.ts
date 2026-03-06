@@ -111,7 +111,7 @@ export class AuthService{
       this.isAuthenticatedSubject.next(isAuthenticated);
 
       if (isAuthenticated) {
-        if(this.getRole(userData) != RoleType.LEAR)  throw new Error('Error Role. '+ this.getRole(userData));
+        if(this.resolveRole(userData) != RoleType.LEAR)  throw new Error('Error Role. '+ this.resolveRole(userData));
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
@@ -158,7 +158,7 @@ export class AuthService{
       }
   }
 
-  private getRole(userData: UserDataAuthenticationResponse): RoleType | null {
+  private resolveRole(userData: UserDataAuthenticationResponse): RoleType | null {
     if (userData.role) {
       return userData.role;
     }
@@ -241,7 +241,7 @@ export class AuthService{
   }
 
   //todo maybe rename (i.e. getPlainMandator), since "Raw" is being used for unnormalized VC/fields
-  public getRawMandator(): EmployeeMandator | null {
+  public extractRawMandator(): EmployeeMandator | null {
     return this.mandatorSubject.getValue();
   }
 

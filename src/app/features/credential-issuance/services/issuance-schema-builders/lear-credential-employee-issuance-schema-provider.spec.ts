@@ -27,7 +27,7 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
 
   beforeEach(() => {
     authMock = {
-      getRawMandator: jest.fn(),
+      extractRawMandator: jest.fn(),
     } as any;
 
     countryMock = {
@@ -80,11 +80,11 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     //   expect(typeof mandator?.staticValueGetter).toBe('function');
 
     //   // quan authService retorna null
-    //   authMock.getRawMandator.mockReturnValue(null);
+    //   authMock.extractRawMandator.mockReturnValue(null);
     //   expect(mandator?.staticValueGetter!()).toBeNull();
 
     //   // quan authService retorna l'objecte complet
-    //   authMock.getRawMandator.mockReturnValue(fakeMandatorRaw as any);
+    //   authMock.extractRawMandator.mockReturnValue(fakeMandatorRaw as any);
     //   const staticData = mandator?.staticValueGetter!();
     //   expect(staticData).toHaveProperty('mandator');
     //   expect(staticData!.mandator).toEqual(

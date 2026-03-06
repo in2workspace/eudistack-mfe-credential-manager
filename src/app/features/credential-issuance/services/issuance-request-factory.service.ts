@@ -23,7 +23,7 @@ export class IssuanceRequestFactoryService {
       format: string): IssuanceLEARCredentialRequestDto{
         const payload = this.createCredentialRequestPayload(credentialData, credentialType);
         const credentialEmail = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, format, payload, credentialEmail);
+        return this.createRequestDto(configId, format, payload, credentialEmail);
       }
 
   public createCredentialRequestPayload(
@@ -49,9 +49,9 @@ export class IssuanceRequestFactoryService {
     }
     const country = mandator['country'];
     const orgIdSuffix = mandator['organizationIdentifier'];
-    const orgId = this.buildOrganizationId(country, orgIdSuffix);
-    const mandatorId = this.buildDidElsi(orgId);
-    const mandatorCommonName = mandator['commonName'] ?? this.buildCommonName(mandator['firstName'], mandator['lastName']);
+    const orgId = this.createOrganizationId(country, orgIdSuffix);
+    const mandatorId = this.createDidElsi(orgId);
+    const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
 
     // Payload
     const payload: IssuanceLEARCredentialEmployeePayload =    
@@ -75,22 +75,22 @@ export class IssuanceRequestFactoryService {
 
   private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialMachinePayload{
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialEmployee');
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialMachine');
 
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData);
-    
+
     // Mandator
     const mandator = this.getMandatorFromCredentialData(credentialData);
     if(!mandator){
-      console.error('Error getting mandator.'); 
+      console.error('Error getting mandator.');
       return {} as IssuanceLEARCredentialMachinePayload;
     }
     const country = mandator['country'];
     const orgIdSuffix = mandator['organizationIdentifier'];
-    const orgId = this.buildOrganizationId(country, orgIdSuffix);
-    const mandatorId = this.buildDidElsi(orgId);
-    const mandatorCommonName = mandator['commonName'] ?? this.buildCommonName(mandator['firstName'], mandator['lastName']);
+    const orgId = this.createOrganizationId(country, orgIdSuffix);
+    const mandatorId = this.createDidElsi(orgId);
+    const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
     const mandatorEmail = mandator['email'];
 
     const didKey = credentialData.formData['keys']['didKey'];
@@ -125,11 +125,11 @@ export class IssuanceRequestFactoryService {
       return undefined;
   }
 
-  private buildDidElsi(orgId: string): string{
+  private createDidElsi(orgId: string): string{
     return "did:elsi:" + orgId;
   }
 
-  private buildOrganizationId(country: string, orgIdSuffix: string): string{
+  private createOrganizationId(country: string, orgIdSuffix: string): string{
     const hasVAT = this.checkIfHasVAT(orgIdSuffix);
     return  hasVAT ? orgIdSuffix : ("VAT" + country + '-' + orgIdSuffix);
   }
@@ -139,7 +139,7 @@ export class IssuanceRequestFactoryService {
     return regex.test(orgId);
   }
 
-  private buildCommonName(name: string, lastName: string): string{
+  private formatCommonName(name: string, lastName: string): string{
     return name + ' ' + lastName;
   }
 
@@ -187,7 +187,7 @@ private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPaylo
   return credentialData.formData['mandatee'];
 }
 
-  private buildRequestDto(configId: string, format: string, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
+  private createRequestDto(configId: string, format: string, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
     return {
       schema: configId,
       format: format,

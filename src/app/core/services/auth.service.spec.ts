@@ -412,13 +412,13 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
 
   it('getRole retorna el rol si existeix', () => {
     const mockUserData = { role: RoleType.LEAR } as UserDataAuthenticationResponse;
-    const result = (service as any).getRole(mockUserData);
+    const result = (service as any).resolveRole(mockUserData);
     expect(result).toBe(RoleType.LEAR);
   });
 
   it('getRole retorna null si no hi ha role', () => {
     const mockUserData = {} as UserDataAuthenticationResponse;
-    const result = (service as any).getRole(mockUserData);
+    const result = (service as any).resolveRole(mockUserData);
     expect(result).toBeNull();
   });
 
