@@ -76,12 +76,12 @@ describe('Credential Details Helpers', () => {
   });
 
   describe('isGxLabel', () => {
-    it('should return true if type includes "gx:LabelCredential"', () => {
-      const cred = { type: ['gx:LabelCredential'] } as any as LEARCredential;
+    it('should return true if type includes "gx.labelcredential.w3c.1"', () => {
+      const cred = { type: ['gx.labelcredential.w3c.1'] } as any as LEARCredential;
       expect(isGxLabel(cred)).toBe(true);
     });
 
-    it('should return false if type does not include "gx:LabelCredential"', () => {
+    it('should return false if type does not include "gx.labelcredential.w3c.1"', () => {
       const cred = { type: ['SomeOtherType'] } as any as LEARCredential;
       expect(isGxLabel(cred)).toBe(false);
     });

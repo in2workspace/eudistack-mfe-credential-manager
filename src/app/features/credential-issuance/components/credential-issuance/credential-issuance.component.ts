@@ -106,7 +106,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
       return;
     }
 
-    if(this.selectedCredentialType$() === 'LEARCredentialMachine'){
+    if(this.selectedCredentialType$() === 'learcredential.machine'){
       this.issuanceService.openLEARCredentialMachineSubmitDialog();
     }else{
       this.issuanceService.openSubmitDialog();

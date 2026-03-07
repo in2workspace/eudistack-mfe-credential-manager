@@ -195,13 +195,13 @@ describe('CredentialDetailsService', () => {
 
   describe('getSchemaByType', () => {
     it('retorna el schema correcte per cada tipus', () => {
-      expect((service as any).getSchemaByType('LEARCredentialEmployee'))
+      expect((service as any).getSchemaByType('learcredential.employee.w3c.4'))
         .toBe(LearCredentialEmployeeDetailsViewModelSchema);
-      expect((service as any).getSchemaByType('LEARCredentialMachine'))
+      expect((service as any).getSchemaByType('learcredential.machine.w3c.3'))
         .toBe(LearCredentialMachineDetailsViewModelSchema);
       expect((service as any).getSchemaByType('VerifiableCertification'))
         .toBe(VerifiableCertificationDetailsViewModelSchema);
-      expect((service as any).getSchemaByType('gx:LabelCredential'))
+      expect((service as any).getSchemaByType('gx.labelcredential.w3c.1'))
         .toBe(GxLabelCredentialDetailsViewModelSchema);
     });
   });
@@ -291,7 +291,7 @@ describe('CredentialDetailsService', () => {
      it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
       service.credentialProcedureDetails$.set({
         lifeCycleStatus: 'ANY',
-        credential: { vc: { type: ['LEARCredentialEmployee'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
+        credential: { vc: { type: ['learcredential.employee.w3c.4'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
       } as any);
 
       jest.spyOn(actionHelpers, 'statusHasSignCredentialButton').mockReturnValue(true);

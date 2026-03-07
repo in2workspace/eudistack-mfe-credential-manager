@@ -47,7 +47,7 @@ describe('CredentialDetailsComponent', () => {
   beforeEach(async () => {
     const validFrom$ = signal('2025-01-01');
     const validUntil$ = signal('2025-12-31');
-    const type$ = signal<CredentialType | undefined>('LEARCredentialEmployee');
+    const type$ = signal<CredentialType | undefined>('learcredential.employee.w3c.4');
     const lifecycle$ = signal<LifeCycleStatus | undefined>('EXPIRED');
     const statusClass$ = signal<StatusClass | undefined>('status-expired');
     const mainModel$ = signal<EvaluatedExtendedDetailsField[] | undefined>([{ key: 'foo', type: 'key-value', value: 'bar' }]);
@@ -126,7 +126,7 @@ describe('CredentialDetailsComponent', () => {
   it('should initialize main signals correctly', () => {
     expect(component.credentialValidFrom$()).toBe('2025-01-01');
     expect(component.credentialValidUntil$()).toBe('2025-12-31');
-    expect(component.credentialType$()).toBe('LEARCredentialEmployee');
+    expect(component.credentialType$()).toBe('learcredential.employee.w3c.4');
     expect(component.lifeCycleStatus$()).toBe('EXPIRED');
     expect(component.credentialStatus$()).toEqual(mockCredentialStatus);
     expect(component.email$()).toEqual('subject@email.com');

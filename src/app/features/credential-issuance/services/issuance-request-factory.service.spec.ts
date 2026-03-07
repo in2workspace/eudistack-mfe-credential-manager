@@ -65,7 +65,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialEmployee', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg', 'jwt_vc_json');
     const emp = result.payload as IssuanceLEARCredentialEmployeePayload;
 
     expect(emp.mandator.commonName).toBe('Beta Common');
@@ -90,7 +90,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -136,7 +136,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');
@@ -150,7 +150,7 @@ describe('IssuanceRequestFactoryService', () => {
       Onboarding: { Execute: false }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'LEARCredentialEmployee');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([]);
     expect(console.error).toHaveBeenCalledWith(
@@ -162,7 +162,7 @@ describe('IssuanceRequestFactoryService', () => {
   });
 
   it('should return empty array when power form is empty', () => {
-    const parsed = (service as any).parsePower({}, 'LEARCredentialEmployee');
+    const parsed = (service as any).parsePower({}, 'learcredential.employee');
     expect(parsed).toEqual([]);
   });
 
@@ -175,7 +175,7 @@ describe('IssuanceRequestFactoryService', () => {
         mandatee: { id: 'M1', email: 'emp@example.com' }
       }
     };
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialEmployee', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg', 'jwt_vc_json');
     expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
     expect(result.payload).toEqual({});
   });
@@ -190,7 +190,7 @@ describe('IssuanceRequestFactoryService', () => {
         keys: { didKey: 'did:test' }
       }
     };
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
     expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
     expect(result.payload).toEqual({});
   });
@@ -215,7 +215,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
 
     expect(authServiceMock.getMandateeEmail).toHaveBeenCalled();
     expect(result.email).toBe('mandatee@example.com');
@@ -239,7 +239,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    expect(() => service.createCredentialRequest(credentialData, 'LEARCredentialMachine', 'cfg', 'jwt_vc_json'))
+    expect(() => service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json'))
       .toThrow('Could not get valid mandator on behalf');
   });
 
@@ -249,7 +249,7 @@ describe('IssuanceRequestFactoryService', () => {
       ProductOffering: { Create: true, Update: true, Upload: false }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'LEARCredentialEmployee');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([
       {

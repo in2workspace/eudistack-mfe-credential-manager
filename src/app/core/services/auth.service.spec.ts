@@ -10,7 +10,7 @@ import { environment } from 'src/environments/environment';
 
 const mockCredentialEmployee: LEARCredentialEmployee = {
   id: 'some-id',
-  type: ['VerifiableCredential', 'LEARCredentialEmployee'],
+  type: ['VerifiableCredential', 'learcredential.employee.w3c.4'],
   description: 'Test credential',
   credentialStatus: {} as CredentialStatus,
   credentialSubject: {

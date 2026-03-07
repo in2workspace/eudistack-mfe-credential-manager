@@ -22,7 +22,7 @@ describe('CredentialIssuanceComponent', () => {
       // Signals
       onBehalf$: signal(false) as WritableSignal<boolean>,
       hasSubmitted$: signal(false) as WritableSignal<boolean>,
-      credentialTypesArr: ['type1', 'LEARCredentialMachine'] as any,
+      credentialTypesArr: ['type1', 'learcredential.machine'] as any,
       selectedCredentialType$: signal(undefined) as WritableSignal<any>,
       credentialFormSchema$: signal(null) as Signal<any>,
       staticData$: signal(null) as Signal<any>,
@@ -128,7 +128,7 @@ describe('CredentialIssuanceComponent', () => {
     it('should open LEARCredentialMachine dialog when selected type is LEARCredentialMachine', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
-      (component as any).selectedCredentialType$ = () => 'LEARCredentialMachine' as any;
+      (component as any).selectedCredentialType$ = () => 'learcredential.machine' as any;
 
       component.onSubmit();
 

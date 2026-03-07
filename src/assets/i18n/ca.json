@@ -57,11 +57,11 @@
   },
   "credentialDetails": {
     "title": "Detalls de la credencial",
-	  "gx:LabelCredential": "Label Credential",
-    "learCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialEmployee":"LEAR Credential Employee",
-    "learCredentialMachine": "LEAR Credential Machine",
-    "LEARCredentialMachine":"LEAR Credential Machine",
+	  "gx.labelcredential.w3c.1": "Label Credential",
+    "learcredential.employee.w3c.4": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.3": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
     "VerifiableCertification": "Verifiable Certification",
     "DRAFT": "ESBORRANY",
     "PEND_SIGNATURE": "PER SIGNAR",
@@ -186,10 +186,12 @@
       "last-page": "Última pàg.",
       "of": "de"
     },    
-    "LABEL_CREDENTIAL": "Label Credential",
-    "LEAR_CREDENTIAL_EMPLOYEE": "LEAR Credential Employee",
-    "LEAR_CREDENTIAL_MACHINE": "LEAR Credential Machine",
-    "VERIFIABLE_CERTIFICATION": "Verifiable Certification"
+    "learcredential.employee.w3c.4": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.3": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
+    "gx.labelcredential.w3c.1": "Label Credential",
+    "VerifiableCertification": "Verifiable Certification"
   },
     "power": {
       "power": "Poders",
@@ -216,10 +218,8 @@
     },
    "credentialIssuance": {
     "title": "Emissió de LEAR Credential",
-    "learCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialEmployee":"LEAR Credential Employee",
-    "learCredentialMachine": "LEAR Credential Machine",
-    "LEARCredentialMachine":"LEAR Credential Machine",
+    "learcredential.employee": "LEAR Credential Employee",
+    "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "Segur que vols crear aquesta credencial?",

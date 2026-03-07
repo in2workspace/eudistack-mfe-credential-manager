@@ -166,10 +166,10 @@ export class AuthService{
     try {
       const vc = this.extractVCFromUserData(userData);
       const types: string[] = (vc as unknown as Record<string, unknown>)?.['type'] as string[] ?? [];
-      if (types.includes('LEARCredentialEmployee')) {
+      if (types.some(t => t.startsWith('learcredential.employee.'))) {
         return RoleType.LEAR;
       }
-      if (types.includes('LEARCredentialMachine')) {
+      if (types.some(t => t.startsWith('learcredential.machine.'))) {
         return RoleType.LER;
       }
     } catch {

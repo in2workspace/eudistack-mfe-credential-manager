@@ -16,5 +16,5 @@ export interface CredentialProcedureBasicInfo {
   }
 }
 
-export type CredentialProcedureType = 'LABEL_CREDENTIAL' | 'LEAR_CREDENTIAL_EMPLOYEE' | 'LEAR_CREDENTIAL_MACHINE' | 'VERIFIABLE_CERTIFICATION';
+export type CredentialProcedureType = string;
 

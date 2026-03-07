@@ -3,7 +3,7 @@ import { credentialTypeHasSignCredentialButton, statusHasSignCredentialButton } 
 
 describe('Credential Helpers', () => {
   describe('credentialTypeHasSignCredentialButton', () => {
-    const allowed: CredentialType[] = ['LEARCredentialEmployee', 'gx:LabelCredential'];
+    const allowed: CredentialType[] = ['learcredential.employee.w3c.4', 'gx.labelcredential.w3c.1'];
     const disallowed: any = 'AnotherType';
 
     it.each(allowed)('returns true for allowed type %s', (type) => {

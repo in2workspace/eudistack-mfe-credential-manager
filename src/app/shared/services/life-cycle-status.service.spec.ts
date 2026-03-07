@@ -38,7 +38,7 @@ describe('StatusService', () => {
           credential_procedure: {
             procedure_id: '1',
             subject: 'Alpha',
-            credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
+            credential_type: 'learcredential.employee.w3c.4',
             status: 'VALID',
             updated: '2025-07-09T12:00:00Z',
             email: "email@aaa.com",
@@ -49,7 +49,7 @@ describe('StatusService', () => {
           credential_procedure: {
             procedure_id: '2',
             subject: 'Beta',
-            credential_type: 'LEAR_CREDENTIAL_MACHINE',
+            credential_type: 'learcredential.machine.w3c.3',
             status: 'UNKNOWN' as LifeCycleStatus,
             updated: '2025-07-09T13:00:00Z',
             email: "email@bbb.com",

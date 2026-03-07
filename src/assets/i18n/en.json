@@ -58,9 +58,11 @@
   },
   "credentialDetails": {
     "title": "Credential details",
-    "gx:LabelCredential": "Label Credential",
-    "LEARCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialMachine": "LEAR Credential Machine",
+    "gx.labelcredential.w3c.1": "Label Credential",
+    "learcredential.employee.w3c.4": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.3": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
     "VerifiableCertification": "Verifiable Certification",
     "DRAFT": "DRAFT",
     "PEND_SIGNATURE": "TO SIGN",
@@ -184,10 +186,12 @@
       "last-page": "Last page",
       "of": "of"
     },
-    "LABEL_CREDENTIAL": "Label Credential",
-    "LEAR_CREDENTIAL_EMPLOYEE": "LEAR Credential Employee",
-    "LEAR_CREDENTIAL_MACHINE": "LEAR Credential Machine",
-    "VERIFIABLE_CERTIFICATION": "Verifiable Certification"
+    "learcredential.employee.w3c.4": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.3": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
+    "gx.labelcredential.w3c.1": "Label Credential",
+    "VerifiableCertification": "Verifiable Certification"
   },
   "power": {
     "power": "Powers",
@@ -214,10 +218,8 @@
   },
   "credentialIssuance": {
     "title": "LEAR Credential Issuance",
-    "learCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialEmployee":"LEAR Credential Employee",
-    "learCredentialMachine": "LEAR Credential Machine",
-    "LEARCredentialMachine":"LEAR Credential Machine",
+    "learcredential.employee": "LEAR Credential Employee",
+    "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Create credential",
       "message": "Are you sure you want to create this credential?",

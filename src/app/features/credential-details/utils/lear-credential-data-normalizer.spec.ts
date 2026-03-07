@@ -97,7 +97,7 @@ describe('LEARCredentialDataNormalizer', () => {
 
       const input: LEARCredentialEmployee = {
         id: '1',
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.4'],
         description: 'desc',
         credentialStatus: {} as CredentialStatus,
         credentialSubject: {
@@ -142,7 +142,7 @@ describe('LEARCredentialDataNormalizer', () => {
       const input: LEARCredentialMachine = {
         id: '2',
         credentialStatus: {} as CredentialStatus,
-        type: ['LEARCredentialMachine'],
+        type: ['learcredential.machine.w3c.3'],
         description: 'desc',
         credentialSubject: {
           mandate: {
@@ -174,7 +174,7 @@ describe('LEARCredentialDataNormalizer', () => {
 
     it('does not change power if it is not an array', () => {
       const input: any = {
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.4'],
         credentialSubject: { mandate: { power: 'no-array' } }
       };
 
@@ -232,7 +232,7 @@ describe('LEARCredentialDataNormalizer', () => {
 
     it('does not throw if mandate is missing in credentialSubject for LEARCredentialEmployee', () => {
       const input: any = {
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.4'],
         credentialSubject: { somethingElse: 123 }
       };
       expect(() => normalizer.normalizeLearCredential(input)).not.toThrow();

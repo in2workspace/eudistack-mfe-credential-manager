@@ -94,10 +94,12 @@ export class CredentialDetailsService {
 
   
   private readonly schemasByTypeMap: Record<CredentialType, ViewModelSchema> = {
-    'LEARCredentialEmployee': LearCredentialEmployeeDetailsViewModelSchema,
-    'LEARCredentialMachine': LearCredentialMachineDetailsViewModelSchema,
+    'learcredential.employee.w3c.4': LearCredentialEmployeeDetailsViewModelSchema,
+    'learcredential.employee.sd.1': LearCredentialEmployeeDetailsViewModelSchema,
+    'learcredential.machine.w3c.3': LearCredentialMachineDetailsViewModelSchema,
+    'learcredential.machine.sd.1': LearCredentialMachineDetailsViewModelSchema,
     'VerifiableCertification': VerifiableCertificationDetailsViewModelSchema,
-    'gx:LabelCredential': GxLabelCredentialDetailsViewModelSchema,
+    'gx.labelcredential.w3c.1': GxLabelCredentialDetailsViewModelSchema,
   } as const;
 
   public constructor(){

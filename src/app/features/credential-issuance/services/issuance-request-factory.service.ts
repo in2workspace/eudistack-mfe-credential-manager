@@ -13,8 +13,8 @@ export class IssuanceRequestFactoryService {
   private readonly authService = inject(AuthService);
 
   private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
-    LEARCredentialEmployee: (data) => this.createLearCredentialEmployeeRequest(data),
-    LEARCredentialMachine: (data) => this.createLearCredentialMachineRequest(data)
+    'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
+    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data)
   }
 
   public createCredentialRequest(
@@ -38,8 +38,8 @@ export class IssuanceRequestFactoryService {
 
   private createLearCredentialEmployeeRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialEmployeePayload{
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialEmployee');
-    
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee');
+
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData) as unknown as EmployeeMandatee;
     
@@ -77,15 +77,15 @@ export class IssuanceRequestFactoryService {
 
   private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialMachinePayload{
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialEmployee');
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData);
-    
+
     // Mandator
     const mandator = this.getMandatorFromCredentialData(credentialData);
     if(!mandator){
-      console.error('Error getting mandator.'); 
+      console.error('Error getting mandator.');
       return {} as IssuanceLEARCredentialMachinePayload;
     }
     const country = mandator['country'];
@@ -121,7 +121,7 @@ export class IssuanceRequestFactoryService {
 
   private getCredentialEmail(credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType): string {
-      if (credentialType === 'LEARCredentialEmployee') {
+      if (credentialType === 'learcredential.employee') {
         return credentialData.formData['mandatee']?.['email'] ?? '';
       }
       if (!credentialData.onBehalf) {
@@ -208,7 +208,7 @@ const powerBase = {
 }
 
 const powerMap: Record<IssuanceCredentialType, Partial<Record<TmfFunction, IssuancePayloadPower>>> = {
-      'LEARCredentialEmployee': {
+      'learcredential.employee': {
         'Onboarding': {
           ...powerBase,
           function: 'Onboarding',
@@ -225,7 +225,7 @@ const powerMap: Record<IssuanceCredentialType, Partial<Record<TmfFunction, Issua
           action: ['Attest', 'Upload']
         }
       },
-      'LEARCredentialMachine': {
+      'learcredential.machine': {
           'Onboarding': {
             ...powerBase,
             function: 'Onboarding',

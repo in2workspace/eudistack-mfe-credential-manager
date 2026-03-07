@@ -8,16 +8,16 @@ import { KeyGeneratorComponent } from "../../components/key-generator/key-genera
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 
 @Injectable({ providedIn: 'root' })
-export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIssuanceSchemaProvider<'LEARCredentialMachine'> {
+export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIssuanceSchemaProvider<'learcredential.machine'> {
 
   private readonly authService = inject(AuthService);
   private readonly countryService = inject(CountryService);
 
-  public getSchema(): CredentialIssuanceTypedViewModelSchema<'LEARCredentialMachine'> {
+  public getSchema(): CredentialIssuanceTypedViewModelSchema<'learcredential.machine'> {
     const countriesSelectorOptions = this.countryService.getCountriesAsSelectorOptions();
 
     return {
-      type: 'LEARCredentialMachine',
+      type: 'learcredential.machine',
       schema:
       [
       // KEYS

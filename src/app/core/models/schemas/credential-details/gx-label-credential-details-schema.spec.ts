@@ -7,7 +7,7 @@ import { commonIssuerDetailsField } from './common-issuer-details-field';
 
 describe('GxLabelCredentialDetailsViewModelSchema', () => {
   const sampleLabel: GxLabelCredential = {
-    type: ['gx:LabelCredential'],
+    type: ['gx.labelcredential.w3c.1'],
     credentialSubject: {
       id: 'ID1',
       'gx:labelLevel': 'BL',

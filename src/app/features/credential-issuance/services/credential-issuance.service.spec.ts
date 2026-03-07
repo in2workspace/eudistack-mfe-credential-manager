@@ -71,21 +71,21 @@ describe('CredentialIssuanceService', () => {
     it('should call globalThis.confirm when type changes and form is dirty', () => {
       jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
       jest.spyOn(service, 'canLeave').mockReturnValue(false);
-      (service as any).selectedCredentialType$.set('LEARCredentialEmployee');
-      const mockSelect = { value: 'LEARCredentialEmployee' } as any;
-      service.updateSelectedType('LEARCredentialMachine', mockSelect);
+      (service as any).selectedCredentialType$.set('learcredential.employee');
+      const mockSelect = { value: 'learcredential.employee' } as any;
+      service.updateSelectedType('learcredential.machine', mockSelect);
       expect(globalThis.confirm).toHaveBeenCalled();
-      expect((service as any).selectedCredentialType$()).toBe('LEARCredentialMachine');
+      expect((service as any).selectedCredentialType$()).toBe('learcredential.machine');
     });
 
     it('should not change type when user cancels confirm', () => {
       jest.spyOn(globalThis, 'confirm').mockReturnValue(false);
       jest.spyOn(service, 'canLeave').mockReturnValue(false);
-      (service as any).selectedCredentialType$.set('LEARCredentialEmployee');
-      const mockSelect = { value: 'LEARCredentialEmployee' } as any;
-      service.updateSelectedType('LEARCredentialMachine', mockSelect);
-      expect(mockSelect.value).toBe('LEARCredentialEmployee');
-      expect((service as any).selectedCredentialType$()).toBe('LEARCredentialEmployee');
+      (service as any).selectedCredentialType$.set('learcredential.employee');
+      const mockSelect = { value: 'learcredential.employee' } as any;
+      service.updateSelectedType('learcredential.machine', mockSelect);
+      expect(mockSelect.value).toBe('learcredential.employee');
+      expect((service as any).selectedCredentialType$()).toBe('learcredential.employee');
     });
   });
 });
