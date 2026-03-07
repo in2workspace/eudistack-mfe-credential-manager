@@ -116,14 +116,6 @@
     "digestSri": "Empremta SRI",
     "revoke": "revocar",
         "revokeTooltip": "Aquesta credencial no pot ser revocada perquè és de tipus legacy. Per consultar com revocar aquest tipus de credencial, consulti la nostra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guia</a>.",
-    "sendReminderConfirm": {
-      "title": "Enviar recordatori",
-      "message": "Estàs segur que vols enviar un recordatori per aquesta oferta de credencial?"
-    },
-    "sendReminderSuccess": {
-      "title": "Recordatori enviat correctament",
-      "message": "El recordatori de l'oferta de credencial s'ha enviat correctament."
-    },
     "signCredentialConfirm": {
       "title": "Signar credencial",
       "message": "Estàs segur que vols signar aquesta credencial?"

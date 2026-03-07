@@ -25,7 +25,6 @@ describe('CredentialDetailsService', () => {
   };
 
   const mockCredentialActionsService = {
-    openSendReminderDialog: jest.fn(),
     openSignCredentialDialog: jest.fn(),
     openRevokeCredentialDialog: jest.fn(),
   };
@@ -60,12 +59,6 @@ describe('CredentialDetailsService', () => {
   it('should set the procedureId$ signal when setProcedureId is called', () => {
     service.setProcedureId('abc123');
     expect(service.procedureId$()).toBe('abc123');
-  });
-
-  it('should call actionsService.openSendReminderDialog with procedureId', () => {
-    service.procedureId$.set('pid123');
-    service.openSendReminderDialog();
-    expect(mockCredentialActionsService.openSendReminderDialog).toHaveBeenCalledWith('pid123');
   });
 
   it('should call actionsService.openSignCredentialDialog with procedureId', () => {
@@ -290,8 +283,7 @@ describe('CredentialDetailsService', () => {
     });
 
 
-    it('showReminderButton$, showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
-      expect(service.showReminderButton$()).toBe(false);
+    it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
       expect(service.showSignCredentialButton$()).toBe(false);
       expect(service.showRevokeCredentialButton$()).toBe(false);
     });

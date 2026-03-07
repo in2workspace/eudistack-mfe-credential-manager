@@ -17,24 +17,6 @@ export class CredentialActionsService {
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
 
-  // SEND REMINDER (NOTIFICATION)
-  public openSendReminderDialog(procedureId: string): void {
-  
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialDetails.sendReminderConfirm.title"),
-      message: this.translate.instant("credentialDetails.sendReminderConfirm.message"),
-      confirmationType: 'async',
-      status: 'default'
-    };
-
-    const sendReminderAfterConfirm = (): Observable<boolean> => {
-      return this.sendReminder(procedureId);
-    }
-
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, sendReminderAfterConfirm);
-
-  }
-
   // SIGN CREDENTIAL
   public openSignCredentialDialog(procedureId: string): void {
 
@@ -127,15 +109,6 @@ export class CredentialActionsService {
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
   }
 
-  private sendReminder(procedureId: string): Observable<boolean> {
-    return this.executeActionByProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.sendReminder(procedureId),
-      "credentialDetails.sendReminderSuccess.title",
-      "credentialDetails.sendReminderSuccess.message"
-    );
-  }
-  
   private signCredential(procedureId: string): Observable<boolean> {
     return this.executeActionByProcedureId(
       procedureId,

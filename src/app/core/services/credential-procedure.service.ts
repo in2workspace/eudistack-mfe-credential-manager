@@ -24,7 +24,6 @@ export class CredentialProcedureService {
   private readonly organizationProcedures = `${environment.server_url}${API_PATH.PROCEDURES}`;
   private readonly saveCredential = `${environment.server_url}${API_PATH.SAVE_CREDENTIAL}`;
   private readonly credentialOfferUrl = `${environment.server_url}${API_PATH.CREDENTIAL_OFFER}`;
-  private readonly notificationProcedure = `${environment.server_url}${API_PATH.NOTIFICATION}`;
   private readonly signCredentialUrl = `${environment.server_url}${API_PATH.SIGN_CREDENTIAL}`;
   private readonly revokeCredentialUrl = `${environment.server_url}${API_PATH.REVOKE}`;
 
@@ -72,12 +71,6 @@ export class CredentialProcedureService {
       'X-Idempotency-Key': crypto.randomUUID()
     });
     return this.http.post<void>(this.saveCredential, procedureRequest, { headers }).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  public sendReminder(procedureId: string): Observable<void> {
-    return this.http.post<void>(`${this.notificationProcedure}/${procedureId}`, {}).pipe(
       catchError(this.handleError)
     );
   }

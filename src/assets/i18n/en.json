@@ -115,14 +115,6 @@
     "digestSri": "digest SRI",
     "revoke": "revoke",
     "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
-    "sendReminderConfirm": {
-      "title": "Send Reminder",
-      "message": "Are you sure you want to send a reminder for this credential offer?"
-    },
-    "sendReminderSuccess": {
-      "title": "Reminder sent successfully",
-      "message": "The credential offer reminder was sent successfully."
-    },
     "signCredentialConfirm": {
       "title": "Sign Credential",
       "message": "Are you sure you want to sign this credential?"
@@ -289,7 +281,7 @@
     },
     "serverMailError": {
       "title": "Mail server error",
-      "message": "There was an error with the mail server. Please try again later to send a send reminder, if problem persist contact support team."
+      "message": "There was an error with the mail server. Please try again later. If the problem persists, contact the support team."
     },
     "form":{
       "required": "This field is required.",

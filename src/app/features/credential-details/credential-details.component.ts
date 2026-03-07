@@ -45,7 +45,6 @@ export class CredentialDetailsComponent implements OnInit {
   public sideViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   public showSideTemplateCard$: Signal<boolean>;
   // Buttons
-  public showReminderButton$: Signal<boolean>;
   public showSignCredentialButton$: Signal<boolean>;
   public showRevokeCredentialButton$: Signal<boolean>;
   public enableRevokeCredentialButton$: Signal<boolean>;
@@ -75,7 +74,6 @@ export class CredentialDetailsComponent implements OnInit {
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.sideViewModel$ = this.detailsService.sideViewModel$;
     this.showSideTemplateCard$ = this.detailsService.showSideTemplateCard$;
-    this.showReminderButton$ = this.detailsService.showReminderButton$;
     this.showSignCredentialButton$ = this.detailsService.showSignCredentialButton$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
@@ -85,11 +83,6 @@ export class CredentialDetailsComponent implements OnInit {
   public ngOnInit(): void {
     this.getProcedureId();
     this.loadViewModel();
-  }
-
-  //SEND REMINDER
-  public openSendReminderDialog(){
-    this.detailsService.openSendReminderDialog();
   }
 
   // SIGN

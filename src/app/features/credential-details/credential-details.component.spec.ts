@@ -32,7 +32,6 @@ describe('CredentialDetailsComponent', () => {
     sideViewModel$: ReturnType<typeof signal<EvaluatedExtendedDetailsField[] | undefined>>;
     showSideTemplateCard$: ReturnType<typeof signal<boolean>>;
 
-    showReminderButton$: ReturnType<typeof signal<boolean>>;
     showSignCredentialButton$: ReturnType<typeof signal<boolean>>;
     showRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
     enableRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
@@ -40,7 +39,6 @@ describe('CredentialDetailsComponent', () => {
 
     setProcedureId: jest.Mock;
     loadCredentialModels: jest.Mock;
-    openSendReminderDialog: jest.Mock;
     openSignCredentialDialog: jest.Mock;
     openRevokeCredentialDialog: jest.Mock;
   };
@@ -55,7 +53,6 @@ describe('CredentialDetailsComponent', () => {
     const mainModel$ = signal<EvaluatedExtendedDetailsField[] | undefined>([{ key: 'foo', type: 'key-value', value: 'bar' }]);
     const sideModel$ = signal<EvaluatedExtendedDetailsField[] | undefined>([]);
     const showSide$ = signal<boolean>(false);
-    const showRem$ = signal<boolean>(true);
     const showSign$ = signal<boolean>(true);
     const showRev$ = signal<boolean>(false);
     const enableRev$ = signal<boolean>(true);
@@ -79,7 +76,6 @@ describe('CredentialDetailsComponent', () => {
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
 
-      showReminderButton$: showRem$,
       showSignCredentialButton$: showSign$,
       showRevokeCredentialButton$: showRev$,
       enableRevokeCredentialButton$: enableRev$,
@@ -87,7 +83,6 @@ describe('CredentialDetailsComponent', () => {
 
       setProcedureId: jest.fn(),
       loadCredentialModels: jest.fn(),
-      openSendReminderDialog: jest.fn(),
       openSignCredentialDialog: jest.fn(),
       openRevokeCredentialDialog: jest.fn(),
     };
@@ -154,7 +149,6 @@ describe('CredentialDetailsComponent', () => {
 
   describe('button signal bindings', () => {
     it('should reflect the service state', () => {
-      expect(component.showReminderButton$()).toBe(true);
       expect(component.showSignCredentialButton$()).toBe(true);
       expect(component.showRevokeCredentialButton$()).toBe(false);
       expect(component.enableRevokeCredentialButton$()).toBe(true);
@@ -164,11 +158,6 @@ describe('CredentialDetailsComponent', () => {
   });
 
   describe('button action methods', () => {
-    it('should call openSendReminderDialog on service', () => {
-      component.openSendReminderDialog();
-      expect(mockDetailsService.openSendReminderDialog).toHaveBeenCalled();
-    });
-
     it('should call openSignCredentialDialog on service', () => {
       component.openSignCredentialDialog();
       expect(mockDetailsService.openSignCredentialDialog).toHaveBeenCalled();
