@@ -165,11 +165,19 @@ export class AuthService{
     // Derive role from credential type when not provided as explicit claim
     try {
       const vc = this.extractVCFromUserData(userData);
-      const types: string[] = (vc as unknown as Record<string, unknown>)?.['type'] as string[] ?? [];
+      const vc_ = vc as unknown as Record<string, unknown>;
+      const types: string[] = vc_?.['type'] as string[] ?? [];
       if (types.some(t => t.startsWith('learcredential.employee.'))) {
         return RoleType.LEAR;
       }
       if (types.some(t => t.startsWith('learcredential.machine.'))) {
+        return RoleType.LER;
+      }
+      const vct = vc_?.['vct'] as string;
+      if (vct?.startsWith('learcredential.employee.')) {
+        return RoleType.LEAR;
+      }
+      if (vct?.startsWith('learcredential.machine.')) {
         return RoleType.LER;
       }
     } catch {

@@ -39,8 +39,9 @@ export class LEARCredentialDataNormalizer {
     }
 
     const types = Array.isArray(normalized?.type) ? normalized.type : [];
-    const isEmployee = types.some((t: string) => t.startsWith('learcredential.employee.'));
-    const isMachine  = types.some((t: string) => t.startsWith('learcredential.machine.'));
+    const vct = typeof normalized?.vct === 'string' ? normalized.vct : '';
+    const isEmployee = types.some((t: string) => t.startsWith('learcredential.employee.')) || vct.startsWith('learcredential.employee.');
+    const isMachine  = types.some((t: string) => t.startsWith('learcredential.machine.')) || vct.startsWith('learcredential.machine.');
     const isVerCert  = types.includes('VerifiableCertification');
 
     this.normalizeMandateIfNeeded(normalized, isEmployee, isMachine);
