@@ -59,7 +59,8 @@ export class CredentialProcedureService {
           ...response,
           credential: {
             vc: normalizedCredential
-          }
+          },
+          rawVc: credentialData,
         } as CredentialProcedureDetails;
       }),
       catchError(this.handleError)

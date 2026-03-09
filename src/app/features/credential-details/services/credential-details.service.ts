@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
+import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialStatus, CredentialType, LEARCredential, CredentialProcedureDetails, LifeCycleStatus, CREDENTIAL_TYPES_ARRAY } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -11,6 +12,7 @@ import { VerifiableCertificationDetailsViewModelSchema } from 'src/app/core/mode
 import { EvaluatedExtendedDetailsField, ViewModelSchema, EvaluatedViewModelSchema, DetailsField, EvaluatedDetailsField, CustomDetailsField, EvaluatedExtendedDetailsGroupField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialActionsService } from './credential-actions.service';
+import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { statusHasSignCredentialButton, credentialTypeHasSignCredentialButton, statusHasRevokeCredentialButton, credentialTypeHasRevokeCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
@@ -89,6 +91,8 @@ export class CredentialDetailsService {
 
   private readonly actionsService = inject(CredentialActionsService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
+  private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly dynamicSchemaBuilder = inject(DynamicSchemaBuilder);
   private readonly dialog = inject(DialogWrapperService);
   private readonly statusService = inject(LifeCycleStatusService);
 
@@ -114,24 +118,44 @@ export class CredentialDetailsService {
     this.procedureId$.set(id);
   }
 
-  public loadCredentialModels(injector: Injector): void {  
-    this.loadCredentialDetails()
-    .subscribe(data => {
+  public loadCredentialModels(injector: Injector): void {
+    forkJoin([
+      this.loadCredentialDetails(),
+      this.metadataService.loadMetadata(),
+    ]).subscribe(([data]) => {
       this.credentialProcedureDetails$.set(data);
       const vc = this.credential$();
       if(!vc) throw new Error('No credential found.');
 
-      const type = this.credentialType$();
-      if(!type){
-       console.error('Credential: ');
-       console.error(vc);
-       throw new Error('No credential type found in credential: ');
-      }
-
-      const schema = this.getSchemaByType(type);
-      const mappedSchema = this.evaluateSchemaValues(schema, vc);
+      // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
+      const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
+      const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
       this.setViewModels(mappedSchema, injector);
     });
+  }
+
+  private resolveSchema(data: CredentialProcedureDetails, vc: LEARCredential): { schema: ViewModelSchema; vcForEvaluation: LEARCredential } {
+    // Try dynamic schema from credential_metadata
+    const configId = data.credential_configuration_id;
+    if (configId) {
+      const config = this.metadataService.getConfigurationById(configId);
+      if (config?.credential_metadata?.claims?.length) {
+        // Use rawVc for dynamic schemas — paths are format-aware (no normalization needed)
+        const rawVc = (data.rawVc ?? vc) as LEARCredential;
+        return {
+          schema: this.dynamicSchemaBuilder.buildSchema(configId, config, rawVc),
+          vcForEvaluation: rawVc,
+        };
+      }
+    }
+
+    // Fallback to hardcoded schema (uses normalized vc)
+    const type = this.credentialType$();
+    if (!type) {
+      console.error('Credential: ', vc);
+      throw new Error('No credential type found in credential');
+    }
+    return { schema: this.getSchemaByType(type), vcForEvaluation: vc };
   }
 
   public openSignCredentialDialog(): void {

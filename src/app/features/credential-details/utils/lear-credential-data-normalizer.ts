@@ -56,6 +56,12 @@ export class LEARCredentialDataNormalizer {
     isMachine: boolean
   ) {
     if (!(isEmployee || isMachine)) return;
+
+    // SD-JWT "direct" strategy: mandator/mandatee/power live at the credential
+    // root instead of under credentialSubject. Wrap them so downstream code
+    // (schemas, detail views) can use the uniform W3C path.
+    this.wrapTopLevelFlatStructure(data);
+
     const sub = data.credentialSubject;
     if (!sub) return;
 
@@ -72,6 +78,26 @@ export class LEARCredentialDataNormalizer {
     if (Array.isArray(sub.mandate.power)) {
       sub.mandate.power = sub.mandate.power.map((p: RawPower) => this.normalizePower(p));
     }
+  }
+
+  /**
+   * SD-JWT credentials with "direct" credential_subject_strategy place
+   * mandator/mandatee/power at the credential root (no credentialSubject).
+   * This creates the credentialSubject.mandate wrapper so downstream code
+   * can use the uniform W3C path.
+   */
+  private wrapTopLevelFlatStructure(data: any): void {
+    if (data.credentialSubject || !('mandator' in data || 'mandatee' in data || 'power' in data)) return;
+    data.credentialSubject = {
+      mandate: {
+        ...(data.mandator ? { mandator: data.mandator } : {}),
+        ...(data.mandatee ? { mandatee: data.mandatee } : {}),
+        ...(data.power ? { power: data.power } : {}),
+      }
+    };
+    delete data.mandator;
+    delete data.mandatee;
+    delete data.power;
   }
 
   /**

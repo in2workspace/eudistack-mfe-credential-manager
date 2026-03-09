@@ -2,9 +2,12 @@
 // todo: use generics
 export interface CredentialProcedureDetails {
   procedure_id: string;
+  credential_configuration_id?: string;
   lifeCycleStatus: LifeCycleStatus;
-  credential: LEARCredentialJwtPayload; 
+  credential: LEARCredentialJwtPayload;
   email: string;
+  /** Raw credential before normalization — used by DynamicSchemaBuilder for format-aware path resolution */
+  rawVc?: any;
 }
 
 export type LifeCycleStatus = 'WITHDRAWN' | 'VALID' | 'EXPIRED' | 'PEND_DOWNLOAD' | 'PEND_SIGNATURE' | 'DRAFT' | 'ISSUED' | 'REVOKED';

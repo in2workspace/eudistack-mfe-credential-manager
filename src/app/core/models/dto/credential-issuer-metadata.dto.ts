@@ -1,6 +1,22 @@
+export interface ClaimDisplayDto {
+  name: string;
+  locale: string;
+}
+
+export interface ClaimDefinitionDto {
+  path: string[];
+  display: ClaimDisplayDto[];
+}
+
+export interface CredentialMetadataDto {
+  display: ClaimDisplayDto[];
+  claims: ClaimDefinitionDto[];
+}
+
 export interface CredentialConfigurationDto {
   format: string;
   credential_definition?: { type: string[] };
+  credential_metadata?: CredentialMetadataDto;
 }
 
 export interface CredentialIssuerMetadataDto {

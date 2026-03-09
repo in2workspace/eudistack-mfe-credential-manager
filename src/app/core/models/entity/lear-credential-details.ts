@@ -20,12 +20,14 @@ export type EvaluatedExtendedDetailsField = ExtendedDetailsField & { value: Eval
 //todo: separate custom and value (which contains value) in different interfaces, or handle differently
 export type DetailsKeyValueField = {
   key?: string;
+  label?: string;
   type: 'key-value';
   value: any;
   custom?: CustomDetailsField;
 };
 export type DetailsGroupField = {
   key?: string;
+  label?: string;
   type: 'group';
   custom?: CustomDetailsField;
   value: DetailsField[] | ((c: LEARCredential) => DetailsField[]);
