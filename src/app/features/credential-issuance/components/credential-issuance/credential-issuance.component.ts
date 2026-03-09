@@ -12,7 +12,7 @@ import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
-import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, DeliveryOption, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
 /**
  * CredentialIssuanceComponent
@@ -39,6 +39,10 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   // GRANT TYPE SELECTOR
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]>;
   public selectedGrantType$: WritableSignal<GrantTypeOption>;
+
+  // DELIVERY SELECTOR
+  public readonly deliveryOptions: Readonly<DeliveryOption[]>;
+  public selectedDelivery$: WritableSignal<DeliveryOption>;
 
   // FORM STATE
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
@@ -71,6 +75,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;
     this.grantTypeOptions = this.issuanceService.grantTypeOptions;
     this.selectedGrantType$ = this.issuanceService.selectedGrantType$;
+    this.deliveryOptions = this.issuanceService.deliveryOptions;
+    this.selectedDelivery$ = this.issuanceService.selectedDelivery$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
     this.form$ = this.issuanceService.form$;
@@ -97,6 +103,10 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
 
   public onGrantTypeSelectionChange(option: GrantTypeOption): void {
     this.issuanceService.updateSelectedGrantType(option);
+  }
+
+  public onDeliverySelectionChange(option: DeliveryOption): void {
+    this.issuanceService.updateSelectedDelivery(option);
   }
 
   public canLeave(): boolean{

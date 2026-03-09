@@ -2,11 +2,11 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceGrantType, IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { EMPTY, from, map, Observable, of, startWith, switchMap, tap } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -16,6 +16,8 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
+import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 
@@ -57,6 +59,10 @@ export class CredentialIssuanceService {
   // GRANT TYPE SELECTOR
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]> = GRANT_TYPE_OPTIONS;
   public selectedGrantType$ = signal<GrantTypeOption>(GRANT_TYPE_OPTIONS[0]);
+
+  // DELIVERY SELECTOR
+  public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
+  public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
 
   // BUILD SCHEMAS FROM CREDENTIAL TYPE
   public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() =>
@@ -115,6 +121,7 @@ export class CredentialIssuanceService {
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
+  private readonly matDialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
@@ -147,6 +154,10 @@ export class CredentialIssuanceService {
 
   public updateSelectedGrantType(option: GrantTypeOption): void {
     this.selectedGrantType$.set(option);
+  }
+
+  public updateSelectedDelivery(option: DeliveryOption): void {
+    this.selectedDelivery$.set(option);
   }
 
   // if the message is new, add it; otherwise, delete it
@@ -288,14 +299,19 @@ export class CredentialIssuanceService {
 
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, grantType);
+      const delivery = this.selectedDelivery$().value;
+      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType);
 
       return this.sendCredentialRequest(request).pipe(
-        // After submitting credential, show success popup and navigate to dashboard after close
-        tap(() => {this.hasSubmitted$.set(true); }),
-        switchMap(() => this.openSuccessfulCreateDialog()),
+        tap(() => { this.hasSubmitted$.set(true); }),
+        switchMap((response) => {
+          if (response?.credential_offer_uri) {
+            return this.openCredentialOfferDialog(response.credential_offer_uri);
+          }
+          return this.openSuccessfulCreateDialog();
+        }),
         switchMap(() => from(this.navigateToCredentials())),
-        tap(() => location.reload() )
+        tap(() => location.reload())
       );
     }
 
@@ -307,9 +323,10 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
+    delivery: IssuanceDelivery,
     grantType: IssuanceGrantType,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, 'email', grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType);
   }
 
 
@@ -318,8 +335,18 @@ export class CredentialIssuanceService {
     return factory ? factory(...(entry.args ?? [])) : null;
   }
 
-  private sendCredentialRequest(credentialPayload: IssuanceLEARCredentialRequestDto): Observable<void>{
+  private sendCredentialRequest(credentialPayload: IssuanceLEARCredentialRequestDto): Observable<IssuanceResponseDto> {
     return this.credentialProcedureService.createProcedure(credentialPayload);
+  }
+
+  private openCredentialOfferDialog(credentialOfferUri: string): Observable<any> {
+    const dialogData: CredentialOfferDialogData = { credentialOfferUri };
+    const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
+      data: dialogData,
+      autoFocus: false,
+      width: '420px'
+    });
+    return dialogRef.afterClosed();
   }
 
   private openSuccessfulCreateDialog(): Observable<any>{

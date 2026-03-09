@@ -44,3 +44,7 @@ export interface IssuanceLEARCredentialEmployeePayload {
       mandator: EmployeeMandator;
       power: IssuancePayloadPower[];
 }
+
+export interface IssuanceResponseDto {
+    credential_offer_uri?: string;
+}

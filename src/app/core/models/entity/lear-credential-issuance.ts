@@ -33,6 +33,18 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
   { value: 'urn:ietf:params:oauth:grant-type:pre-authorized_code', labelKey: 'credentialIssuance.grantType.preAuthorizedCode' },
 ];
 
+export type DeliveryMode = 'email' | 'ui';
+
+export interface DeliveryOption {
+  value: DeliveryMode;
+  labelKey: string;
+}
+
+export const DELIVERY_OPTIONS: DeliveryOption[] = [
+  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+  { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+];
+
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
   format: 'mso_mdoc',

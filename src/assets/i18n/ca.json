@@ -265,6 +265,17 @@
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
+    "delivery": {
+      "label": "Mètode de lliurament",
+      "email": "Correu electrònic",
+      "qrCode": "Codi QR"
+    },
+    "credential-offer-dialog": {
+      "title": "Credencial creada",
+      "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",
+      "copy": "Copiar enllaç",
+      "copied": "Copiat!"
+    },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",
     "unloadAlert": "Segur que vols sortir? Perdràs el progrés fet."
   },
