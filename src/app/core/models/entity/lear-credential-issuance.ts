@@ -21,6 +21,18 @@ export const FORMAT_LABEL_MAP: Partial<Record<CredentialFormat, string>> = {
   'mso_mdoc':    'credentialIssuance.format.mdoc',
 };
 
+export type GrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
+
+export interface GrantTypeOption {
+  value: GrantType;
+  labelKey: string;
+}
+
+export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
+  { value: 'authorization_code', labelKey: 'credentialIssuance.grantType.authorizationCode' },
+  { value: 'urn:ietf:params:oauth:grant-type:pre-authorized_code', labelKey: 'credentialIssuance.grantType.preAuthorizedCode' },
+];
+
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
   format: 'mso_mdoc',

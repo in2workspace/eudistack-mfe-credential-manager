@@ -260,6 +260,11 @@
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (próximamente)"
     },
+    "grantType": {
+      "label": "Tipo de concesión",
+      "authorizationCode": "Authorization Code",
+      "preAuthorizedCode": "Pre-Authorized Code"
+    },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."
   },

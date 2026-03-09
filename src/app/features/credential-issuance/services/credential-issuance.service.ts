@@ -2,11 +2,11 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceGrantType, IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { EMPTY, from, map, Observable, of, startWith, switchMap, tap } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, FORMAT_LABEL_MAP, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -53,6 +53,10 @@ export class CredentialIssuanceService {
     const avail = this.availableFormats$();
     return avail.find(f => !f.disabled) ?? avail[0] ?? null;
   });
+
+  // GRANT TYPE SELECTOR
+  public readonly grantTypeOptions: Readonly<GrantTypeOption[]> = GRANT_TYPE_OPTIONS;
+  public selectedGrantType$ = signal<GrantTypeOption>(GRANT_TYPE_OPTIONS[0]);
 
   // BUILD SCHEMAS FROM CREDENTIAL TYPE
   public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() =>
@@ -139,6 +143,10 @@ export class CredentialIssuanceService {
 
   public updateSelectedFormat(option: CredentialFormatOption): void {
     this.selectedFormatOption$.set(option);
+  }
+
+  public updateSelectedGrantType(option: GrantTypeOption): void {
+    this.selectedGrantType$.set(option);
   }
 
   // if the message is new, add it; otherwise, delete it
@@ -279,7 +287,8 @@ export class CredentialIssuanceService {
       }
 
       const configId = formatOption?.configId ?? credentialType;
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId);
+      const grantType = this.selectedGrantType$().value;
+      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, grantType);
 
       return this.sendCredentialRequest(request).pipe(
         // After submitting credential, show success popup and navigate to dashboard after close
@@ -298,8 +307,9 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
+    grantType: IssuanceGrantType,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, 'email', grantType);
   }
 
 

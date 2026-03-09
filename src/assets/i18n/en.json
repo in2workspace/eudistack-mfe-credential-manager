@@ -260,6 +260,11 @@
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (coming soon)"
     },
+    "grantType": {
+      "label": "Grant type",
+      "authorizationCode": "Authorization Code",
+      "preAuthorizedCode": "Pre-Authorized Code"
+    },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",
     "unloadAlert": "Are you sure yo want to leave? Your progress will be lost."
   },

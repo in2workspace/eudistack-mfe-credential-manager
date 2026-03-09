@@ -2,11 +2,14 @@ import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/
 
 export type IssuanceDelivery = 'email' | 'ui';
 
+export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
+
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
     delivery: IssuanceDelivery;
     email: string;
+    grant_type: IssuanceGrantType;
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;

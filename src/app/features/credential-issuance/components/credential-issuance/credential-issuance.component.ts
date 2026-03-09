@@ -12,7 +12,7 @@ import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
-import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
 /**
  * CredentialIssuanceComponent
@@ -35,6 +35,10 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   // FORMAT SELECTOR
   public availableFormats$: Signal<CredentialFormatOption[]>;
   public effectiveFormatOption$: Signal<CredentialFormatOption | null>;
+
+  // GRANT TYPE SELECTOR
+  public readonly grantTypeOptions: Readonly<GrantTypeOption[]>;
+  public selectedGrantType$: WritableSignal<GrantTypeOption>;
 
   // FORM STATE
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
@@ -65,6 +69,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.selectedCredentialType$ = this.issuanceService.selectedCredentialType$;
     this.availableFormats$ = this.issuanceService.availableFormats$;
     this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;
+    this.grantTypeOptions = this.issuanceService.grantTypeOptions;
+    this.selectedGrantType$ = this.issuanceService.selectedGrantType$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
     this.form$ = this.issuanceService.form$;
@@ -87,6 +93,10 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
 
   public onFormatSelectionChange(option: CredentialFormatOption): void {
     this.issuanceService.updateSelectedFormat(option);
+  }
+
+  public onGrantTypeSelectionChange(option: GrantTypeOption): void {
+    this.issuanceService.updateSelectedGrantType(option);
   }
 
   public canLeave(): boolean{
