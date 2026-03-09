@@ -4,4 +4,5 @@ export interface CredentialProcedureDetailsResponse {
   procedure_id: string;
   lifeCycleStatus: LifeCycleStatus;
   credential: LEARCredentialJwtPayload | LEARCredential;
+  email?: string;
 }

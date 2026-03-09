@@ -10,7 +10,7 @@ import { CredentialProcedureDetails } from '../models/entity/lear-credential';
 import { DialogWrapperService } from "../../shared/components/dialog/dialog-wrapper/dialog-wrapper.service";
 import { TranslateService } from "@ngx-translate/core";
 import { Router } from "@angular/router";
-import { IssuanceLEARCredentialRequestDto } from '../models/dto/lear-credential-issuance-request.dto';
+import { IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from '../models/dto/lear-credential-issuance-request.dto';
 import { LEARCredentialDataNormalizer } from 'src/app/features/credential-details/utils/lear-credential-data-normalizer';
 import { API_PATH } from '../constants/api-paths.constants';
 import { CredentialRevokeRequestDto } from '../models/dto/credential-revoke-request.dto';
@@ -42,7 +42,7 @@ export class CredentialProcedureService {
   // get credential and normalize it
   public getCredentialProcedureById(procedureId: string): Observable<CredentialProcedureDetails> {
     return this.http.get<CredentialProcedureDetailsResponse>(
-      `${this.organizationProcedures}/${procedureId}/credential-decoded`
+      `${this.organizationProcedures}/${procedureId}`
     )
     .pipe(
       map(response => {
@@ -66,11 +66,11 @@ export class CredentialProcedureService {
     );
   }
 
-  public createProcedure(procedureRequest: IssuanceLEARCredentialRequestDto): Observable<void> {
+  public createProcedure(procedureRequest: IssuanceLEARCredentialRequestDto): Observable<IssuanceResponseDto> {
     const headers = new HttpHeaders({
       'X-Idempotency-Key': crypto.randomUUID()
     });
-    return this.http.post<void>(this.saveCredential, procedureRequest, { headers }).pipe(
+    return this.http.post<IssuanceResponseDto>(this.saveCredential, procedureRequest, { headers }).pipe(
       catchError(this.handleError)
     );
   }
