@@ -3,70 +3,10 @@ import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { UserDataAuthenticationResponse } from '../models/dto/user-data-authentication-response.dto';
-import { CredentialStatus, LEARCredentialEmployee } from '../models/entity/lear-credential';
 import { RoleType } from '../models/enums/auth-rol-type.enum';
-import { LEARCredentialDataNormalizer } from 'src/app/features/credential-details/utils/lear-credential-data-normalizer';
 import { environment } from 'src/environments/environment';
 
-const mockCredentialEmployee: LEARCredentialEmployee = {
-  id: 'some-id',
-  type: ['VerifiableCredential', 'learcredential.employee.w3c.4'],
-  description: 'Test credential',
-  credentialStatus: {} as CredentialStatus,
-  credentialSubject: {
-    mandate: {
-      id: 'mandate-id',
-      life_span: {
-        start: '2024-01-01T00:00:00Z',
-        end: '2024-12-31T23:59:59Z'
-      },
-      signer: {
-        organizationIdentifier: 'SIGNER123',
-        organization: 'Signer Organization',
-        commonName: 'Signer Name',
-        emailAddress: 'signer@example.com',
-        serialNumber: '7891011',
-        country: 'Signerland'
-      },
-      mandator: {
-        id: 'mandator-id',
-        organizationIdentifier: 'ORG123',
-        organization: 'Test Organization',
-        commonName: 'Mandator Name',
-        email: 'mandator@example.com',
-        serialNumber: '123456',
-        country: 'Testland'
-      },
-      mandatee: {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'jhonDoe@example.com',
-      },
-      power: [
-        {
-          function: 'Onboarding',
-          action: 'Execute',
-          domain: 'domain',
-          type: 'type'
-        }
-      ]
-    }
-  },
-  issuer: {
-    id: 'id-issuer',
-    organizationIdentifier: 'ORG123',
-    organization: 'Test Organization',
-    commonName: 'Mandator Name',
-    serialNumber: '123456',
-    country: 'Testland'
-  },
-  validFrom: '2024-01-01T00:00:00Z',
-  validUntil: '2024-12-31T23:59:59Z',
-  issuanceDate: '2024-01-01T00:00:00Z',
-  expirationDate: '2024-12-31T23:59:59Z'
-};
-
-const mockUserDataWithVC: UserDataAuthenticationResponse = {
+const mockUserDataWithClaims: UserDataAuthenticationResponse = {
   id: 'id',
   sub: 'subValue',
   commonName: 'commonNameValue',
@@ -75,14 +15,35 @@ const mockUserDataWithVC: UserDataAuthenticationResponse = {
   email_verified: true,
   preferred_username: 'preferred_usernameValue',
   given_name: 'givenNameValue',
-  vc: mockCredentialEmployee,
+  credential_type: 'learcredential.employee.w3c.1',
+  mandatee: {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'jhonDoe@example.com',
+  },
+  mandator: {
+    id: 'mandator-id',
+    organizationIdentifier: 'ORG123',
+    organization: 'Test Organization',
+    commonName: 'Mandator Name',
+    email: 'mandator@example.com',
+    serialNumber: '123456',
+    country: 'Testland'
+  },
+  power: [
+    {
+      function: 'Onboarding',
+      action: 'Execute',
+      domain: 'domain',
+      type: 'type'
+    }
+  ],
   'tenant-id': 'tenant-idValue',
   emailAddress: 'someone@example.com',
   organizationIdentifier: 'ORG123',
   organization: 'Test Organization',
   name: 'John Doe',
   family_name: 'Doe',
-  role: RoleType.LEAR
 };
 
 const mockUserDataWithCert: UserDataAuthenticationResponse = {
@@ -102,7 +63,6 @@ const mockUserDataWithCert: UserDataAuthenticationResponse = {
   organization: 'Cert Organization',
   name: 'John Cert',
   family_name: 'Cert',
-  role: RoleType.LEAR
 };
 
 const mockUserDataNoVCNoCert: UserDataAuthenticationResponse = {
@@ -134,8 +94,6 @@ describe('AuthService', () => {
     logoffLocal: jest.Mock
   };
 
-  let extractVcSpy: jest.SpyInstance;
-
   beforeEach(() => {
     oidcSecurityServiceMock = {
       checkAuth: jest.fn().mockReturnValue(of({
@@ -152,9 +110,6 @@ describe('AuthService', () => {
       registerForEvents: jest.fn().mockReturnValue(of())
     };
 
-    jest.spyOn(LEARCredentialDataNormalizer.prototype, 'normalizeLearCredential')
-      .mockImplementation((data) => data);
-
     TestBed.configureTestingModule({
       providers: [
         AuthService,
@@ -164,7 +119,6 @@ describe('AuthService', () => {
     });
 
     service = TestBed.inject(AuthService);
-    extractVcSpy = jest.spyOn(service as any, 'extractVCFromUserData');
 
     jest.clearAllMocks();
   });
@@ -229,28 +183,28 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   // hasPower()
   // --------------------------------------------------------------------------
-  it('true si té "Onboarding" i acció "Execute"', () => {
+  it('true si te "Onboarding" i accio "Execute"', () => {
     (service as any).userPowers = [
       { function: 'Onboarding', action: ['Read', 'Execute', 'Write'] }
     ];
     expect(service.hasPower('Onboarding', 'Execute')).toBe(true);
   });
 
-  it('false si no té "Execute"', () => {
+  it('false si no te "Execute"', () => {
     (service as any).userPowers = [
       { function: 'Onboarding', action: ['Read', 'Write'] }
     ];
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
-  it('false si no té "Onboarding"', () => {
+  it('false si no te "Onboarding"', () => {
     (service as any).userPowers = [
       { function: 'OtherFunction', action: 'Execute' }
     ];
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
-  it('false si userPowers és buit', () => {
+  it('false si userPowers es buit', () => {
     (service as any).userPowers = [];
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
@@ -260,7 +214,6 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('hasAdminOrganizationIdentifier', () => {
     it('retorna true si organizationIdentifier coincideix amb environment.admin_organization_id', () => {
-      // comment: env-driven admin org id
       (environment as any).admin_organization_id = 'VATES-B60645900';
 
       (service as any).mandatorSubject.next({
@@ -281,7 +234,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('false si mandator és null', () => {
+  it('false si mandator es null', () => {
     (service as any).mandatorSubject.next(null);
     expect(service.hasAdminOrganizationIdentifier()).toBe(false);
   });
@@ -289,7 +242,7 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   // getMandator()
   // --------------------------------------------------------------------------
-  it('getMandator() retorna l’observable amb el mandator', (done) => {
+  it('getMandator() retorna l\'observable amb el mandator', (done) => {
     const mockMandator = {
       id: 'mandator-id',
       organizationIdentifier: 'ORG123',
@@ -310,52 +263,42 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   // handleLoginCallback()
   // --------------------------------------------------------------------------
-  it('setejaria userData i token si autenticat i amb VC vàlid', (done) => {
-  oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
-    isAuthenticated: true,
-    userData: mockUserDataWithVC,
-    accessToken: 'test-token'
-  }));
-  extractVcSpy.mockReturnValue(mockCredentialEmployee);
+  it('setejaria userData i token si autenticat i amb claims valids', (done) => {
+    oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+      isAuthenticated: true,
+      userData: mockUserDataWithClaims,
+      accessToken: 'test-token'
+    }));
 
-  service.handleLoginCallback();
+    service.handleLoginCallback();
 
-  service.isLoggedIn().subscribe(isLogged => {
-    expect(isLogged).toBe(true);
-    service.getUserData().subscribe(ud => {
-      expect(ud).toEqual(mockUserDataWithVC);
-      service.getToken().subscribe(token => {
-        expect(token).toBe('test-token');
-        done();
+    service.isLoggedIn().subscribe(isLogged => {
+      expect(isLogged).toBe(true);
+      service.getUserData().subscribe(ud => {
+        expect(ud).toEqual(mockUserDataWithClaims);
+        service.getToken().subscribe(token => {
+          expect(token).toBe('test-token');
+          done();
+        });
       });
     });
   });
-});
 
-it('omple el correu del mandatee després de handleUserAuthentication()', () => {
-  extractVcSpy.mockReturnValue(mockCredentialEmployee);
+  it('omple el correu del mandatee despres de handleUserAuthentication()', () => {
+    (service as any).handleUserAuthentication(mockUserDataWithClaims);
 
-  (service as any).handleUserAuthentication(mockUserDataWithVC);
+    expect(service.getMandateeEmail()).toBe('jhonDoe@example.com');
+  });
 
-  expect(service.getMandateeEmail()).toBe('jhonDoe@example.com');
-});
-
-
-
-  it('fa logout si autenticat però sense power Onboarding Execute', () => {
-    const credWithoutOnboarding = {
-      credentialSubject: {
-        mandate: {
-          mandator: { email: 'whatever@x.com' },
-          mandatee: { firstName: 'x', lastName: 'y' },
-          power: [{ function: 'OtherFunction', action: 'Write' }]
-        }
-      }
+  it('fa logout si autenticat pero sense power Onboarding Execute', () => {
+    const userDataWithoutOnboarding: UserDataAuthenticationResponse = {
+      ...mockUserDataWithClaims,
+      power: [{ function: 'OtherFunction', action: 'Write', domain: 'domain', type: 'type' }]
     };
 
     oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
       isAuthenticated: true,
-      userData: { ...mockUserDataWithVC, vc: credWithoutOnboarding },
+      userData: userDataWithoutOnboarding,
       accessToken: 'abc'
     }));
     const logoutSpy = jest.spyOn(service, 'logout');
@@ -364,7 +307,7 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
     expect(logoutSpy).toHaveBeenCalled();
   });
 
-  it('fa logout si autenticat però sense VC ni cert', () => {
+  it('fa logout si autenticat pero sense mandatee/mandator (no powers)', () => {
     oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
       isAuthenticated: true,
       userData: mockUserDataNoVCNoCert,
@@ -400,26 +343,12 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
   // --------------------------------------------------------------------------
   // handleUserAuthentication()
   // --------------------------------------------------------------------------
-  it('gestiona el flux VC a handleUserAuthentication()', () => {
-    const handleVCLoginSpy = jest.spyOn(service as any, 'handleVCLogin');
-    extractVcSpy.mockReturnValue(mockCredentialEmployee);
+  it('gestiona el flux flat claims a handleUserAuthentication()', () => {
+    const handleFlatClaimsLoginSpy = jest.spyOn(service as any, 'handleFlatClaimsLogin');
 
-    (service as any).handleUserAuthentication(mockUserDataWithVC);
-    expect(LEARCredentialDataNormalizer.prototype.normalizeLearCredential).toHaveBeenCalled();
-    expect(handleVCLoginSpy).toHaveBeenCalled();
+    (service as any).handleUserAuthentication(mockUserDataWithClaims);
+    expect(handleFlatClaimsLoginSpy).toHaveBeenCalledWith(mockUserDataWithClaims);
     expect(service.roleType()).toBe(RoleType.LEAR);
-  });
-
-  it('getRole retorna el rol si existeix', () => {
-    const mockUserData = { role: RoleType.LEAR } as UserDataAuthenticationResponse;
-    const result = (service as any).getRole(mockUserData);
-    expect(result).toBe(RoleType.LEAR);
-  });
-
-  it('getRole retorna null si no hi ha role', () => {
-    const mockUserData = {} as UserDataAuthenticationResponse;
-    const result = (service as any).getRole(mockUserData);
-    expect(result).toBeNull();
   });
 
   it('extractDataFromCertificate extreu dades correctament', () => {
@@ -435,14 +364,12 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
     });
   });
 
-  it('handleUserAuthentication captura error si no hi ha VC ni cert', () => {
+  it('handleUserAuthentication logs error si no hi ha mandatee ni mandator', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    extractVcSpy.mockReturnValue(null);
 
     (service as any).handleUserAuthentication(mockUserDataNoVCNoCert);
 
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Missing mandatee or mandator claims in ID Token.');
   });
 
   // --------------------------------------------------------------------------
@@ -459,16 +386,16 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
   // checkAuth$()
   // --------------------------------------------------------------------------
   describe('checkAuth$', () => {
-    it('marca autenticat i invoca handleUserAuthentication si vàlid', (done) => {
+    it('marca autenticat i invoca handleUserAuthentication si valid', (done) => {
       const handleUserAuthSpy = jest.spyOn(service as any, 'handleUserAuthentication');
       oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
         isAuthenticated: true,
-        userData: mockUserDataWithVC,
+        userData: mockUserDataWithClaims,
         accessToken: 'xxx'
       }));
 
       service.checkAuth$().subscribe(() => {
-        expect(handleUserAuthSpy).toHaveBeenCalledWith(mockUserDataWithVC);
+        expect(handleUserAuthSpy).toHaveBeenCalledWith(mockUserDataWithClaims);
         service.isLoggedIn().subscribe(isLoggedIn => {
           expect(isLoggedIn).toBe(true);
           done();
@@ -491,14 +418,14 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       });
     });
 
-    it('propaga error si checkAuth llença', (done) => {
+    it('propaga error si checkAuth llenca', (done) => {
       const error = new Error('Some error');
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       oidcSecurityServiceMock.checkAuth.mockReturnValue(throwError(() => error));
 
       service.checkAuth$().subscribe({
         next: () => {
-          fail('S’esperava un error');
+          fail('S\'esperava un error');
         },
         error: err => {
           expect(err).toBe(error);
@@ -510,25 +437,6 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       });
     });
 
-    it('llença error si el rol no és LEAR', (done) => {
-      const badUserData = { ...mockUserDataWithVC, role: 'SOME_OTHER_ROLE' } as any;
-      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
-        isAuthenticated: true,
-        userData: badUserData,
-        accessToken: 'xxx'
-      }));
-
-      service.checkAuth$().subscribe({
-        next: () => {
-          fail('S’esperava error per rol invàlid');
-        },
-        error: err => {
-          expect(err).toBeInstanceOf(Error);
-          expect(err.message).toContain('Error Role');
-          done();
-        }
-      });
-    });
   });
 
   // --------------------------------------------------------------------------
@@ -548,7 +456,6 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
     it('gestiona SilentRenewStarted', () => {
       service.subscribeToAuthEvents();
       eventSubject.next({ type: EventTypes.SilentRenewStarted });
-      // SilentRenewStarted only advances the stream; no side-effects to verify
       expect(service.authorize).not.toHaveBeenCalled();
     });
 
@@ -566,7 +473,7 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       consoleError.mockRestore();
     });
 
-    it('online handler: not authenticated after reconnect → logs error and calls authorize', () => {
+    it('online handler: not authenticated after reconnect -> logs error and calls authorize', () => {
       jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
       const consoleError = jest.spyOn(console, 'error').mockImplementation();
       const removeListenerSpy = jest.spyOn(globalThis, 'removeEventListener').mockImplementation();
@@ -580,7 +487,6 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       eventSubject.next({ type: EventTypes.SilentRenewFailed });
       expect(capturedHandler).toBeDefined();
 
-      // trigger the online handler; checkAuth returns isAuthenticated: false
       oidcSecurityServiceMock.checkAuth.mockReturnValue(of({ isAuthenticated: false, userData: null, accessToken: null }));
       capturedHandler!();
 
@@ -592,7 +498,7 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       removeListenerSpy.mockRestore();
     });
 
-    it('online handler: error during reauth → logs error and calls authorize', () => {
+    it('online handler: error during reauth -> logs error and calls authorize', () => {
       jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
       const consoleError = jest.spyOn(console, 'error').mockImplementation();
       const removeListenerSpy = jest.spyOn(globalThis, 'removeEventListener').mockImplementation();
@@ -617,7 +523,7 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
       removeListenerSpy.mockRestore();
     });
 
-    it('gestiona SilentRenewFailed online → authorize()', () => {
+    it('gestiona SilentRenewFailed online -> authorize()', () => {
       jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
       const consoleError = jest.spyOn(console, 'error').mockImplementation();
 
@@ -650,25 +556,13 @@ it('omple el correu del mandatee després de handleUserAuthentication()', () => 
   // --------------------------------------------------------------------------
   // private helpers
   // --------------------------------------------------------------------------
-  it('extractVCFromUserData retorna vc si present', () => {
-    const result = (service as any).extractVCFromUserData(mockUserDataWithVC);
-    expect(result).toBe(mockUserDataWithVC.vc);
+  it('extractPowersFromClaims retorna l\'array de power', () => {
+    const result = (service as any).extractPowersFromClaims(mockUserDataWithClaims);
+    expect(result).toEqual(mockUserDataWithClaims.power);
   });
 
-  it('extractVCFromUserData llença error si falta vc', () => {
-    expect(() => {
-      (service as any).extractVCFromUserData(mockUserDataNoVCNoCert);
-    }).toThrowError('VC claim error: neither vc nor vc_json found in userData.');
-  });
-
-  it('extractUserPowers retorna l’array de power', () => {
-    const result = (service as any).extractUserPowers(mockCredentialEmployee);
-    expect(result).toEqual(mockCredentialEmployee.credentialSubject.mandate.power);
-  });
-
-  it('extractUserPowers retorna [] si hi ha error', () => {
-    const invalidCredential: any = {};
-    const result = (service as any).extractUserPowers(invalidCredential);
+  it('extractPowersFromClaims retorna [] si no hi ha power', () => {
+    const result = (service as any).extractPowersFromClaims(mockUserDataNoVCNoCert);
     expect(result).toEqual([]);
   });
 });
