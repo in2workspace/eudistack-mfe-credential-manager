@@ -239,5 +239,45 @@ describe('LEARCredentialDataNormalizer', () => {
       const out = normalizer.normalizeLearCredential(input);
       expect(out.credentialSubject).toHaveProperty('somethingElse', 123);
     });
+
+    it('wraps flat SD-JWT employee structure into mandate object', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        credentialSubject: {
+          mandator: { id: 'did:elsi:VATES-123', commonName: 'John', email: 'john@example.com', organization: 'Org', organizationIdentifier: 'VATES-123', serialNumber: '123', country: 'ES' },
+          mandatee: { first_name: 'Alice', last_name: 'Wonder', email: 'alice@example.com' },
+          power: [{ action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate).toBeDefined();
+      expect(out.credentialSubject.mandate.mandator.commonName).toBe('John');
+      expect(out.credentialSubject.mandate.mandatee.firstName).toBe('Alice');
+      expect(out.credentialSubject.mandate.mandatee.lastName).toBe('Wonder');
+      expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
+      expect(out.credentialSubject.mandator).toBeUndefined();
+      expect(out.credentialSubject.mandatee).toBeUndefined();
+      expect(out.credentialSubject.power).toBeUndefined();
+    });
+
+    it('wraps flat SD-JWT machine structure into mandate object', () => {
+      const input: any = {
+        vct: 'learcredential.machine.sd.1',
+        credentialSubject: {
+          mandator: { id: 'did:elsi:VATES-456', commonName: 'Corp' },
+          mandatee: { id: 'did:key:abc', domain: 'example.com', ipAddress: '10.0.0.1' },
+          power: [{ tmf_action: 'Execute', tmf_domain: 'DOME', tmf_function: 'Onboarding', tmf_type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate).toBeDefined();
+      expect(out.credentialSubject.mandate.mandatee.domain).toBe('example.com');
+      expect(out.credentialSubject.mandate.power[0].action).toBe('Execute');
+      expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
+    });
   });
 });

@@ -57,7 +57,10 @@ export class LEARCredentialDataNormalizer {
   ) {
     if (!(isEmployee || isMachine)) return;
     const sub = data.credentialSubject;
-    if (!sub || !('mandate' in sub)) return;
+    if (!sub) return;
+
+    this.wrapFlatMandateStructure(sub);
+    if (!sub.mandate) return;
 
     sub.mandate = { ...sub.mandate };
     if (isEmployee && sub.mandate.mandatee) {
@@ -69,6 +72,23 @@ export class LEARCredentialDataNormalizer {
     if (Array.isArray(sub.mandate.power)) {
       sub.mandate.power = sub.mandate.power.map((p: RawPower) => this.normalizePower(p));
     }
+  }
+
+  /**
+   * SD-JWT credentials place mandator/mandatee/power directly on credentialSubject
+   * instead of nesting them under a `mandate` object (W3C format).
+   * This wraps the flat structure so downstream code works uniformly.
+   */
+  private wrapFlatMandateStructure(sub: any): void {
+    if ('mandate' in sub || !('mandator' in sub || 'mandatee' in sub || 'power' in sub)) return;
+    sub.mandate = {
+      ...(sub.mandator ? { mandator: sub.mandator } : {}),
+      ...(sub.mandatee ? { mandatee: sub.mandatee } : {}),
+      ...(sub.power ? { power: sub.power } : {}),
+    };
+    delete sub.mandator;
+    delete sub.mandatee;
+    delete sub.power;
   }
 
   private normalizeCertificationIfNeeded(
@@ -103,17 +123,6 @@ private normalizeEmployeeMandator(mandator: RawEmployeeMandator): EmployeeMandat
   return copy as EmployeeMandator;
 }
 
-
-private normalizeMandatorEmail(m: RawEmployeeMandator): RawEmployeeMandator {
-  const copy: any = { ...m };
-
-  if (copy.email == null && typeof copy.emailAddress === 'string') {
-    copy.email = copy.emailAddress;
-  }
-  delete copy.emailAddress;
-
-  return copy;
-}
 
 private normalizePower(data: RawPower): Power {
   const action = data.action   ?? data.tmf_action ?? '';
