@@ -200,7 +200,12 @@ export class CredentialDetailsService {
   }
       
   private getCredentialType(cred: LEARCredential): CredentialType{
-    const type = cred.type.find((t): t is CredentialType => CREDENTIAL_TYPES_ARRAY.includes(t as CredentialType));
+    // W3C credentials have type[] array; SD-JWT credentials have vct string
+    const vct = (cred as any).vct as string | undefined;
+    if(vct && CREDENTIAL_TYPES_ARRAY.includes(vct as CredentialType)){
+      return vct as CredentialType;
+    }
+    const type = cred.type?.find((t): t is CredentialType => CREDENTIAL_TYPES_ARRAY.includes(t as CredentialType));
     if(!type) throw new Error('No credential type found in credential');
     return type;
   }

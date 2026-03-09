@@ -6,7 +6,7 @@ import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { CredentialProceduresResponse } from '../models/dto/credential-procedures-response.dto';
 import { CredentialOfferResponse } from '../models/dto/credential-offer-response.dto';
-import { CredentialProcedureDetails } from '../models/entity/lear-credential';
+import { CredentialProcedureDetails, LEARCredential } from '../models/entity/lear-credential';
 import { DialogWrapperService } from "../../shared/components/dialog/dialog-wrapper/dialog-wrapper.service";
 import { TranslateService } from "@ngx-translate/core";
 import { Router } from "@angular/router";
@@ -47,17 +47,17 @@ export class CredentialProcedureService {
     .pipe(
       map(response => {
         const { credential } = response;
-        // If vc exists, we normalize it, otherwise we assume that credential is already of the expected type
+        // The unified API returns the credential directly (not wrapped in a JWT payload).
+        // If 'vc' exists it's a legacy JWT payload; otherwise credential IS the VC.
         const credentialData = 'vc' in credential
           ? credential.vc
-          : credential;
+          : credential as unknown as LEARCredential;
 
         const normalizedCredential = this.normalizer.normalizeLearCredential(credentialData);
 
         return {
           ...response,
           credential: {
-            ...credential,
             vc: normalizedCredential
           }
         } as CredentialProcedureDetails;
