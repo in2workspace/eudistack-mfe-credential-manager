@@ -10,9 +10,15 @@ const credentialTypeHasRevokeCredentialButtonSet = new Set<CredentialType>([
   'learcredential.machine.w3c.3', 'learcredential.machine.sd.1',
   'gx.labelcredential.w3c.1',
 ]);
+const credentialTypeHasWithdrawCredentialButtonSet = new Set<CredentialType>([
+  'learcredential.employee.w3c.4', 'learcredential.employee.sd.1',
+  'learcredential.machine.w3c.3', 'learcredential.machine.sd.1',
+  'gx.labelcredential.w3c.1',
+]);
 
 const statusHasSignCredentialButtonSet = new Set<LifeCycleStatus>(['PEND_SIGNATURE']);
 const statusHasRevokeCredentialButtonSet = new Set<LifeCycleStatus>(['VALID']);
+const statusHasWithdrawCredentialButtonSet = new Set<LifeCycleStatus>(['DRAFT']);
 
 export function credentialTypeHasSignCredentialButton(type: CredentialType): boolean {
     return credentialTypeHasSignCredentialButtonSet.has(type);
@@ -28,4 +34,12 @@ export function statusHasSignCredentialButton(status: LifeCycleStatus): boolean 
 
 export function statusHasRevokeCredentialButton(status: LifeCycleStatus): boolean {
     return statusHasRevokeCredentialButtonSet.has(status);
+}
+
+export function credentialTypeHasWithdrawCredentialButton(type: CredentialType): boolean {
+    return credentialTypeHasWithdrawCredentialButtonSet.has(type);
+}
+
+export function statusHasWithdrawCredentialButton(status: LifeCycleStatus): boolean {
+    return statusHasWithdrawCredentialButtonSet.has(status);
 }

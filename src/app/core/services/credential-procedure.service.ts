@@ -89,6 +89,12 @@ export class CredentialProcedureService {
     );
   }
 
+  public withdrawCredential(procedureId: string): Observable<void> {
+    return this.http.patch<void>(`${this.organizationProcedures}/${procedureId}`, { status: 'WITHDRAWN' }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   public getCredentialOfferByTransactionCode(transactionCode: string): Observable<CredentialOfferResponse> {
     console.error('Getting credential offer by transaction code: ' + transactionCode);
     return this.http.get<CredentialOfferResponse>(`${this.credentialOfferUrl}/transaction-code/${transactionCode}`).pipe(

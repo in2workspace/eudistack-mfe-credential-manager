@@ -27,3 +27,7 @@
   .status-draft {
     background-color: var(--status-warning, #D97706);
   }
+
+  .status-withdrawn {
+    background-color: var(--status-neutral, #6B7280);
+  }

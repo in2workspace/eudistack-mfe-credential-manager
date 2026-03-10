@@ -48,6 +48,7 @@ export class CredentialDetailsComponent implements OnInit {
   public showSignCredentialButton$: Signal<boolean>;
   public showRevokeCredentialButton$: Signal<boolean>;
   public enableRevokeCredentialButton$: Signal<boolean>;
+  public showWithdrawCredentialButton$: Signal<boolean>;
   public showActionsButtonsContainer$: Signal<boolean>;
   
   //OBSERVABLES
@@ -77,6 +78,7 @@ export class CredentialDetailsComponent implements OnInit {
     this.showSignCredentialButton$ = this.detailsService.showSignCredentialButton$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
+    this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showActionsButtonsContainer$ = this.detailsService.showActionsButtonsContainer$;
   }
 
@@ -88,6 +90,11 @@ export class CredentialDetailsComponent implements OnInit {
   // SIGN
   public openSignCredentialDialog(){
     this.detailsService.openSignCredentialDialog();
+  }
+
+  // WITHDRAW
+  public openWithdrawCredentialDialog(){
+    this.detailsService.openWithdrawCredentialDialog();
   }
 
   // REVOKE

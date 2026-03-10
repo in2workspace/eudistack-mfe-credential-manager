@@ -115,6 +115,7 @@
     "gx:validatedCriteriaReference": "Referencia de Criterios Validados",
     "digestSri": "Huella SRI",
     "revoke": "revocar",
+    "withdraw": "retirar",
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
     "signCredentialConfirm": {
       "title": "Firmar credencial",
@@ -131,6 +132,14 @@
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha sido revocada."
+    },
+    "withdrawCredentialConfirm": {
+      "title": "Retirar Credencial",
+      "message": "¿Estás seguro de que deseas retirar esta credencial?"
+    },
+    "withdrawCredentialSuccess": {
+      "title": "Credencial retirada",
+      "message": "La credencial ha sido retirada correctamente."
     }
   },
   "credentialOffer": {

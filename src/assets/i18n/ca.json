@@ -115,6 +115,7 @@
     "gx:validatedCriteriaReference": "Referència de Criteris Validats",
     "digestSri": "Empremta SRI",
     "revoke": "revocar",
+    "withdraw": "retirar",
         "revokeTooltip": "Aquesta credencial no pot ser revocada perquè és de tipus legacy. Per consultar com revocar aquest tipus de credencial, consulti la nostra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guia</a>.",
     "signCredentialConfirm": {
       "title": "Signar credencial",
@@ -131,8 +132,16 @@
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha estat revocada."
+    },
+    "withdrawCredentialConfirm": {
+      "title": "Retirar Credencial",
+      "message": "Estàs segur que vols retirar aquesta credencial?"
+    },
+    "withdrawCredentialSuccess": {
+      "title": "Credencial retirada",
+      "message": "La credencial ha estat retirada correctament."
     }
-  },  
+  },
   "credentialOffer": {
     "first-label": "Iniciar sessió al Wallet",
     "second-label": "Obtenir Credencial",

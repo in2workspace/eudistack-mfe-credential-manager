@@ -54,6 +54,24 @@ export class CredentialActionsService {
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, revokeCredentialAfterConfirm);
   }
 
+  // WITHDRAW CREDENTIAL
+
+  public openWithdrawCredentialDialog(procedureId: string): void {
+
+    const dialogData: DialogData = {
+      title: this.translate.instant("credentialDetails.withdrawCredentialConfirm.title"),
+      message: this.translate.instant("credentialDetails.withdrawCredentialConfirm.message"),
+      confirmationType: 'async',
+      status: 'error'
+    };
+
+    const withdrawCredentialAfterConfirm = (): Observable<boolean> => {
+      return this.withdrawCredential(procedureId);
+    }
+
+    this.dialog.openDialogWithCallback(DialogComponent, dialogData, withdrawCredentialAfterConfirm);
+  }
+
   //executes backend callback by CREDENTIAL ID
   private executeCredentialBackendAction(
     id: string,
@@ -119,12 +137,21 @@ export class CredentialActionsService {
   }
 
   private revokeCredential(procedureId: string, credentialList: string): Observable<boolean> {
-   
+
     return this.executeActionByCredentialProcedureId(
       procedureId,
       (procedureId) => this.credentialProcedureService.revokeCredential(procedureId, credentialList),
       "credentialDetails.revokeCredentialSuccess.title",
       "credentialDetails.revokeCredentialSuccess.message"
+    );
+  }
+
+  private withdrawCredential(procedureId: string): Observable<boolean> {
+    return this.executeActionByProcedureId(
+      procedureId,
+      (procedureId) => this.credentialProcedureService.withdrawCredential(procedureId),
+      "credentialDetails.withdrawCredentialSuccess.title",
+      "credentialDetails.withdrawCredentialSuccess.message"
     );
   }
 }

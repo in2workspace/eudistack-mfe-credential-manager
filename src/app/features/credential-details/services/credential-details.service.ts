@@ -10,7 +10,7 @@ import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-statu
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, credentialTypeHasSignCredentialButton, statusHasRevokeCredentialButton, credentialTypeHasRevokeCredentialButton } from '../helpers/actions-helpers';
+import { statusHasSignCredentialButton, credentialTypeHasSignCredentialButton, statusHasRevokeCredentialButton, credentialTypeHasRevokeCredentialButton, statusHasWithdrawCredentialButton, credentialTypeHasWithdrawCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 
@@ -81,8 +81,20 @@ export class CredentialDetailsService {
     return !!this.credentialStatus$();
   });
 
+  public showWithdrawCredentialButton$ = computed<boolean>(() => {
+    const type = this.credentialType$();
+    const status = this.lifeCycleStatus$();
+
+    return !!(
+      status
+      && statusHasWithdrawCredentialButton(status)
+      && type
+      && credentialTypeHasWithdrawCredentialButton(type)
+    );
+  });
+
   public showActionsButtonsContainer$ = computed<boolean>(() => {
-    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$()
+    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$()
   });
 
   private readonly actionsService = inject(CredentialActionsService);
@@ -142,6 +154,22 @@ export class CredentialDetailsService {
   public openSignCredentialDialog(): void {
     const procedureId = this.getProcedureId();
     return this.actionsService.openSignCredentialDialog(procedureId);
+  }
+
+  public openWithdrawCredentialDialog(): void {
+    if(this.lifeCycleStatus$() !== 'DRAFT'){
+      console.error("Only credentials with status DRAFT can be withdrawn.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+
+    const procedureId = this.getProcedureId();
+    if(!procedureId){
+      console.error("Couldn't get procedure id from vc.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+    return this.actionsService.openWithdrawCredentialDialog(procedureId);
   }
 
   public openRevokeCredentialDialog(): void{
