@@ -52,11 +52,18 @@ export class DynamicSchemaBuilder {
     const groupKey = path.length > 1 ? path[0] : '_root';
     const label = this.resolveDisplayName(claim);
 
+    const valueMap = claim.value_map;
     const field: DetailsKeyValueField = {
       key: claimKey,
       label,
       type: 'key-value',
-      value: (c: any) => this.resolvePathValue(c, path),
+      value: (c: any) => {
+        const raw = this.resolvePathValue(c, path);
+        if (valueMap && typeof raw === 'string' && raw in valueMap) {
+          return valueMap[raw];
+        }
+        return raw;
+      },
     };
 
     const existing = groups.get(groupKey) ?? [];

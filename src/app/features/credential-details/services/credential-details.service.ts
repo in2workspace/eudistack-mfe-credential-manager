@@ -5,10 +5,6 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialStatus, CredentialType, LEARCredential, CredentialProcedureDetails, LifeCycleStatus, CREDENTIAL_TYPES_ARRAY } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { LearCredentialEmployeeDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-employee-details-schema';
-import { LearCredentialMachineDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-machine-details-schema';
-import { GxLabelCredentialDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/gx-label-credential-details-schema';
-import { VerifiableCertificationDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/verifiable-certification-details-schema';
 import { EvaluatedExtendedDetailsField, ViewModelSchema, EvaluatedViewModelSchema, DetailsField, EvaluatedDetailsField, CustomDetailsField, EvaluatedExtendedDetailsGroupField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialActionsService } from './credential-actions.service';
@@ -96,16 +92,6 @@ export class CredentialDetailsService {
   private readonly dialog = inject(DialogWrapperService);
   private readonly statusService = inject(LifeCycleStatusService);
 
-  
-  private readonly schemasByTypeMap: Record<CredentialType, ViewModelSchema> = {
-    'learcredential.employee.w3c.4': LearCredentialEmployeeDetailsViewModelSchema,
-    'learcredential.employee.sd.1': LearCredentialEmployeeDetailsViewModelSchema,
-    'learcredential.machine.w3c.3': LearCredentialMachineDetailsViewModelSchema,
-    'learcredential.machine.sd.1': LearCredentialMachineDetailsViewModelSchema,
-    'VerifiableCertification': VerifiableCertificationDetailsViewModelSchema,
-    'gx.labelcredential.w3c.1': GxLabelCredentialDetailsViewModelSchema,
-  } as const;
-
   public constructor(){
     this.lifeCycleStatusClass$ = computed<StatusClass | undefined>(() => {
       const status = this.lifeCycleStatus$();
@@ -135,12 +121,10 @@ export class CredentialDetailsService {
   }
 
   private resolveSchema(data: CredentialProcedureDetails, vc: LEARCredential): { schema: ViewModelSchema; vcForEvaluation: LEARCredential } {
-    // Try dynamic schema from credential_metadata
     const configId = data.credential_configuration_id;
     if (configId) {
       const config = this.metadataService.getConfigurationById(configId);
       if (config?.credential_metadata?.claims?.length) {
-        // Use rawVc for dynamic schemas — paths are format-aware (no normalization needed)
         const rawVc = (data.rawVc ?? vc) as LEARCredential;
         return {
           schema: this.dynamicSchemaBuilder.buildSchema(configId, config, rawVc),
@@ -149,13 +133,10 @@ export class CredentialDetailsService {
       }
     }
 
-    // Fallback to hardcoded schema (uses normalized vc)
-    const type = this.credentialType$();
-    if (!type) {
-      console.error('Credential: ', vc);
-      throw new Error('No credential type found in credential');
-    }
-    return { schema: this.getSchemaByType(type), vcForEvaluation: vc };
+    throw new Error(
+      `No schema available for credential "${configId ?? 'unknown'}". ` +
+      `Ensure credential_metadata.claims is configured in the issuer.`
+    );
   }
 
   public openSignCredentialDialog(): void {
@@ -219,10 +200,6 @@ export class CredentialDetailsService {
     return this.credentialProcedureService.getCredentialProcedureById(this.procedureId$());
   }
 
-  private getSchemaByType(credType: CredentialType): ViewModelSchema{
-    return this.schemasByTypeMap[credType];
-  }
-      
   private getCredentialType(cred: LEARCredential): CredentialType{
     // W3C credentials have type[] array; SD-JWT credentials have vct string
     const vct = (cred as any).vct as string | undefined;

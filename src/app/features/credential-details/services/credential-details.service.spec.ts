@@ -8,10 +8,6 @@ import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wr
 import { CredentialActionsService } from './credential-actions.service';
 import { of } from 'rxjs';
 import { Injector } from '@angular/core';
-import { GxLabelCredentialDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/gx-label-credential-details-schema';
-import { LearCredentialEmployeeDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-employee-details-schema';
-import { LearCredentialMachineDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-machine-details-schema';
-import { VerifiableCertificationDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/verifiable-certification-details-schema';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
 import * as actionHelpers from 'src/app/features/credential-details/helpers/actions-helpers';
@@ -193,18 +189,6 @@ describe('CredentialDetailsService', () => {
   });
 });
 
-  describe('getSchemaByType', () => {
-    it('retorna el schema correcte per cada tipus', () => {
-      expect((service as any).getSchemaByType('learcredential.employee.w3c.4'))
-        .toBe(LearCredentialEmployeeDetailsViewModelSchema);
-      expect((service as any).getSchemaByType('learcredential.machine.w3c.3'))
-        .toBe(LearCredentialMachineDetailsViewModelSchema);
-      expect((service as any).getSchemaByType('VerifiableCertification'))
-        .toBe(VerifiableCertificationDetailsViewModelSchema);
-      expect((service as any).getSchemaByType('gx.labelcredential.w3c.1'))
-        .toBe(GxLabelCredentialDetailsViewModelSchema);
-    });
-  });
 
   describe('computed signals', () => {
     const mockVc = {
@@ -306,27 +290,26 @@ describe('CredentialDetailsService', () => {
 
 describe('Load models', () => {
   it('should load and evaluate credential models correctly', () => {
-  const svc: any = service;
+    const svc: any = service;
 
-  jest.spyOn(svc, 'credentialType$').mockReturnValue('MyType');
+    const vc = { foo: 'bar' };
+    const mockData = { credential: { vc } };
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of(mockData));
 
-  const vc = { foo: 'bar' };
-  const mockData = { credential: { vc, type: 'MyType' } };
-  jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of(mockData));
+    const schemaResult = { schema: { schemaKey: 'schemaVal' }, vcForEvaluation: vc };
+    const resolveSchemaSpy = jest.spyOn(svc, 'resolveSchema').mockReturnValue(schemaResult);
+    const evaluated = { evaluatedKey: 'evaluatedVal' };
+    const evaluateSpy = jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue(evaluated);
+    const templateSpy = jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
 
-  const getSchemaSpy   = jest.spyOn(svc, 'getSchemaByType').mockReturnValue({ schemaKey: 'schemaVal' });
-  const evaluated         = { evaluatedKey: 'evaluatedVal' };
-  const evaluateSpy         = jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue(evaluated);
-  const templateSpy    = jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
+    const injector = TestBed.inject(Injector);
+    svc.loadCredentialModels(injector);
 
-  const injector = TestBed.inject(Injector);
-  svc.loadCredentialModels(injector);
-
-  expect(svc.loadCredentialDetails).toHaveBeenCalled();
-  expect(getSchemaSpy).toHaveBeenCalledWith('MyType');
-  expect(evaluateSpy).toHaveBeenCalledWith({ schemaKey: 'schemaVal' }, vc);
-  expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
-});
+    expect(svc.loadCredentialDetails).toHaveBeenCalled();
+    expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
+    expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
+    expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+  });
 });
 
 describe('shouldIncludeSideField', () => {
