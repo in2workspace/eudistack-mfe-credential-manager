@@ -44,6 +44,7 @@ export class LEARCredentialDataNormalizer {
     const isMachine  = types.some((t: string) => t.startsWith('learcredential.machine.')) || vct.startsWith('learcredential.machine.');
     const isVerCert  = types.includes('VerifiableCertification');
 
+    this.normalizeStatusIfNeeded(normalized);
     this.normalizeMandateIfNeeded(normalized, isEmployee, isMachine);
     this.normalizeCertificationIfNeeded(normalized, isVerCert);
 
@@ -115,6 +116,24 @@ export class LEARCredentialDataNormalizer {
     delete sub.mandator;
     delete sub.mandatee;
     delete sub.power;
+  }
+
+  /**
+   * SD-JWT credentials use `status.status_list` (Token Status List) instead of
+   * the W3C `credentialStatus` envelope. This maps the Token Status List structure
+   * to the unified CredentialStatus interface so downstream code works uniformly.
+   */
+  private normalizeStatusIfNeeded(data: any): void {
+    if (data.credentialStatus) return;
+    const sl = data.status?.status_list;
+    if (!sl?.uri) return;
+    data.credentialStatus = {
+      id: `${sl.uri}#${sl.idx}`,
+      type: 'TokenStatusListEntry',
+      statusPurpose: 'revocation',
+      statusListIndex: String(sl.idx),
+      statusListCredential: sl.uri,
+    };
   }
 
   private normalizeCertificationIfNeeded(

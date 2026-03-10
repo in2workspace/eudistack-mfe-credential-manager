@@ -24,7 +24,8 @@ export class DialogWrapperService {
   ): MatDialogRef<T, any> {
     return this.dialog.open(component, {
       data: { ...dialogData },
-      autoFocus: false
+      autoFocus: false,
+      panelClass: 'dialog-custom'
     });
   }
 
@@ -51,12 +52,13 @@ export class DialogWrapperService {
       return openDialog;
     } else {
       return this.dialog.open(component, {
-        data: { ...errorDialogData }
+        data: { ...errorDialogData },
+        panelClass: 'dialog-custom'
       });
     }
   }
 
-  public openDialogWithCallback< 
+  public openDialogWithCallback<
     D extends BaseDialogData,
     T extends AbstractDialogComponent<D>
   >(
@@ -69,7 +71,8 @@ export class DialogWrapperService {
     const dialogRef = this.dialog.open(component, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: disableClose === 'DISABLE_CLOSE'
+      disableClose: disableClose === 'DISABLE_CLOSE',
+      panelClass: 'dialog-custom'
     });
 
     let confirm$: Observable<boolean>;

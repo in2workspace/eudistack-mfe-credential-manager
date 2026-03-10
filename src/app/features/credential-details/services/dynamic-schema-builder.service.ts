@@ -111,39 +111,78 @@ export class DynamicSchemaBuilder {
   }
 
   private buildSideFields(credential: any): DetailsGroupField[] {
+    const groups: DetailsGroupField[] = [];
+
+    // Issuer group
     const issuer = credential?.issuer;
-    if (!issuer) return [];
-
-    if (typeof issuer === 'string') {
-      return [{
-        key: 'issuer',
-        type: 'group',
-        value: [
-          { key: 'id', type: 'key-value', value: () => issuer },
-        ],
-      }];
-    }
-
-    const fields: DetailsKeyValueField[] = [];
-    const fieldKeys = ['id', 'commonName', 'serialNumber', 'organization', 'organizationIdentifier', 'country'];
-
-    for (const fk of fieldKeys) {
-      if (issuer[fk] != null) {
-        fields.push({
-          key: fk,
-          type: 'key-value',
-          value: () => issuer[fk],
+    if (issuer) {
+      if (typeof issuer === 'string') {
+        groups.push({
+          key: 'issuer',
+          type: 'group',
+          value: [
+            { key: 'id', type: 'key-value', value: () => issuer },
+          ],
         });
+      } else {
+        const fields: DetailsKeyValueField[] = [];
+        const fieldKeys = ['id', 'commonName', 'serialNumber', 'organization', 'organizationIdentifier', 'country'];
+
+        for (const fk of fieldKeys) {
+          if (issuer[fk] != null) {
+            fields.push({
+              key: fk,
+              type: 'key-value',
+              value: () => issuer[fk],
+            });
+          }
+        }
+
+        if (fields.length > 0) {
+          groups.push({
+            key: 'issuer',
+            type: 'group',
+            value: fields,
+          });
+        }
       }
     }
 
-    if (fields.length === 0) return [];
+    // Credential Status group (status list link + index)
+    const credentialStatus = credential?.credentialStatus;
+    if (credentialStatus?.statusListCredential) {
+      const statusFields: DetailsKeyValueField[] = [];
 
-    return [{
-      key: 'issuer',
-      type: 'group',
-      value: fields,
-    }];
+      statusFields.push({
+        key: 'statusListCredential',
+        type: 'key-value',
+        value: () => credentialStatus.statusListCredential,
+      });
+
+      if (credentialStatus.statusListIndex != null) {
+        statusFields.push({
+          key: 'statusListIndex',
+          type: 'key-value',
+          value: () => String(credentialStatus.statusListIndex),
+        });
+      }
+
+      if (credentialStatus.statusPurpose) {
+        statusFields.push({
+          key: 'statusPurpose',
+          type: 'key-value',
+          value: () => credentialStatus.statusPurpose,
+        });
+      }
+
+      groups.push({
+        key: 'credentialStatus',
+        type: 'group',
+        value: statusFields,
+      });
+    }
+
+    return groups;
   }
 
   private resolvePathValue(obj: any, path: string[]): any {

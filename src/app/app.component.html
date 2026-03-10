@@ -1,4 +1,6 @@
 @if(showNavbar$()){
     <app-navbar/>
 }
-<router-outlet></router-outlet>
+<div [@routeAnimations]="getRouteAnimationData()">
+  <router-outlet></router-outlet>
+</div>

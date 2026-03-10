@@ -115,27 +115,6 @@ describe('CredentialDetailsService', () => {
   // });
   });
 
-  describe('getCredentialListId', () => {
-    it('sense statusListCredential: retorna empty string i loggea error', () => {
-      const noStatus: any = { credentialStatus: { statusListCredential: undefined } };
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      (service as any).getCredential = () => noStatus;
-      const result = (service as any).getCredentialListId();
-      expect(result).toBe('');
-      expect(console.error).toHaveBeenCalledWith('No Status List Credential found in vc: ');
-      expect(console.error).toHaveBeenCalledWith(noStatus);
-    });
-
-    it('amb statusListCredential: retorna l’últim element sense error', () => {
-      const withStatus: any = { credentialStatus: { statusListCredential: 'one/two/three' } };
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      (service as any).getCredential = () => withStatus;
-
-      expect((service as any).getCredentialListId()).toBe('three');
-      expect(console.error).not.toHaveBeenCalled();
-    });
-
-  });
 
   describe('evaluateFieldMain', () => {
  it('should evaluate “key-value” and “group” correctly', () => {

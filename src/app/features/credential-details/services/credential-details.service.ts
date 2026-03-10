@@ -184,19 +184,13 @@ export class CredentialDetailsService {
       return;
     }
 
-    const procedureId = this.credentialProcedureDetails$()?.procedure_id;
-    if(!procedureId){
-      console.error("Couldn't get procedure id from vc.");
+    const issuanceId = this.credentialProcedureDetails$()?.procedure_id;
+    if(!issuanceId){
+      console.error("Couldn't get issuance id from credential.");
       this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
       return;
     }
-    const listId = this.getCredentialListId();
-    if(!listId){
-      console.error("Couldn't get credential list from vc.");
-      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
-      return;
-    }
-    return this.actionsService.openRevokeCredentialDialog(procedureId, listId);
+    return this.actionsService.openRevokeCredentialDialog(issuanceId);
   }
 
   private getProcedureId(): string{
@@ -207,23 +201,6 @@ export class CredentialDetailsService {
     return this.credentialProcedureDetails$()?.credential?.vc;
   }
 
-  private getCredentialListId(): string {
-    const statusListCredential = this.getCredential()?.credentialStatus?.statusListCredential;
-
-    if (!statusListCredential) {
-      console.error('No Status List Credential found in vc: ');
-      console.error(this.getCredential());
-      return "";
-    }
-
-    const parts = statusListCredential.split('/');
-    const id = parts.at(-1);
-
-    return id ?? "";
-  }
-
-
-  
   private loadCredentialDetails(): Observable<CredentialProcedureDetails> {
     return this.credentialProcedureService.getCredentialProcedureById(this.procedureId$());
   }

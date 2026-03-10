@@ -20,6 +20,7 @@ import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-c
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { environment } from 'src/environments/environment';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 
 @Component({
@@ -27,7 +28,15 @@ import { environment } from 'src/environments/environment';
     providers: [CredentialDetailsService],
     selector: 'app-credential-details',
     templateUrl: './credential-details.component.html',
-    styleUrl: './credential-details.component.scss'
+    styleUrl: './credential-details.component.scss',
+    animations: [
+      trigger('fadeSlideIn', [
+        transition(':enter', [
+          style({ opacity: 0, transform: 'translateY(12px)' }),
+          animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+        ])
+      ])
+    ]
 })
 export class CredentialDetailsComponent implements OnInit {
   

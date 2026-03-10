@@ -1,3 +1,8 @@
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
 .dialog-custom, .responsive-dialog, .conditional-confirm{
     .mat-mdc-dialog-container .mdc-dialog__surface {
         border-radius: var(--radius-md, 8px) !important;

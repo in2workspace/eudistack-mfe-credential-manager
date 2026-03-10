@@ -36,3 +36,27 @@ button, input, select, textarea {
 .ml-2{
   margin-left:2rem ;
 }
+
+// Toast / Snackbar styles
+.toast-success .mdc-snackbar__surface {
+  background-color: var(--status-success, #059669) !important;
+  color: white !important;
+}
+.toast-error .mdc-snackbar__surface {
+  background-color: var(--status-error, #DC2626) !important;
+  color: white !important;
+}
+.toast-warning .mdc-snackbar__surface {
+  background-color: var(--status-warning, #D97706) !important;
+  color: white !important;
+}
+.toast-info .mdc-snackbar__surface {
+  background-color: var(--status-info, #2563EB) !important;
+  color: white !important;
+}
+.mdc-snackbar__surface {
+  border-radius: var(--radius-md, 8px) !important;
+}
+.mat-mdc-snack-bar-action {
+  color: white !important;
+}

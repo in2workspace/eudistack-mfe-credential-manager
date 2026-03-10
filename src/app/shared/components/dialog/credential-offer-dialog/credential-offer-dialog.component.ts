@@ -28,7 +28,7 @@ export class CredentialOfferDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<CredentialOfferDialogComponent>);
 
   public copied = false;
-  public readonly qrColor = '#2d58a7';
+  public readonly qrColor = '#000000';
 
   public copyOfferUri(): void {
     navigator.clipboard.writeText(this.data.credentialOfferUri);

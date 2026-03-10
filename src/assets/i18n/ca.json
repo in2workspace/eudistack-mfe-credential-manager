@@ -107,6 +107,10 @@
     "scope": "abast",
     "standard": "estàndard",
 	  "basic": "bàsic",
+    "credentialStatus": "estat de la credencial",
+    "statusListCredential": "llista d'estat",
+    "statusListIndex": "índex a la llista",
+    "statusPurpose": "propòsit de l'estat",
 	  "gx:labelLevel": "Label Level",
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
@@ -200,7 +204,12 @@
     "learcredential.machine.w3c.3": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
     "gx.labelcredential.w3c.1": "Label Credential",
-    "VerifiableCertification": "Verifiable Certification"
+    "VerifiableCertification": "Verifiable Certification",
+    "emptyState": {
+      "title": "Encara no hi ha credencials",
+      "description": "Crea la teva primera credencial per començar.",
+      "action": "Crear Credencial"
+    }
   },
     "power": {
       "power": "Poders",

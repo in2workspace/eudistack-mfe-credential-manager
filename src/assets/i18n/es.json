@@ -107,6 +107,10 @@
     "scope": "alcance",
     "standard": "estándar",
 	  "basic": "básico",
+    "credentialStatus": "estado de la credencial",
+    "statusListCredential": "lista de estado",
+    "statusListIndex": "índice en la lista",
+    "statusPurpose": "propósito del estado",
 	  "gx:labelLevel": "Label Level",
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
@@ -200,7 +204,12 @@
     "learcredential.machine.w3c.3": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
     "gx.labelcredential.w3c.1": "Label Credential",
-    "VerifiableCertification": "Verifiable Certification"
+    "VerifiableCertification": "Verifiable Certification",
+    "emptyState": {
+      "title": "Aún no hay credenciales",
+      "description": "Crea tu primera credencial para comenzar.",
+      "action": "Crear Credencial"
+    }
   },
   "power": {
     "power": "Poderes",
