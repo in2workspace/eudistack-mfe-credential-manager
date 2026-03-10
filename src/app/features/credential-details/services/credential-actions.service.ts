@@ -36,21 +36,19 @@ export class CredentialActionsService {
 
   // REVOKE CREDENTIAL
 
-  public openRevokeCredentialDialog(procedureId: string, credentialList: string): void {
+  public openRevokeCredentialDialog(issuanceId: string): void {
 
     const dialogData: DialogData = {
       title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
       confirmationType: 'async',
-      status: 'error'
+      status: 'default'
     };
 
-
-
     const revokeCredentialAfterConfirm = (): Observable<boolean> => {
-      return this.revokeCredential(procedureId, credentialList);
+      return this.revokeCredential(issuanceId);
     }
-    
+
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, revokeCredentialAfterConfirm);
   }
 
@@ -136,11 +134,11 @@ export class CredentialActionsService {
     );
   }
 
-  private revokeCredential(procedureId: string, credentialList: string): Observable<boolean> {
+  private revokeCredential(issuanceId: string): Observable<boolean> {
 
     return this.executeActionByCredentialProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.revokeCredential(procedureId, credentialList),
+      issuanceId,
+      (id) => this.credentialProcedureService.revokeCredential(id),
       "credentialDetails.revokeCredentialSuccess.title",
       "credentialDetails.revokeCredentialSuccess.message"
     );

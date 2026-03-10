@@ -218,9 +218,8 @@ describe('CredentialProcedureService', () => {
     );
 
 
-    const credentialId = '1234';
-    const listId = '1111';
-    service.revokeCredential(credentialId, listId).subscribe(
+    const issuanceId = '1234';
+    service.revokeCredential(issuanceId).subscribe(
       data => fail('should have failed with 500 error'),
       (error: string) => {
         expect(error).toContain('Server-side error: 500');

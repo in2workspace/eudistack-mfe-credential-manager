@@ -79,9 +79,8 @@ describe('CredentialActionsService', () => {
 
   describe('openRevokeCredentialDialog', () => {
     it('should call openDialogWithCallback with correct DialogData', () => {
-      const credentialId = 'cred789';
-      const credentialList = 'listXYZ';
-      service.openRevokeCredentialDialog(credentialId, credentialList);
+      const issuanceId = 'cred789';
+      service.openRevokeCredentialDialog(issuanceId);
       expect(mockDialog.openDialogWithCallback).toHaveBeenCalledTimes(1);
       const [_, dialogData, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
       expect(dialogData.title).toBe('credentialDetails.revokeCredentialConfirm.title');
