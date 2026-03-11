@@ -52,9 +52,9 @@ export class IssuanceRequestFactoryService {
     }
     const country = mandator['country'];
     const orgIdSuffix = mandator['organizationIdentifier'];
-    const orgId = this.buildOrganizationId(country, orgIdSuffix);
-    const mandatorId = this.buildDidElsi(orgId);
-    const mandatorCommonName = mandator['commonName'] ?? this.buildCommonName(mandator['firstName'], mandator['lastName']);
+    const orgId = this.createOrganizationId(country, orgIdSuffix);
+    const mandatorId = this.createDidElsi(orgId);
+    const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
 
     // Payload
     const payload: IssuanceLEARCredentialEmployeePayload =    
@@ -91,9 +91,9 @@ export class IssuanceRequestFactoryService {
     }
     const country = mandator['country'];
     const orgIdSuffix = mandator['organizationIdentifier'];
-    const orgId = this.buildOrganizationId(country, orgIdSuffix);
-    const mandatorId = this.buildDidElsi(orgId);
-    const mandatorCommonName = mandator['commonName'] ?? this.buildCommonName(mandator['firstName'], mandator['lastName']);
+    const orgId = this.createOrganizationId(country, orgIdSuffix);
+    const mandatorId = this.createDidElsi(orgId);
+    const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
     const mandatorEmail = mandator['email'];
 
     const didKey = credentialData.formData['keys']['didKey'];
@@ -131,11 +131,11 @@ export class IssuanceRequestFactoryService {
       return credentialData.formData['mandatee']?.['email'] ?? '';
   }
 
-  private buildDidElsi(orgId: string): string{
+  private createDidElsi(orgId: string): string{
     return "did:elsi:" + orgId;
   }
 
-  private buildOrganizationId(country: string, orgIdSuffix: string): string{
+  private createOrganizationId(country: string, orgIdSuffix: string): string{
     const hasVAT = this.checkIfHasVAT(orgIdSuffix);
     return  hasVAT ? orgIdSuffix : ("VAT" + country + '-' + orgIdSuffix);
   }
@@ -145,7 +145,7 @@ export class IssuanceRequestFactoryService {
     return regex.test(orgId);
   }
 
-  private buildCommonName(name: string, lastName: string): string{
+  private formatCommonName(name: string, lastName: string): string{
     return name + ' ' + lastName;
   }
 

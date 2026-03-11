@@ -44,7 +44,7 @@ describe('CredentialIssuanceService', () => {
         IssuanceRequestFactoryService, 
         CountryService, 
         { provide: CredentialProcedureService, useValue: mockProcedureService },
-        { provide: CredentialIssuerMetadataService, useValue: { loadMetadata: jest.fn(() => of(undefined)), getConfigurationsForType: jest.fn(() => []) } }
+        { provide: CredentialIssuerMetadataService, useValue: { loadMetadata: jest.fn(() => of(undefined)), findConfigurationsForType: jest.fn(() => []) } }
       ]
     });
     service = TestBed.inject(CredentialIssuanceService);

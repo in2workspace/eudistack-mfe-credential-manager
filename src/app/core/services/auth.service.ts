@@ -108,6 +108,8 @@ export class AuthService{
       this.isAuthenticatedSubject.next(isAuthenticated);
 
       if (isAuthenticated) {
+        const role = this.resolveRole(userData);
+        if(role != null && role !== RoleType.LEAR)  throw new Error('Error Role. '+ role);
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
@@ -140,6 +142,10 @@ export class AuthService{
 
   public authorize(){
     this.oidcSecurityService.authorize();
+  }
+
+  private resolveRole(userData: UserDataAuthenticationResponse): RoleType | null {
+    return userData.role ?? null;
   }
 
   private handleUserAuthentication(userData: UserDataAuthenticationResponse): void {
@@ -216,7 +222,7 @@ export class AuthService{
   }
 
   //todo maybe rename (i.e. getPlainMandator), since "Raw" is being used for unnormalized VC/fields
-  public getRawMandator(): EmployeeMandator | null {
+  public extractRawMandator(): EmployeeMandator | null {
     return this.mandatorSubject.getValue();
   }
 

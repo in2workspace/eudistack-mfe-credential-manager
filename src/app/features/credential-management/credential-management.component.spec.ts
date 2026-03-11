@@ -66,7 +66,7 @@ describe('CredentialManagementComponent', () => {
     }).compileComponents();
 
     credentialProcedureService = TestBed.inject(CredentialProcedureService);
-    credentialProcedureSpy = jest.spyOn(credentialProcedureService, 'getCredentialProcedures');
+    credentialProcedureSpy = jest.spyOn(credentialProcedureService, 'fetchCredentialProcedures');
     router = TestBed.inject(Router);
     jest.spyOn(router, 'navigate');
     statusService = TestBed.inject(LifeCycleStatusService);
@@ -261,7 +261,7 @@ describe('CredentialManagementComponent', () => {
     expect(component.dataSource.data).toEqual(withClass);
   }));
 
-  it('should log an error if getCredentialProcedures fails', fakeAsync(() => {
+  it('should log an error if fetchCredentialProcedures fails', fakeAsync(() => {
     const error = new Error('oops');
     credentialProcedureSpy.mockReturnValue(throwError(() => error));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

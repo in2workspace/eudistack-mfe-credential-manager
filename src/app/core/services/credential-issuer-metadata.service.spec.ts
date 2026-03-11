@@ -81,15 +81,15 @@ describe('CredentialIssuerMetadataService', () => {
     });
   });
 
-  describe('getConfigurationsForType()', () => {
+  describe('findConfigurationsForType()', () => {
     it('should return empty array when metadata not loaded', () => {
-      const result = service.getConfigurationsForType('learcredential.employee');
+      const result = service.findConfigurationsForType('learcredential.employee');
       expect(result).toEqual([]);
     });
 
     it('should return matching configurations after metadata loaded', (done) => {
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('learcredential.employee');
+        const result = service.findConfigurationsForType('learcredential.employee');
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({ configId: 'learcredential.employee.w3c.1', format: 'jwt_vc_json' });
         expect(result).toContainEqual({ configId: 'LEARCredentialEmployee_mdoc', format: 'mso_mdoc' });
@@ -100,7 +100,7 @@ describe('CredentialIssuerMetadataService', () => {
 
     it('should return matching configurations for machine type', (done) => {
       service.loadMetadata().subscribe(() => {
-        const machineResult = service.getConfigurationsForType('learcredential.machine');
+        const machineResult = service.findConfigurationsForType('learcredential.machine');
         expect(machineResult).toHaveLength(1);
         expect(machineResult[0]).toEqual({ configId: 'learcredential.machine.w3c.1', format: 'jwt_vc_json' });
         done();
@@ -116,7 +116,7 @@ describe('CredentialIssuerMetadataService', () => {
         }
       };
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('learcredential.employee');
+        const result = service.findConfigurationsForType('learcredential.employee');
         expect(result).toEqual([]);
         done();
       });

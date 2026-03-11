@@ -33,14 +33,14 @@ export class CredentialProcedureService {
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
 
-  public getCredentialProcedures(): Observable<CredentialProceduresResponse> {
+  public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
     return this.http.get<CredentialProceduresResponse>(this.organizationProcedures).pipe(
       catchError(this.handleError)
     );
   }
 
   // get credential and normalize it
-  public getCredentialProcedureById(procedureId: string): Observable<CredentialProcedureDetails> {
+  public fetchCredentialProcedureById(procedureId: string): Observable<CredentialProcedureDetails> {
     return this.http.get<CredentialProcedureDetailsResponse>(
       `${this.organizationProcedures}/${procedureId}`
     )
@@ -103,7 +103,7 @@ export class CredentialProcedureService {
     );
   }
 
-  public getCredentialOfferByCTransactionCode(cTransactionCode: string): Observable<CredentialOfferResponse> {
+  public fetchCredentialOfferByCTransactionCode(cTransactionCode: string): Observable<CredentialOfferResponse> {
     console.error('Refreshing QR code: getting credential offer by c-transaction code: ' + cTransactionCode);
     return this.http.get<CredentialOfferResponse>(`${this.credentialOfferUrl}/c-transaction-code/${cTransactionCode}`).pipe(
       catchError(this.handleError),

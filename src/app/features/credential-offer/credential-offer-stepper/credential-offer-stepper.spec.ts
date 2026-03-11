@@ -22,7 +22,7 @@ describe('Credential Offer Stepper', () => {
   let fixture: ComponentFixture<CredentialOfferStepperComponent>;
   let procedureService: {
     getCredentialOfferByTransactionCode: jest.Mock,
-    getCredentialOfferByCTransactionCode: jest.Mock
+    fetchCredentialOfferByCTransactionCode: jest.Mock
   };
   let configService: any
 
@@ -49,7 +49,7 @@ describe('Credential Offer Stepper', () => {
     };
     procedureService = {
         getCredentialOfferByTransactionCode: jest.fn(),
-        getCredentialOfferByCTransactionCode: jest.fn()
+        fetchCredentialOfferByCTransactionCode: jest.fn()
     }
 
     await TestBed.configureTestingModule({
@@ -547,10 +547,10 @@ describe('getCredentialOffer', () => {
     };
 
     jest.spyOn(component, 'offerParams$').mockReturnValue(mockOffer);
-    procedureService.getCredentialOfferByCTransactionCode.mockReturnValue(of(mockResponse));
+    procedureService.fetchCredentialOfferByCTransactionCode.mockReturnValue(of(mockResponse));
 
     component.getCredentialOffer().subscribe((result) => {
-      expect(procedureService.getCredentialOfferByCTransactionCode).toHaveBeenCalledWith(mockCTransactionCode);
+      expect(procedureService.fetchCredentialOfferByCTransactionCode).toHaveBeenCalledWith(mockCTransactionCode);
       expect(result).toEqual(mockResponse);
     });
   });
@@ -580,7 +580,7 @@ describe('getCredentialOffer', () => {
   });
 });
 
-describe('getCredentialOfferByTransactionCode', () => {
+describe('fetchCredentialOfferByTransactionCode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -590,7 +590,7 @@ describe('getCredentialOfferByTransactionCode', () => {
     const redirectSpy = jest.spyOn(component, 'redirectToHome');
     const message = component['translate'].instant("error.credentialOffer.invalid-url");
 
-    const result$ = component.getCredentialOfferByTransactionCode('');
+    const result$ = component.fetchCredentialOfferByTransactionCode('');
 
     result$.subscribe({
       error: (error) => {
@@ -608,7 +608,7 @@ describe('getCredentialOfferByTransactionCode', () => {
 
     procedureService.getCredentialOfferByTransactionCode.mockReturnValue(of(mockResponse));
 
-    const result$ = component.getCredentialOfferByTransactionCode(mockTransactionCode);
+    const result$ = component.fetchCredentialOfferByTransactionCode(mockTransactionCode);
 
     result$.subscribe((response) => {
       expect(procedureService.getCredentialOfferByTransactionCode)
@@ -620,7 +620,7 @@ describe('getCredentialOfferByTransactionCode', () => {
 
 
 });
-describe('getCredentialOfferByCTransactionCode', () => {
+describe('fetchCredentialOfferByCTransactionCode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -630,7 +630,7 @@ describe('getCredentialOfferByCTransactionCode', () => {
     const dialogSpy = jest.spyOn(component['dialog'], 'openErrorInfoDialog');
     const message = component['translate'].instant("error.credentialOffer.invalid-url");
 
-    const result$ = component.getCredentialOfferByCTransactionCode('');
+    const result$ = component.fetchCredentialOfferByCTransactionCode('');
 
     result$.subscribe({
       error: (error) => {
@@ -646,12 +646,12 @@ describe('getCredentialOfferByCTransactionCode', () => {
     const mockTransactionCode = 'validCTransactionCode';
     const mockResponse = { credential_offer_uri: 'offer uri', c_transaction_code: 'Test c' };
 
-    procedureService.getCredentialOfferByCTransactionCode.mockReturnValue(of(mockResponse));
+    procedureService.fetchCredentialOfferByCTransactionCode.mockReturnValue(of(mockResponse));
 
-    const result$ = component.getCredentialOfferByCTransactionCode(mockTransactionCode);
+    const result$ = component.fetchCredentialOfferByCTransactionCode(mockTransactionCode);
 
     result$.subscribe((response) => {
-      expect(procedureService.getCredentialOfferByCTransactionCode)
+      expect(procedureService.fetchCredentialOfferByCTransactionCode)
         .toHaveBeenCalledWith(mockTransactionCode);
       expect(response).toEqual(mockResponse);
       done();

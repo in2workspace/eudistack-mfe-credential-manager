@@ -173,7 +173,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   private loadCredentialData(): void {
     this.isLoading = true;
-    this.credentialProcedureService.getCredentialProcedures()
+    this.credentialProcedureService.fetchCredentialProcedures()
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {

@@ -29,7 +29,7 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
 
   beforeEach(() => {
     authMock = {
-      getRawMandator: jest.fn(),
+      extractRawMandator: jest.fn(),
     } as any;
 
     countryMock = {
@@ -101,10 +101,10 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
       expect(mandator?.display).toBe('pref_side');
       expect(typeof mandator?.staticValueGetter).toBe('function');
 
-      authMock.getRawMandator.mockReturnValue(null);
+      authMock.extractRawMandator.mockReturnValue(null);
       expect(mandator?.staticValueGetter!()).toBeNull();
 
-      authMock.getRawMandator.mockReturnValue(fakeMandatorRaw as any);
+      authMock.extractRawMandator.mockReturnValue(fakeMandatorRaw as any);
       const staticData = mandator?.staticValueGetter!();
       expect(staticData).toHaveProperty('mandator');
 

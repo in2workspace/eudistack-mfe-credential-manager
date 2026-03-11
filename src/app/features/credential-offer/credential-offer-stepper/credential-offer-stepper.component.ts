@@ -304,9 +304,9 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
     let params: Observable<Partial<CredentialOfferParams>> = throwError(()=>new Error('No transaction nor c code to fetch credential offer.'));
     
     if(offer?.c_transaction_code){
-      params = this.getCredentialOfferByCTransactionCode(offer.c_transaction_code);
+      params = this.fetchCredentialOfferByCTransactionCode(offer.c_transaction_code);
     }else if(offer?.transaction_code){
-      params = this.getCredentialOfferByTransactionCode(offer.transaction_code);
+      params = this.fetchCredentialOfferByTransactionCode(offer.transaction_code);
     }else{
       this.redirectToHome();
       console.error("Client error: Transaction code not found. Can't get credential offer");
@@ -316,7 +316,7 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
     return params;
   }
 
-  public getCredentialOfferByTransactionCode(transactionCode:string): Observable<CredentialOfferResponse> {
+  public fetchCredentialOfferByTransactionCode(transactionCode:string): Observable<CredentialOfferResponse> {
     if(!transactionCode){
       console.error("No transaction code was found, can't refresh QR.");
       const message = this.translate.instant("error.credentialOffer.invalid-url");
@@ -331,7 +331,7 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
     )
   }
 
-  public getCredentialOfferByCTransactionCode(cCode:string): Observable<CredentialOfferResponse> {
+  public fetchCredentialOfferByCTransactionCode(cCode:string): Observable<CredentialOfferResponse> {
     if (!cCode) {
       console.error("No c-transaction code was found, can't refresh QR.");
       const message = this.translate.instant("error.credentialOffer.invalid-url");
@@ -340,7 +340,7 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
       return throwError(()=>new Error('Invalid credential offer parameters'));
     }
 
-    return this.credentialProcedureService.getCredentialOfferByCTransactionCode(cCode)
+    return this.credentialProcedureService.fetchCredentialOfferByCTransactionCode(cCode)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
       )

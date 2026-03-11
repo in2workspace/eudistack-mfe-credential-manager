@@ -1,6 +1,2 @@
 {
-    "sonarlint.connectedMode.project": {
-        "connectionId": "in2workspace",
-        "projectKey": "in2workspace_eudistack-mfe-credential-manager"
-    }
 }

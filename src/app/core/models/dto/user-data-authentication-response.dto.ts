@@ -49,5 +49,6 @@ export interface UserDataAuthenticationResponse {
   mandatee?: MandateeIdTokenClaim;
   mandator?: MandatorIdTokenClaim;
   power?: PowerIdTokenClaim[];
+  role?: import('../enums/auth-rol-type.enum').RoleType;
   vc_json?: string;
 }

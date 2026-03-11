@@ -44,7 +44,7 @@ describe('IssuanceRequestFactoryService', () => {
       formData: { mandatee: {} }
     } as unknown as IssuanceRawCredentialPayload;
 
-    expect(() => service.createCredentialRequest(payload, 'UNKNOWN' as any, 'cfg', 'jwt_vc_json'))
+    expect(() => service.createCredentialRequest(payload, 'UNKNOWN' as any, 'cfg'))
       .toThrow(TypeError);
   });
 
@@ -65,7 +65,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg');
     const emp = result.payload as IssuanceLEARCredentialEmployeePayload;
 
     expect(emp.mandator.commonName).toBe('Beta Common');
@@ -90,7 +90,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -136,7 +136,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');
@@ -175,7 +175,7 @@ describe('IssuanceRequestFactoryService', () => {
         mandatee: { id: 'M1', email: 'emp@example.com' }
       }
     };
-    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg');
     expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
     expect(result.payload).toEqual({});
   });
@@ -190,7 +190,7 @@ describe('IssuanceRequestFactoryService', () => {
         keys: { didKey: 'did:test' }
       }
     };
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
     expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
     expect(result.payload).toEqual({});
   });
@@ -215,7 +215,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
 
     expect(authServiceMock.getMandateeEmail).toHaveBeenCalled();
     expect(result.email).toBe('mandatee@example.com');
@@ -239,7 +239,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     };
 
-    expect(() => service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', 'jwt_vc_json'))
+    expect(() => service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg'))
       .toThrow('Could not get valid mandator on behalf');
   });
 

@@ -190,7 +190,7 @@ export class CredentialDetailsService {
   }
 
   private loadCredentialDetails(): Observable<CredentialProcedureDetails> {
-    return this.credentialProcedureService.getCredentialProcedureById(this.procedureId$());
+    return this.credentialProcedureService.fetchCredentialProcedureById(this.procedureId$());
   }
 
 private evaluateSchemaValues(

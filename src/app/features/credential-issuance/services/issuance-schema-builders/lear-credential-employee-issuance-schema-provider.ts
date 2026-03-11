@@ -41,7 +41,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
           type: 'group',
           display: 'pref_side',
           staticValueGetter: () => {
-            const mandator = this.authService.getRawMandator();
+            const mandator = this.authService.extractRawMandator();
             return mandator ? { mandator: convertToOrderedArray(mandator, employeeMandatorFieldsOrder) } : null;
           },
           groupFields: [

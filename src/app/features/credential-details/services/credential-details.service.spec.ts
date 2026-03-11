@@ -17,7 +17,7 @@ describe('CredentialDetailsService', () => {
   let service: CredentialDetailsService;
 
   const mockCredentialProcedureService = {
-    getCredentialProcedureById: jest.fn(),
+    fetchCredentialProcedureById: jest.fn(),
   };
 
   const mockCredentialActionsService = {

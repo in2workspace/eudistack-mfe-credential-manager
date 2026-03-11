@@ -20,7 +20,7 @@ export class CredentialIssuerMetadataService {
     );
   }
 
-  getConfigurationsForType(type: IssuanceCredentialType): Array<{ configId: string; format: string }> {
+  findConfigurationsForType(type: IssuanceCredentialType): Array<{ configId: string; format: string }> {
     const configs = this.configurations();
     if (!configs) return [];
     return Object.entries(configs)
