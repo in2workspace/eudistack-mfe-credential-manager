@@ -5,13 +5,14 @@ import { ActivatedRoute } from '@angular/router';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { CredentialDetailsService } from './services/credential-details.service';
 import { CredentialDetailsComponent } from './credential-details.component';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { mockCredentialStatus } from 'src/app/core/mocks/details.mock';
-import { CredentialType, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
+import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 
 describe('CredentialDetailsComponent', () => {
@@ -23,7 +24,8 @@ describe('CredentialDetailsComponent', () => {
     lifeCycleStatus$: ReturnType<typeof signal<LifeCycleStatus | undefined>>;
     credentialValidFrom$: ReturnType<typeof signal<string>>;
     credentialValidUntil$: ReturnType<typeof signal<string>>;
-    credentialType$: ReturnType<typeof signal<CredentialType | undefined>>;
+    credentialType$: ReturnType<typeof signal<string | undefined>>;
+    credentialDisplayName$: ReturnType<typeof signal<string>>;
     credentialStatus$: ReturnType<typeof signal<any>>;
     lifeCycleStatusClass$: ReturnType<typeof signal<StatusClass | undefined>>;
     email$: ReturnType<typeof signal<any>>;
@@ -35,6 +37,7 @@ describe('CredentialDetailsComponent', () => {
     showSignCredentialButton$: ReturnType<typeof signal<boolean>>;
     showRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
     enableRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
+    showWithdrawCredentialButton$: ReturnType<typeof signal<boolean>>;
     showActionsButtonsContainer$: ReturnType<typeof signal<boolean>>;
 
     setProcedureId: jest.Mock;
@@ -47,7 +50,8 @@ describe('CredentialDetailsComponent', () => {
   beforeEach(async () => {
     const validFrom$ = signal('2025-01-01');
     const validUntil$ = signal('2025-12-31');
-    const type$ = signal<CredentialType | undefined>('learcredential.employee.w3c.4');
+    const type$ = signal<string | undefined>('learcredential.employee.w3c.1');
+    const displayName$ = signal<string>('LEAR Credential Employee');
     const lifecycle$ = signal<LifeCycleStatus | undefined>('EXPIRED');
     const statusClass$ = signal<StatusClass | undefined>('status-expired');
     const mainModel$ = signal<EvaluatedExtendedDetailsField[] | undefined>([{ key: 'foo', type: 'key-value', value: 'bar' }]);
@@ -56,6 +60,7 @@ describe('CredentialDetailsComponent', () => {
     const showSign$ = signal<boolean>(true);
     const showRev$ = signal<boolean>(false);
     const enableRev$ = signal<boolean>(true);
+    const showWithdraw$ = signal<boolean>(false);
     const showActions$ = signal<boolean>(true);
     const credentialStatus$ = signal(mockCredentialStatus);
     const procedureId$ = signal<string>('the-id');
@@ -68,6 +73,7 @@ describe('CredentialDetailsComponent', () => {
       credentialValidFrom$: validFrom$,
       credentialValidUntil$: validUntil$,
       credentialType$: type$,
+      credentialDisplayName$: displayName$,
       credentialStatus$: credentialStatus$,
       lifeCycleStatusClass$: statusClass$,
       email$: email$,
@@ -79,6 +85,7 @@ describe('CredentialDetailsComponent', () => {
       showSignCredentialButton$: showSign$,
       showRevokeCredentialButton$: showRev$,
       enableRevokeCredentialButton$: enableRev$,
+      showWithdrawCredentialButton$: showWithdraw$,
       showActionsButtonsContainer$: showActions$,
 
       setProcedureId: jest.fn(),
@@ -101,6 +108,7 @@ describe('CredentialDetailsComponent', () => {
         TranslateModule.forRoot()
       ],
       providers: [
+        provideNoopAnimations(),
         { provide: ActivatedRoute, useValue: fakeActivatedRoute }
       ]
     })
@@ -126,7 +134,7 @@ describe('CredentialDetailsComponent', () => {
   it('should initialize main signals correctly', () => {
     expect(component.credentialValidFrom$()).toBe('2025-01-01');
     expect(component.credentialValidUntil$()).toBe('2025-12-31');
-    expect(component.credentialType$()).toBe('learcredential.employee.w3c.4');
+    expect(component.credentialType$()).toBe('learcredential.employee.w3c.1');
     expect(component.lifeCycleStatus$()).toBe('EXPIRED');
     expect(component.credentialStatus$()).toEqual(mockCredentialStatus);
     expect(component.email$()).toEqual('subject@email.com');

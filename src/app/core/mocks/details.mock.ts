@@ -32,7 +32,7 @@ export const mockCredentialEmployee: any = {
     jti: 'jti-emp-123',
     vc: {
       id: 'cred-emp-id',
-      type: ['learcredential.employee.w3c.4'],
+      type: ['learcredential.employee.w3c.1'],
       description: 'Mock employee credential',
       credentialStatus: {
         ...mockCredentialStatus
@@ -101,7 +101,7 @@ export const mockCredentialMachine: any = {
     jti: 'jti-mac-123',
     vc: {
       id: 'cred-machine-id',
-      type: ['learcredential.machine.w3c.3'],
+      type: ['learcredential.machine.w3c.1'],
       description: 'Mock machine credential',
       credentialStatus: {
         ...mockCredentialStatus

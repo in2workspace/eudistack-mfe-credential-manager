@@ -6,11 +6,11 @@ import { Router } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialActionsService } from './credential-actions.service';
+import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { of } from 'rxjs';
 import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
-import * as actionHelpers from 'src/app/features/credential-details/helpers/actions-helpers';
 import { LEARCredentialEmployee, LEARCredential } from 'src/app/core/models/entity/lear-credential';
 
 describe('CredentialDetailsService', () => {
@@ -23,6 +23,11 @@ describe('CredentialDetailsService', () => {
   const mockCredentialActionsService = {
     openSignCredentialDialog: jest.fn(),
     openRevokeCredentialDialog: jest.fn(),
+  };
+
+  const mockMetadataService = {
+    loadMetadata: jest.fn().mockReturnValue(of(void 0)),
+    getConfigurationById: jest.fn().mockReturnValue(undefined),
   };
 
   const mockDialogWrapperService = {
@@ -40,6 +45,7 @@ describe('CredentialDetailsService', () => {
         FormBuilder,
         { provide: CredentialProcedureService, useValue: mockCredentialProcedureService },
         { provide: CredentialActionsService, useValue: mockCredentialActionsService },
+        { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
         { provide: DialogWrapperService, useValue: mockDialogWrapperService },
         { provide: Router, useValue: mockRouter },
       ],
@@ -68,52 +74,6 @@ describe('CredentialDetailsService', () => {
   expect((service as any).getProcedureId()).toBe('proc-123');
 });
 
-  describe('getters', () => {
-    it('getCredential ha de retornar vc quan existeix', () => {
-    const fakeCred: any = {
-      id: 'cred-1',
-      type: [],
-      description: '',
-      credentialSubject: {
-        mandate: {
-          id: '',
-          life_span: { start: '', end: '' },
-          mandatee: {} as any,
-          mandator: {} as any,
-          power: [],
-          signer: {} as any,
-        }
-      },
-      validFrom: '',
-      validUntil: '',
-      credentialStatus: {
-        id: 'st-1',
-        type: 'RevocationList2020Status',
-        statusPurpose: 'revocation',
-        statusListIndex: 0,
-        statusListCredential: ['list-1']
-      }
-    };
-    (service as any).credentialProcedureDetails$ = () => ({ credential: { vc: fakeCred } });
-    expect((service as any).getCredential()).toBe(fakeCred);
-  });
-
-  it('getCredential ha de retornar undefined quan no hi ha dades', () => {
-    (service as any).credentialProcedureDetails$ = () => undefined;
-    expect((service as any).getCredential()).toBeUndefined();
-  });
-
-  // it('getCredentialId ha de retornar l’id de la credencial', () => {
-  //   const fake: LEARCredential = { id: 'cred-42' } as any;
-  //   (service as any).getCredential = () => fake;
-  //   expect((service as any).getCredentialId()).toBe('cred-42');
-  // });
-
-  // it('getCredentialId ha de retornar undefined si no hi ha credential', () => {
-  //   (service as any).getCredential = () => undefined;
-  //   expect((service as any).getCredentialId()).toBeUndefined();
-  // });
-  });
 
 
   describe('evaluateFieldMain', () => {
@@ -220,11 +180,12 @@ describe('CredentialDetailsService', () => {
       expect(service.credentialStatus$()).toBe('VALID');
     });
 
-    it('credentialType$() delegates to getCredentialType()', () => {
-      const spy = jest.spyOn(service as any, 'getCredentialType').mockReturnValue('THE‑TYPE');
-      service.credentialProcedureDetails$.set({ credential: { vc: mockVc } } as any);
-      expect(service.credentialType$()).toBe('THE‑TYPE');
-      expect(spy).toHaveBeenCalledWith(mockVc);
+    it('credentialType$() returns credential_configuration_id from details', () => {
+      service.credentialProcedureDetails$.set({
+        credential_configuration_id: 'learcredential.employee.w3c.1',
+        credential: { vc: mockVc }
+      } as any);
+      expect(service.credentialType$()).toBe('learcredential.employee.w3c.1');
     });
 
     it('showSideTemplateCard$() is false by default, true when sideViewModel has items', () => {
@@ -253,15 +214,11 @@ describe('CredentialDetailsService', () => {
 
      it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
       service.credentialProcedureDetails$.set({
-        lifeCycleStatus: 'ANY',
-        credential: { vc: { type: ['learcredential.employee.w3c.4'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
+        lifeCycleStatus: 'PEND_SIGNATURE',
+        credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
       } as any);
 
-      jest.spyOn(actionHelpers, 'statusHasSignCredentialButton').mockReturnValue(true);
-      jest.spyOn(actionHelpers, 'credentialTypeHasSignCredentialButton').mockReturnValue(true);
-
       expect(service.showSignCredentialButton$()).toBe(true);
-
       expect(service.showActionsButtonsContainer$()).toBe(true);
     });
 });

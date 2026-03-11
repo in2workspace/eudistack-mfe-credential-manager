@@ -14,7 +14,7 @@ import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
 import { CredentialDetailsService } from './services/credential-details.service';
 import { PortalModule } from '@angular/cdk/portal';
-import { CredentialStatus, CredentialType, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
+import { CredentialStatus, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { Observable } from 'rxjs';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
@@ -44,7 +44,8 @@ export class CredentialDetailsComponent implements OnInit {
   //Credential data
   public credentialValidFrom$: Signal<string>;
   public credentialValidUntil$: Signal<string>
-  public credentialType$: Signal<CredentialType | undefined>;
+  public credentialType$: Signal<string | undefined>;
+  public credentialDisplayName$: Signal<string>;
   public lifeCycleStatus$: Signal<LifeCycleStatus | undefined>;
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public email$: Signal<string | undefined>;
@@ -77,6 +78,7 @@ export class CredentialDetailsComponent implements OnInit {
     this.credentialValidFrom$ = this.detailsService.credentialValidFrom$;
     this.credentialValidUntil$ = this.detailsService.credentialValidUntil$;
     this.credentialType$ = this.detailsService.credentialType$;
+    this.credentialDisplayName$ = this.detailsService.credentialDisplayName$;
     this.lifeCycleStatus$ = this.detailsService.lifeCycleStatus$;
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;

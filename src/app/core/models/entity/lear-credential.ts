@@ -34,16 +34,9 @@ export interface LEARCredentialJwtPayload {
   jti: string;
 }
 
-export const CREDENTIAL_TYPES_ARRAY = [
-  'learcredential.employee.w3c.4',
-  'learcredential.employee.sd.1',
-  'learcredential.machine.w3c.3',
-  'learcredential.machine.sd.1',
-  'gx.labelcredential.w3c.1',
-  'VerifiableCertification',
-] as const;
-export type CredentialType = typeof CREDENTIAL_TYPES_ARRAY[number];
-export type ExtendedCredentialType =  'VerifiableCredential' | CredentialType;
+/** Credential configuration ID (e.g. "learcredential.employee.w3c.1"). Resolved dynamically from issuer metadata. */
+export type CredentialType = string;
+export type ExtendedCredentialType = string;
 
 // todo: use generics
 export type LEARCredential =

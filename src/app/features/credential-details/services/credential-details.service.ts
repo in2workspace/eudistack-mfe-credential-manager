@@ -3,14 +3,14 @@ import { forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { CredentialStatus, CredentialType, LEARCredential, CredentialProcedureDetails, LifeCycleStatus, CREDENTIAL_TYPES_ARRAY } from 'src/app/core/models/entity/lear-credential';
+import { CredentialStatus, LEARCredential, CredentialProcedureDetails, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { EvaluatedExtendedDetailsField, ViewModelSchema, EvaluatedViewModelSchema, DetailsField, EvaluatedDetailsField, CustomDetailsField, EvaluatedExtendedDetailsGroupField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, credentialTypeHasSignCredentialButton, statusHasRevokeCredentialButton, credentialTypeHasRevokeCredentialButton, statusHasWithdrawCredentialButton, credentialTypeHasWithdrawCredentialButton } from '../helpers/actions-helpers';
+import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 
@@ -35,9 +35,22 @@ export class CredentialDetailsService {
   public credentialValidUntil$ = computed<string>(() => {
     return this.credential$()?.validUntil ?? '';
   });
-  public credentialType$ = computed<CredentialType | undefined>(() => {
-    const vc = this.credential$();
-    return vc ? this.getCredentialType(vc) : undefined;
+  public credentialType$ = computed<string | undefined>(() => {
+    return this.credentialProcedureDetails$()?.credential_configuration_id;
+  });
+  public credentialDisplayName$ = computed<string>(() => {
+    const configId = this.credentialType$();
+    if (!configId) return '';
+    const config = this.metadataService.getConfigurationById(configId);
+    const displays = config?.credential_metadata?.display;
+    if (displays?.length) {
+      const lang = navigator?.language?.split('-')[0] ?? 'en';
+      return displays.find(d => d.locale === lang)?.name
+        ?? displays.find(d => d.locale === 'en')?.name
+        ?? displays[0].name
+        ?? configId;
+    }
+    return configId;
   });
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
@@ -53,28 +66,14 @@ export class CredentialDetailsService {
   );
 
   //BUTTONS
-  public showSignCredentialButton$ = computed<boolean>(()=>{
-    const type = this.credentialType$();
+  public showSignCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-
-    return !!(
-      status
-      && statusHasSignCredentialButton(status)
-      && type 
-      && credentialTypeHasSignCredentialButton(type)
-    );
+    return !!status && statusHasSignCredentialButton(status);
   });
 
-  public showRevokeCredentialButton$ = computed<boolean>(()=>{
-    const type = this.credentialType$();
+  public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-
-    return !!(
-      status
-      && statusHasRevokeCredentialButton(status)
-      && type 
-      && credentialTypeHasRevokeCredentialButton(type)
-    );
+    return !!status && statusHasRevokeCredentialButton(status);
   });
 
   public enableRevokeCredentialButton$ = computed<boolean>(() => {
@@ -82,15 +81,8 @@ export class CredentialDetailsService {
   });
 
   public showWithdrawCredentialButton$ = computed<boolean>(() => {
-    const type = this.credentialType$();
     const status = this.lifeCycleStatus$();
-
-    return !!(
-      status
-      && statusHasWithdrawCredentialButton(status)
-      && type
-      && credentialTypeHasWithdrawCredentialButton(type)
-    );
+    return !!status && statusHasWithdrawCredentialButton(status);
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
@@ -197,23 +189,8 @@ export class CredentialDetailsService {
     return this.procedureId$();
   }
 
-  private getCredential(): LEARCredential | undefined{
-    return this.credentialProcedureDetails$()?.credential?.vc;
-  }
-
   private loadCredentialDetails(): Observable<CredentialProcedureDetails> {
     return this.credentialProcedureService.getCredentialProcedureById(this.procedureId$());
-  }
-
-  private getCredentialType(cred: LEARCredential): CredentialType{
-    // W3C credentials have type[] array; SD-JWT credentials have vct string
-    const vct = (cred as any).vct as string | undefined;
-    if(vct && CREDENTIAL_TYPES_ARRAY.includes(vct as CredentialType)){
-      return vct as CredentialType;
-    }
-    const type = cred.type?.find((t): t is CredentialType => CREDENTIAL_TYPES_ARRAY.includes(t as CredentialType));
-    if(!type) throw new Error('No credential type found in credential');
-    return type;
   }
 
 private evaluateSchemaValues(

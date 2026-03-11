@@ -12,17 +12,17 @@ describe('CredentialIssuerMetadataService', () => {
   const mockMetadata = {
     credential_issuer: 'https://example.com',
     credential_configurations_supported: {
-      'learcredential.employee.w3c.4': {
+      'learcredential.employee.w3c.1': {
         format: 'jwt_vc_json',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.4'] }
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
       },
       'LEARCredentialEmployee_mdoc': {
         format: 'mso_mdoc',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.4'] }
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
       },
-      'learcredential.machine.w3c.3': {
+      'learcredential.machine.w3c.1': {
         format: 'jwt_vc_json',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.machine.w3c.3'] }
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.machine.w3c.1'] }
       },
       'OtherCredential': {
         format: 'jwt_vc_json'
@@ -83,28 +83,26 @@ describe('CredentialIssuerMetadataService', () => {
 
   describe('getConfigurationsForType()', () => {
     it('should return empty array when metadata not loaded', () => {
-      const result = service.getConfigurationsForType('learcredential.employee.w3c.4');
+      const result = service.getConfigurationsForType('learcredential.employee');
       expect(result).toEqual([]);
     });
 
     it('should return matching configurations after metadata loaded', (done) => {
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('learcredential.employee.w3c.4');
+        const result = service.getConfigurationsForType('learcredential.employee');
         expect(result).toHaveLength(2);
-        expect(result).toContainEqual({ configId: 'learcredential.employee.w3c.4', format: 'jwt_vc_json' });
+        expect(result).toContainEqual({ configId: 'learcredential.employee.w3c.1', format: 'jwt_vc_json' });
         expect(result).toContainEqual({ configId: 'LEARCredentialEmployee_mdoc', format: 'mso_mdoc' });
         done();
       });
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
     });
 
-    it('should return empty array for type with no matching configurations', (done) => {
+    it('should return matching configurations for machine type', (done) => {
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('learcredential.employee.w3c.4' as any);
-        // OtherCredential has no credential_definition, so won't match
-        const machineResult = service.getConfigurationsForType('learcredential.machine.w3c.3');
+        const machineResult = service.getConfigurationsForType('learcredential.machine');
         expect(machineResult).toHaveLength(1);
-        expect(machineResult[0]).toEqual({ configId: 'learcredential.machine.w3c.3', format: 'jwt_vc_json' });
+        expect(machineResult[0]).toEqual({ configId: 'learcredential.machine.w3c.1', format: 'jwt_vc_json' });
         done();
       });
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
@@ -118,7 +116,7 @@ describe('CredentialIssuerMetadataService', () => {
         }
       };
       service.loadMetadata().subscribe(() => {
-        const result = service.getConfigurationsForType('learcredential.employee.w3c.4');
+        const result = service.getConfigurationsForType('learcredential.employee');
         expect(result).toEqual([]);
         done();
       });
