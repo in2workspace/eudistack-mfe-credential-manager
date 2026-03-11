@@ -344,7 +344,8 @@ export class CredentialIssuanceService {
     const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
       data: dialogData,
       autoFocus: false,
-      width: '420px'
+      width: '420px',
+      panelClass: 'dialog-custom'
     });
     return dialogRef.afterClosed();
   }
