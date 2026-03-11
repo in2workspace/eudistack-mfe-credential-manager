@@ -190,7 +190,13 @@ private getMandatorFromCredentialData(credentialData: IssuanceRawCredentialPaylo
 }
     
 private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPayload): Record<string, string>{
-  return credentialData.formData['mandatee'];
+  return this.stripNullValues(credentialData.formData['mandatee']);
+}
+
+private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v != null)
+  ) as Record<string, string>;
 }
 
   private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
