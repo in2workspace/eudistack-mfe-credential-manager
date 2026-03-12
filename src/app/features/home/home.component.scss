@@ -4,7 +4,7 @@
   min-height: 100vh;
 
   .container-nav {
-    background: var(--brand-primary, var(--brand-primary, var(--primary-color)));
+    background: var(--primary-color);
     padding: 1rem 0;
     background-repeat: no-repeat;
     background-position: 50% 0;
@@ -13,7 +13,7 @@
     .main-header {
       position: fixed;
       top: 0;
-      background: var(--brand-primary, var(--brand-primary, var(--primary-color)));
+      background: var(--primary-color);
       padding: 3rem 0;
       margin-top: 0;
       width: 100%;
@@ -39,7 +39,7 @@
           }
 
           span {
-            color: var(--brand-primary-contrast, #ffffff);
+            color: var(--primary-contrast-color, #ffffff);
             font-weight: bold;
             font-size: 1.2rem;
             padding-bottom: 3.5px;
@@ -56,7 +56,7 @@
             margin-left: 1rem;
 
             .nav-link {
-              color: var(--custom-primary-contrast-color);
+              color: var(--secondary-color);
               text-decoration: none;
               font-size: large;
               cursor: pointer;
@@ -68,7 +68,7 @@
   }
 
   .cover {
-    color: var(--brand-primary-contrast, var(--brand-primary-contrast, var(--primary-contrast-color)));
+    color: var(--primary-contrast-color);
     text-align: center;
     padding-top: 10rem;
     padding-bottom: 5rem;
@@ -86,12 +86,12 @@
       }
 
       .btn-primary {
-        background-color: var(--secondary-color);
-        color: var(--secondary-contrast-color);
+        background-color: var(--primary-color);
+        color: #ffffff;
         padding: 0.5rem 1rem;
         font-size: 1rem;
         border-radius: 0.375rem;
-        border: none;
+        border: 2px solid var(--secondary-color);
         box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
         display: inline-flex;
         align-items: center;
@@ -103,7 +103,7 @@
         &:active {
           transform: scale(0.95);
           box-shadow: 0 5px 8px rgba(0, 0, 0, 0.2);
-          background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+          opacity: 0.9;
         }
 
         .arrow-right {
@@ -111,7 +111,7 @@
           width: 20px;
           align-items: center;
           text-align: center;
-          fill: var(--secondary-contrast-color);
+          fill: #ffffff;
         }
 
 
@@ -153,8 +153,8 @@
       }
     }
     &:nth-of-type(2n) {
-      background-color: var(--brand-primary, var(--primary-color));
-      color: var(--brand-primary-contrast, var(--primary-contrast-color));
+      background-color: var(--primary-color);
+      color: var(--primary-contrast-color);
       font-size: calc(1.275rem + 0.3vw);
       margin-top: 0;
       font-weight: 500;
@@ -182,10 +182,11 @@
           align-items: center;
           justify-content: center;
           text-align: center;
-          background-color: var(--secondary-color);
-          color: var(--secondary-contrast-color);
+          background-color: var(--primary-color);
+          color: #ffffff;
           padding: 0.5rem 1rem;
           border-radius: 0.375rem;
+          border: 2px solid var(--secondary-color);
           text-decoration: none;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
           cursor: pointer;
@@ -200,7 +201,7 @@
           height: 0;
           border-left: 2vw solid transparent;
           border-right: 2vw solid transparent;
-          border-top: 2vw solid var(--brand-primary, var(--primary-color));
+          border-top: 2vw solid var(--primary-color);
           transform: translateX(-50%);
           z-index: 3;
         }
@@ -246,7 +247,7 @@
           display: block;
         }
         .btn-verifier {
-          background-color: var(--brand-primary, var(--primary-color));
+          background-color: var(--primary-color);
           color: #fff;
           padding: 0.5rem 1rem;
           font-size: 1rem;
@@ -266,8 +267,8 @@
   }
 
   .main-footer {
-    background-color: var(--brand-secondary, #132153);
-    color: var(--brand-secondary-contrast, #ffffff);
+    background-color: var(--primary-color, #132153);
+    color: var(--primary-contrast-color, #ffffff);
     padding: 3rem 0;
     margin-top: auto;
     display: flex;
@@ -283,7 +284,7 @@
     }
 
     a {
-      color: var(--brand-secondary-contrast, #ffffff);
+      color: var(--primary-contrast-color, #ffffff);
       text-decoration: none;
       cursor: pointer;
       &:hover {

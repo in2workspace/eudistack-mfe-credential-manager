@@ -1,13 +1,15 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
 
+export type IssuanceDelivery = 'email' | 'ui';
+
+export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
+
 export interface IssuanceLEARCredentialRequestDto {
-    schema: string,
-    format: string,
-    payload: IssuanceLEARCredentialPayload,
-    operation_mode: string,
-    validity_period?: number,
-    response_uri?: string,
-    email?: string
+    credential_configuration_id: string;
+    payload: IssuanceLEARCredentialPayload;
+    delivery: IssuanceDelivery;
+    email: string;
+    grant_type: IssuanceGrantType;
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
@@ -41,4 +43,8 @@ export interface IssuanceLEARCredentialEmployeePayload {
       mandatee: EmployeeMandatee;
       mandator: EmployeeMandator;
       power: IssuancePayloadPower[];
+}
+
+export interface IssuanceResponseDto {
+    credential_offer_uri?: string;
 }

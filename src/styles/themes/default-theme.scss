@@ -89,7 +89,7 @@ $warn-palette: (
 );
 
 $custom-primary: mat.m2-define-palette($action-palette);
-$custom-accent: mat.m2-define-palette(mat.$m2-pink-palette, A200, A100, A400);
+$custom-accent: mat.m2-define-palette($action-palette);
 $custom-warn: mat.m2-define-palette($warn-palette);
 
 $font-stack: 'Blinker', 'Arial', sans-serif;
@@ -113,4 +113,40 @@ $custom-theme: mat.m2-define-light-theme((
 
 :root {
   @include mat.all-component-themes($custom-theme);
+}
+
+// ── Override Material primary → tenant --primary-color ───────────
+// Material bakes static colours at build time; these runtime overrides
+// ensure buttons, radios, selects and checkboxes follow the tenant brand.
+
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-color: var(--primary-color);
+  --mdc-filled-button-label-text-color: var(--primary-contrast-color, #fff);
+  --mdc-protected-button-container-color: var(--primary-color);
+  --mdc-protected-button-label-text-color: var(--primary-contrast-color, #fff);
+}
+
+.mat-mdc-icon-button.mat-primary {
+  --mdc-icon-button-icon-color: var(--primary-color);
+}
+
+.mat-mdc-radio-button .mdc-radio {
+  --mdc-radio-selected-icon-color: var(--primary-color);
+  --mdc-radio-selected-hover-icon-color: var(--primary-color);
+  --mdc-radio-selected-pressed-icon-color: var(--primary-color);
+  --mdc-radio-selected-focus-icon-color: var(--primary-color);
+}
+
+.mat-mdc-form-field.mat-focused .mdc-floating-label {
+  color: var(--primary-color) !important;
+}
+
+.mat-mdc-form-field.mat-focused .mdc-line-ripple::after {
+  border-bottom-color: var(--primary-color) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: var(--primary-color) !important;
 }

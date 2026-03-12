@@ -99,21 +99,12 @@ export class ThemeService {
     const root = document.documentElement.style;
 
     // ── Layer 1: Brand tokens (header/footer only) ──
-    root.setProperty('--brand-primary', theme.branding.primaryColor);
-    root.setProperty('--brand-primary-contrast', theme.branding.primaryContrastColor);
-    root.setProperty('--brand-secondary', theme.branding.secondaryColor);
-    root.setProperty('--brand-secondary-contrast', theme.branding.secondaryContrastColor);
-
-    const rgb = this.hexToRgb(theme.branding.primaryColor);
-    if (rgb) {
-      root.setProperty('--brand-primary-rgb', `${rgb.r} ${rgb.g} ${rgb.b}`);
-    }
-
-    // Backwards compatibility — components still using old names will keep working
     root.setProperty('--primary-color', theme.branding.primaryColor);
     root.setProperty('--primary-contrast-color', theme.branding.primaryContrastColor);
     root.setProperty('--secondary-color', theme.branding.secondaryColor);
     root.setProperty('--secondary-contrast-color', theme.branding.secondaryContrastColor);
+
+    const rgb = this.hexToRgb(theme.branding.primaryColor);
     if (rgb) {
       root.setProperty('--primary-color-rgb', `${rgb.r} ${rgb.g} ${rgb.b}`);
     }

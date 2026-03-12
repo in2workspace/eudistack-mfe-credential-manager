@@ -24,6 +24,8 @@ import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
+import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
+import { RouterLink } from '@angular/router';
 
 
 
@@ -57,7 +59,9 @@ import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
         SubjectComponent,
         TranslatePipe,
         CapitalizePipe,
-        AddPrefixPipe
+        AddPrefixPipe,
+        SkeletonLoaderComponent,
+        RouterLink
     ],
     animations: [
         trigger('openClose', [
@@ -84,6 +88,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public isSearchByOrganizationFilterChecked = false;
   public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
   public searchPlaceholder = CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT;
+  public isLoading = true;
 
   public hideSearchBar: boolean = true;
 
@@ -167,14 +172,17 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   private loadCredentialData(): void {
+    this.isLoading = true;
     this.credentialProcedureService.fetchCredentialProcedures()
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {
         this.dataSource.data = this.statusService.addStatusClass(data.credential_procedures);
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error fetching credentials for table', error);
+        this.isLoading = false;
       }
     });
   }

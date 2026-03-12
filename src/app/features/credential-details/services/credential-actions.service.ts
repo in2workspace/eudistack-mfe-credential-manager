@@ -17,24 +17,6 @@ export class CredentialActionsService {
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
 
-  // SEND REMINDER (NOTIFICATION)
-  public openSendReminderDialog(procedureId: string): void {
-  
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialDetails.sendReminderConfirm.title"),
-      message: this.translate.instant("credentialDetails.sendReminderConfirm.message"),
-      confirmationType: 'async',
-      status: 'default'
-    };
-
-    const sendReminderAfterConfirm = (): Observable<boolean> => {
-      return this.sendReminder(procedureId);
-    }
-
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, sendReminderAfterConfirm);
-
-  }
-
   // SIGN CREDENTIAL
   public openSignCredentialDialog(procedureId: string): void {
 
@@ -54,22 +36,38 @@ export class CredentialActionsService {
 
   // REVOKE CREDENTIAL
 
-  public openRevokeCredentialDialog(procedureId: string, credentialList: string): void {
+  public openRevokeCredentialDialog(issuanceId: string): void {
 
     const dialogData: DialogData = {
       title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
       confirmationType: 'async',
+      status: 'default'
+    };
+
+    const revokeCredentialAfterConfirm = (): Observable<boolean> => {
+      return this.revokeCredential(issuanceId);
+    }
+
+    this.dialog.openDialogWithCallback(DialogComponent, dialogData, revokeCredentialAfterConfirm);
+  }
+
+  // WITHDRAW CREDENTIAL
+
+  public openWithdrawCredentialDialog(procedureId: string): void {
+
+    const dialogData: DialogData = {
+      title: this.translate.instant("credentialDetails.withdrawCredentialConfirm.title"),
+      message: this.translate.instant("credentialDetails.withdrawCredentialConfirm.message"),
+      confirmationType: 'async',
       status: 'error'
     };
 
-
-
-    const revokeCredentialAfterConfirm = (): Observable<boolean> => {
-      return this.revokeCredential(procedureId, credentialList);
+    const withdrawCredentialAfterConfirm = (): Observable<boolean> => {
+      return this.withdrawCredential(procedureId);
     }
-    
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, revokeCredentialAfterConfirm);
+
+    this.dialog.openDialogWithCallback(DialogComponent, dialogData, withdrawCredentialAfterConfirm);
   }
 
   //executes backend callback by CREDENTIAL ID
@@ -127,15 +125,6 @@ export class CredentialActionsService {
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
   }
 
-  private sendReminder(procedureId: string): Observable<boolean> {
-    return this.executeActionByProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.sendReminder(procedureId),
-      "credentialDetails.sendReminderSuccess.title",
-      "credentialDetails.sendReminderSuccess.message"
-    );
-  }
-  
   private signCredential(procedureId: string): Observable<boolean> {
     return this.executeActionByProcedureId(
       procedureId,
@@ -145,13 +134,22 @@ export class CredentialActionsService {
     );
   }
 
-  private revokeCredential(procedureId: string, credentialList: string): Observable<boolean> {
-   
+  private revokeCredential(issuanceId: string): Observable<boolean> {
+
     return this.executeActionByCredentialProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.revokeCredential(procedureId, credentialList),
+      issuanceId,
+      (id) => this.credentialProcedureService.revokeCredential(id),
       "credentialDetails.revokeCredentialSuccess.title",
       "credentialDetails.revokeCredentialSuccess.message"
+    );
+  }
+
+  private withdrawCredential(procedureId: string): Observable<boolean> {
+    return this.executeActionByProcedureId(
+      procedureId,
+      (procedureId) => this.credentialProcedureService.withdrawCredential(procedureId),
+      "credentialDetails.withdrawCredentialSuccess.title",
+      "credentialDetails.withdrawCredentialSuccess.message"
     );
   }
 }

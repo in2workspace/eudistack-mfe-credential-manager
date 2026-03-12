@@ -39,10 +39,12 @@ export class LEARCredentialDataNormalizer {
     }
 
     const types = Array.isArray(normalized?.type) ? normalized.type : [];
-    const isEmployee = types.includes('LEARCredentialEmployee');
-    const isMachine  = types.includes('LEARCredentialMachine');
+    const vct = typeof normalized?.vct === 'string' ? normalized.vct : '';
+    const isEmployee = types.some((t: string) => t.startsWith('learcredential.employee.')) || vct.startsWith('learcredential.employee.');
+    const isMachine  = types.some((t: string) => t.startsWith('learcredential.machine.')) || vct.startsWith('learcredential.machine.');
     const isVerCert  = types.includes('VerifiableCertification');
 
+    this.normalizeStatusIfNeeded(normalized);
     this.normalizeMandateIfNeeded(normalized, isEmployee, isMachine);
     this.normalizeCertificationIfNeeded(normalized, isVerCert);
 
@@ -55,8 +57,17 @@ export class LEARCredentialDataNormalizer {
     isMachine: boolean
   ) {
     if (!(isEmployee || isMachine)) return;
+
+    // SD-JWT "direct" strategy: mandator/mandatee/power live at the credential
+    // root instead of under credentialSubject. Wrap them so downstream code
+    // (schemas, detail views) can use the uniform W3C path.
+    this.wrapTopLevelFlatStructure(data);
+
     const sub = data.credentialSubject;
-    if (!sub || !('mandate' in sub)) return;
+    if (!sub) return;
+
+    this.wrapFlatMandateStructure(sub);
+    if (!sub.mandate) return;
 
     sub.mandate = { ...sub.mandate };
     if (isEmployee && sub.mandate.mandatee) {
@@ -68,6 +79,61 @@ export class LEARCredentialDataNormalizer {
     if (Array.isArray(sub.mandate.power)) {
       sub.mandate.power = sub.mandate.power.map((p: RawPower) => this.normalizePower(p));
     }
+  }
+
+  /**
+   * SD-JWT credentials with "direct" credential_subject_strategy place
+   * mandator/mandatee/power at the credential root (no credentialSubject).
+   * This creates the credentialSubject.mandate wrapper so downstream code
+   * can use the uniform W3C path.
+   */
+  private wrapTopLevelFlatStructure(data: any): void {
+    if (data.credentialSubject || !('mandator' in data || 'mandatee' in data || 'power' in data)) return;
+    data.credentialSubject = {
+      mandate: {
+        ...(data.mandator ? { mandator: data.mandator } : {}),
+        ...(data.mandatee ? { mandatee: data.mandatee } : {}),
+        ...(data.power ? { power: data.power } : {}),
+      }
+    };
+    delete data.mandator;
+    delete data.mandatee;
+    delete data.power;
+  }
+
+  /**
+   * SD-JWT credentials place mandator/mandatee/power directly on credentialSubject
+   * instead of nesting them under a `mandate` object (W3C format).
+   * This wraps the flat structure so downstream code works uniformly.
+   */
+  private wrapFlatMandateStructure(sub: any): void {
+    if ('mandate' in sub || !('mandator' in sub || 'mandatee' in sub || 'power' in sub)) return;
+    sub.mandate = {
+      ...(sub.mandator ? { mandator: sub.mandator } : {}),
+      ...(sub.mandatee ? { mandatee: sub.mandatee } : {}),
+      ...(sub.power ? { power: sub.power } : {}),
+    };
+    delete sub.mandator;
+    delete sub.mandatee;
+    delete sub.power;
+  }
+
+  /**
+   * SD-JWT credentials use `status.status_list` (Token Status List) instead of
+   * the W3C `credentialStatus` envelope. This maps the Token Status List structure
+   * to the unified CredentialStatus interface so downstream code works uniformly.
+   */
+  private normalizeStatusIfNeeded(data: any): void {
+    if (data.credentialStatus) return;
+    const sl = data.status?.status_list;
+    if (!sl?.uri) return;
+    data.credentialStatus = {
+      id: `${sl.uri}#${sl.idx}`,
+      type: 'TokenStatusListEntry',
+      statusPurpose: 'revocation',
+      statusListIndex: String(sl.idx),
+      statusListCredential: sl.uri,
+    };
   }
 
   private normalizeCertificationIfNeeded(
@@ -102,17 +168,6 @@ private normalizeEmployeeMandator(mandator: RawEmployeeMandator): EmployeeMandat
   return copy as EmployeeMandator;
 }
 
-
-private normalizeMandatorEmail(m: RawEmployeeMandator): RawEmployeeMandator {
-  const copy: any = { ...m };
-
-  if (copy.email == null && typeof copy.emailAddress === 'string') {
-    copy.email = copy.emailAddress;
-  }
-  delete copy.emailAddress;
-
-  return copy;
-}
 
 private normalizePower(data: RawPower): Power {
   const action = data.action   ?? data.tmf_action ?? '';

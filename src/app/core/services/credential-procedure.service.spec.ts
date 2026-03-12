@@ -31,7 +31,6 @@ describe('CredentialProcedureService', () => {
   let routerSpy: jest.Mocked<Router>;
   const apiUrl = `${environment.server_url}${API_PATH.SAVE_CREDENTIAL}`;
   const proceduresURL = `${environment.server_url}${API_PATH.PROCEDURES}`;
-  const notificationUrl = `${environment.server_url}${API_PATH.NOTIFICATION}`;
   const credentialOfferUrl = `${environment.server_url}${API_PATH.CREDENTIAL_OFFER}`;
   const signCredentialUrl = `${environment.server_url}${API_PATH.SIGN_CREDENTIAL}`;
   const revokeCredentialUrl = `${environment.server_url}${API_PATH.REVOKE}`;
@@ -66,7 +65,7 @@ describe('CredentialProcedureService', () => {
 
   it('should fetch credential procedures successfully', () => {
     const mockData: CredentialProceduresResponse = {credential_procedures:[
-      { credential_procedure: {procedure_id: '1', status: {} as LifeCycleStatus, subject: 'John Doe', updated: '2023-01-01', credential_type: 'LEAR_CREDENTIAL_EMPLOYEE', email: "aa@bb.com", organization_identifier: "VATES-000000"}},
+      { credential_procedure: {procedure_id: '1', status: {} as LifeCycleStatus, subject: 'John Doe', updated: '2023-01-01', credential_type: 'learcredential.employee.w3c.1', email: "aa@bb.com", organization_identifier: "VATES-000000"}},
       { credential_procedure: { procedure_id: '2', status: {} as LifeCycleStatus, subject: 'Jane Doe', updated: '2023-01-02', credential_type: 'VERIFIABLE_CERTIFICATION', email: "aa@bb.com", organization_identifier: "VATES-000000"}}
     ]};
 
@@ -103,7 +102,7 @@ describe('CredentialProcedureService', () => {
     service.fetchCredentialProcedureById(procedureId).subscribe(data => {
       expect(data).toEqual(mockData);
     });
-    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}/credential-decoded`);
+    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockData);
   });
@@ -119,14 +118,13 @@ describe('CredentialProcedureService', () => {
       }
     );
 
-    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}/credential-decoded`);
+    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}`);
     req.flush('404 error', errorResponse);
   });
 
   // todo test it('should save credential procedure successfully', () => {
   //   const IssuanceRequestMock:IssuanceLEARCredentialRequestDto = {
-  //     schema: "LEARCredentialEmployee",
-  //     format: "jwt_vc_json",
+  //     credential_configuration_id: "learcredential.employee.w3c.1",
   //     payload: {
   //       mandatee: {
   //         firstName: '',
@@ -142,7 +140,8 @@ describe('CredentialProcedureService', () => {
   //         country: ''
   //       }, power: []
   //     },
-  //     operation_mode: "S"
+  //     delivery: "email",
+  //     email: "test@example.com"
   //   };
   //   service.createProcedure(IssuanceRequestMock).subscribe(data => {
   //     expect(data).toEqual(IssuanceRequestMock);
@@ -155,8 +154,7 @@ describe('CredentialProcedureService', () => {
 
   // todo test it('should handle error when saving credential procedure', () => {
   //   const IssuanceRequestMock:IssuanceLEARCredentialRequestDto = {
-  //     schema: "LEARCredentialEmployee",
-  //     format: "jwt_vc_json",
+  //     credential_configuration_id: "learcredential.employee.w3c.1",
   //     payload: {
   //       mandatee: {
   //         firstName: '',
@@ -172,7 +170,8 @@ describe('CredentialProcedureService', () => {
   //         country: ''
   //       }, power: []
   //     },
-  //     operation_mode: "S"
+  //     delivery: "email",
+  //     email: "test@example.com"
   //   };
   //   const errorResponse = new HttpErrorResponse({
   //     error: '500 error',
@@ -191,18 +190,6 @@ describe('CredentialProcedureService', () => {
   //   req.flush('500 error', errorResponse);
   // });
 
-  it('should send reminder successfully', () => {
-    const procedureId = '1';
-
-    service.sendReminder(procedureId).subscribe(data => {
-      expect(data).toBeTruthy();
-    });
-
-    const req = httpMock.expectOne(`${notificationUrl}/${procedureId}`);
-    expect(req.request.method).toBe('POST');
-    req.flush({});
-  });
-
   it('should sign credential successfully', () => {
     const procedureId = '1';
 
@@ -215,20 +202,13 @@ describe('CredentialProcedureService', () => {
     req.flush({});
   });
 
-  it('should handle error when sending reminder, revoking or signing credential', () => {
+  it('should handle error when revoking or signing credential', () => {
     const procedureId = '1';
     const errorResponse = new HttpErrorResponse({
       error: '500 error',
       status: 500,
       statusText: 'Server Error'
     });
-
-    service.sendReminder(procedureId).subscribe(
-      data => fail('should have failed with 500 error'),
-      (error: string) => {
-        expect(error).toContain('Server-side error: 500');
-      }
-    );
 
     service.signCredential(procedureId).subscribe(
       data => fail('should have failed with 500 error'),
@@ -238,9 +218,8 @@ describe('CredentialProcedureService', () => {
     );
 
 
-    const credentialId = '1234';
-    const listId = '1111';
-    service.revokeCredential(credentialId, listId).subscribe(
+    const issuanceId = '1234';
+    service.revokeCredential(issuanceId).subscribe(
       data => fail('should have failed with 500 error'),
       (error: string) => {
         expect(error).toContain('Server-side error: 500');
@@ -278,7 +257,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const mockResponse = JSON.stringify({ qrCode: 'mockQRCode' });
 
-    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe('mockQRCode');
     });
 
@@ -291,7 +270,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const mockResponse = JSON.stringify({});
 
-    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe(mockResponse);
     });
 
@@ -304,7 +283,7 @@ describe('CredentialProcedureService', () => {
     const transactionCode = 'abc123';
     const invalidJSONResponse = 'Invalid JSON string';
 
-    service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
+    service.getCredentialOfferByTransactionCode(transactionCode).subscribe(data => {
       expect(data).toBe(invalidJSONResponse);
     });
 
@@ -377,16 +356,16 @@ describe('get credential offer by c-code', () => {
     });
   });
 
-  it('should handle sendReminder error for server mail error', () => {
+  it('should handle signCredential error for server mail error', () => {
     const procedureId = '1';
     const errorResponse = new HttpErrorResponse({
       error: { status: 503, message: 'Error during communication with the mail server' },
       status: 503,
       statusText: 'Service Unavailable',
-      url: notificationUrl
+      url: signCredentialUrl
     });
 
-    service.sendReminder(procedureId).subscribe({
+    service.signCredential(procedureId).subscribe({
       next: () => fail('should have failed with a server mail error'),
       error: (err: HttpErrorResponse) => {
         expect(translateSpy.instant).toHaveBeenCalledWith('error.serverMailError.message');
@@ -396,7 +375,7 @@ describe('get credential offer by c-code', () => {
       }
     });
 
-    const req = httpMock.expectOne(`${notificationUrl}/${procedureId}`);
+    const req = httpMock.expectOne(`${signCredentialUrl}/${procedureId}`);
     expect(req.request.method).toBe('POST');
     req.flush(
       { message: 'Error during communication with the mail server' },
@@ -447,12 +426,12 @@ describe('get credential offer by c-code', () => {
     });
   });
 
-  describe('fetchCredentialOfferByTransactionCode', () => {
+  describe('getCredentialOfferByTransactionCode', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const transactionCode = 'test-code';
       const error = new HttpErrorResponse({ status: 404, error: {} });
   
-      service.fetchCredentialOfferByTransactionCode(transactionCode).subscribe({
+      service.getCredentialOfferByTransactionCode(transactionCode).subscribe({
         next: () => fail('Expected error'),
         error: err => {
           expect(err).toBe(error);

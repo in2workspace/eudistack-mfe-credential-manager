@@ -4,6 +4,7 @@ import { RouterOutlet, ActivatedRoute, Router, NavigationEnd } from '@angular/ro
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
 import { DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
 import { By } from '@angular/platform-browser';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { of, Subject } from 'rxjs';
@@ -41,6 +42,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       schemas: [NO_ERRORS_SCHEMA],
       imports: [
+        NoopAnimationsModule,
         RouterOutlet,
         TranslateModule.forRoot(),
         AppComponent,

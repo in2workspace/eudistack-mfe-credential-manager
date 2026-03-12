@@ -58,10 +58,6 @@
   },
   "credentialDetails": {
     "title": "Credential details",
-    "gx:LabelCredential": "Label Credential",
-    "LEARCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialMachine": "LEAR Credential Machine",
-    "VerifiableCertification": "Verifiable Certification",
     "DRAFT": "DRAFT",
     "PEND_SIGNATURE": "TO SIGN",
     "WITHDRAWN": "WITHDRAWN",
@@ -106,6 +102,10 @@
     "scope": "scope",
     "standard": "standard",
     "basic": "basic",
+    "credentialStatus": "credential status",
+    "statusListCredential": "status list",
+    "statusListIndex": "status list index",
+    "statusPurpose": "status purpose",
     "gx:labelLevel": "Label Level",
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
@@ -114,15 +114,8 @@
     "gx:validatedCriteriaReference": "Validated Criteria Reference",
     "digestSri": "digest SRI",
     "revoke": "revoke",
+    "withdraw": "withdraw",
     "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
-    "sendReminderConfirm": {
-      "title": "Send Reminder",
-      "message": "Are you sure you want to send a reminder for this credential offer?"
-    },
-    "sendReminderSuccess": {
-      "title": "Reminder sent successfully",
-      "message": "The credential offer reminder was sent successfully."
-    },
     "signCredentialConfirm": {
       "title": "Sign Credential",
       "message": "Are you sure you want to sign this credential?"
@@ -138,6 +131,14 @@
     "revokeCredentialSuccess": {
       "title": "Credential revoked",
       "message": "The credential was revoked successfully."
+    },
+    "withdrawCredentialConfirm": {
+      "title": "Withdraw Credential",
+      "message": "Are you sure you want to withdraw this credential?"
+    },
+    "withdrawCredentialSuccess": {
+      "title": "Credential withdrawn",
+      "message": "The credential was withdrawn successfully."
     }
   },
   "credentialOffer": {
@@ -192,10 +193,17 @@
       "last-page": "Last page",
       "of": "of"
     },
-    "LABEL_CREDENTIAL": "Label Credential",
-    "LEAR_CREDENTIAL_EMPLOYEE": "LEAR Credential Employee",
-    "LEAR_CREDENTIAL_MACHINE": "LEAR Credential Machine",
-    "VERIFIABLE_CERTIFICATION": "Verifiable Certification"
+    "learcredential.employee.w3c.1": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.1": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
+    "gx.labelcredential.w3c.1": "Label Credential",
+    "VerifiableCertification": "Verifiable Certification",
+    "emptyState": {
+      "title": "No credentials yet",
+      "description": "Create your first credential to get started.",
+      "action": "Create Credential"
+    }
   },
   "power": {
     "power": "Powers",
@@ -222,10 +230,8 @@
   },
   "credentialIssuance": {
     "title": "LEAR Credential Issuance",
-    "learCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialEmployee":"LEAR Credential Employee",
-    "learCredentialMachine": "LEAR Credential Machine",
-    "LEARCredentialMachine":"LEAR Credential Machine",
+    "learcredential.employee": "LEAR Credential Employee",
+    "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Create credential",
       "message": "Are you sure you want to create this credential?",
@@ -266,6 +272,22 @@
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (coming soon)"
     },
+    "grantType": {
+      "label": "Grant type",
+      "authorizationCode": "Authorization Code",
+      "preAuthorizedCode": "Pre-Authorized Code"
+    },
+    "delivery": {
+      "label": "Delivery method",
+      "email": "Email",
+      "qrCode": "QR Code"
+    },
+    "credential-offer-dialog": {
+      "title": "Credential created",
+      "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",
+      "copy": "Copy link",
+      "copied": "Copied!"
+    },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",
     "unloadAlert": "Are you sure yo want to leave? Your progress will be lost."
   },
@@ -289,7 +311,7 @@
     },
     "serverMailError": {
       "title": "Mail server error",
-      "message": "There was an error with the mail server. Please try again later to send a send reminder, if problem persist contact support team."
+      "message": "There was an error with the mail server. Please try again later. If the problem persists, contact the support team."
     },
     "form":{
       "required": "This field is required.",

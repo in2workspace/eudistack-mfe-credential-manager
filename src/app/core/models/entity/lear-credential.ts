@@ -2,9 +2,12 @@
 // todo: use generics
 export interface CredentialProcedureDetails {
   procedure_id: string;
+  credential_configuration_id?: string;
   lifeCycleStatus: LifeCycleStatus;
-  credential: LEARCredentialJwtPayload; 
+  credential: LEARCredentialJwtPayload;
   email: string;
+  /** Raw credential before normalization — used by DynamicSchemaBuilder for format-aware path resolution */
+  rawVc?: any;
 }
 
 export type LifeCycleStatus = 'WITHDRAWN' | 'VALID' | 'EXPIRED' | 'PEND_DOWNLOAD' | 'PEND_SIGNATURE' | 'DRAFT' | 'ISSUED' | 'REVOKED';
@@ -31,9 +34,9 @@ export interface LEARCredentialJwtPayload {
   jti: string;
 }
 
-export const CREDENTIAL_TYPES_ARRAY = ['LEARCredentialEmployee', 'LEARCredentialMachine', 'VerifiableCertification', 'gx:LabelCredential'] as const;
-export type CredentialType = typeof CREDENTIAL_TYPES_ARRAY[number];
-export type ExtendedCredentialType =  'VerifiableCredential' | CredentialType;
+/** Credential configuration ID (e.g. "learcredential.employee.w3c.1"). Resolved dynamically from issuer metadata. */
+export type CredentialType = string;
+export type ExtendedCredentialType = string;
 
 // todo: use generics
 export type LEARCredential =

@@ -1,29 +1,53 @@
 // STATUS STYLES — uses semantic tokens from ThemeService
 .status-ellipse {
-    padding: 5px 10px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
     min-width: 100px;
     border-radius: var(--radius-full, 9999px);
-    color: white;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
     text-align: center;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
   }
 
   .status-default {
-    background-color: var(--status-neutral, #6B7280);
+    color: var(--status-neutral, #6B7280);
+    background-color: rgba(107, 114, 128, 0.1);
   }
 
   .status-valid {
-    background-color: var(--status-success, #059669);
+    color: var(--status-success, #059669);
+    background-color: rgba(5, 150, 105, 0.1);
   }
 
   .status-expired {
-    background-color: var(--status-error, #DC2626);
+    color: var(--status-error, #DC2626);
+    background-color: rgba(220, 38, 38, 0.1);
   }
 
   .status-revoked {
-    background-color: var(--status-error, #DC2626);
+    color: var(--status-error, #DC2626);
+    background-color: rgba(220, 38, 38, 0.1);
   }
 
   .status-draft {
-    background-color: var(--status-warning, #D97706);
+    color: var(--status-warning, #D97706);
+    background-color: rgba(217, 119, 6, 0.1);
+  }
+
+  .status-withdrawn {
+    color: var(--status-neutral, #6B7280);
+    background-color: rgba(107, 114, 128, 0.1);
   }

@@ -55,7 +55,8 @@ describe('DialogWrapperService', () => {
       data: {
         ...dialogData
       },
-      autoFocus: false
+      autoFocus: false,
+      panelClass: 'dialog-custom'
     });
 
     expect(result).toBe(mockDialogRef);
@@ -84,8 +85,9 @@ describe('DialogWrapperService', () => {
 
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
-      autoFocus:false,
-      disableClose: false
+      autoFocus: false,
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
     expect(callback).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalled();
@@ -118,8 +120,9 @@ describe('DialogWrapperService', () => {
 
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
-      autoFocus:false,
-      disableClose: false
+      autoFocus: false,
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
     expect(dialogRefMock.componentInstance.updateData).toHaveBeenCalledWith({ loadingData: dialogData.loadingData});
     expect(loaderServiceMock.updateIsLoading).toHaveBeenCalledWith(true);
@@ -150,8 +153,9 @@ describe('DialogWrapperService', () => {
 
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
-      autoFocus:false,
-      disableClose: false
+      autoFocus: false,
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
     expect(callback).toHaveBeenCalled();
     expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -180,7 +184,8 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: true  
+      disableClose: true,
+      panelClass: 'dialog-custom'
     });
   });
   
@@ -243,7 +248,8 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: false
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
     expect(callback).toHaveBeenCalled();
     expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -278,7 +284,8 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: false
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
 
     expect(cancelCallback).toHaveBeenCalled();
@@ -311,7 +318,8 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: false
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
 
     expect(cancelCallback).toHaveBeenCalled();
@@ -338,7 +346,8 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: false
+      disableClose: false,
+      panelClass: 'dialog-custom'
     });
   
     expect(result).toBe(dialogRefMock);
@@ -387,9 +396,9 @@ describe('DialogWrapperService', () => {
     expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: true,
+      disableClose: true
     });
-  
+
     expect(resultRef).toBe(dialogRefMock);
     expect(validateForm).toHaveBeenCalledWith(embeddedInstanceMock);
     expect(getFormValue).toHaveBeenCalledWith(embeddedInstanceMock);

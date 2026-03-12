@@ -3,15 +3,13 @@ import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } f
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, take, tap } from 'rxjs/operators';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
-import { Power, EmployeeMandator, LEARCredentialEmployee } from "../models/entity/lear-credential";
+import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { LEARCredentialDataNormalizer } from 'src/app/features/credential-details/utils/lear-credential-data-normalizer';
 import { environment } from 'src/environments/environment';
 
-// todo restore auth.service.spec.ts
 @Injectable({
   providedIn: 'root'
 })
@@ -23,13 +21,12 @@ export class AuthService{
   private readonly mandatorSubject = new BehaviorSubject<EmployeeMandator | null>(null);
   private readonly mandateeEmailSubject = new BehaviorSubject<string>('');
   private readonly nameSubject = new BehaviorSubject<string>('');
-  private readonly normalizer = new LEARCredentialDataNormalizer();
   public readonly roleType: WritableSignal<RoleType> = signal(RoleType.LEAR);
-  
-  
-  
+
+
+
   private userPowers: Power[] = [];
-  
+
   private readonly authEvents = inject(PublicEventsService);
   private readonly destroy$ = inject(DestroyRef);
   private readonly oidcSecurityService = inject(OidcSecurityService);
@@ -46,9 +43,9 @@ export class AuthService{
         takeUntilDestroyed(this.destroy$),
         filter((e) =>
           [
-            EventTypes.SilentRenewStarted, 
+            EventTypes.SilentRenewStarted,
             EventTypes.SilentRenewFailed,
-            EventTypes.IdTokenExpired, 
+            EventTypes.IdTokenExpired,
             EventTypes.TokenExpired
           ].includes(e.type)
         )
@@ -85,7 +82,7 @@ export class AuthService{
                       globalThis.removeEventListener('online', onlineHandler);
                     }
                   });
-                
+
               };
 
               globalThis.addEventListener('online', onlineHandler);
@@ -111,7 +108,8 @@ export class AuthService{
       this.isAuthenticatedSubject.next(isAuthenticated);
 
       if (isAuthenticated) {
-        if(this.resolveRole(userData) != RoleType.LEAR)  throw new Error('Error Role. '+ this.resolveRole(userData));
+        const role = this.resolveRole(userData);
+        if(role != null && role !== RoleType.LEAR)  throw new Error('Error Role. '+ role);
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
@@ -146,38 +144,23 @@ export class AuthService{
     this.oidcSecurityService.authorize();
   }
 
-  private handleUserAuthentication(userData: UserDataAuthenticationResponse): void {
-     //Future work: when accessing with certificate update signal role LER and  handleCertificateLogin
-      try{
-        const learCredential = this.extractVCFromUserData(userData);
-        const normalizedCredential = this.normalizer.normalizeLearCredential(learCredential) as LEARCredentialEmployee;
-        this.handleVCLogin(normalizedCredential);
-      }
-      catch(error){
-        console.error(error);
-      }
-  }
-
   private resolveRole(userData: UserDataAuthenticationResponse): RoleType | null {
-    if (userData.role) {
-      return userData.role;
-    }
-    // Derive role from credential type when not provided as explicit claim
-    try {
-      const vc = this.extractVCFromUserData(userData);
-      const types: string[] = (vc as unknown as Record<string, unknown>)?.['type'] as string[] ?? [];
-      if (types.includes('LEARCredentialEmployee')) {
-        return RoleType.LEAR;
-      }
-      if (types.includes('LEARCredentialMachine')) {
-        return RoleType.LER;
-      }
-    } catch {
-      // VC not available yet
-    }
-    return null;
+    return userData.role ?? null;
   }
 
+  private handleUserAuthentication(userData: UserDataAuthenticationResponse): void {
+    try {
+      if (userData.mandator && userData.mandatee) {
+        this.handleFlatClaimsLogin(userData);
+      } else {
+        console.error('Missing mandatee or mandator claims in ID Token.');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // Future work: certificate-based login
   private handleCertificateLogin(userData: UserDataAuthenticationResponse): void {
     const certData = this.extractDataFromCertificate(userData);
     this.mandatorSubject.next(certData);
@@ -196,25 +179,23 @@ export class AuthService{
       }
   }
 
-  private handleVCLogin(learCredential: LEARCredentialEmployee): void {
-    const mandator = {
-      id: learCredential.credentialSubject.mandate.mandator.id,
-      organizationIdentifier: learCredential.credentialSubject.mandate.mandator.organizationIdentifier,
-      organization: learCredential.credentialSubject.mandate.mandator.organization,
-      commonName: learCredential.credentialSubject.mandate.mandator.commonName,
-      email: learCredential.credentialSubject.mandate.mandator.email,
-      serialNumber: learCredential.credentialSubject.mandate.mandator.serialNumber,
-      country: learCredential.credentialSubject.mandate.mandator.country
+  private handleFlatClaimsLogin(userData: UserDataAuthenticationResponse): void {
+    const mandator: EmployeeMandator = {
+      id: userData.mandator!.id,
+      organizationIdentifier: userData.mandator!.organizationIdentifier,
+      organization: userData.mandator!.organization,
+      commonName: userData.mandator!.commonName,
+      email: userData.mandator!.email,
+      serialNumber: userData.mandator!.serialNumber,
+      country: userData.mandator!.country
     };
-    
     this.mandatorSubject.next(mandator);
-  
-    const email = learCredential.credentialSubject.mandate.mandatee.email;
-    const name = learCredential.credentialSubject.mandate.mandatee.firstName + ' ' + learCredential.credentialSubject.mandate.mandatee.lastName;
-  
+
+    const email = userData.mandatee!.email ?? '';
+    const name = (userData.mandatee!.firstName ?? '') + ' ' + (userData.mandatee!.lastName ?? '');
     this.mandateeEmailSubject.next(email);
-    this.nameSubject.next(name);
-    this.userPowers = this.extractUserPowers(learCredential);
+    this.nameSubject.next(name.trim());
+    this.userPowers = this.extractPowersFromClaims(userData);
   }
 
   public hasPower(tmfFunction: string, tmfAction: string): boolean {
@@ -253,23 +234,12 @@ export class AuthService{
     this.oidcSecurityService.checkAuth()
       .pipe(take(1))
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
-        if (isAuthenticated ) {
-          let learCredential: LEARCredentialEmployee;
-          try {
-            learCredential = this.extractVCFromUserData(userData);
-          } catch {
+        if (isAuthenticated) {
+          this.userPowers = this.extractPowersFromClaims(userData);
+          const hasOnboardingPower = this.hasPower('Onboarding', 'Execute');
+          if (!hasOnboardingPower) {
             this.logout();
             return;
-          }
-
-          if(learCredential!=null){
-            const normalizedCredential = this.normalizer.normalizeLearCredential(learCredential) as LEARCredentialEmployee;
-            this.userPowers = this.extractUserPowers(normalizedCredential);
-            const hasOnboardingPower = this.hasPower('Onboarding','Execute');
-            if (!hasOnboardingPower) {
-              this.logout();
-              return;
-            }
           }
 
           this.isAuthenticatedSubject.next(true);
@@ -299,22 +269,10 @@ export class AuthService{
     return this.nameSubject.asObservable()
   }
 
-  private extractVCFromUserData(userData: UserDataAuthenticationResponse): LEARCredentialEmployee {
-    // Support both 'vc' (object, from Keycloak) and 'vc_json' (string, from verifier)
-    if (userData?.vc) {
-      return userData.vc;
-    }
-    const vcJson = (userData as unknown as Record<string, unknown>)?.['vc_json'];
-    if (vcJson && typeof vcJson === 'string') {
-      return JSON.parse(vcJson) as LEARCredentialEmployee;
-    }
-    throw new Error('VC claim error: neither vc nor vc_json found in userData.');
-  }
-
-  private extractUserPowers(learCredential: LEARCredentialEmployee): Power[] {
+  private extractPowersFromClaims(userData: UserDataAuthenticationResponse): Power[] {
     try {
-      return learCredential?.credentialSubject.mandate.power || [];
-    } catch (error) {
+      return (userData.power as Power[]) ?? [];
+    } catch {
       return [];
     }
   }

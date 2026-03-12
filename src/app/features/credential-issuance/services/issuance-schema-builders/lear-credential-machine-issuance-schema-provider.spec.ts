@@ -57,7 +57,7 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
   });
 
   describe('getSchema()', () => {
-    let schema: CredentialIssuanceTypedViewModelSchema<"LEARCredentialMachine">;
+    let schema: CredentialIssuanceTypedViewModelSchema<"learcredential.machine">;
 
     beforeEach(() => {
       schema = service.getSchema();

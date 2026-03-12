@@ -2,6 +2,8 @@ import { LEARCredential, LEARCredentialJwtPayload, LifeCycleStatus } from "../en
 
 export interface CredentialProcedureDetailsResponse {
   procedure_id: string;
+  credential_configuration_id?: string;
   lifeCycleStatus: LifeCycleStatus;
   credential: LEARCredentialJwtPayload | LEARCredential;
+  email?: string;
 }

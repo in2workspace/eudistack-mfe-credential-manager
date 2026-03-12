@@ -17,7 +17,6 @@ describe('CredentialActionsService', () => {
 
   beforeEach(() => {
     mockCredentialProcedure = {
-      sendReminder: jest.fn().mockReturnValue(of(void 0)),
       signCredential: jest.fn().mockReturnValue(of(void 0)),
       revokeCredential: jest.fn().mockReturnValue(of(void 0)),
     };
@@ -65,19 +64,6 @@ describe('CredentialActionsService', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('openSendReminderDialog', () => {
-    it('should call openDialogWithCallback with correct DialogData', () => {
-      const procedureId = 'proc123';
-      service.openSendReminderDialog(procedureId);
-      expect(mockDialog.openDialogWithCallback).toHaveBeenCalledTimes(1);
-      const [_, dialogData, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
-      expect(dialogData.title).toBe('credentialDetails.sendReminderConfirm.title');
-      expect(dialogData.message).toBe('credentialDetails.sendReminderConfirm.message');
-      expect(dialogData.confirmationType).toBe('async');
-      expect(typeof callback).toBe('function');
-    });
-  });
-
   describe('openSignCredentialDialog', () => {
     it('should call openDialogWithCallback with correct DialogData', () => {
       const procedureId = 'proc456';
@@ -93,9 +79,8 @@ describe('CredentialActionsService', () => {
 
   describe('openRevokeCredentialDialog', () => {
     it('should call openDialogWithCallback with correct DialogData', () => {
-      const credentialId = 'cred789';
-      const credentialList = 'listXYZ';
-      service.openRevokeCredentialDialog(credentialId, credentialList);
+      const issuanceId = 'cred789';
+      service.openRevokeCredentialDialog(issuanceId);
       expect(mockDialog.openDialogWithCallback).toHaveBeenCalledTimes(1);
       const [_, dialogData, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
       expect(dialogData.title).toBe('credentialDetails.revokeCredentialConfirm.title');
@@ -165,14 +150,7 @@ describe('CredentialActionsService', () => {
     // });
   });
 
-  describe('sendReminder, signCredential, revokeCredential', () => {
-    it('sendReminder should call credentialProcedureService.sendReminder', done => {
-      (service as any).sendReminder('xyz').subscribe(() => {
-        expect(mockCredentialProcedure.sendReminder).toHaveBeenCalledWith('xyz');
-        done();
-      });
-    });
-
+  describe('signCredential, revokeCredential', () => {
     it('signCredential should call credentialProcedureService.signCredential', done => {
       (service as any).signCredential('uvw').subscribe(() => {
         expect(mockCredentialProcedure.signCredential).toHaveBeenCalledWith('uvw');
@@ -181,8 +159,8 @@ describe('CredentialActionsService', () => {
     });
 
     it('revokeCredential should call credentialProcedureService.revokeCredential', done => {
-      (service as any).revokeCredential('abc', 'list1').subscribe(() => {
-        expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc', 'list1');
+      (service as any).revokeCredential('abc').subscribe(() => {
+        expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc');
         done();
       });
     });

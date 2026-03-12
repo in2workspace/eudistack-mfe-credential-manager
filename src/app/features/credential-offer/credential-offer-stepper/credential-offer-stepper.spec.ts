@@ -21,7 +21,7 @@ describe('Credential Offer Stepper', () => {
   let component: CredentialOfferStepperComponent;
   let fixture: ComponentFixture<CredentialOfferStepperComponent>;
   let procedureService: {
-    fetchCredentialOfferByTransactionCode: jest.Mock,
+    getCredentialOfferByTransactionCode: jest.Mock,
     fetchCredentialOfferByCTransactionCode: jest.Mock
   };
   let configService: any
@@ -48,7 +48,7 @@ describe('Credential Offer Stepper', () => {
       logoff: jest.fn()
     };
     procedureService = {
-        fetchCredentialOfferByTransactionCode: jest.fn(),
+        getCredentialOfferByTransactionCode: jest.fn(),
         fetchCredentialOfferByCTransactionCode: jest.fn()
     }
 
@@ -571,10 +571,10 @@ describe('getCredentialOffer', () => {
     };
 
     jest.spyOn(component, 'offerParams$').mockReturnValue(mockOffer);
-    procedureService.fetchCredentialOfferByTransactionCode.mockReturnValue(of(mockResponse));
+    procedureService.getCredentialOfferByTransactionCode.mockReturnValue(of(mockResponse));
 
     component.getCredentialOffer().subscribe((result) => {
-      expect(procedureService.fetchCredentialOfferByTransactionCode).toHaveBeenCalledWith(mockTransactionCode);
+      expect(procedureService.getCredentialOfferByTransactionCode).toHaveBeenCalledWith(mockTransactionCode);
       expect(result).toEqual(mockResponse);
     });
   });
@@ -606,12 +606,12 @@ describe('fetchCredentialOfferByTransactionCode', () => {
     const mockTransactionCode = 'validTransactionCode';
     const mockResponse = { credential_offer_uri: 'offer uri', c_transaction_code: 'Test c' };
 
-    procedureService.fetchCredentialOfferByTransactionCode.mockReturnValue(of(mockResponse));
+    procedureService.getCredentialOfferByTransactionCode.mockReturnValue(of(mockResponse));
 
     const result$ = component.fetchCredentialOfferByTransactionCode(mockTransactionCode);
 
     result$.subscribe((response) => {
-      expect(procedureService.fetchCredentialOfferByTransactionCode)
+      expect(procedureService.getCredentialOfferByTransactionCode)
         .toHaveBeenCalledWith(mockTransactionCode);
       expect(response).toEqual(mockResponse);
       done();

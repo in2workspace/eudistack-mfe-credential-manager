@@ -8,18 +8,18 @@ import { IssuancePowerComponent } from "../../components/power/issuance-power.co
 import { baseNameLengthValidatorEntries, nameValidatorEntries } from "src/app/shared/validators/credential-issuance/validators-entries";
 
 @Injectable({ providedIn: 'root' })
-export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceSchemaProvider<'LEARCredentialEmployee'> {
+export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceSchemaProvider<'learcredential.employee'> {
 
   private readonly authService = inject(AuthService);
   private readonly countriesService = inject(CountryService);
 
 
-  public getSchema(): CredentialIssuanceTypedViewModelSchema<'LEARCredentialEmployee'> {
+  public getSchema(): CredentialIssuanceTypedViewModelSchema<'learcredential.employee'> {
     
     const countriesSelectorOptions = this.countriesService.getCountriesAsSelectorOptions();
     
     return {
-      type: 'LEARCredentialEmployee',
+      type: 'learcredential.employee',
       schema: [
 
         // MANDATEE

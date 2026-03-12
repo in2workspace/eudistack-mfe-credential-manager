@@ -97,7 +97,7 @@ describe('LEARCredentialDataNormalizer', () => {
 
       const input: LEARCredentialEmployee = {
         id: '1',
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.1'],
         description: 'desc',
         credentialStatus: {} as CredentialStatus,
         credentialSubject: {
@@ -142,7 +142,7 @@ describe('LEARCredentialDataNormalizer', () => {
       const input: LEARCredentialMachine = {
         id: '2',
         credentialStatus: {} as CredentialStatus,
-        type: ['LEARCredentialMachine'],
+        type: ['learcredential.machine.w3c.1'],
         description: 'desc',
         credentialSubject: {
           mandate: {
@@ -174,7 +174,7 @@ describe('LEARCredentialDataNormalizer', () => {
 
     it('does not change power if it is not an array', () => {
       const input: any = {
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.1'],
         credentialSubject: { mandate: { power: 'no-array' } }
       };
 
@@ -232,12 +232,52 @@ describe('LEARCredentialDataNormalizer', () => {
 
     it('does not throw if mandate is missing in credentialSubject for LEARCredentialEmployee', () => {
       const input: any = {
-        type: ['LEARCredentialEmployee'],
+        type: ['learcredential.employee.w3c.1'],
         credentialSubject: { somethingElse: 123 }
       };
       expect(() => normalizer.normalizeLearCredential(input)).not.toThrow();
       const out = normalizer.normalizeLearCredential(input);
       expect(out.credentialSubject).toHaveProperty('somethingElse', 123);
+    });
+
+    it('wraps flat SD-JWT employee structure into mandate object', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        credentialSubject: {
+          mandator: { id: 'did:elsi:VATES-123', commonName: 'John', email: 'john@example.com', organization: 'Org', organizationIdentifier: 'VATES-123', serialNumber: '123', country: 'ES' },
+          mandatee: { first_name: 'Alice', last_name: 'Wonder', email: 'alice@example.com' },
+          power: [{ action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate).toBeDefined();
+      expect(out.credentialSubject.mandate.mandator.commonName).toBe('John');
+      expect(out.credentialSubject.mandate.mandatee.firstName).toBe('Alice');
+      expect(out.credentialSubject.mandate.mandatee.lastName).toBe('Wonder');
+      expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
+      expect(out.credentialSubject.mandator).toBeUndefined();
+      expect(out.credentialSubject.mandatee).toBeUndefined();
+      expect(out.credentialSubject.power).toBeUndefined();
+    });
+
+    it('wraps flat SD-JWT machine structure into mandate object', () => {
+      const input: any = {
+        vct: 'learcredential.machine.sd.1',
+        credentialSubject: {
+          mandator: { id: 'did:elsi:VATES-456', commonName: 'Corp' },
+          mandatee: { id: 'did:key:abc', domain: 'example.com', ipAddress: '10.0.0.1' },
+          power: [{ tmf_action: 'Execute', tmf_domain: 'DOME', tmf_function: 'Onboarding', tmf_type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate).toBeDefined();
+      expect(out.credentialSubject.mandate.mandatee.domain).toBe('example.com');
+      expect(out.credentialSubject.mandate.power[0].action).toBe('Execute');
+      expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
     });
   });
 });

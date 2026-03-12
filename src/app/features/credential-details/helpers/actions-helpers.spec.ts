@@ -1,46 +1,7 @@
-import { CredentialStatus, CredentialType, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
-import { credentialTypeHasSendReminderButton, credentialTypeHasSignCredentialButton, statusHasSendReminderlButton, statusHasSignCredentialButton } from './actions-helpers';
+import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
+import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton } from './actions-helpers';
 
 describe('Credential Helpers', () => {
-  describe('credentialTypeHasSendReminderButton', () => {
-    const allowed: CredentialType[] = ['LEARCredentialEmployee', 'gx:LabelCredential', 'LEARCredentialMachine'];
-    const disallowed: any = 'SomeOtherType';
-
-    it.each(allowed)('returns true for allowed type %s', (type) => {
-      expect(credentialTypeHasSendReminderButton(type)).toBeTruthy()
-    });
-
-    it('returns false for a disallowed type', () => {
-      expect(credentialTypeHasSendReminderButton(disallowed)).toBeFalsy();
-    });
-  });
-
-  describe('credentialTypeHasSignCredentialButton', () => {
-    const allowed: CredentialType[] = ['LEARCredentialEmployee', 'gx:LabelCredential'];
-    const disallowed: any = 'AnotherType';
-
-    it.each(allowed)('returns true for allowed type %s', (type) => {
-      expect(credentialTypeHasSignCredentialButton(type)).toBeTruthy();
-    });
-
-    it('returns false for a disallowed type', () => {
-      expect(credentialTypeHasSignCredentialButton(disallowed)).toBeFalsy();
-    });
-  });
-
-  describe('statusHasSendReminderlButton', () => {
-    const allowed: LifeCycleStatus[] = ['WITHDRAWN', 'DRAFT', 'PEND_DOWNLOAD'];
-    const disallowed: any = 'PUBLISHED';
-
-    it.each(allowed)('returns true for allowed status %s', (status) => {
-      expect(statusHasSendReminderlButton(status)).toBeTruthy();
-    });
-
-    it('returns false for a disallowed status', () => {
-      expect(statusHasSendReminderlButton(disallowed)).toBeFalsy();
-    });
-  });
-
   describe('statusHasSignCredentialButton', () => {
     const allowed: LifeCycleStatus[] = ['PEND_SIGNATURE'];
     const disallowed: any = 'DRAFT';
@@ -51,6 +12,26 @@ describe('Credential Helpers', () => {
 
     it('returns false for a disallowed status', () => {
       expect(statusHasSignCredentialButton(disallowed)).toBeFalsy();
+    });
+  });
+
+  describe('statusHasRevokeCredentialButton', () => {
+    it('returns true for VALID', () => {
+      expect(statusHasRevokeCredentialButton('VALID')).toBeTruthy();
+    });
+
+    it('returns false for DRAFT', () => {
+      expect(statusHasRevokeCredentialButton('DRAFT')).toBeFalsy();
+    });
+  });
+
+  describe('statusHasWithdrawCredentialButton', () => {
+    it('returns true for DRAFT', () => {
+      expect(statusHasWithdrawCredentialButton('DRAFT')).toBeTruthy();
+    });
+
+    it('returns false for VALID', () => {
+      expect(statusHasWithdrawCredentialButton('VALID')).toBeFalsy();
     });
   });
 });

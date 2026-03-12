@@ -58,10 +58,6 @@
 "credentialDetails": {
     "title": "Detalles de la credencial",
     "type" : "tipo",
-	  "gx:LabelCredential": "Label Credential",
-    "LEARCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialMachine": "LEAR Credential Machine",
-    "VerifiableCertification": "Verifiable Certification",
     "DRAFT": "BORRADOR",
     "PEND_SIGNATURE": "POR FIRMAR",
     "WITHDRAWN": "WITHDRAWN",
@@ -105,6 +101,10 @@
     "scope": "alcance",
     "standard": "estándar",
 	  "basic": "básico",
+    "credentialStatus": "estado de la credencial",
+    "statusListCredential": "lista de estado",
+    "statusListIndex": "índice en la lista",
+    "statusPurpose": "propósito del estado",
 	  "gx:labelLevel": "Label Level",
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
@@ -113,15 +113,8 @@
     "gx:validatedCriteriaReference": "Referencia de Criterios Validados",
     "digestSri": "Huella SRI",
     "revoke": "revocar",
+    "withdraw": "retirar",
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
-    "sendReminderConfirm": {
-      "title": "Enviar recordatorio",
-      "message": "¿Estás seguro de que deseas enviar un recordatorio para esta oferta de credencial?"
-    },
-    "sendReminderSuccess": {
-      "title": "Recordatorio enviado correctamente",
-      "message": "El recordatorio de la oferta de credencial se envió correctamente."
-    },
     "signCredentialConfirm": {
       "title": "Firmar credencial",
       "message": "¿Estás seguro de que deseas firmar esta credencial?"
@@ -137,6 +130,14 @@
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha sido revocada."
+    },
+    "withdrawCredentialConfirm": {
+      "title": "Retirar Credencial",
+      "message": "¿Estás seguro de que deseas retirar esta credencial?"
+    },
+    "withdrawCredentialSuccess": {
+      "title": "Credencial retirada",
+      "message": "La credencial ha sido retirada correctamente."
     }
   },
   "credentialOffer": {
@@ -192,10 +193,17 @@
       "last-page": "Última pág.",
       "of": "de"
     },    
-    "LABEL_CREDENTIAL": "Label Credential",
-    "LEAR_CREDENTIAL_EMPLOYEE": "LEAR Credential Employee",
-    "LEAR_CREDENTIAL_MACHINE": "LEAR Credential Machine",
-    "VERIFIABLE_CERTIFICATION": "Verifiable Certification"
+    "learcredential.employee.w3c.1": "LEAR Credential Employee",
+    "learcredential.employee.sd.1": "LEAR Credential Employee",
+    "learcredential.machine.w3c.1": "LEAR Credential Machine",
+    "learcredential.machine.sd.1": "LEAR Credential Machine",
+    "gx.labelcredential.w3c.1": "Label Credential",
+    "VerifiableCertification": "Verifiable Certification",
+    "emptyState": {
+      "title": "Aún no hay credenciales",
+      "description": "Crea tu primera credencial para comenzar.",
+      "action": "Crear Credencial"
+    }
   },
   "power": {
     "power": "Poderes",
@@ -222,10 +230,8 @@
   },
   "credentialIssuance": {
     "title": "Emisión de  credencial",
-    "learCredentialEmployee": "LEAR Credential Employee",
-    "LEARCredentialEmployee":"LEAR Credential Employee",
-    "learCredentialMachine": "LEAR Credential Machine",
-    "LEARCredentialMachine":"LEAR Credential Machine",
+    "learcredential.employee": "LEAR Credential Employee",
+    "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "¿Estás seguro de que quieres crear esta credencial?",
@@ -265,6 +271,22 @@
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (próximamente)"
+    },
+    "grantType": {
+      "label": "Tipo de concesión",
+      "authorizationCode": "Authorization Code",
+      "preAuthorizedCode": "Pre-Authorized Code"
+    },
+    "delivery": {
+      "label": "Método de entrega",
+      "email": "Correo electrónico",
+      "qrCode": "Código QR"
+    },
+    "credential-offer-dialog": {
+      "title": "Credencial creada",
+      "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",
+      "copy": "Copiar enlace",
+      "copied": "¡Copiado!"
     },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."

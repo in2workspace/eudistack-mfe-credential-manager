@@ -14,12 +14,13 @@ import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
 import { CredentialDetailsService } from './services/credential-details.service';
 import { PortalModule } from '@angular/cdk/portal';
-import { CredentialStatus, CredentialType, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
+import { CredentialStatus, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { Observable } from 'rxjs';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { environment } from 'src/environments/environment';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 
 @Component({
@@ -27,7 +28,15 @@ import { environment } from 'src/environments/environment';
     providers: [CredentialDetailsService],
     selector: 'app-credential-details',
     templateUrl: './credential-details.component.html',
-    styleUrl: './credential-details.component.scss'
+    styleUrl: './credential-details.component.scss',
+    animations: [
+      trigger('fadeSlideIn', [
+        transition(':enter', [
+          style({ opacity: 0, transform: 'translateY(12px)' }),
+          animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+        ])
+      ])
+    ]
 })
 export class CredentialDetailsComponent implements OnInit {
   
@@ -35,7 +44,8 @@ export class CredentialDetailsComponent implements OnInit {
   //Credential data
   public credentialValidFrom$: Signal<string>;
   public credentialValidUntil$: Signal<string>
-  public credentialType$: Signal<CredentialType | undefined>;
+  public credentialType$: Signal<string | undefined>;
+  public credentialDisplayName$: Signal<string>;
   public lifeCycleStatus$: Signal<LifeCycleStatus | undefined>;
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public email$: Signal<string | undefined>;
@@ -45,10 +55,10 @@ export class CredentialDetailsComponent implements OnInit {
   public sideViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   public showSideTemplateCard$: Signal<boolean>;
   // Buttons
-  public showReminderButton$: Signal<boolean>;
   public showSignCredentialButton$: Signal<boolean>;
   public showRevokeCredentialButton$: Signal<boolean>;
   public enableRevokeCredentialButton$: Signal<boolean>;
+  public showWithdrawCredentialButton$: Signal<boolean>;
   public showActionsButtonsContainer$: Signal<boolean>;
   
   //OBSERVABLES
@@ -68,6 +78,7 @@ export class CredentialDetailsComponent implements OnInit {
     this.credentialValidFrom$ = this.detailsService.credentialValidFrom$;
     this.credentialValidUntil$ = this.detailsService.credentialValidUntil$;
     this.credentialType$ = this.detailsService.credentialType$;
+    this.credentialDisplayName$ = this.detailsService.credentialDisplayName$;
     this.lifeCycleStatus$ = this.detailsService.lifeCycleStatus$;
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;
@@ -75,10 +86,10 @@ export class CredentialDetailsComponent implements OnInit {
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.sideViewModel$ = this.detailsService.sideViewModel$;
     this.showSideTemplateCard$ = this.detailsService.showSideTemplateCard$;
-    this.showReminderButton$ = this.detailsService.showReminderButton$;
     this.showSignCredentialButton$ = this.detailsService.showSignCredentialButton$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
+    this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showActionsButtonsContainer$ = this.detailsService.showActionsButtonsContainer$;
   }
 
@@ -87,14 +98,14 @@ export class CredentialDetailsComponent implements OnInit {
     this.loadViewModel();
   }
 
-  //SEND REMINDER
-  public openSendReminderDialog(){
-    this.detailsService.openSendReminderDialog();
-  }
-
   // SIGN
   public openSignCredentialDialog(){
     this.detailsService.openSignCredentialDialog();
+  }
+
+  // WITHDRAW
+  public openWithdrawCredentialDialog(){
+    this.detailsService.openWithdrawCredentialDialog();
   }
 
   // REVOKE

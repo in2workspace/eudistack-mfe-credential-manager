@@ -24,7 +24,11 @@ export class CredentialIssuerMetadataService {
     const configs = this.configurations();
     if (!configs) return [];
     return Object.entries(configs)
-      .filter(([, cfg]) => cfg.credential_definition?.type?.includes(type))
+      .filter(([, cfg]) => cfg.credential_definition?.type?.some(t => t.startsWith(type)))
       .map(([configId, cfg]) => ({ configId, format: cfg.format }));
+  }
+
+  getConfigurationById(configId: string): CredentialConfigurationDto | undefined {
+    return this.configurations()?.[configId] ?? undefined;
   }
 }

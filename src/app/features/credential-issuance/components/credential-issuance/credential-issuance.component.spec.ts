@@ -22,7 +22,7 @@ describe('CredentialIssuanceComponent', () => {
       // Signals
       onBehalf$: signal(false) as WritableSignal<boolean>,
       hasSubmitted$: signal(false) as WritableSignal<boolean>,
-      credentialTypesArr: ['type1', 'LEARCredentialMachine'] as any,
+      credentialTypesArr: ['type1', 'learcredential.machine'] as any,
       selectedCredentialType$: signal(undefined) as WritableSignal<any>,
       credentialFormSchema$: signal(null) as Signal<any>,
       staticData$: signal(null) as Signal<any>,
@@ -32,8 +32,14 @@ describe('CredentialIssuanceComponent', () => {
       bottomAlertMessages$: signal([]) as WritableSignal<string[]>,
       availableFormats$: signal([]) as Signal<any>,
       effectiveFormatOption$: signal(null) as Signal<any>,
+      grantTypeOptions: [],
+      selectedGrantType$: signal({ value: 'authorization_code', labelKey: 'key' }) as WritableSignal<any>,
+      deliveryOptions: [],
+      selectedDelivery$: signal({ value: 'email', labelKey: 'key' }) as WritableSignal<any>,
       // Methods
       updateSelectedType: jest.fn(),
+      updateSelectedGrantType: jest.fn(),
+      updateSelectedDelivery: jest.fn(),
       canLeave: jest.fn().mockReturnValue(true),
       canDeactivate: jest.fn().mockReturnValue('canDeactivateReturn'),
       openLeaveConfirm: jest.fn().mockReturnValue(true),
@@ -128,7 +134,7 @@ describe('CredentialIssuanceComponent', () => {
     it('should open LEARCredentialMachine dialog when selected type is LEARCredentialMachine', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
-      (component as any).selectedCredentialType$ = () => 'LEARCredentialMachine' as any;
+      (component as any).selectedCredentialType$ = () => 'learcredential.machine' as any;
 
       component.onSubmit();
 

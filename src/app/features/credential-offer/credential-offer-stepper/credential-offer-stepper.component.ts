@@ -325,7 +325,7 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
       return throwError(()=>new Error('Invalid credential offer parameters'));
     }
 
-    return this.credentialProcedureService.fetchCredentialOfferByTransactionCode(transactionCode)
+    return this.credentialProcedureService.getCredentialOfferByTransactionCode(transactionCode)
     .pipe(
       takeUntilDestroyed(this.destroyRef),
     )

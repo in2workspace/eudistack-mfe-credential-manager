@@ -1,18 +1,16 @@
 import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
+import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { CredentialStatus, CredentialType, LEARCredential, CredentialProcedureDetails, LifeCycleStatus, CREDENTIAL_TYPES_ARRAY } from 'src/app/core/models/entity/lear-credential';
+import { CredentialStatus, LEARCredential, CredentialProcedureDetails, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { LearCredentialEmployeeDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-employee-details-schema';
-import { LearCredentialMachineDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/lear-credential-machine-details-schema';
-import { GxLabelCredentialDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/gx-label-credential-details-schema';
-import { VerifiableCertificationDetailsViewModelSchema } from 'src/app/core/models/schemas/credential-details/verifiable-certification-details-schema';
 import { EvaluatedExtendedDetailsField, ViewModelSchema, EvaluatedViewModelSchema, DetailsField, EvaluatedDetailsField, CustomDetailsField, EvaluatedExtendedDetailsGroupField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialActionsService } from './credential-actions.service';
+import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSendReminderlButton, credentialTypeHasSendReminderButton, statusHasSignCredentialButton, credentialTypeHasSignCredentialButton, statusHasRevokeCredentialButton, credentialTypeHasRevokeCredentialButton } from '../helpers/actions-helpers';
+import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 
@@ -37,9 +35,22 @@ export class CredentialDetailsService {
   public credentialValidUntil$ = computed<string>(() => {
     return this.credential$()?.validUntil ?? '';
   });
-  public credentialType$ = computed<CredentialType | undefined>(() => {
-    const vc = this.credential$();
-    return vc ? this.getCredentialType(vc) : undefined;
+  public credentialType$ = computed<string | undefined>(() => {
+    return this.credentialProcedureDetails$()?.credential_configuration_id;
+  });
+  public credentialDisplayName$ = computed<string>(() => {
+    const configId = this.credentialType$();
+    if (!configId) return '';
+    const config = this.metadataService.getConfigurationById(configId);
+    const displays = config?.credential_metadata?.display;
+    if (displays?.length) {
+      const lang = navigator?.language?.split('-')[0] ?? 'en';
+      return displays.find(d => d.locale === lang)?.name
+        ?? displays.find(d => d.locale === 'en')?.name
+        ?? displays[0].name
+        ?? configId;
+    }
+    return configId;
   });
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
@@ -55,62 +66,35 @@ export class CredentialDetailsService {
   );
 
   //BUTTONS
-  public showReminderButton$ = computed<boolean>(() => {
-    const type = this.credentialType$();
+  public showSignCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-
-    return !!(
-      status 
-      && statusHasSendReminderlButton(status)
-      && type 
-      && credentialTypeHasSendReminderButton(type)
-    );
-  });
-  
-  public showSignCredentialButton$ = computed<boolean>(()=>{
-    const type = this.credentialType$();
-    const status = this.lifeCycleStatus$();
-
-    return !!(
-      status
-      && statusHasSignCredentialButton(status)
-      && type 
-      && credentialTypeHasSignCredentialButton(type)
-    );
+    return !!status && statusHasSignCredentialButton(status);
   });
 
-  public showRevokeCredentialButton$ = computed<boolean>(()=>{
-    const type = this.credentialType$();
+  public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-
-    return !!(
-      status
-      && statusHasRevokeCredentialButton(status)
-      && type 
-      && credentialTypeHasRevokeCredentialButton(type)
-    );
+    return !!status && statusHasRevokeCredentialButton(status);
   });
 
   public enableRevokeCredentialButton$ = computed<boolean>(() => {
     return !!this.credentialStatus$();
   });
 
+  public showWithdrawCredentialButton$ = computed<boolean>(() => {
+    const status = this.lifeCycleStatus$();
+    return !!status && statusHasWithdrawCredentialButton(status);
+  });
+
   public showActionsButtonsContainer$ = computed<boolean>(() => {
-    return this.showSignCredentialButton$() || this.showReminderButton$() || this.showRevokeCredentialButton$()
+    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$()
   });
 
   private readonly actionsService = inject(CredentialActionsService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
+  private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly dynamicSchemaBuilder = inject(DynamicSchemaBuilder);
   private readonly dialog = inject(DialogWrapperService);
   private readonly statusService = inject(LifeCycleStatusService);
-
-  
-  private readonly schemasByTypeMap: Record<CredentialType, ViewModelSchema> = {
-    'LEARCredentialEmployee': LearCredentialEmployeeDetailsViewModelSchema,
-    'LEARCredentialMachine': LearCredentialMachineDetailsViewModelSchema,
-    'VerifiableCertification': VerifiableCertificationDetailsViewModelSchema,
-    'gx:LabelCredential': GxLabelCredentialDetailsViewModelSchema,
-  } as const;
 
   public constructor(){
     this.lifeCycleStatusClass$ = computed<StatusClass | undefined>(() => {
@@ -124,34 +108,60 @@ export class CredentialDetailsService {
     this.procedureId$.set(id);
   }
 
-  public loadCredentialModels(injector: Injector): void {  
-    this.loadCredentialDetails()
-    .subscribe(data => {
+  public loadCredentialModels(injector: Injector): void {
+    forkJoin([
+      this.loadCredentialDetails(),
+      this.metadataService.loadMetadata(),
+    ]).subscribe(([data]) => {
       this.credentialProcedureDetails$.set(data);
       const vc = this.credential$();
       if(!vc) throw new Error('No credential found.');
 
-      const type = this.credentialType$();
-      if(!type){
-       console.error('Credential: ');
-       console.error(vc);
-       throw new Error('No credential type found in credential: ');
-      }
-
-      const schema = this.getSchemaByType(type);
-      const mappedSchema = this.evaluateSchemaValues(schema, vc);
+      // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
+      const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
+      const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
       this.setViewModels(mappedSchema, injector);
     });
   }
 
-  public openSendReminderDialog(): void {
-    const procedureId = this.getProcedureId();
-    return this.actionsService.openSendReminderDialog(procedureId);
+  private resolveSchema(data: CredentialProcedureDetails, vc: LEARCredential): { schema: ViewModelSchema; vcForEvaluation: LEARCredential } {
+    const configId = data.credential_configuration_id;
+    if (configId) {
+      const config = this.metadataService.getConfigurationById(configId);
+      if (config?.credential_metadata?.claims?.length) {
+        const rawVc = (data.rawVc ?? vc) as LEARCredential;
+        return {
+          schema: this.dynamicSchemaBuilder.buildSchema(configId, config, rawVc),
+          vcForEvaluation: rawVc,
+        };
+      }
+    }
+
+    throw new Error(
+      `No schema available for credential "${configId ?? 'unknown'}". ` +
+      `Ensure credential_metadata.claims is configured in the issuer.`
+    );
   }
 
   public openSignCredentialDialog(): void {
     const procedureId = this.getProcedureId();
     return this.actionsService.openSignCredentialDialog(procedureId);
+  }
+
+  public openWithdrawCredentialDialog(): void {
+    if(this.lifeCycleStatus$() !== 'DRAFT'){
+      console.error("Only credentials with status DRAFT can be withdrawn.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+
+    const procedureId = this.getProcedureId();
+    if(!procedureId){
+      console.error("Couldn't get procedure id from vc.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+    return this.actionsService.openWithdrawCredentialDialog(procedureId);
   }
 
   public openRevokeCredentialDialog(): void{
@@ -166,58 +176,21 @@ export class CredentialDetailsService {
       return;
     }
 
-    const procedureId = this.credentialProcedureDetails$()?.procedure_id;
-    if(!procedureId){
-      console.error("Couldn't get procedure id from vc.");
+    const issuanceId = this.credentialProcedureDetails$()?.procedure_id;
+    if(!issuanceId){
+      console.error("Couldn't get issuance id from credential.");
       this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
       return;
     }
-    const listId = this.getCredentialListId();
-    if(!listId){
-      console.error("Couldn't get credential list from vc.");
-      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
-      return;
-    }
-    return this.actionsService.openRevokeCredentialDialog(procedureId, listId);
+    return this.actionsService.openRevokeCredentialDialog(issuanceId);
   }
 
   private getProcedureId(): string{
     return this.procedureId$();
   }
 
-  private getCredential(): LEARCredential | undefined{
-    return this.credentialProcedureDetails$()?.credential?.vc;
-  }
-
-  private getCredentialListId(): string {
-    const statusListCredential = this.getCredential()?.credentialStatus?.statusListCredential;
-
-    if (!statusListCredential) {
-      console.error('No Status List Credential found in vc: ');
-      console.error(this.getCredential());
-      return "";
-    }
-
-    const parts = statusListCredential.split('/');
-    const id = parts.at(-1);
-
-    return id ?? "";
-  }
-
-
-  
   private loadCredentialDetails(): Observable<CredentialProcedureDetails> {
     return this.credentialProcedureService.fetchCredentialProcedureById(this.procedureId$());
-  }
-
-  private getSchemaByType(credType: CredentialType): ViewModelSchema{
-    return this.schemasByTypeMap[credType];
-  }
-      
-  private getCredentialType(cred: LEARCredential): CredentialType{
-    const type = cred.type.find((t): t is CredentialType => CREDENTIAL_TYPES_ARRAY.includes(t as CredentialType));
-    if(!type) throw new Error('No credential type found in credential');
-    return type;
   }
 
 private evaluateSchemaValues(

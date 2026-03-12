@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
 import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
@@ -13,17 +13,20 @@ export class IssuanceRequestFactoryService {
   private readonly authService = inject(AuthService);
 
   private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
-    LEARCredentialEmployee: (data) => this.createLearCredentialEmployeeRequest(data),
-    LEARCredentialMachine: (data) => this.createLearCredentialMachineRequest(data)
+    'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
+    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data)
   }
 
-  public createCredentialRequest(credentialData: IssuanceRawCredentialPayload,
+  public createCredentialRequest(
+      credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      format: string): IssuanceLEARCredentialRequestDto{
+      delivery: IssuanceDelivery = 'email',
+      grantType: IssuanceGrantType = 'authorization_code'
+  ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType);
-        const credentialEmail = this.getCredentialEmail(credentialData, credentialType);
-        return this.createRequestDto(configId, format, payload, credentialEmail);
+        const email = this.getCredentialEmail(credentialData, credentialType);
+        return this.buildRequestDto(configId, delivery, payload, email, grantType);
       }
 
   public createCredentialRequestPayload(
@@ -36,8 +39,8 @@ export class IssuanceRequestFactoryService {
 
   private createLearCredentialEmployeeRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialEmployeePayload{
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialEmployee');
-    
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee');
+
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData) as unknown as EmployeeMandatee;
     
@@ -75,7 +78,7 @@ export class IssuanceRequestFactoryService {
 
   private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialMachinePayload{
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'LEARCredentialMachine');
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData);
@@ -117,12 +120,15 @@ export class IssuanceRequestFactoryService {
     return payload;
   }
 
-  private getCredentialEmail(credentialData: IssuanceRawCredentialPayload, 
-    credentialType: IssuanceCredentialType): string | undefined{
-      if(credentialType === 'LEARCredentialMachine' && !credentialData.onBehalf){
+  private getCredentialEmail(credentialData: IssuanceRawCredentialPayload,
+    credentialType: IssuanceCredentialType): string {
+      if (credentialType === 'learcredential.employee') {
+        return credentialData.formData['mandatee']?.['email'] ?? '';
+      }
+      if (!credentialData.onBehalf) {
         return this.authService.getMandateeEmail();
       }
-      return undefined;
+      return credentialData.formData['mandatee']?.['email'] ?? '';
   }
 
   private createDidElsi(orgId: string): string{
@@ -184,17 +190,23 @@ private getMandatorFromCredentialData(credentialData: IssuanceRawCredentialPaylo
 }
     
 private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPayload): Record<string, string>{
-  return credentialData.formData['mandatee'];
+  return this.stripNullValues(credentialData.formData['mandatee']);
 }
 
-  private createRequestDto(configId: string, format: string, payload: IssuanceLEARCredentialPayload, credentialEmail?: string): IssuanceLEARCredentialRequestDto{
+private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v != null)
+  ) as Record<string, string>;
+}
+
+  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
     return {
-      schema: configId,
-      format: format,
-      payload: payload,
-      operation_mode: "S",
-      email: credentialEmail
-    }
+      credential_configuration_id: configId,
+      payload,
+      delivery,
+      email,
+      grant_type: grantType
+    };
   }
 }
 
@@ -204,7 +216,7 @@ const powerBase = {
 }
 
 const powerMap: Record<IssuanceCredentialType, Partial<Record<TmfFunction, IssuancePayloadPower>>> = {
-      'LEARCredentialEmployee': {
+      'learcredential.employee': {
         'Onboarding': {
           ...powerBase,
           function: 'Onboarding',
@@ -221,7 +233,7 @@ const powerMap: Record<IssuanceCredentialType, Partial<Record<TmfFunction, Issua
           action: ['Attest', 'Upload']
         }
       },
-      'LEARCredentialMachine': {
+      'learcredential.machine': {
           'Onboarding': {
             ...powerBase,
             function: 'Onboarding',
