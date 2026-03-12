@@ -102,7 +102,7 @@ describe('CredentialProcedureService', () => {
     service.fetchCredentialProcedureById(procedureId).subscribe(data => {
       expect(data).toEqual(mockData);
     });
-    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}/credential-decoded`);
+    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockData);
   });
@@ -118,7 +118,7 @@ describe('CredentialProcedureService', () => {
       }
     );
 
-    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}/credential-decoded`);
+    const req = httpMock.expectOne(`${proceduresURL}/${procedureId}`);
     req.flush('404 error', errorResponse);
   });
 

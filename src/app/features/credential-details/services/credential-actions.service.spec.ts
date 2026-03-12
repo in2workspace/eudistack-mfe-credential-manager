@@ -159,8 +159,8 @@ describe('CredentialActionsService', () => {
     });
 
     it('revokeCredential should call credentialProcedureService.revokeCredential', done => {
-      (service as any).revokeCredential('abc', 'list1').subscribe(() => {
-        expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc', 'list1');
+      (service as any).revokeCredential('abc').subscribe(() => {
+        expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc');
         done();
       });
     });
