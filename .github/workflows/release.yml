@@ -91,15 +91,14 @@ jobs:
         id: project_name
         run: echo "PROJECT_NAME=$(jq -r '.name' package.json)" >> $GITHUB_ENV
 
-      - name: Check for existing release tag (only on PR)
-        if: github.event_name == 'pull_request'
+      - name: Check for existing release tag
         env:
           VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG_EXISTS=$(curl -H "Authorization: token $GITHUB_TOKEN" -s https://api.github.com/repos/${{ github.repository }}/releases | jq -r ".[] | select(.tag_name == \"v$VERSION\") | .tag_name")
           if [ "$TAG_EXISTS" == "v$VERSION" ]; then
-            echo "Release tag v$VERSION already exists. Rejecting PR."
+            echo "Release tag v$VERSION already exists. Skipping release."
             exit 1
           else
             echo "No existing release with tag v$VERSION found. Proceeding with build."
