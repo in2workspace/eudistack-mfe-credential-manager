@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Hardcoded LEAR credential detail schemas (`LearCredentialEmployeeDetailsViewModelSchema`, `LearCredentialMachineDetailsViewModelSchema`). LEAR credential details are now rendered exclusively via the dynamic schema builder driven by `credential_metadata.claims` from the issuer.
 
+## [3.0.1](https://github.com/in2workspace/eudistack-mfe-credential-manager/releases/tag/v3.0.1)
+### Fixed
+- Sort credential list by updated date (desc by default)
+
 ## [2.1.13](https://github.com/in2workspace/in2-issuer-ui/releases/tag/v2.1.13)
 ### Changed
 - Update revocation endpoint and change the way the way the Credential Status List URL is obtained to make it compatible with BitstringStatusListEntry.
