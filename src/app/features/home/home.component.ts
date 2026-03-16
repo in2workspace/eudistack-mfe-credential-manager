@@ -16,10 +16,10 @@ export class HomeComponent{
   @ViewChild('loginSection') loginSection!: ElementRef<HTMLElement>;
   @ViewChild('header') header!: ElementRef;
   public walletUrl = environment.wallet_url ?? '';
-  public knowledge_base_url = environment.knowledge_base_url;
 
   private readonly themeService = inject(ThemeService);
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
+  public knowledge_base_url = this.themeService.knowledgeBaseUrl;
 
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);

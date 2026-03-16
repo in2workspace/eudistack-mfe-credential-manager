@@ -19,7 +19,7 @@ import { Observable } from 'rxjs';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
-import { environment } from 'src/environments/environment';
+import { ThemeService } from 'src/app/core/services/theme.service';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 
@@ -66,9 +66,10 @@ export class CredentialDetailsComponent implements OnInit {
 
   //RAW VARIABLES
   public tooltipText: string = "credentialDetails.revokeTooltip";
-  public knowledgeBaseUrl = environment.knowledge_base_url + KNOWLEDGEBASE_PATH.ISSUER + KNOWLEDGEBASE_PATH.ISSUER_REVOKATION;
 
   private readonly route = inject(ActivatedRoute);
+  private readonly themeService = inject(ThemeService);
+  public knowledgeBaseUrl = this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.ISSUER + KNOWLEDGEBASE_PATH.ISSUER_REVOKATION;
   private readonly detailsService = inject(CredentialDetailsService);
   private readonly injector = inject(Injector);
   private readonly loader = inject(LoaderService);

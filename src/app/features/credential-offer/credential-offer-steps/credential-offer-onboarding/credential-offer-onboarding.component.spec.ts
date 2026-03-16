@@ -3,13 +3,23 @@ import { CredentialOfferOnboardingComponent } from './credential-offer-onboardin
 import { TranslateModule } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { environment } from 'src/environments/environment';
+import { ThemeService } from 'src/app/core/services/theme.service';
+
+const MOCK_KNOWLEDGE_BASE_URL = 'https://knowledgebase.example.com/';
 
 describe('CredentialOfferOnboardingComponent', () => {
   let component: CredentialOfferOnboardingComponent;
 
   beforeEach(async () => {
+    const themeServiceMock = {
+      knowledgeBaseUrl: MOCK_KNOWLEDGE_BASE_URL,
+    };
+
     await TestBed.configureTestingModule({
       imports: [QRCodeComponent, TranslateModule.forRoot(), CredentialOfferOnboardingComponent],
+      providers: [
+        { provide: ThemeService, useValue: themeServiceMock },
+      ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(CredentialOfferOnboardingComponent);
@@ -46,8 +56,8 @@ describe('CredentialOfferOnboardingComponent', () => {
     expect(component.showWalletSameDeviceUrlTest).toBe(environment.show_wallet_url_test);
   });
 
-  it('should initialize walletUsersGuideUrl with the correct value from the environment', () => {
-    const expectedGuideUrl = environment.knowledge_base_url + "/books/dome-digital-wallet-user-guide";
+  it('should initialize walletUsersGuideUrl with the correct value from theme', () => {
+    const expectedGuideUrl = MOCK_KNOWLEDGE_BASE_URL + "/books/dome-digital-wallet-user-guide";
     expect(component.walletUsersGuideUrl).toBe(expectedGuideUrl);
   });
 

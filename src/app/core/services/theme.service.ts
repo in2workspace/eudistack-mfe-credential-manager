@@ -81,6 +81,14 @@ export class ThemeService {
     return this.theme$.value;
   }
 
+  get tenantDomain(): string {
+    return this.theme$.value?.tenantDomain ?? '';
+  }
+
+  get knowledgeBaseUrl(): string {
+    return this.theme$.value?.content?.knowledgeBaseUrl ?? '';
+  }
+
   private detectBrowserLanguage(available: string[]): string | undefined {
     const browserLanguages = navigator.languages?.length
       ? navigator.languages

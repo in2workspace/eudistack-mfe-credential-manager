@@ -25,7 +25,8 @@ describe('HomeComponent', () => {
     const themeServiceMock = {
       snapshot: {
         branding: { logoUrl: 'https://example.com/logo.png' }
-      }
+      },
+      knowledgeBaseUrl: 'https://knowledgebase.example.com/',
     };
 
     TestBed.configureTestingModule({
@@ -55,9 +56,9 @@ describe('HomeComponent', () => {
     expect(component.logoSrc).toBe('https://example.com/logo.png');
   });
 
-  it('should set walletUrl and knowledge_base_url from environment', () => {
+  it('should set walletUrl from environment and knowledge_base_url from theme', () => {
     expect(component.walletUrl).toBe(environment.wallet_url ?? '');
-    expect(component.knowledge_base_url).toBe(environment.knowledge_base_url);
+    expect(component.knowledge_base_url).toBe('https://knowledgebase.example.com/');
   });
 
   it('should call authService.login when login() is called', () => {

@@ -3,7 +3,7 @@ import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLE
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
 import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { environment } from 'src/environments/environment';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +11,7 @@ import { environment } from 'src/environments/environment';
 export class IssuanceRequestFactoryService {
 
   private readonly authService = inject(AuthService);
+  private readonly themeService = inject(ThemeService);
 
   private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
     'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
@@ -155,7 +156,7 @@ export class IssuanceRequestFactoryService {
   ): IssuancePayloadPower[] {
     return Object.entries(power).reduce<IssuancePayloadPower[]>((acc, [funct, pow]) => {
       const tmfFunc = funct as TmfFunction;
-      const base = powerMap[credType]?.[tmfFunc];
+      const base = buildPowerMap(this.themeService.tenantDomain)[credType]?.[tmfFunc];
 
       if (!base) {
         console.error('Function key found in schema but not in received data: ' + funct);
@@ -210,34 +211,36 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   }
 }
 
-const powerBase = {
-  type: "domain",
-  domain: environment.sys_tenant
-}
+function buildPowerMap(tenantDomain: string): Record<IssuanceCredentialType, Partial<Record<TmfFunction, IssuancePayloadPower>>> {
+  const powerBase = {
+    type: "domain" as const,
+    domain: tenantDomain
+  };
 
-const powerMap: Record<IssuanceCredentialType, Partial<Record<TmfFunction, IssuancePayloadPower>>> = {
-      'learcredential.employee': {
-        'Onboarding': {
-          ...powerBase,
-          function: 'Onboarding',
-          action: ['Execute']
-        },
-        'ProductOffering': {
-          ...powerBase,
-          function: 'ProductOffering',
-          action: ['Create', 'Update', 'Upload']
-        },
-        'Certification': {
-          ...powerBase,
-          function: 'Certification',
-          action: ['Attest', 'Upload']
-        }
+  return {
+    'learcredential.employee': {
+      'Onboarding': {
+        ...powerBase,
+        function: 'Onboarding',
+        action: ['Execute']
       },
-      'learcredential.machine': {
-          'Onboarding': {
-            ...powerBase,
-            function: 'Onboarding',
-            action: ['Execute']
-          }
+      'ProductOffering': {
+        ...powerBase,
+        function: 'ProductOffering',
+        action: ['Create', 'Update', 'Upload']
       },
-    }
+      'Certification': {
+        ...powerBase,
+        function: 'Certification',
+        action: ['Attest', 'Upload']
+      }
+    },
+    'learcredential.machine': {
+      'Onboarding': {
+        ...powerBase,
+        function: 'Onboarding',
+        action: ['Execute']
+      }
+    },
+  };
+}
