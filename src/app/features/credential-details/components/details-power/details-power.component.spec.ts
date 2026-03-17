@@ -4,6 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
 import { DetailsPowerComponent, detailsPowerToken } from './details-power.component';
 import { FunctionActions } from '../../helpers/credential-details-helpers';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 describe('DetailsPowerComponent', () => {
   let component: DetailsPowerComponent;
@@ -23,7 +24,8 @@ describe('DetailsPowerComponent', () => {
         TranslateModule.forRoot()
       ],
       providers: [
-        { provide: detailsPowerToken, useValue: mockPowers }
+        { provide: detailsPowerToken, useValue: mockPowers },
+        { provide: ThemeService, useValue: { tenantDomain: 'TENANT' } }
       ]
     }).compileComponents();
 

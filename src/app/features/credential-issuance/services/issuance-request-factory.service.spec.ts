@@ -6,6 +6,7 @@ import {
 } from '../../../core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 describe('IssuanceRequestFactoryService', () => {
   let service: IssuanceRequestFactoryService;
@@ -14,11 +15,16 @@ describe('IssuanceRequestFactoryService', () => {
     getMandateeEmail: jest.fn(() => 'mandatee@example.com')
   };
 
+  const themeServiceMock = {
+    tenantDomain: 'TENANT'
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
         IssuanceRequestFactoryService,
-        { provide: AuthService, useValue: authServiceMock }
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: ThemeService, useValue: themeServiceMock }
       ]
     });
 
