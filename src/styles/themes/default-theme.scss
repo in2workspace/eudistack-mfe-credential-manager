@@ -133,10 +133,10 @@ $custom-theme: mat.m2-define-light-theme((
 }
 
 .mat-mdc-radio-button .mdc-radio {
-  --mdc-radio-selected-icon-color: var(--primary-color);
-  --mdc-radio-selected-hover-icon-color: var(--primary-color);
-  --mdc-radio-selected-pressed-icon-color: var(--primary-color);
-  --mdc-radio-selected-focus-icon-color: var(--primary-color);
+  --mdc-radio-selected-icon-color: var(--text-primary, #1A1A2E);
+  --mdc-radio-selected-hover-icon-color: var(--text-primary, #1A1A2E);
+  --mdc-radio-selected-pressed-icon-color: var(--text-primary, #1A1A2E);
+  --mdc-radio-selected-focus-icon-color: var(--text-primary, #1A1A2E);
 }
 
 .mat-mdc-form-field.mat-focused .mdc-floating-label {
