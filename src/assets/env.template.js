@@ -24,7 +24,15 @@
     window["env"]["client_id"] = "${CLIENT_ID}";
   }
 
-  window["env"]["server_url"] = "${BASE_URL}";
+  // Server URL: derive from current hostname so each tenant subdomain
+  // routes API calls through nginx (which injects X-Tenant-Domain).
+  // Falls back to a static value when BASE_URL_TEMPLATE is not set.
+  const baseUrlTemplate = "${BASE_URL_TEMPLATE}";
+  if (baseUrlTemplate?.includes("{host}")) {
+    window["env"]["server_url"] = baseUrlTemplate.replace("{host}", window.location.hostname);
+  } else {
+    window["env"]["server_url"] = "${BASE_URL}";
+  }
   window["env"]["admin_organization_id"]= "${ADMIN_ORGANIZATION_ID}"
   window["env"]["wallet_url"] = "${WALLET_URL}";
   window["env"]["wallet_url_test"] = "${WALLET_URL_TEST}";
