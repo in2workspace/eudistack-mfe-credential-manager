@@ -4,13 +4,23 @@ import { TranslateModule } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { NgIf } from '@angular/common';
 import { environment } from 'src/environments/environment';
+import { ThemeService } from 'src/app/core/services/theme.service';
+
+const MOCK_KNOWLEDGE_BASE_URL = 'https://knowledgebase.example.com/';
 
 describe('CredentialOfferComponent', () => {
   let component: CredentialOfferComponent;
 
   beforeEach(async () => {
+    const themeServiceMock = {
+      knowledgeBaseUrl: MOCK_KNOWLEDGE_BASE_URL,
+    };
+
     await TestBed.configureTestingModule({
       imports: [ NgIf, QRCodeComponent, TranslateModule.forRoot(), CredentialOfferComponent],
+      providers: [
+        { provide: ThemeService, useValue: themeServiceMock },
+      ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(CredentialOfferComponent);
@@ -25,8 +35,8 @@ describe('CredentialOfferComponent', () => {
     expect(component.qrColor).toBe('#000000');
   });
 
-  it('should initialize walletUsersGuideUrl with the correct value from the environment', () => {
-    const expectedGuideUrl = environment.knowledge_base_url + '/books/dome-digital-wallet-user-guide';
+  it('should initialize walletUsersGuideUrl with the correct value from theme', () => {
+    const expectedGuideUrl = MOCK_KNOWLEDGE_BASE_URL + '/books/dome-digital-wallet-user-guide';
     expect(component.walletUsersGuideUrl).toBe(expectedGuideUrl);
   });
 

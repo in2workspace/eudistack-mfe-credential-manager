@@ -4,8 +4,8 @@ export const environment = {
   production: true,
   // Admin organization identifier (REQUIRED)
   admin_organization_id: window["env"]["admin_organization_id"],
-  // System tenant name; included as "Domain" in credential powers
-  sys_tenant: window["env"]["sys_tenant"],
+  // OIDC client identifier — resolved per tenant at runtime (REQUIRED)
+  client_id: window["env"]["client_id"],
   // Keycloak URL (REQUIRED)
   iam_url: window["env"]["iam_url"],
   // Issuer API base URL (REQUIRED)
@@ -16,6 +16,4 @@ export const environment = {
   wallet_url_test: window["env"]["wallet_url_test"],
   // Determines whether to show wallet_url_test or not (REQUIRED)
   show_wallet_url_test: window["env"]["show_wallet_url_test"] === "true",
-  // Knowledgebase base URL (REQUIRED)
-  knowledge_base_url: window["env"]["knowledge_base_url"],
 };

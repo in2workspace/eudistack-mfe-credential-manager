@@ -1,9 +1,10 @@
-import { Component, computed, EventEmitter, input, Output } from '@angular/core';
+import { Component, computed, EventEmitter, inject, input, Output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { MatIcon } from '@angular/material/icon';
 import { environment } from 'src/environments/environment';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 @Component({
     selector: 'app-credential-offer',
@@ -12,10 +13,11 @@ import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
     imports: [QRCodeComponent, TranslatePipe, MatIcon]
 })
 export class CredentialOfferComponent{
+  private readonly themeService = inject(ThemeService);
   @Output() public refreshCredential = new EventEmitter<void>();
   public qrColor = "#000000";
   public copied = false;
-  public walletUsersGuideUrl = environment.knowledge_base_url + KNOWLEDGEBASE_PATH.WALLET;
+  public walletUsersGuideUrl = this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.WALLET;
   public credentialOfferUri$ = input.required<string>();
 
   public readonly walletSameDeviceUrl = environment.wallet_url + '/protocol/callback';

@@ -61,7 +61,7 @@ bootstrapApplication(AppComponent, {
                 authority: environment.iam_url,
                 redirectUrl: IAM_REDIRECT_URI,
                 postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
-                clientId: IAM_PARAMS.CLIENT_ID,
+                clientId: environment.client_id ?? IAM_PARAMS.CLIENT_ID,
                 scope: IAM_PARAMS.SCOPE,
                 responseType: IAM_PARAMS.GRANT_TYPE,
                 silentRenew: true,

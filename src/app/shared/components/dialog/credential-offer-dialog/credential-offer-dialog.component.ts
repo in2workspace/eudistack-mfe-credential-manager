@@ -4,6 +4,7 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { environment } from 'src/environments/environment';
 
 export interface CredentialOfferDialogData {
   credentialOfferUri: string;
@@ -29,6 +30,35 @@ export class CredentialOfferDialogComponent {
 
   public copied = false;
   public readonly qrColor = '#000000';
+
+  public readonly walletSameDeviceUrl = environment.wallet_url + '/protocol/callback';
+  public readonly showWalletSameDeviceUrlTest = environment.show_wallet_url_test;
+  public readonly walletSameDeviceTestUrl = environment.wallet_url_test + '/protocol/callback';
+
+  public get walletSameDeviceFullUrl(): string {
+    const httpsUrl = this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri);
+    return this.walletSameDeviceUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+  }
+
+  public get walletSameDeviceTestFullUrl(): string {
+    const httpsUrl = this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri);
+    return this.walletSameDeviceTestUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+  }
+
+  /**
+   * Extracts the HTTPS credential offer URL from the openid-credential-offer:// URI.
+   * Input:  openid-credential-offer://?credential_offer_uri=https%3A%2F%2F...
+   * Output: https://...
+   */
+  private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
+    try {
+      const parsed = new URL(oid4vciUri.replace('openid-credential-offer://', 'https://openid-credential-offer/'));
+      const innerUrl = parsed.searchParams.get('credential_offer_uri');
+      return innerUrl ?? oid4vciUri;
+    } catch {
+      return oid4vciUri;
+    }
+  }
 
   public copyOfferUri(): void {
     navigator.clipboard.writeText(this.data.credentialOfferUri);

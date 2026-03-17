@@ -9,6 +9,7 @@ import { of } from 'rxjs';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 describe('IssuancePowerComponent', () => {
   let component: IssuancePowerComponent;
@@ -51,7 +52,8 @@ describe('IssuancePowerComponent', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: DialogWrapperService, useValue: dialog },
-        { provide: CredentialIssuanceService, useValue: mockIssuanceService }
+        { provide: CredentialIssuanceService, useValue: mockIssuanceService },
+        { provide: ThemeService, useValue: { tenantDomain: 'TENANT' } }
       ]
     }).compileComponents();
 
