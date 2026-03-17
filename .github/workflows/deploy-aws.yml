@@ -50,19 +50,19 @@ jobs:
       # Creates a JSON file with environment-specific settings for the app
       - name: Generate env.js from env.template.js (envsubst)
         env:
-          IAM_URL: ${{ vars.IAM_URL }}
-          BASE_URL: ${{ vars.BASE_URL }}
           ADMIN_ORGANIZATION_ID: ${{ vars.ADMIN_ORGANIZATION_ID }}
+          ASSETS_BASE_URL: ${{ vars.ASSETS_BASE_URL }}
+          DEFAULT_LANG: ${{ vars.DEFAULT_LANG }}
+          FAVICON_PATH: ${{ vars.FAVICON_PATH }}
+          IAM_URL: ${{ vars.IAM_URL }}
+          KNOWLEDGE_BASE_URL: ${{ vars.KNOWLEDGE_BASE_URL }}
+          LOGO_PATH: ${{ vars.LOGO_PATH }}
+          SERVER_URL: ${{ vars.SERVER_URL }}
+          SHOW_WALLET_URL_TEST: ${{ vars.SHOW_WALLET_URL_TEST }}
           SYS_TENANT: ${{ vars.SYS_TENANT }}
+          THEME_NAME: ${{ vars.THEME_NAME }}
           WALLET_URL: ${{ vars.WALLET_URL }}
           WALLET_URL_TEST: ${{ vars.WALLET_URL_TEST }}
-          SHOW_WALLET_URL_TEST: ${{ vars.SHOW_WALLET_URL_TEST }}
-          KNOWLEDGE_BASE_URL: ${{ vars.KNOWLEDGE_BASE_URL }}
-          THEME_NAME: ${{ vars.THEME_NAME }}
-          ASSETS_BASE_URL: ${{ vars.ASSETS_BASE_URL }}
-          LOGO_PATH: ${{ vars.LOGO_PATH }}
-          FAVICON_PATH: ${{ vars.FAVICON_PATH }}
-          DEFAULT_LANG: ${{ vars.DEFAULT_LANG }}
         run: |
           sudo apt-get update && sudo apt-get install -y gettext-base
           if [ -f dist/out/assets/env.template.js ]; then
