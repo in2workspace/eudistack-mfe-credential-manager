@@ -2,6 +2,7 @@
 
 interface Window {
     env: {
+        client_id?: string;
         iam_url?: string;
         server_url?: string;
         wallet_url?: string;
