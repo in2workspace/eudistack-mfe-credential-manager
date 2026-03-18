@@ -3,7 +3,8 @@
 
   // Environment variables
   window["env"]["iam_url"] = "${IAM_URL}";
-  window["env"]["server_url"] = "${BASE_URL}";
+  window["env"]["client_id"] = "${CLIENT_ID}";
+  window["env"]["server_url"] = "${SERVER_URL}";
   window["env"]["admin_organization_id"]= "${ADMIN_ORGANIZATION_ID}"
   window["env"]["wallet_url"] = "${WALLET_URL}";
   window["env"]["wallet_url_test"] = "${WALLET_URL_TEST}";
