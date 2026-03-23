@@ -199,7 +199,7 @@
     "learcredential.machine.sd.1": "LEAR Credential Machine",
     "gx.labelcredential.w3c.1": "Label Credential",
     "VerifiableCertification": "Verifiable Certification",
-    "doctorid.sd.1": "Identificació Mèdica",
+    "doctorid.sd.1": "Doctor ID",
     "emptyState": {
       "title": "Encara no hi ha credencials",
       "description": "Crea la teva primera credencial per començar.",
@@ -233,7 +233,7 @@
     "title": "Emissió de LEAR Credential",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
-    "doctorid": "Identificació Mèdica",
+    "doctorid": "Doctor ID",
     "doctorData": "Dades del metge",
     "registrationNumber": "Número de col·legiat",
     "nationalId": "DNI",

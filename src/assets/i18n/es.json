@@ -199,7 +199,7 @@
     "learcredential.machine.sd.1": "LEAR Credential Machine",
     "gx.labelcredential.w3c.1": "Label Credential",
     "VerifiableCertification": "Verifiable Certification",
-    "doctorid.sd.1": "Identificación Médica",
+    "doctorid.sd.1": "Doctor ID",
     "emptyState": {
       "title": "Aún no hay credenciales",
       "description": "Crea tu primera credencial para comenzar.",
@@ -233,7 +233,7 @@
     "title": "Emisión de  credencial",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
-    "doctorid": "Identificación Médica",
+    "doctorid": "Doctor ID",
     "doctorData": "Datos del médico",
     "registrationNumber": "Número de colegiado",
     "nationalId": "DNI",
