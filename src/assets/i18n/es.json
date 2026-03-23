@@ -199,6 +199,7 @@
     "learcredential.machine.sd.1": "LEAR Credential Machine",
     "gx.labelcredential.w3c.1": "Label Credential",
     "VerifiableCertification": "Verifiable Certification",
+    "doctorid.sd.1": "Identificación Médica",
     "emptyState": {
       "title": "Aún no hay credenciales",
       "description": "Crea tu primera credencial para comenzar.",
