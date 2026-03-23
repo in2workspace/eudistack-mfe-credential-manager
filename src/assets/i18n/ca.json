@@ -232,6 +232,12 @@
     "title": "Emissió de LEAR Credential",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
+    "doctorid": "Identificació Mèdica",
+    "doctorData": "Dades del metge",
+    "registrationNumber": "Número de col·legiat",
+    "nationalId": "DNI",
+    "provincialBoard": "Col·legi provincial",
+    "specialty": "Especialitat",
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "Segur que vols crear aquesta credencial?",

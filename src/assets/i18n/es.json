@@ -232,6 +232,12 @@
     "title": "Emisión de  credencial",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
+    "doctorid": "Identificación Médica",
+    "doctorData": "Datos del médico",
+    "registrationNumber": "Número de colegiado",
+    "nationalId": "DNI",
+    "provincialBoard": "Colegio provincial",
+    "specialty": "Especialidad",
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "¿Estás seguro de que quieres crear esta credencial?",

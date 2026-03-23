@@ -12,7 +12,7 @@ export interface IssuanceLEARCredentialRequestDto {
     grant_type: IssuanceGrantType;
 }
 
-export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
+export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload | IssuanceDoctorIdPayload;
 
 //interfaces enviades a API
 export interface IssuancePayloadPower extends Power {
@@ -43,6 +43,17 @@ export interface IssuanceLEARCredentialEmployeePayload {
       mandatee: EmployeeMandatee;
       mandator: EmployeeMandator;
       power: IssuancePayloadPower[];
+}
+
+export interface IssuanceDoctorIdPayload {
+    firstName: string;
+    lastName: string;
+    registrationNumber: string;
+    nationalId: string;
+    provincialBoard: string;
+    specialty: string;
+    email: string;
+    country: string;
 }
 
 export interface IssuanceResponseDto {

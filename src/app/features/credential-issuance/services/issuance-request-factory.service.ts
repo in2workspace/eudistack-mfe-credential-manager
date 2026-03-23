@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType, IssuanceDoctorIdPayload } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
 import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
@@ -15,7 +15,8 @@ export class IssuanceRequestFactoryService {
 
   private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
     'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
-    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data)
+    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data),
+    'doctorid': (data) => this.createDoctorIdRequest(data)
   }
 
   public createCredentialRequest(
@@ -121,10 +122,27 @@ export class IssuanceRequestFactoryService {
     return payload;
   }
 
+  private createDoctorIdRequest(credentialData: IssuanceRawCredentialPayload): IssuanceDoctorIdPayload {
+    const data = credentialData.formData['doctorData'];
+    return {
+      firstName: data['firstName'],
+      lastName: data['lastName'],
+      registrationNumber: data['registrationNumber'],
+      nationalId: data['nationalId'],
+      provincialBoard: data['provincialBoard'],
+      specialty: data['specialty'],
+      email: data['email'],
+      country: data['country']
+    };
+  }
+
   private getCredentialEmail(credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType): string {
       if (credentialType === 'learcredential.employee') {
         return credentialData.formData['mandatee']?.['email'] ?? '';
+      }
+      if (credentialType === 'doctorid') {
+        return credentialData.formData['doctorData']?.['email'] ?? '';
       }
       if (!credentialData.onBehalf) {
         return this.authService.getMandateeEmail();
@@ -242,5 +260,6 @@ function buildPowerMap(tenantDomain: string): Record<IssuanceCredentialType, Par
         action: ['Execute']
       }
     },
+    'doctorid': {},
   };
 }

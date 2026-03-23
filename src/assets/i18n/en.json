@@ -232,6 +232,12 @@
     "title": "LEAR Credential Issuance",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
+    "doctorid": "Doctor ID",
+    "doctorData": "Doctor information",
+    "registrationNumber": "Registration number",
+    "nationalId": "National ID",
+    "provincialBoard": "Provincial board",
+    "specialty": "Specialty",
     "create-confirm-dialog": {
       "title": "Create credential",
       "message": "Are you sure you want to create this credential?",

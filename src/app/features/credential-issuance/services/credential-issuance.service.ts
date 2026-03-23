@@ -230,7 +230,7 @@ export class CredentialIssuanceService {
     this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
   }
 
-  private issuanceViewModelsBuilder(credType: "learcredential.employee" | "learcredential.machine", onBehalf: boolean): IssuanceViewModelsTuple{
+  private issuanceViewModelsBuilder(credType: IssuanceCredentialType, onBehalf: boolean): IssuanceViewModelsTuple{
     return this.schemaBuilder.formSchemasBuilder(credType, onBehalf);
   }
 
