@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-03-24
+
 ### Removed
 
 - Hardcoded LEAR credential detail schemas (`LearCredentialEmployeeDetailsViewModelSchema`, `LearCredentialMachineDetailsViewModelSchema`). LEAR credential details are now rendered exclusively via the dynamic schema builder driven by `credential_metadata.claims` from the issuer.

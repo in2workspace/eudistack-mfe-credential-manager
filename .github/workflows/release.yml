@@ -1,140 +1,39 @@
 name: Release
+
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+    branches: [main]
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  release-snapshot:
-    if: github.event_name == 'pull_request'
-    name: Release Snapshot
-    concurrency:
-      group: docker-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
-    runs-on: ubuntu-latest
-    environment: local
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Get Project Name
-        id: project_name
-        run: echo "PROJECT_NAME=$(jq -r '.name' package.json)" >> $GITHUB_ENV
-
-      - name: Get Project Version
-        id: get_version
-        run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
-
-      - name: Compute PR-based snapshot suffix
-        if: github.event_name == 'pull_request'
-        run: echo "SNAPSHOT_SUFFIX=-pr-${{ github.event.number }}" >> $GITHUB_ENV
-
-      - name: Check for existing release tag (only on PR)
-        if: github.event_name == 'pull_request'
-        env:
-          VERSION: ${{ env.VERSION }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_EXISTS=$(curl -H "Authorization: token $GITHUB_TOKEN" -s https://api.github.com/repos/${{ github.repository }}/releases | jq -r ".[] | select(.tag_name == \"v$VERSION\") | .tag_name")
-          if [ "$TAG_EXISTS" == "v$VERSION" ]; then
-            echo "Release tag v$VERSION already exists. Rejecting PR."
-            exit 1
-          else
-            echo "No existing release with tag v$VERSION found. Proceeding with build."
-          fi
-
-      # Logins
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: in2infra
-          password: ${{ secrets.DOCKERHUB_PAT }}
-
-      - name: Build and Push docker image (DockerHub)
-        env:
-          PROJECT_NAME: ${{ env.PROJECT_NAME }}
-          VERSION: ${{ env.VERSION }}
-          SNAPSHOT_SUFFIX: ${{ env.SNAPSHOT_SUFFIX }}
-          DOCKERHUB_ORG: in2workspace
-        run: |
-          set -euo pipefail
-          TAG="v${VERSION}${SNAPSHOT_SUFFIX}"
-
-          DH_IMAGE="docker.io/${DOCKERHUB_ORG}/${PROJECT_NAME}:${TAG}"
-
-          docker build -f Dockerfile --build-arg SKIP_TESTS=true -t "${DH_IMAGE}" .
-
-          docker push "${DH_IMAGE}"
-
   release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    name: Release
+    name: Create Release
     runs-on: ubuntu-latest
-    environment: local
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Get Project Version
-        id: get_version
+      - name: Get Version
         run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
 
-      - name: Get Project Name
-        id: project_name
-        run: echo "PROJECT_NAME=$(jq -r '.name' package.json)" >> $GITHUB_ENV
-
-      - name: Check for existing release tag
+      - name: Check if release exists
         env:
-          VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_EXISTS=$(curl -H "Authorization: token $GITHUB_TOKEN" -s https://api.github.com/repos/${{ github.repository }}/releases | jq -r ".[] | select(.tag_name == \"v$VERSION\") | .tag_name")
-          if [ "$TAG_EXISTS" == "v$VERSION" ]; then
-            echo "Release tag v$VERSION already exists. Skipping release."
-            exit 1
-          else
-            echo "No existing release with tag v$VERSION found. Proceeding with build."
+          TAG_EXISTS=$(gh release view "v${{ env.VERSION }}" --json tagName --jq '.tagName' 2>/dev/null || echo "")
+          if [ "$TAG_EXISTS" = "v${{ env.VERSION }}" ]; then
+            echo "::notice::Release v${{ env.VERSION }} already exists — skipping."
+            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
           fi
-
-      # Logins
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: in2infra
-          password: ${{ secrets.DOCKERHUB_PAT }}
-
-      - name: Build and Push docker image (DockerHub)
-        env:
-          PROJECT_NAME: ${{ env.PROJECT_NAME }}
-          VERSION: ${{ env.VERSION }}
-          DOCKERHUB_ORG: in2workspace
-        run: |
-          set -euo pipefail
-          TAG="v${VERSION}"
-          DH_IMAGE="docker.io/${DOCKERHUB_ORG}/${PROJECT_NAME}:${TAG}"
-          DH_LATEST="docker.io/${DOCKERHUB_ORG}/${PROJECT_NAME}:latest"
-
-          docker build -f Dockerfile --build-arg SKIP_TESTS=true -t "${DH_IMAGE}" .
-          docker tag "${DH_IMAGE}" "${DH_LATEST}"
-
-          docker push "${DH_IMAGE}"
-          docker push "${DH_LATEST}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        if: env.SKIP_RELEASE != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${{ env.VERSION }}"
-          release_name: "v${{ env.VERSION }}"
-          body: "Release of version v${{ env.VERSION }}"
-          draft: false
-          prerelease: false
+        run: |
+          gh release create "v${{ env.VERSION }}" \
+            --title "v${{ env.VERSION }}" \
+            --notes "Release of version v${{ env.VERSION }}" \
+            --target main
