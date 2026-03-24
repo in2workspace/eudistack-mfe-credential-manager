@@ -1,26 +1,33 @@
-# GitHub Actions workflow for deploying EUDIStack Credential Manager to AWS Amplify
-# Manually triggered
-name: Deploy to AWS Amplify
+name: Deploy
+
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - stg
+        default: 'stg'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy:
-    name: Deploy to AWS Amplify
+    name: Deploy to ${{ inputs.environment }}
     runs-on: ubuntu-latest
-    environment: stg
+    environment: ${{ inputs.environment }}
     env:
       AMPLIFY_APP_NAME: credential-manager
       BRANCH_NAME: main
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
@@ -29,10 +36,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Npm Build
+      - name: Build
         run: npm run build -- --output-path=./dist/out --configuration "production"
 
-      - name: Generate env.js from env.template.js (envsubst)
+      - name: Generate env.js
         env:
           IAM_URL: ${{ vars.IAM_URL }}
           IAM_URI_TEMPLATE: ${{ vars.IAM_URI_TEMPLATE }}
@@ -45,49 +52,51 @@ jobs:
           SHOW_WALLET_URL_TEST: ${{ vars.SHOW_WALLET_URL_TEST }}
         run: |
           sudo apt-get update && sudo apt-get install -y gettext-base
+
           if [ -f dist/out/assets/env.template.js ]; then
             envsubst < dist/out/assets/env.template.js > dist/out/assets/env.js
-            echo "Generated env.js from env.template.js:"
-            head -n 30 dist/out/assets/env.js || true
+            echo "Generated env.js"
           else
-            echo "dist/out/assets/env.template.js not found" >&2
+            echo "env.template.js not found" >&2
             exit 1
           fi
 
-      - name: Create Zip File
+      - name: Create Zip
         run: |
           cd dist/out
           zip -r ../out.zip .
           echo "ZIP_FILE=dist/out.zip" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Extract Amplify App ID
+      - name: Deploy to Amplify
         run: |
+          set -euo pipefail
           AMPLIFY_APP_ID=$(aws amplify list-apps --query "apps[?name=='${{ env.AMPLIFY_APP_NAME }}'] | [0].appId" --output text)
           echo "AMPLIFY_APP_ID=$AMPLIFY_APP_ID" >> $GITHUB_ENV
-          echo "Found App ID: $AMPLIFY_APP_ID for app: ${{ env.AMPLIFY_APP_NAME }}"
 
-      - name: Create AWS Amplify Deployment
-        run: |
-          DEPLOYMENT_OUTPUT=$(aws amplify create-deployment --app-id ${{ env.AMPLIFY_APP_ID }} --branch-name ${{ env.BRANCH_NAME }} --output json)
+          DEPLOYMENT_OUTPUT=$(aws amplify create-deployment --app-id "${AMPLIFY_APP_ID}" --branch-name "${{ env.BRANCH_NAME }}" --output json)
           ZIP_UPLOAD_URL=$(echo $DEPLOYMENT_OUTPUT | jq -r '.zipUploadUrl')
           JOB_ID=$(echo $DEPLOYMENT_OUTPUT | jq -r '.jobId')
-          echo "ZIP_UPLOAD_URL=$ZIP_UPLOAD_URL" >> $GITHUB_ENV
-          echo "JOB_ID=$JOB_ID" >> $GITHUB_ENV
-          echo "Deployment created with Job ID: $JOB_ID and Upload URL: $ZIP_UPLOAD_URL"
 
-      - name: Upload Deployment Zip
-        run: |
-          echo "Uploading zip file to AWS Amplify..."
-          curl -X PUT --upload-file ${{ env.ZIP_FILE }} "${{ env.ZIP_UPLOAD_URL }}"
+          curl -X PUT --upload-file ${{ env.ZIP_FILE }} "${ZIP_UPLOAD_URL}"
+          aws amplify start-deployment --app-id "${AMPLIFY_APP_ID}" --branch-name "${{ env.BRANCH_NAME }}" --job-id "${JOB_ID}"
 
-      - name: Start AWS Amplify Deployment
+          echo "### 🚀 Deployed to Amplify" >> $GITHUB_STEP_SUMMARY
+          echo "- **App:** ${{ env.AMPLIFY_APP_NAME }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Smoke test
         run: |
-          echo "Starting deployment for Job ID: ${{ env.JOB_ID }}"
-          aws amplify start-deployment --app-id ${{ env.AMPLIFY_APP_ID }} --branch-name ${{ env.BRANCH_NAME }} --job-id ${{ env.JOB_ID }}
+          SITE_URL="https://credential-manager-${{ inputs.environment }}.altia.eudistack.net"
+          sleep 30
+          HTTP_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "${SITE_URL}" --max-time 15 || echo "000")
+          if [ "${HTTP_STATUS}" = "200" ]; then
+            echo "Smoke test passed (HTTP ${HTTP_STATUS})"
+          else
+            echo "::warning::Smoke test returned HTTP ${HTTP_STATUS}"
+          fi
