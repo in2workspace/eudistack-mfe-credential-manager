@@ -1,10 +1,11 @@
 {
   "next": "Següent",
   "back": "Tornar",
+  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
-    "title": "Benvingut a l'Issuer de LEAR Credentials ",
+    "title": "Benvingut a l'Issuer de LEAR Credentials",
     "learn-more": "Més informació",
     "scroll": "Desplaça't per saber-ne més i iniciar sessió",
     "intro-main": "Aquest lloc està destinat als Representants Legals d'empreses que vulguin emetre una o més LEAR Credentials per als seus empleats. Una LEAR Credential és un tipus de Credencial Verificable que permet a un empleat, designat per un representant legal, actuar en nom d'una organització amb poders restringits envers tercers.",
@@ -60,7 +61,7 @@
     "DRAFT": "ESBORRANY",
     "PEND_SIGNATURE": "PER SIGNAR",
     "WITHDRAWN": "WITHDRAWN",
-    "VALID": "VALID",
+    "VALID": "VÀLID",
     "REVOKED": "REVOCAT",
     "EXPIRED": "EXPIRAT",
     "PEND_DOWNLOAD": "PER DESCARREGAR",
@@ -101,6 +102,8 @@
     "scope": "abast",
     "standard": "estàndard",
 	  "basic": "bàsic",
+    "credentialSubject": "subjecte de la credencial",
+    "mandate": "mandat",
     "credentialStatus": "estat de la credencial",
     "statusListCredential": "llista d'estat",
     "statusListIndex": "índex a la llista",
@@ -144,7 +147,7 @@
     "first-label": "Iniciar sessió al Wallet",
     "second-label": "Obtenir Credencial",
     "no-data": "No hi ha dades d'oferta de credencial.",
-    "getting": "Obtenint de l'oferta de credencial...",
+    "getting": "Obtenint l'oferta de credencial...",
     "refreshing": "Actualitzant l'oferta de credencial...",
     "unable": "No pots escanejar el codi QR? Fes clic a l'enllaç següent per accedir al",
     "environment-wallet": "Wallet de l'entorn",
@@ -156,7 +159,7 @@
     "remaining-time": "Temps restant:",
     "first-step": {
       "title": "Escaneja el codi QR per iniciar sessió i accedir al Wallet Digital.",
-      "test-purposes": "Per fer fer proves, accedeix al "
+      "test-purposes": "Per fer proves, accedeix al "
     },
     "copy-qr": "Copiar contingut del QR",
     "copied": "Copiat!",
@@ -174,7 +177,7 @@
     "status": "Estatus",
     "organization": "Organització",
     "organizationIdentifier": "ID d'Organització",
-    "filter-by-org": "Filtra por org.",
+    "filter-by-org": "Filtra per org.",
     "subject": "Subjecte",
     "credentialType": "Tipus de credencial",
     "updated": "Actualitzat",
@@ -184,7 +187,6 @@
     "search": "Buscar per",
     "searchPlaceholderSubject": "Joan Garcia",
     "searchPlaceholderOrgID": "VATES-000000",
-    "searchPlaceholder": "Joan Garcia",
       "paginator": {
       "items-per-page": "Ítems per pàg.",
       "next-page": "Següent",
@@ -222,10 +224,10 @@
       "attest": "Acreditar",
       "select": "Selecciona un poder",
       "invalid_power_title": "Accés Denegat",
-      "invalid_power_message": "No teniu la política necessaria per accedir",
+      "invalid_power_message": "No teniu la política necessària per accedir",
       "remove-dialog": {
         "title":"Eliminar power",
-        "message": "Segur que vols eliminar aquest power? "
+        "message": "Segur que vols eliminar aquest power?"
       }
     },
    "credentialIssuance": {

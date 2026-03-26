@@ -102,6 +102,8 @@
     "scope": "scope",
     "standard": "standard",
     "basic": "basic",
+    "credentialSubject": "credential subject",
+    "mandate": "mandate",
     "credentialStatus": "credential status",
     "statusListCredential": "status list",
     "statusListIndex": "status list index",
@@ -225,7 +227,7 @@
     "invalid_power_message": "You do not have the required power to access.",
     "remove-dialog": {
       "title": "Remove power",
-      "message": "Are you sure you want to remove this power? "
+      "message": "Are you sure you want to remove this power?"
     }
   },
   "credentialIssuance": {
@@ -289,7 +291,7 @@
       "copied": "Copied!"
     },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",
-    "unloadAlert": "Are you sure yo want to leave? Your progress will be lost."
+    "unloadAlert": "Are you sure you want to leave? Your progress will be lost."
   },
   "error": {
     "not_found": "The requested resource was not found.",
