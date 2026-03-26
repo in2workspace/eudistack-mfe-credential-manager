@@ -1,6 +1,7 @@
 {
   "next": "Siguiente",
   "back": "Volver",
+  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
@@ -61,7 +62,7 @@
     "DRAFT": "BORRADOR",
     "PEND_SIGNATURE": "POR FIRMAR",
     "WITHDRAWN": "WITHDRAWN",
-    "VALID": "VALIDO",
+    "VALID": "VÁLIDO",
     "REVOKED": "REVOCADO",
     "EXPIRED": "EXPIRADO",
     "PEND_DOWNLOAD": "POR DESCARGAR",
@@ -101,6 +102,8 @@
     "scope": "alcance",
     "standard": "estándar",
 	  "basic": "básico",
+    "credentialSubject": "sujeto de la credencial",
+    "mandate": "mandato",
     "credentialStatus": "estado de la credencial",
     "statusListCredential": "lista de estado",
     "statusListIndex": "índice en la lista",
@@ -125,7 +128,7 @@
     },
     "revokeCredentialConfirm": {
       "title": "Revocar Credencial",
-      "message": "Estás seguro de que deseas revocar la credencial?"
+      "message": "¿Estás seguro de que deseas revocar la credencial?"
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
@@ -184,7 +187,6 @@
     "search": "Buscar por",
     "searchPlaceholderSubject": "Juan García",
     "searchPlaceholderOrgID": "VATES-000000",
-    "searchPlaceholder": "Juan García",
       "paginator": {
       "items-per-page": "Ítems por página",
       "next-page": "Siguiente",
@@ -225,11 +227,11 @@
     "invalid_power_message": "No tienes la política necesaria para acceder",
     "remove-dialog": {
       "title":"Eliminar power",
-      "message": "Seguro que quieres eliminar este power? "
+      "message": "¿Seguro que quieres eliminar este power?"
     }
   },
   "credentialIssuance": {
-    "title": "Emisión de  credencial",
+    "title": "Emisión de credencial",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
