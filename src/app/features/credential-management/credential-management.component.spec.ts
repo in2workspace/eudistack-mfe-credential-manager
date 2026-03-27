@@ -95,9 +95,9 @@ describe('CredentialManagementComponent', () => {
     expect(component.isAdminOrganizationIdentifier).toBe(true);
   });
 
-  it('should call loadCredentialData on ngOnInit', () => {
+  it('should call initializeCredentialTable on ngOnInit', () => {
     // Spy on the private method
-    const loadSpy = jest.spyOn(component as any, 'loadCredentialData');
+    const loadSpy = jest.spyOn(component as any, 'initializeCredentialTable');
     component.ngOnInit();
     expect(loadSpy).toHaveBeenCalledTimes(1);
   });
@@ -126,31 +126,17 @@ describe('CredentialManagementComponent', () => {
   }));
 
   it('should run all setup functions inside ngAfterViewInit', () => {
-    // Provide dummy paginator and sort so assignments work
-    const mockPaginator = {} as any;
-    const mockSort = {} as any;
-    component.paginator = mockPaginator;
-    component.sort = mockSort;
-
-    // Spies on the private setup methods called inside ngAfterViewInit
-    const sortAccessorSpy = jest.spyOn(component as any, 'setDataSortingAccessor');
     const filterPredicateSpy = jest.spyOn(component as any, 'setFilterPredicate');
     const searchSubSpy = jest.spyOn(component as any, 'setStringSearchSubscription');
 
     component.ngAfterViewInit();
 
-    // Assignments done
-    expect(component.dataSource.paginator).toBe(mockPaginator);
-    expect(component.dataSource.sort).toBe(mockSort);
-
-    // Methods executed with the right arguments
-    expect(sortAccessorSpy).toHaveBeenCalledTimes(1);
     expect(filterPredicateSpy).toHaveBeenCalledWith('subject');
     expect(searchSubSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should configure sortingDataAccessor correctly (status, subject, updated, credential_type, organization_identifier)', () => {
-    component.ngAfterViewInit();
+    (component as any).setDataSortingAccessor();
     const mockItem: any = {
       credential_procedure: {
         procedure_id: 'id-proc',
@@ -252,13 +238,18 @@ describe('CredentialManagementComponent', () => {
     credentialProcedureSpy.mockReturnValue(of(mockResponse));
     const withClass: CredentialProcedureWithClass[] = [{ ...mockProc, statusClass: 'status-active' }];
     const statusSpy = jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+    const cdSpy = jest.spyOn(component['cd'], 'detectChanges');
 
-    component['loadCredentialData']();
+    component['initializeCredentialTable']();
     tick();
 
     expect(credentialProcedureSpy).toHaveBeenCalled();
     expect(statusSpy).toHaveBeenCalledWith(mockResponse.credential_procedures);
     expect(component.dataSource.data).toEqual(withClass);
+    expect(cdSpy).toHaveBeenCalled();
+    expect(component.dataSource.paginator).toBeDefined();
+    expect(component.dataSource.sort).toBeDefined();
+    expect(component.dataSource.sortingDataAccessor).toBeDefined();
   }));
 
   it('should log an error if fetchCredentialProcedures fails', fakeAsync(() => {
@@ -266,7 +257,7 @@ describe('CredentialManagementComponent', () => {
     credentialProcedureSpy.mockReturnValue(throwError(() => error));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    component['loadCredentialData']();
+    component['initializeCredentialTable']();
     tick();
 
     expect(consoleSpy).toHaveBeenCalledWith('Error fetching credentials for table', error);

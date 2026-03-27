@@ -10,16 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
 - Fix credential details grouping to display section titles using the second-to-last key to handle different path depths.
+- Sort credential list by updated date (desc by default)
 
 ## [3.0.0] - 2026-03-24
 
 ### Removed
-
 - Hardcoded LEAR credential detail schemas (`LearCredentialEmployeeDetailsViewModelSchema`, `LearCredentialMachineDetailsViewModelSchema`). LEAR credential details are now rendered exclusively via the dynamic schema builder driven by `credential_metadata.claims` from the issuer.
-
-## [3.0.1](https://github.com/in2workspace/eudistack-mfe-credential-manager/releases/tag/v3.0.1)
-### Fixed
-- Sort credential list by updated date (desc by default)
 
 ## [2.1.13](https://github.com/in2workspace/in2-issuer-ui/releases/tag/v2.1.13)
 ### Changed
