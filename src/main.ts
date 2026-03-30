@@ -5,7 +5,6 @@ import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
 import { ServeErrorInterceptor } from './app/core/interceptors/server-error-interceptor';
-import { TenantHeaderInterceptor } from './app/core/interceptors/tenant-header.interceptor';
 import { AuthInterceptor, AuthModule } from 'angular-auth-oidc-client';
 import { HTTP_INTERCEPTORS, HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { RouterModule } from "@angular/router";
@@ -75,7 +74,6 @@ bootstrapApplication(AppComponent, {
             },
         })),
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-        { provide: HTTP_INTERCEPTORS, useClass: TenantHeaderInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ServeErrorInterceptor, multi: true },
         provideAnimations(),
     ]
