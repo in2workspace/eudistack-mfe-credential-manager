@@ -102,8 +102,6 @@
     "scope": "alcance",
     "standard": "estándar",
 	  "basic": "básico",
-    "credentialSubject": "sujeto de la credencial",
-    "mandate": "mandato",
     "credentialStatus": "estado de la credencial",
     "statusListCredential": "lista de estado",
     "statusListIndex": "índice en la lista",

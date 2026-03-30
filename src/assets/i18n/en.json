@@ -102,8 +102,6 @@
     "scope": "scope",
     "standard": "standard",
     "basic": "basic",
-    "credentialSubject": "credential subject",
-    "mandate": "mandate",
     "credentialStatus": "credential status",
     "statusListCredential": "status list",
     "statusListIndex": "status list index",
