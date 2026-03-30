@@ -102,8 +102,6 @@
     "scope": "abast",
     "standard": "estàndard",
 	  "basic": "bàsic",
-    "credentialSubject": "subjecte de la credencial",
-    "mandate": "mandat",
     "credentialStatus": "estat de la credencial",
     "statusListCredential": "llista d'estat",
     "statusListIndex": "índex a la llista",

@@ -49,7 +49,7 @@ export class DynamicSchemaBuilder {
     claimKey: string,
     path: string[],
   ): void {
-    const groupKey = path.length > 1 ? path[0] : '_root';
+    const groupKey = path.length > 1 ? path[path.length - 2] : '_root';
     const label = this.resolveDisplayName(claim);
 
     const valueMap = claim.value_map;

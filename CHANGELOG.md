@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
+- Fix credential details grouping to display section titles using the second-to-last key to handle different path depths.
 
 ## [3.0.0] - 2026-03-24
 
