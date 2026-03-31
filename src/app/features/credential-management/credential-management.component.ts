@@ -1,5 +1,5 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
-import { AfterViewInit, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { Router } from '@angular/router';
@@ -98,6 +98,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly statusService = inject(LifeCycleStatusService);
+  private readonly cd = inject(ChangeDetectorRef);
   private readonly searchSubject = new Subject<string>();
 
   private readonly filtersMap: Record<Filter, FilterConfig> = {
@@ -109,15 +110,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    } as const;
 
   public ngOnInit() {
-    this.loadCredentialData();
+    this.initializeCredentialTable();
     this.isAdminOrganizationIdentifier = this.authService.hasAdminOrganizationIdentifier();
   }
 
   public ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-
-    this.setDataSortingAccessor();
     this.setFilter("subject");
     this.setStringSearchSubscription();
   }
@@ -171,7 +168,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.searchSubject.next(filterValue);
   }
 
-  private loadCredentialData(): void {
+  private initializeCredentialTable(): void {
     this.isLoading = true;
     this.credentialProcedureService.fetchCredentialProcedures()
     .pipe(take(1))
@@ -179,6 +176,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       next: (data: CredentialProceduresResponse) => {
         this.dataSource.data = this.statusService.addStatusClass(data.credential_procedures);
         this.isLoading = false;
+        this.cd.detectChanges();
+        this.dataSource.paginator = this.paginator;
+        this.setDataSortingAccessor();
+        this.dataSource.sort = this.sort;
       },
       error: (error) => {
         console.error('Error fetching credentials for table', error);
@@ -198,7 +199,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return item.credential_procedure.subject.toLowerCase();
         }
         case 'updated': {
-          return item.credential_procedure.updated.toLowerCase();
+          const t = Date.parse(item.credential_procedure.updated);
+          return Number.isFinite(t) ? t : 0;
         }
         case 'credential_type': {
           return item.credential_procedure.credential_type.toLowerCase();
