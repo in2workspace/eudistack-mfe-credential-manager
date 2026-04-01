@@ -86,7 +86,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   }
 
   @HostListener('window:beforeunload', ['$event'])
-  private unloadAlert($event: BeforeUnloadEvent): void{
+  public unloadAlert($event: BeforeUnloadEvent): void{
     if(!this.canLeave()){
       const confirm = this.issuanceService.openLeaveConfirm();
       if(!confirm) $event.preventDefault();

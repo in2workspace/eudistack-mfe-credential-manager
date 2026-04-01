@@ -5,7 +5,7 @@ import { CredentialProcedureService } from 'src/app/core/services/credential-pro
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { EMPTY, from, map, Observable, of, startWith, switchMap, tap } from 'rxjs';
-import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
+import { MetadataBasedSchemaBuilder } from './metadata-based-schema-builder.service';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -64,12 +64,13 @@ export class CredentialIssuanceService {
   public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
   public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
 
-  // BUILD SCHEMAS FROM CREDENTIAL TYPE
-  public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() =>
-    this.selectedCredentialType$()
-    ? this.issuanceViewModelsBuilder(this.selectedCredentialType$()!, this.onBehalf$())
-    : null
-  );
+  // BUILD SCHEMAS FROM CREDENTIAL TYPE AND FORMAT
+  public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() => {
+    const formatOption = this.effectiveFormatOption$();
+    if (!formatOption) return null;
+    
+    return this.buildSchemaFromMetadata(formatOption.configId, this.onBehalf$());
+  });
 
   // SIDE (STATIC CREDENTIAL DATA)
   public staticData$ = computed<IssuanceStaticViewModel | null>(() => {
@@ -123,7 +124,7 @@ export class CredentialIssuanceService {
   private readonly dialog = inject(DialogWrapperService);
   private readonly matDialog = inject(MatDialog);
   private readonly router = inject(Router);
-  private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
+  private readonly metadataSchemaBuilder = inject(MetadataBasedSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
 
@@ -230,8 +231,8 @@ export class CredentialIssuanceService {
     this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
   }
 
-  private issuanceViewModelsBuilder(credType: "learcredential.employee" | "learcredential.machine", onBehalf: boolean): IssuanceViewModelsTuple{
-    return this.schemaBuilder.formSchemasBuilder(credType, onBehalf);
+  private buildSchemaFromMetadata(configId: string, onBehalf: boolean): IssuanceViewModelsTuple | null {
+    return this.metadataSchemaBuilder.buildSchemaFromMetadata(configId, onBehalf);
   }
 
   private formBuilder(

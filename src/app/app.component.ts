@@ -31,6 +31,11 @@ public readonly showNavbar$ = toSignal(this.router.events.pipe(
   startWith(!this.router.url.startsWith('/home'))
 ));
 
+constructor(){
+  //todo remove
+  console.log("AppComponent initialized");
+}
+
 public getRouteAnimationData() {
   return this.contexts.getContext('primary')?.route?.snapshot?.url;
 }
