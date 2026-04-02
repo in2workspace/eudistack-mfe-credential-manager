@@ -150,6 +150,9 @@ export class AuthService{
 
   private handleUserAuthentication(userData: UserDataAuthenticationResponse): void {
     try {
+      // Unwrap mandate wrapper if present (SD-JWT with nested disclosures)
+      this.unwrapMandate(userData);
+
       if (userData.mandator && userData.mandatee) {
         this.handleFlatClaimsLogin(userData);
       } else {
@@ -157,6 +160,20 @@ export class AuthService{
       }
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  private unwrapMandate(userData: any): void {
+    if (userData.mandate && typeof userData.mandate === 'object') {
+      if (!userData.mandatee && userData.mandate.mandatee) {
+        userData.mandatee = userData.mandate.mandatee;
+      }
+      if (!userData.mandator && userData.mandate.mandator) {
+        userData.mandator = userData.mandate.mandator;
+      }
+      if (!userData.power && userData.mandate.power) {
+        userData.power = userData.mandate.power;
+      }
     }
   }
 
