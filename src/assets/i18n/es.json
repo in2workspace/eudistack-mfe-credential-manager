@@ -61,7 +61,7 @@
     "type" : "tipo",
     "DRAFT": "BORRADOR",
     "PEND_SIGNATURE": "POR FIRMAR",
-    "WITHDRAWN": "WITHDRAWN",
+    "WITHDRAWN": "RETIRADO",
     "VALID": "VÁLIDO",
     "REVOKED": "REVOCADO",
     "EXPIRED": "EXPIRADO",
