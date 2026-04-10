@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified light blue buttons to primary color 
 - Fix credential details grouping to display section titles using the second-to-last key to handle different path depths.
 - Sort credential list by updated date (desc by default)
+- Fix incorrect "serial number" label (previously shown as "identity-document")
 
 ## [3.0.0] - 2026-03-24
 
