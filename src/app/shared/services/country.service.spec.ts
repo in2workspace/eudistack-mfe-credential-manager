@@ -31,7 +31,7 @@ describe('CountryService', () => {
 
     // A couple of concrete examples derived from the provided COUNTRIES
     expect(service.findCountryByIsoCode('ES')?.name).toBe('countries.spain');
-    expect(service.findCountryByIsoCode('GB')?.name).toBe('countries.unitedkingdom'); // original was "unitedKingdom"
+    expect(service.findCountryByIsoCode('GB')?.name).toBe('countries.unitedKingdom'); // original was "unitedKingdom"
   });
 
   it('should return the list of countries (already mapped)', () => {
