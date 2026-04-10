@@ -21,7 +21,7 @@ export class CountryService {
   private mapCountriesToTranslationLabel(countries: Country[]): Country[]{
     return countries.map(c => ({
       ...c,
-      name: "countries." + c.name.toLocaleLowerCase() 
+      name: "countries." + c.name
     }));
   }
 
