@@ -324,6 +324,25 @@
     
   }
 }
+@media (orientation: landscape) and (max-height: 500px) {
+  .landing-page {
+    .container-nav {
+      .main-header {
+        padding: 1rem 0;
+        min-height: 56px;
+        
+        .navbar {
+          .navbar-brand {
+            .logo {
+              height: 48px;
+              max-width: 96px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 #about-section {
   scroll-margin-top: 130px;
