@@ -3,24 +3,12 @@ import { routes } from './app.routes';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 
 describe('App Routes', () => {
-  it('should contain a default redirect to home', () => {
+  it('should contain a default redirect to organization/credentials', () => {
     const defaultRoute = routes.find(
-      (route) => route.path === '' && route.redirectTo === 'home'
+      (route) => route.path === '' && route.redirectTo === 'organization/credentials'
     );
     expect(defaultRoute).toBeTruthy();
     expect(defaultRoute?.pathMatch).toBe('full');
-  });
-
-  it('should define lazy loading for the home module', () => {
-    const homeRoute = routes.find((route) => route.path === 'home');
-    expect(homeRoute).toBeTruthy();
-    expect(typeof homeRoute?.loadChildren).toBe('function');
-  });
-
-  it('should actually load the home module', async () => {
-    const homeRoute = routes.find(r => r.path === 'home')!;
-    const homeModule = await homeRoute.loadChildren!();
-    expect(homeModule).toBeDefined();
   });
 
   it('should define lazy loading for settings with guards', () => {
@@ -122,9 +110,9 @@ describe('App Routes', () => {
     expect(module).toBeDefined();
   });
 
-  it('should redirect wildcard (**) to home', () => {
+  it('should redirect wildcard (**) to organization/credentials', () => {
     const wildcardRoute = routes.find((route) => route.path === '**');
     expect(wildcardRoute).toBeTruthy();
-    expect(wildcardRoute?.redirectTo).toBe('home');
+    expect(wildcardRoute?.redirectTo).toBe('organization/credentials');
   });
 });

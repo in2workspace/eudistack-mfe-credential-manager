@@ -11,7 +11,10 @@ import { CUSTOM_ELEMENTS_SCHEMA, ViewContainerRef } from '@angular/core';
 import { CredentialOfferStepperComponent, loadingBufferTimeInMs, undefinedCredentialOfferParamsState } from './credential-offer-stepper.component';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { HomeComponent } from '../../home/home.component';
+import { Component } from '@angular/core';
+
+@Component({ selector: 'app-stub', template: '', standalone: true })
+class StubComponent {}
 import { TemplatePortal } from '@angular/cdk/portal';
 
 (globalThis as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj));
@@ -54,7 +57,7 @@ describe('Credential Offer Stepper', () => {
 
     await TestBed.configureTestingModule({
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    imports: [BrowserAnimationsModule, RouterModule.forRoot([{ path: 'home', component: HomeComponent }]), TranslateModule.forRoot({}), CredentialOfferStepperComponent, HomeComponent],
+    imports: [BrowserAnimationsModule, RouterModule.forRoot([{ path: 'home', component: StubComponent }]), TranslateModule.forRoot({}), CredentialOfferStepperComponent, StubComponent],
     providers: [
         AuthService,
         BreakpointObserver,
@@ -691,7 +694,7 @@ it('should navigate when c_transaction_code is provided', () => {
     component.redirectToHome();
   
     setTimeout(()=>{
-      expect(routerSpy).toHaveBeenCalledWith(['/home']);
+      expect(routerSpy).toHaveBeenCalledWith(['/']);
     }, 1000);
   });
 

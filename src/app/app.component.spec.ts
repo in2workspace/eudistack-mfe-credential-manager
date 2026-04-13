@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { RouterOutlet, ActivatedRoute, Router, NavigationEnd } from '@angular/router';
-import { TranslateService, TranslateModule } from '@ngx-translate/core';
+import { RouterOutlet, ActivatedRoute } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { of, Subject } from 'rxjs';
+import { of } from 'rxjs';
 
 describe('AppComponent', () => {
   let component: AppComponent;
@@ -29,16 +29,7 @@ describe('AppComponent', () => {
     hasPower: () => true,
   } as jest.Mocked<any>;
 
-  let routerEventsSubject: Subject<any>;
-  let mockRouter: Partial<Router>;
-
   beforeEach(async () => {
-    routerEventsSubject = new Subject<any>();
-    mockRouter = {
-      url: '/another',
-      events: routerEventsSubject.asObservable(),
-    };
-
     await TestBed.configureTestingModule({
       schemas: [NO_ERRORS_SCHEMA],
       imports: [
@@ -50,7 +41,6 @@ describe('AppComponent', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: {} } } },
-        { provide: Router, useValue: mockRouter },
         { provide: ThemeService, useValue: { snapshot: { branding: { logoUrl: null } } } },
       ]
     }).compileComponents();
@@ -71,27 +61,14 @@ describe('AppComponent', () => {
     expect(component.title).toBe('Credential-issuer-ui');
   });
 
-  it('should not set language directly (handled by ThemeService via APP_INITIALIZER)', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should contain a router-outlet in the template', () => {
     const routerOutlet = debugElement.query(By.css('router-outlet'));
     expect(routerOutlet).not.toBeNull();
   });
 
-  it('should hide navbar if the route is "/home"', () => {
-    routerEventsSubject.next(new NavigationEnd(1, '/home', '/home'));
-    fixture.detectChanges();
-
-    expect(component.showNavbar$()).toBe(false);
-  });
-
-  it('should show navbar if the route is "/another"', () => {
-    routerEventsSubject.next(new NavigationEnd(1, '/another', '/another'));
-    fixture.detectChanges();
-
-    expect(component.showNavbar$()).toBe(true);
+  it('should always render the navbar', () => {
+    const navbar = debugElement.query(By.css('app-navbar'));
+    expect(navbar).not.toBeNull();
   });
 
 });

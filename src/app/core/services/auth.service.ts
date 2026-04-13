@@ -113,7 +113,7 @@ export class AuthService{
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
-        if (this.router.url === '/' || this.router.url.startsWith('/home')) {
+        if (this.router.url === '/') {
           this.router.navigate([IAM_POST_LOGIN_ROUTE]);
         }
       }else{
@@ -137,7 +137,7 @@ export class AuthService{
     this.nameSubject.next('');
     this.userPowers = [];
     sessionStorage.clear();
-    this.router.navigate(['/home']);
+    this.router.navigate(['/']);
   }
 
   public authorize(){

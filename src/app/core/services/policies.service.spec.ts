@@ -65,7 +65,7 @@ describe('PoliciesService', () => {
 
       service.checkOnboardingPolicy().subscribe((result) => {
         expect(dialogMock.openErrorInfoDialog).toHaveBeenCalled();
-        expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
+        expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
         expect(result).toBe(false);
         done();
       });
