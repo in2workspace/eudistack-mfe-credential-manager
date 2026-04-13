@@ -133,14 +133,18 @@ $custom-theme: mat.m2-define-light-theme((
 }
 
 .mat-mdc-radio-button .mdc-radio {
-  --mdc-radio-selected-icon-color: var(--primary-color);
-  --mdc-radio-selected-hover-icon-color: var(--primary-color);
-  --mdc-radio-selected-pressed-icon-color: var(--primary-color);
-  --mdc-radio-selected-focus-icon-color: var(--primary-color);
+  --mdc-radio-selected-icon-color: var(--neutral-strong);
+  --mdc-radio-selected-hover-icon-color: var(--neutral-strong);
+  --mdc-radio-selected-pressed-icon-color: var(--neutral-strong);
+  --mdc-radio-selected-focus-icon-color: var(--neutral-strong);
+  --mdc-radio-unselected-icon-color:         var(--neutral-strong);
+  --mdc-radio-unselected-hover-icon-color:   var(--neutral-strong);
+  --mdc-radio-unselected-pressed-icon-color: var(--neutral-strong);
+  --mdc-radio-unselected-focus-icon-color:   var(--neutral-strong);
 }
 
 .mat-mdc-form-field.mat-focused .mdc-floating-label {
-  color: var(--primary-color) !important;
+  color: var(--neutral-strong) !important;
 }
 
 .mat-mdc-form-field.mat-focused .mdc-line-ripple::after {
@@ -148,5 +152,6 @@ $custom-theme: mat.m2-define-light-theme((
 }
 
 .mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
-  color: var(--primary-color) !important;
+  color: var(--neutral-strong) !important;
+  font-weight: 600;
 }

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add static neutral color CSS variables to ensure proper contrast of UI elements regardless of the configured primary color.
+
 ### Fixed
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
@@ -13,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sort credential list by updated date (desc by default)
 - Fix oversized header, correct i18n translation and normalize countrie names
 - Fix incorrect "serial number" label (previously shown as "identity-document")
+- Fix visibility of buttons and text when primary color is white.
 
 ## [3.0.0] - 2026-03-24
 
