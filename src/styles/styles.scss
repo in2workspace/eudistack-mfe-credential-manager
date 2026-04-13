@@ -63,3 +63,6 @@ button, input, select, textarea {
 #logout-link > * {
   color: var(--status-error);
 }
+.mat-mdc-header-cell {
+  border-bottom-width: 3px !important;
+}
