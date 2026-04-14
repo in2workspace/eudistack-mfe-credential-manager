@@ -24,11 +24,6 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--action-secondary-hover': '#E5E7EB',
   '--action-secondary-text': '#374151',
 
-  /** static, brand-independent neutral color palette　(not overridden by ThemeService)  **/
-  '--neutral-strong':   '#333333', 
-  '--neutral-medium':   '#6B7280',
-  '--neutral-light': '#9CA3AF',
-
   '--status-success':       '#059669',
   '--status-warning':       '#D97706',
   '--status-error':         '#DC2626',
