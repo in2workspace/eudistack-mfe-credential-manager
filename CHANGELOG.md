@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Changed $action-palette color to gray base.
+- Ensure proper contrast of UI elements regardless of the configured primary color by using contrast and neutral variables.
+
 ### Fixed
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
