@@ -1,6 +1,8 @@
 import {Component, inject} from '@angular/core';
-import {ChildrenOutletContexts, RouterOutlet} from '@angular/router';
+import {ChildrenOutletContexts, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {NavbarComponent} from '../app/shared/components/navbar/navbar.component';
+import {toSignal} from '@angular/core/rxjs-interop';
+import {filter, map, startWith} from 'rxjs';
 import {trigger, transition, style, animate, query} from '@angular/animations';
 
 export const routeAnimations = trigger('routeAnimations', [
@@ -20,10 +22,17 @@ export const routeAnimations = trigger('routeAnimations', [
     animations: [routeAnimations]
 })
 export class AppComponent {
-  public title = 'Credential-issuer-ui';
-  private readonly contexts = inject(ChildrenOutletContexts);
+public title = 'Credential-issuer-ui';
+private readonly router= inject(Router);
+private readonly contexts = inject(ChildrenOutletContexts);
+public readonly showNavbar$ = toSignal(this.router.events.pipe(
+  filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+  map((event: NavigationEnd) => !event.urlAfterRedirects.startsWith('/home')),
+  startWith(!this.router.url.startsWith('/home'))
+));
 
-  public getRouteAnimationData() {
-    return this.contexts.getContext('primary')?.route?.snapshot?.url;
-  }
+public getRouteAnimationData() {
+  return this.contexts.getContext('primary')?.route?.snapshot?.url;
+}
+
 }

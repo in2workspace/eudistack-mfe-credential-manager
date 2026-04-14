@@ -3,7 +3,11 @@ import { AutoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'organization/credentials' },
+  { path: '', pathMatch: 'full', redirectTo: 'home' },
+  {
+    path: 'home',
+    loadChildren: () => import('./features/home/home.routes').then(m => m.default)
+  },
   {
     path: 'settings',
     loadChildren: () => import('./features/settings/settings.routes').then(m => m.default),
@@ -38,5 +42,5 @@ export const routes: Routes = [
         (m) => m.default
       ),
   },
-  { path: '**', redirectTo: 'organization/credentials' }
+  { path: '**', redirectTo: 'home' }
 ];

@@ -370,7 +370,7 @@ export class CredentialOfferStepperComponent implements OnInit, OnDestroy {
 
   public redirectToHome(): void{
     setTimeout(()=>{
-      this.router.navigate(['/']);
+      this.router.navigate(['/home']);
     }, 0);
   }
 

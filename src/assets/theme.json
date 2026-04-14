@@ -1,14 +1,12 @@
 {
-  "tenantDomain": "EUDISTACK",
   "branding": {
-    "name": "EUDIStack",
-    "primaryColor": "#0F2B5B",
+    "name": "Credential Issuer",
+    "primaryColor": "#001E8C",
     "primaryContrastColor": "#ffffff",
-    "secondaryColor": "#00BFA6",
-    "secondaryContrastColor": "#ffffff",
-    "logoUrl": "/assets/logos/eudistack-logo-dark.svg",
-    "logoDarkUrl": "/assets/logos/eudistack-logo.svg",
-    "faviconUrl": "/assets/icons/eudistack-favicon.svg"
+    "secondaryColor": "#00FF94",
+    "secondaryContrastColor": "#000000",
+    "logoUrl": null,
+    "faviconUrl": null
   },
   "content": {
     "links": [],
@@ -19,7 +17,7 @@
     "showWalletUrlTest": false
   },
   "i18n": {
-    "defaultLang": "es",
+    "defaultLang": "en",
     "available": ["en", "es", "ca"]
   }
 }

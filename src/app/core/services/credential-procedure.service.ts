@@ -168,7 +168,7 @@ export class CredentialProcedureService {
   
     this.dialog.openErrorInfoDialog(DialogComponent, errorMessage);
     setTimeout(()=>{
-      this.router.navigate(['/']);
+      this.router.navigate(['/home']);
     }, 0);
     
     return throwError(() => error);

@@ -35,7 +35,7 @@ export class PoliciesService {
   }
 
   public checkOnboardingPolicy(): Observable<boolean> {
-    return this.executePolicy('Onboarding', 'Execute', '/', true);
+    return this.executePolicy('Onboarding', 'Execute', '/home', true);
   }
 
   public checkSettingsPolicy(): Observable<boolean> {
