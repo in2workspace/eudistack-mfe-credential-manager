@@ -14,8 +14,8 @@
   }
 
   // IAM URL: OIDC authority (Verifier as IdP)
-  // Same origin in Atlassian-style — absolute URL required by OIDC library
-  window["env"]["iam_url"] = window.location.origin;
+  // Same origin + /verifier path (Atlassian-style)
+  window["env"]["iam_url"] = window.location.origin + "/verifier";
 
   // Issuer API: relative path (same origin, no CORS)
   window["env"]["server_url"] = "${SERVER_URL}";
