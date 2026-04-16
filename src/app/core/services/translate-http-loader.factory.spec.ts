@@ -21,7 +21,7 @@ describe('httpTranslateLoader factory', () => {
     // Arrange
     const responses = { en: { HELLO: 'world' } };
     const getMock = jest.fn().mockImplementation((url: string) => {
-      if (url.endsWith('/assets/i18n/en.json')) return of(responses.en);
+      if (url.endsWith('assets/i18n/en.json')) return of(responses.en);
       return of({});
     });
     const httpMock: Partial<HttpClient> = { get: getMock };
@@ -32,7 +32,7 @@ describe('httpTranslateLoader factory', () => {
       expect(getMock).toHaveBeenCalledTimes(1);
 
       const firstCallArgs = getMock.mock.calls[0];
-      expect(firstCallArgs[0]).toBe('/assets/i18n/en.json');
+      expect(firstCallArgs[0]).toBe('assets/i18n/en.json');
 
       expect(payload).toEqual(responses.en);
 
