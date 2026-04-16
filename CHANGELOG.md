@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
-- Remove unused dependencies from the project.
+- Remove unused dependencies("@angular-builders/jest") from the project.
 
 ### Fixed
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
