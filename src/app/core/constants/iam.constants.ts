@@ -4,6 +4,7 @@ export const IAM_PARAMS = Object.freeze({
     GRANT_TYPE: "code"
 });
 
-export const IAM_POST_LOGOUT_URI = globalThis.location.origin;
+const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
+export const IAM_POST_LOGOUT_URI = `${globalThis.location.origin}${baseHref}`;
 export const IAM_POST_LOGIN_ROUTE = '/organization/credentials';
-export const IAM_REDIRECT_URI = `${globalThis.location.origin}`;
+export const IAM_REDIRECT_URI = `${globalThis.location.origin}${baseHref}`;
