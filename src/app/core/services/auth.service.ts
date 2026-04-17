@@ -225,13 +225,40 @@ export class AuthService{
     });
   }
 
-  // POLICY: user_powers_restriction_policy
-  public hasAdminOrganizationIdentifier() : boolean {
-    const mandatorData = this.mandatorSubject.getValue();
-    if (mandatorData != null){
-      return environment.admin_organization_id === mandatorData.organizationIdentifier;
+  /**
+   * Resolves the user's authorization role based on powers and organization.
+   * - SYSADMIN_READONLY: power organization/EUDISTACK/System/Administration + platform tenant
+   * - TENANT_ADMIN: orgId == admin_organization_id + domain Onboarding/Execute power
+   *   (also: SysAdmin on non-platform tenant)
+   * - LEAR: domain Onboarding/Execute power + different orgId
+   */
+  public getUserRole(): RoleType {
+    const tenant = window.location.hostname.split('.')[0];
+
+    // SysAdmin: power organization/EUDISTACK/System/Administration
+    const isSysAdmin = this.userPowers.some((p: Power) =>
+      p.type === 'organization' && p.domain === 'EUDISTACK'
+      && p.function === 'System'
+      && (p.action === 'Administration' || (Array.isArray(p.action) && p.action.includes('Administration')))
+    );
+
+    if (isSysAdmin) {
+      return tenant === 'platform' ? RoleType.SYSADMIN_READONLY : RoleType.TENANT_ADMIN;
     }
-    return false
+
+    // TenantAdmin: orgId == admin_organization_id
+    const mandatorData = this.mandatorSubject.getValue();
+    if (mandatorData && environment.admin_organization_id === mandatorData.organizationIdentifier) {
+      return RoleType.TENANT_ADMIN;
+    }
+
+    return RoleType.LEAR;
+  }
+
+  /** @deprecated Use getUserRole() instead */
+  public hasAdminOrganizationIdentifier(): boolean {
+    const role = this.getUserRole();
+    return role === RoleType.TENANT_ADMIN || role === RoleType.SYSADMIN_READONLY;
   }
 
   public getMandator(): Observable<EmployeeMandator | null> {

@@ -7,6 +7,8 @@ import { CredentialStatus, LEARCredential, CredentialProcedureDetails, LifeCycle
 import { ComponentPortal } from '@angular/cdk/portal';
 import { EvaluatedExtendedDetailsField, ViewModelSchema, EvaluatedViewModelSchema, DetailsField, EvaluatedDetailsField, CustomDetailsField, EvaluatedExtendedDetailsGroupField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
+import { AuthService } from 'src/app/core/services/auth.service';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
@@ -65,15 +67,17 @@ export class CredentialDetailsService {
     Boolean(this.sideViewModel$()?.length)
   );
 
-  //BUTTONS
+  //BUTTONS — hidden when platform read-only view
+  private readonly canWrite = inject(AuthService).getUserRole() !== RoleType.SYSADMIN_READONLY;
+
   public showSignCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return !!status && statusHasSignCredentialButton(status);
+    return this.canWrite && !!status && statusHasSignCredentialButton(status);
   });
 
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return !!status && statusHasRevokeCredentialButton(status);
+    return this.canWrite && !!status && statusHasRevokeCredentialButton(status);
   });
 
   public enableRevokeCredentialButton$ = computed<boolean>(() => {
@@ -82,7 +86,7 @@ export class CredentialDetailsService {
 
   public showWithdrawCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return !!status && statusHasWithdrawCredentialButton(status);
+    return this.canWrite && !!status && statusHasWithdrawCredentialButton(status);
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
