@@ -13,6 +13,7 @@ export interface CredentialProcedureBasicInfo {
     updated: string;
     email: string;
     organization_identifier: string;
+    tenant?: string;
   }
 }
 

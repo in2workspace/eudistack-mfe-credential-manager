@@ -70,7 +70,7 @@ bootstrapApplication(AppComponent, {
                 ignoreNonceAfterRefresh: true,
                 triggerRefreshWhenIdTokenExpired: false,
                 autoUserInfo: false,
-                secureRoutes: [environment.server_url, environment.iam_url].filter((route): route is string => route !== undefined),
+                secureRoutes: [environment.server_url].filter((route): route is string => route !== undefined),
             },
         })),
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
