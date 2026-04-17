@@ -240,6 +240,16 @@ function buildPowerMap(tenantDomain: string): Record<IssuanceCredentialType, Par
         ...powerBase,
         function: 'Onboarding',
         action: ['Execute']
+      },
+      'ProductOffering': {
+        ...powerBase,
+        function: 'ProductOffering',
+        action: ['Create', 'Update', 'Delete']
+      },
+      'Certification': {
+        ...powerBase,
+        function: 'Certification',
+        action: ['Attest', 'Upload']
       }
     },
   };

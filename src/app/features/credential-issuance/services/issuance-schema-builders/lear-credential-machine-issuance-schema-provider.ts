@@ -110,15 +110,25 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
                 {
                   action: ['Execute'],
                   function: 'Onboarding',
+                  isAdminRequired: true
+                },
+                {
+                  action: [
+                      "Create",
+                      "Update",
+                      "Delete"
+                  ],
+                  function: "ProductOffering",
                   isAdminRequired: false
                 },
                 {
                   action: [
-                      "Upload"
+                      "Upload",
+                      "Attest"
                   ],
                   function: "Certification",
                   isAdminRequired: true
-            }
+                }
           ]
         }
       },
