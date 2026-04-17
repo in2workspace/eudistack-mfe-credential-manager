@@ -108,8 +108,6 @@ export class AuthService{
       this.isAuthenticatedSubject.next(isAuthenticated);
 
       if (isAuthenticated) {
-        const role = this.resolveRole(userData);
-        if(role != null && role !== RoleType.LEAR)  throw new Error('Error Role. '+ role);
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
@@ -142,10 +140,6 @@ export class AuthService{
 
   public authorize(){
     this.oidcSecurityService.authorize();
-  }
-
-  private resolveRole(userData: UserDataAuthenticationResponse): RoleType | null {
-    return userData.role ?? null;
   }
 
   private handleUserAuthentication(userData: UserDataAuthenticationResponse): void {
@@ -225,6 +219,14 @@ export class AuthService{
     });
   }
 
+  public isSysAdmin(): boolean {
+    return this.userPowers.some((p: Power) =>
+      p.type === 'organization' && p.domain === 'EUDISTACK'
+      && p.function === 'System'
+      && (p.action === 'Administration' || (Array.isArray(p.action) && p.action.includes('Administration')))
+    );
+  }
+
   /**
    * Resolves the user's authorization role based on powers and organization.
    * - SYSADMIN_READONLY: power organization/EUDISTACK/System/Administration + platform tenant
@@ -235,14 +237,7 @@ export class AuthService{
   public getUserRole(): RoleType {
     const tenant = window.location.hostname.split('.')[0];
 
-    // SysAdmin: power organization/EUDISTACK/System/Administration
-    const isSysAdmin = this.userPowers.some((p: Power) =>
-      p.type === 'organization' && p.domain === 'EUDISTACK'
-      && p.function === 'System'
-      && (p.action === 'Administration' || (Array.isArray(p.action) && p.action.includes('Administration')))
-    );
-
-    if (isSysAdmin) {
+    if (this.isSysAdmin()) {
       return tenant === 'platform' ? RoleType.SYSADMIN_READONLY : RoleType.TENANT_ADMIN;
     }
 
@@ -280,8 +275,8 @@ export class AuthService{
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
         if (isAuthenticated) {
           this.userPowers = this.extractPowersFromClaims(userData);
-          const hasOnboardingPower = this.hasPower('Onboarding', 'Execute');
-          if (!hasOnboardingPower) {
+          const canEnter = this.hasPower('Onboarding', 'Execute') || this.isSysAdmin();
+          if (!canEnter) {
             this.logout();
             return;
           }
