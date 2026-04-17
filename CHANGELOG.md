@@ -6,7 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (EUDI-065: Role-based UI visibility)
+
+- **`UserRole` enum extended** with `SYSADMIN_READONLY` and `TENANT_ADMIN` values.
+- **`AuthService.getUserRole()`** — resolves role from token powers + hostname:
+  - SysAdmin from `platform` subdomain → `SYSADMIN_READONLY`
+  - SysAdmin from any other subdomain → `TENANT_ADMIN`
+  - `organizationId == admin_organization_id` → `TENANT_ADMIN`
+  - Otherwise → `LEAR`
+- **Platform read-only view** — "New credential" and "New credential (on behalf)" buttons hidden; credential details accessible but Withdraw/Revoke/Sign buttons hidden.
+- **TenantAdmin** sees "New credential (on behalf)" button; **LEAR** only sees "New credential".
+
+### Fixed (EUDI-064)
+
+- **Remove `iam_url` from `secureRoutes`** — prevents Bearer token on `/oidc/token` endpoint (was causing 401 on multi-tenant login).
+- **Add tenant column** to credential management table (shown dynamically when cross-tenant data is present).
+
+### Deprecated
+
+- **`AuthService.hasAdminOrganizationIdentifier()`** — use `getUserRole()` instead.
+
 ### Fixed
+
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
 - Fix credential details grouping to display section titles using the second-to-last key to handle different path depths.
