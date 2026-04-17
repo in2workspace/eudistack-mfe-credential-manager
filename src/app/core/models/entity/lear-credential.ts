@@ -10,7 +10,7 @@ export interface CredentialProcedureDetails {
   rawVc?: any;
 }
 
-export type LifeCycleStatus = 'WITHDRAWN' | 'VALID' | 'EXPIRED' | 'PEND_DOWNLOAD' | 'PEND_SIGNATURE' | 'DRAFT' | 'ISSUED' | 'REVOKED';
+export type LifeCycleStatus = 'ARCHIVED' | 'WITHDRAWN' | 'VALID' | 'EXPIRED' | 'PEND_DOWNLOAD' | 'PEND_SIGNATURE' | 'DRAFT' | 'ISSUED' | 'REVOKED';
 
 export interface CredentialStatus {   
   "id": string,

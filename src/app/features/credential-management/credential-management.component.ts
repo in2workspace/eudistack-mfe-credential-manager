@@ -179,7 +179,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {
-        this.dataSource.data = this.statusService.addStatusClass(data.credential_procedures);
+        const activeCredentials = data.credential_procedures.filter(
+          p => p.credential_procedure.status !== 'ARCHIVED'
+        );
+        this.dataSource.data = this.statusService.addStatusClass(activeCredentials);
 
         // Show tenant column when cross-tenant data is present (platform admin view)
         const hasTenantData = data.credential_procedures.some(p => !!p.credential_procedure.tenant);

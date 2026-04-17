@@ -10,7 +10,8 @@ export const STATUSES_WITH_DEFINED_CLASS = [
     'DRAFT',
     'EXPIRED',
     'REVOKED',
-    'WITHDRAWN'
+    'WITHDRAWN',
+    'ARCHIVED'
   ] as const;
 
 export type DefinedStatusClass = typeof STATUSES_WITH_DEFINED_CLASS[number];
