@@ -16,6 +16,7 @@ describe('PoliciesService', () => {
   beforeEach(() => {
     authServiceMock = {
       hasPower: jest.fn(),
+      isSysAdmin: jest.fn().mockReturnValue(false),
       logout: jest.fn().mockReturnValue(of(null))
     } as unknown as jest.Mocked<AuthService>;
 
@@ -67,6 +68,17 @@ describe('PoliciesService', () => {
         expect(dialogMock.openErrorInfoDialog).toHaveBeenCalled();
         expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
         expect(result).toBe(false);
+        done();
+      });
+    });
+
+    it('should return true for SysAdmin even without Onboarding/Execute', (done) => {
+      authServiceMock.hasPower.mockReturnValue(false);
+      (authServiceMock.isSysAdmin as jest.Mock).mockReturnValue(true);
+
+      service.checkOnboardingPolicy().subscribe((result) => {
+        expect(result).toBe(true);
+        expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
         done();
       });
     });

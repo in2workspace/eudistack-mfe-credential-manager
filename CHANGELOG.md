@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (EUDI-064: Tenant validation)
+
+- **`tenantGuard`** — Angular route guard that validates the tenant exists before rendering protected routes.
+- **`TenantNotFoundComponent`** — user-friendly error page for unknown tenant subdomains.
+- **`tenants.constants`** — central registry of valid tenants.
+- Guard applied to `home`, `settings`, `organization/credentials`, and `credential-offer` routes.
+- i18n keys for tenant-not-found page (ca/en/es).
+
 ### Added (EUDI-065: Role-based UI visibility)
 
 - **`UserRole` enum extended** with `SYSADMIN_READONLY` and `TENANT_ADMIN` values.

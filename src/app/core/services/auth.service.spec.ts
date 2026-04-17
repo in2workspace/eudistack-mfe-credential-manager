@@ -210,6 +210,37 @@ describe('AuthService', () => {
   });
 
   // --------------------------------------------------------------------------
+  // isSysAdmin()
+  // --------------------------------------------------------------------------
+  describe('isSysAdmin', () => {
+    it('true amb power organization/EUDISTACK/System/Administration (action string)', () => {
+      (service as any).userPowers = [
+        { type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration' }
+      ];
+      expect(service.isSysAdmin()).toBe(true);
+    });
+
+    it('true amb Administration dins array d\'actions', () => {
+      (service as any).userPowers = [
+        { type: 'organization', domain: 'EUDISTACK', function: 'System', action: ['Read', 'Administration'] }
+      ];
+      expect(service.isSysAdmin()).toBe(true);
+    });
+
+    it('false si el domain no es EUDISTACK', () => {
+      (service as any).userPowers = [
+        { type: 'organization', domain: 'OTHER', function: 'System', action: 'Administration' }
+      ];
+      expect(service.isSysAdmin()).toBe(false);
+    });
+
+    it('false si userPowers es buit', () => {
+      (service as any).userPowers = [];
+      expect(service.isSysAdmin()).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // hasAdminOrganizationIdentifier()
   // --------------------------------------------------------------------------
   describe('hasAdminOrganizationIdentifier', () => {
@@ -305,6 +336,28 @@ describe('AuthService', () => {
 
     service.handleLoginCallback();
     expect(logoutSpy).toHaveBeenCalled();
+  });
+
+  it('accepta login d\'un SysAdmin sense power Onboarding/Execute', (done) => {
+    const sysAdminUserData: UserDataAuthenticationResponse = {
+      ...mockUserDataWithClaims,
+      power: [{ type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration' }]
+    };
+
+    oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+      isAuthenticated: true,
+      userData: sysAdminUserData,
+      accessToken: 'sysadmin-token'
+    }));
+    const logoutSpy = jest.spyOn(service, 'logout');
+
+    service.handleLoginCallback();
+
+    expect(logoutSpy).not.toHaveBeenCalled();
+    service.isLoggedIn().subscribe(isLogged => {
+      expect(isLogged).toBe(true);
+      done();
+    });
   });
 
   it('fa logout si autenticat pero sense mandatee/mandator (no powers)', () => {

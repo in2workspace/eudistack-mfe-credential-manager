@@ -1,5 +1,4 @@
 export interface Theme {
-  tenantDomain: string;
   branding: {
     name: string;
     primaryColor: string;

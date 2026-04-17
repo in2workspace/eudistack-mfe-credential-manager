@@ -82,7 +82,7 @@ export class ThemeService {
   }
 
   get tenantDomain(): string {
-    return this.theme$.value?.tenantDomain ?? '';
+    return window.location.hostname.split('.')[0].toUpperCase();
   }
 
   get knowledgeBaseUrl(): string {
