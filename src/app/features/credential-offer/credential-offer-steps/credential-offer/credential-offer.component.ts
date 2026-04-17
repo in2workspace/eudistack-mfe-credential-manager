@@ -42,9 +42,7 @@ export class CredentialOfferComponent{
    */
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
     try {
-      const parsed = new URL(oid4vciUri.replace('openid-credential-offer://', 'https://openid-credential-offer/'));
-      const innerUrl = parsed.searchParams.get('credential_offer_uri');
-      return innerUrl ?? oid4vciUri;
+      return new URL(oid4vciUri).searchParams.get('credential_offer_uri') ?? oid4vciUri;
     } catch {
       return oid4vciUri;
     }
