@@ -6,6 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideHttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
@@ -40,6 +41,7 @@ describe('CredentialManagementComponent', () => {
       logout: () => of(void 0),
       hasPower: () => true,
       hasAdminOrganizationIdentifier: jest.fn().mockReturnValue(true),
+      getUserRole: jest.fn().mockReturnValue(RoleType.TENANT_ADMIN),
     } as jest.Mocked<any>;
 
     await TestBed.configureTestingModule({
@@ -89,9 +91,9 @@ describe('CredentialManagementComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should call hasAdminOrganizationIdentifier on ngOnInit', () => {
+  it('should derive isAdminOrganizationIdentifier from getUserRole on ngOnInit', () => {
     component.ngOnInit();
-    expect(authService.hasAdminOrganizationIdentifier).toHaveBeenCalled();
+    expect(authService.getUserRole).toHaveBeenCalled();
     expect(component.isAdminOrganizationIdentifier).toBe(true);
   });
 

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `AuthService` spec: removed two tests for `resolveRole` (method deleted in 6752953, EUDI-065).
+- `CredentialDetailsService` spec: provided a mock `AuthService` — the service now injects it since 0737343 (EUDI-065) added `canWrite = getUserRole() !== SYSADMIN_READONLY`, which caused `NullInjectorError: No provider for _HttpClient` transitively through `OidcSecurityService`.
+- `CredentialManagementComponent` spec: added `getUserRole` to the `AuthService` mock and updated the admin-flag assertion — `ngOnInit` calls `getUserRole()` instead of `hasAdminOrganizationIdentifier()` since 0737343.
+- `LearCredentialMachineIssuanceSchemaProvider` spec: updated the `power.custom.data` assertion to match the intentional alignment with Employee schema in 4ec3633 (EUDISTACK-160): `Onboarding` now `isAdminRequired: true`, added `ProductOffering`, and `Attest` action in `Certification`.
+
 ## [3.0.1] - 2026-04-17
 
 ### Changed

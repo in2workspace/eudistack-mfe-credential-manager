@@ -138,15 +138,18 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
           {
             action: ['Execute'],
             function: 'Onboarding',
+            isAdminRequired: true,
+          },
+          {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
             isAdminRequired: false,
           },
           {
-            action: [
-                "Upload"
-            ],
-            function: "Certification",
-            isAdminRequired: true
-            }
+            action: ['Upload', 'Attest'],
+            function: 'Certification',
+            isAdminRequired: true,
+          },
         ],
       });
     });

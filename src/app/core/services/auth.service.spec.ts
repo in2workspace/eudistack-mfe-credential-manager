@@ -404,18 +404,6 @@ describe('AuthService', () => {
     expect(service.roleType()).toBe(RoleType.LEAR);
   });
 
-  it('getRole retorna el rol si existeix', () => {
-    const mockUserData = { role: RoleType.LEAR } as UserDataAuthenticationResponse;
-    const result = (service as any).resolveRole(mockUserData);
-    expect(result).toBe(RoleType.LEAR);
-  });
-
-  it('getRole retorna null si no hi ha role', () => {
-    const mockUserData = {} as UserDataAuthenticationResponse;
-    const result = (service as any).resolveRole(mockUserData);
-    expect(result).toBeNull();
-  });
-
   it('extractDataFromCertificate extreu dades correctament', () => {
     const result = (service as any).extractDataFromCertificate(mockUserDataWithCert);
     expect(result).toEqual({
