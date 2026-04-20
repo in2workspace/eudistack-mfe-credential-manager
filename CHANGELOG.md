@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-04-20
+
 ### Added (EUDI-064: Tenant validation)
 
 - **`tenantGuard`** — Angular route guard that validates the tenant exists before rendering protected routes.
