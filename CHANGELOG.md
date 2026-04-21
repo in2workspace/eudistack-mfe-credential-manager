@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] - 2026-04-21
+
+### Fixed (EUDI-065: cross-tenant session reuse)
+
+- **`AuthService.checkAuth$`** (the bootstrap path invoked on every app start) now applies the same tenant-domain gate as `handleLoginCallback`. Previously only the OIDC callback validated the power's `domain`; after a successful login in one tenant the silent `checkAuth()` on a different tenant's subdomain found an existing valid session and promoted the user to authenticated, skipping the domain check and granting access across tenants even in incognito (since the OIDC storage was shared by same parent domain).
+- Shared gate extracted into `AuthService.isAuthorizedForCurrentTenant()` so the OIDC callback and the bootstrap path cannot drift.
+
 ## [3.1.1] - 2026-04-21
 
 ### Fixed (EUDI-065: cross-tenant TenantAdmin bypass)

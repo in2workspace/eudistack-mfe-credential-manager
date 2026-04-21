@@ -105,23 +105,35 @@ export class AuthService{
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
       tap(({ isAuthenticated, userData}) => {
-      this.isAuthenticatedSubject.next(isAuthenticated);
-
       if (isAuthenticated) {
+        this.userPowers = this.extractPowersFromClaims(userData);
+        if (!this.isAuthorizedForCurrentTenant()) {
+          console.error('Checking authentication: session scoped to a different tenant, logging out.');
+          this.logout();
+          return;
+        }
+
+        this.isAuthenticatedSubject.next(true);
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
 
         if (this.router.url === '/' || this.router.url.startsWith('/home')) {
           this.router.navigate([IAM_POST_LOGIN_ROUTE]);
         }
-      }else{
-          console.error('Checking authentication: not authenticated.');
+      } else {
+        this.isAuthenticatedSubject.next(false);
+        console.error('Checking authentication: not authenticated.');
       }
     }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
     }));
+  }
+
+  private isAuthorizedForCurrentTenant(): boolean {
+    const tenant = window.location.hostname.split('.')[0];
+    return this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
   }
 
 
@@ -282,9 +294,7 @@ export class AuthService{
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
         if (isAuthenticated) {
           this.userPowers = this.extractPowersFromClaims(userData);
-          const tenant = window.location.hostname.split('.')[0];
-          const canEnter = this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
-          if (!canEnter) {
+          if (!this.isAuthorizedForCurrentTenant()) {
             this.logout();
             return;
           }
