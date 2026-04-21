@@ -13,6 +13,5 @@ interface Window {
         credential_offer_url?: string;
         notification?: string;
         sign_credential_url?: string;
-        admin_organization_id?: string;
     };
 }

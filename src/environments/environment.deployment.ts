@@ -2,8 +2,6 @@
 
 export const environment = {
   production: true,
-  // Admin organization identifier (REQUIRED)
-  admin_organization_id: window["env"]["admin_organization_id"],
   // OIDC client identifier — resolved per tenant at runtime (REQUIRED)
   client_id: window["env"]["client_id"],
   // Keycloak URL (REQUIRED)

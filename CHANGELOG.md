@@ -4,11 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.4] - 2026-04-21
+## [3.2.1] - 2026-04-21
 
 ### Changed (format selector always visible per tenant)
 
 - **`credential-issuance.component.html`** — The "select credential format" radio group is now rendered whenever a credential type is selected, regardless of how many formats are enabled for the current tenant. The gate `@if(availableFormats.length > 1)` was changed to `> 0`. Motivation: with per-tenant filtering through `/.well-known/openid-credential-issuer`, tenants restricted to a single format (e.g. `kpmg` → SD-JWT only, `dome` → W3C only) previously saw no format indicator at all. Now the single available option renders as a selected radio, giving the user explicit confirmation of the format being issued and keeping the UI consistent across tenants.
+
+## [3.2.0] - 2026-04-21
+
+### Added (EUDI-065 Fase 8)
+
+- **`MeService`** (`src/app/core/services/me.service.ts`) + **`MeResponse`** DTO. Llama `GET /api/v1/me` del Issuer para resolver el rol del caller contra el tenant actual. El backend usa `tenant_config.admin_organization_id` (per-tenant), así que el frontend nunca conoce ese valor.
+- **`AuthService.refreshRoleFromBackend()`** invocado tras `checkAuth$` y `handleLoginCallback`. Mapea el `UserRole` del backend a `RoleType` del frontend: `SYSADMIN + readOnly → SYSADMIN_READONLY`; `SYSADMIN + !readOnly → TENANT_ADMIN`; `TENANT_ADMIN → TENANT_ADMIN`; `LEAR → LEAR`.
+
+### Changed (breaking — internal)
+
+- **`environment.admin_organization_id` eliminado** (`environment.ts`, `environment.deployment.ts`). `global.d.ts`, `env.js`, `env.template.js` y `.github/workflows/deploy.yml` ya no referencian `ADMIN_ORGANIZATION_ID`. `AuthService.getUserRole()` lee del signal `roleType` (alimentado por el backend); `hasAdminOrganizationIdentifier()` deriva del mismo signal.
+- **`RoleType.LER` eliminado** (semánticamente ≡ `LEAR`: un LER es un padre LEAR autoemitido). `accessLevel.guard.ts` simplificado — `basicGuard`/`settingsGuard` delegan directamente en `PoliciesService`.
+
+### Migration
+
+- El Issuer debe exponer `GET /api/v1/me` (disponible desde core-issuer `3.3.0`).
+- En deploy, eliminar la variable `ADMIN_ORGANIZATION_ID` de GitHub Actions (`vars.ADMIN_ORGANIZATION_ID`). El MFE ya no la consume.
 
 ## [3.1.3] - 2026-04-21
 

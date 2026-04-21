@@ -9,9 +9,10 @@ import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { environment } from 'src/environments/environment';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
+import { MeService } from './me.service';
+import { MeResponse } from '../models/dto/me-response.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -36,6 +37,7 @@ export class AuthService{
   private readonly router = inject(Router);
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
+  private readonly meService = inject(MeService);
   private crossTenantDialogOpen = false;
 
   public constructor() {
@@ -122,6 +124,7 @@ export class AuthService{
         this.isAuthenticatedSubject.next(true);
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
+        this.refreshRoleFromBackend();
 
         if (this.router.url === '/' || this.router.url.startsWith('/home')) {
           this.router.navigate([IAM_POST_LOGIN_ROUTE]);
@@ -135,6 +138,32 @@ export class AuthService{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
     }));
+  }
+
+  /**
+   * Fetches the authoritative role from the Issuer (`GET /api/v1/me`) and
+   * updates the `roleType` signal. The backend resolves TenantAdmin using
+   * `tenant_config.admin_organization_id`, so this is the single source of
+   * truth. UI guards and components must read from `roleType()`.
+   */
+  private refreshRoleFromBackend(): void {
+    this.meService.fetchMe().pipe(take(1)).subscribe({
+      next: (me) => this.roleType.set(this.mapRoleToFrontend(me)),
+      error: (err) => {
+        console.error('Failed to resolve role from backend; defaulting to LEAR', err);
+        this.roleType.set(RoleType.LEAR);
+      }
+    });
+  }
+
+  private mapRoleToFrontend(me: MeResponse): RoleType {
+    if (me.role === 'SYSADMIN') {
+      return me.readOnly ? RoleType.SYSADMIN_READONLY : RoleType.TENANT_ADMIN;
+    }
+    if (me.role === 'TENANT_ADMIN') {
+      return RoleType.TENANT_ADMIN;
+    }
+    return RoleType.LEAR;
   }
 
   private isAuthorizedForCurrentTenant(): boolean {
@@ -277,37 +306,16 @@ export class AuthService{
   }
 
   /**
-   * Resolves the user's authorization role based on powers and organization.
-   * - SYSADMIN_READONLY: power organization/EUDISTACK/System/Administration + platform tenant
-   * - TENANT_ADMIN: orgId == admin_organization_id + domain Onboarding/Execute power
-   *   (also: SysAdmin on non-platform tenant)
-   * - LEAR: domain Onboarding/Execute power + different orgId
+   * Resolved role for the current tenant. Source of truth: backend
+   * `GET /api/v1/me` (see `refreshRoleFromBackend`). Reads from the
+   * `roleType` signal — no local fallback to `environment.admin_organization_id`.
    */
   public getUserRole(): RoleType {
-    const tenant = window.location.hostname.split('.')[0];
-
-    if (this.isSysAdmin()) {
-      return tenant === 'platform' ? RoleType.SYSADMIN_READONLY : RoleType.TENANT_ADMIN;
-    }
-
-    // TenantAdmin: orgId == admin_organization_id AND the Onboarding/Execute
-    // power is scoped to the current tenant (prevents cross-tenant bypass where
-    // a credential issued for domain=KPMG is presented on the DOME tenant).
-    const mandatorData = this.mandatorSubject.getValue();
-    if (
-      mandatorData &&
-      environment.admin_organization_id === mandatorData.organizationIdentifier &&
-      this.hasPower('Onboarding', 'Execute', tenant)
-    ) {
-      return RoleType.TENANT_ADMIN;
-    }
-
-    return RoleType.LEAR;
+    return this.roleType();
   }
 
-  /** @deprecated Use getUserRole() instead */
   public hasAdminOrganizationIdentifier(): boolean {
-    const role = this.getUserRole();
+    const role = this.roleType();
     return role === RoleType.TENANT_ADMIN || role === RoleType.SYSADMIN_READONLY;
   }
 
@@ -338,6 +346,7 @@ export class AuthService{
           this.isAuthenticatedSubject.next(true);
           this.userDataSubject.next(userData);
           this.tokenSubject.next(accessToken);
+          this.refreshRoleFromBackend();
         }
       });
   }
