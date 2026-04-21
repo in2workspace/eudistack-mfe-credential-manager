@@ -20,7 +20,6 @@
   // Issuer API: relative path (same origin, no CORS)
   window["env"]["server_url"] = "${SERVER_URL}";
 
-  window["env"]["admin_organization_id"]= "${ADMIN_ORGANIZATION_ID}"
   window["env"]["wallet_url"] = "${WALLET_URL}";
   window["env"]["wallet_url_test"] = "${WALLET_URL_TEST}";
   window["env"]["show_wallet_url_test"] = "${SHOW_WALLET_URL_TEST}";

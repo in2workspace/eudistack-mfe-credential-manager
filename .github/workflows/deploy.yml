@@ -56,7 +56,6 @@ jobs:
           CLIENT_ID: ${{ vars.CLIENT_ID }}
           CLIENT_ID_PREFIX: ${{ vars.CLIENT_ID_PREFIX }}
           SERVER_URL: ${{ vars.SERVER_URL }}
-          ADMIN_ORGANIZATION_ID: ${{ vars.ADMIN_ORGANIZATION_ID }}
           WALLET_URL: ${{ vars.WALLET_URL }}
           WALLET_URL_TEST: ${{ vars.WALLET_URL_TEST }}
           SHOW_WALLET_URL_TEST: ${{ vars.SHOW_WALLET_URL_TEST }}

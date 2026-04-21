@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { MeService } from './me.service';
 import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { UserDataAuthenticationResponse } from '../models/dto/user-data-authentication-response.dto';
 import { RoleType } from '../models/enums/auth-rol-type.enum';
-import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 
@@ -118,6 +118,14 @@ describe('AuthService', () => {
     const dialogWrapperServiceMock = {
       openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
     };
+    const meServiceMock = {
+      fetchMe: jest.fn().mockReturnValue(of({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'LEAR',
+        readOnly: false,
+        tenant: 'sandbox'
+      }))
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -126,6 +134,7 @@ describe('AuthService', () => {
         { provide: PublicEventsService, useValue: mockPublicEventsService },
         { provide: TranslateService, useValue: translateServiceMock },
         { provide: DialogWrapperService, useValue: dialogWrapperServiceMock },
+        { provide: MeService, useValue: meServiceMock },
       ]
     });
 
@@ -253,35 +262,23 @@ describe('AuthService', () => {
 
   // --------------------------------------------------------------------------
   // hasAdminOrganizationIdentifier()
+  // Now derived from `roleType` signal (populated by GET /api/v1/me).
   // --------------------------------------------------------------------------
   describe('hasAdminOrganizationIdentifier', () => {
-    it('retorna true si organizationIdentifier coincideix amb environment.admin_organization_id', () => {
-      (environment as any).admin_organization_id = 'VATES-B60645900';
-
-      (service as any).mandatorSubject.next({
-        organizationIdentifier: 'VATES-B60645900'
-      });
-      (service as any).userPowers = [
-        { function: 'Onboarding', action: 'Execute', domain: 'localhost', type: 'domain' }
-      ];
-
+    it('true cuando el role es TENANT_ADMIN', () => {
+      service.roleType.set(RoleType.TENANT_ADMIN);
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
 
-    it('retorna false si organizationIdentifier no coincideix amb environment.admin_organization_id', () => {
-      (environment as any).admin_organization_id = 'VATES-B60645900';
+    it('true cuando el role es SYSADMIN_READONLY', () => {
+      service.roleType.set(RoleType.SYSADMIN_READONLY);
+      expect(service.hasAdminOrganizationIdentifier()).toBe(true);
+    });
 
-      (service as any).mandatorSubject.next({
-        organizationIdentifier: 'OTHER-ORG'
-      });
-
+    it('false cuando el role es LEAR', () => {
+      service.roleType.set(RoleType.LEAR);
       expect(service.hasAdminOrganizationIdentifier()).toBe(false);
     });
-  });
-
-  it('false si mandator es null', () => {
-    (service as any).mandatorSubject.next(null);
-    expect(service.hasAdminOrganizationIdentifier()).toBe(false);
   });
 
   // --------------------------------------------------------------------------

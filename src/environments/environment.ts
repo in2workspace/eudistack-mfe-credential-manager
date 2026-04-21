@@ -2,7 +2,6 @@
 
 export const environment = {
   production: false,
-  admin_organization_id: "VATES-000000000",
   client_id: 'vc-auth-client',
   iam_url: 'https://keycloak-dev.ssihub.org/realms/in2-issuer',
   server_url: 'http://localhost:8081',

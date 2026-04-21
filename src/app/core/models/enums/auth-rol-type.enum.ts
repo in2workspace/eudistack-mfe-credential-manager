@@ -2,5 +2,4 @@ export enum RoleType {
     SYSADMIN_READONLY = 'SYSADMIN_READONLY',
     TENANT_ADMIN = 'TENANT_ADMIN',
     LEAR = 'LEAR',
-    LER = 'LER',
 }
