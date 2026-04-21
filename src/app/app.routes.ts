@@ -1,20 +1,25 @@
 import { Routes } from '@angular/router';
 import { AutoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
+import { tenantGuard } from './core/guards/tenant.guard';
+import { TenantNotFoundComponent } from './features/tenant-not-found/tenant-not-found.component';
 
 export const routes: Routes = [
+  { path: 'tenant-not-found', component: TenantNotFoundComponent },
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   {
     path: 'home',
+    canActivate: [tenantGuard],
     loadChildren: () => import('./features/home/home.routes').then(m => m.default)
   },
   {
     path: 'settings',
     loadChildren: () => import('./features/settings/settings.routes').then(m => m.default),
-    canActivate: [AutoLoginPartialRoutesGuard, settingsGuard],
+    canActivate: [tenantGuard, AutoLoginPartialRoutesGuard, settingsGuard],
   },
   {
     path: 'organization/credentials',
+    canActivate: [tenantGuard],
     canActivateChild: [AutoLoginPartialRoutesGuard, basicGuard],
     children: [
       {
@@ -37,6 +42,7 @@ export const routes: Routes = [
   },
   {
     path: 'credential-offer',
+    canActivate: [tenantGuard],
     loadChildren: () =>
       import('./features/credential-offer/credential-offer.routes').then(
         (m) => m.default

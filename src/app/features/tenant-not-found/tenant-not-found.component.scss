@@ -1,0 +1,39 @@
+.tenant-not-found {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+
+  .content {
+    max-width: 480px;
+    text-align: center;
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+      color: var(--text-primary, #1A1A2E);
+    }
+
+    p {
+      color: var(--text-secondary, #6B7280);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    button.primary {
+      background-color: var(--primary-color);
+      color: var(--primary-contrast-color, #fff);
+      border: none;
+      border-radius: var(--radius-md, 8px);
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 const statusHasSignCredentialButtonSet = new Set<LifeCycleStatus>(['PEND_SIGNATURE']);
 const statusHasRevokeCredentialButtonSet = new Set<LifeCycleStatus>(['VALID']);
 const statusHasWithdrawCredentialButtonSet = new Set<LifeCycleStatus>(['DRAFT']);
+const statusHasArchiveCredentialButtonSet = new Set<LifeCycleStatus>(['WITHDRAWN', 'REVOKED', 'EXPIRED']);
 
 export function statusHasSignCredentialButton(status: LifeCycleStatus): boolean {
     return statusHasSignCredentialButtonSet.has(status);
@@ -14,4 +15,8 @@ export function statusHasRevokeCredentialButton(status: LifeCycleStatus): boolea
 
 export function statusHasWithdrawCredentialButton(status: LifeCycleStatus): boolean {
     return statusHasWithdrawCredentialButtonSet.has(status);
+}
+
+export function statusHasArchiveCredentialButton(status: LifeCycleStatus): boolean {
+    return statusHasArchiveCredentialButtonSet.has(status);
 }

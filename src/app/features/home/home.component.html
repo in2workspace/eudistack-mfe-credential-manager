@@ -4,14 +4,12 @@
     <!-- HEADER INTEGRATED NAVBAR -->
     <header #header class="main-header">
       <nav class="navbar">
-        <div class="navbar-brand" href="/">
-          <a href="/">
-            <img
-              class="logo"
-              [src]="logoSrc"
-              alt="Tenant Logo"
-            />
-          </a>
+        <div class="navbar-brand">
+          <img
+            class="logo"
+            [src]="logoSrc"
+            alt="Tenant Logo"
+          />
         </div>
         <ul class="navbar-nav">
           <li class="nav-item">
@@ -59,7 +57,7 @@
                   height="24"
                 >
                   <image
-                    href="/assets/background/fondoIssuer.png"
+                    href="assets/background/fondoIssuer.png"
                     x="0"
                     y="0"
                     width="24"
@@ -110,7 +108,7 @@
   <section class="content-section wallet-section">
     <div class="wallet-info-container">
       <div class="wallet-info-qr">
-        <img class="wallet-logo" src="../../../assets/icons/wallet.png" alt="wallet">
+        <img class="wallet-logo" src="assets/icons/wallet.png" alt="wallet">
         <h2>{{ "home.obtain-wallet-title" | translate }}</h2>
         <p>{{ "home.obtain-wallet-intro" | translate }}</p>
         <p>{{ "home.obtain-wallet-detail" | translate }}</p>

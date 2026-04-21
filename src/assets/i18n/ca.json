@@ -412,5 +412,10 @@
     "switzerland": "Suïssa",
     "turkey": "Turquia",
     "vaticanCity": "Ciutat del Vaticà"
+  },
+  "tenantNotFound": {
+    "title": "Tenant no trobat",
+    "message": "El subdomini «{{hostname}}» no correspon a cap tenant vàlid.",
+    "cta": "Anar a l'entorn sandbox"
   }
 }

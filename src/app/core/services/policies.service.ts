@@ -17,8 +17,8 @@ export class PoliciesService {
   private readonly translate = inject(TranslateService);
 
   private executePolicy(tmfFunction: TmfFunction, action: TmfAction, redirectUrl: string, authFlag: boolean = false): Observable<boolean> {
-    if (this.authService.hasPower(tmfFunction, action)) {
-      return of(true); 
+    if (this.authService.isSysAdmin() || this.authService.hasPower(tmfFunction, action)) {
+      return of(true);
     } else {
       console.error("User with required powers was not found.");
       const errorTitle = this.translate.instant(`error.policy.title`);

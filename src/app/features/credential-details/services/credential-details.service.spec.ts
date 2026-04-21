@@ -7,6 +7,8 @@ import { CredentialProcedureService } from 'src/app/core/services/credential-pro
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialActionsService } from './credential-actions.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { AuthService } from 'src/app/core/services/auth.service';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { of } from 'rxjs';
 import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
@@ -35,6 +37,10 @@ describe('CredentialDetailsService', () => {
   } as any;
   const mockRouter = {} as any;
 
+  const mockAuthService = {
+    getUserRole: jest.fn().mockReturnValue(RoleType.LEAR),
+  } as any;
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -48,6 +54,7 @@ describe('CredentialDetailsService', () => {
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
         { provide: DialogWrapperService, useValue: mockDialogWrapperService },
         { provide: Router, useValue: mockRouter },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     });
 

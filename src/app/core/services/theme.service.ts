@@ -60,7 +60,7 @@ export class ThemeService {
   ) {}
 
   async load(): Promise<void> {
-    const theme = await firstValueFrom(this.http.get<Theme>('/assets/theme.json'));
+    const theme = await firstValueFrom(this.http.get<Theme>('assets/theme.json'));
     this.theme$.next(theme);
     this.applyTheme(theme);
 
@@ -82,7 +82,7 @@ export class ThemeService {
   }
 
   get tenantDomain(): string {
-    return this.theme$.value?.tenantDomain ?? '';
+    return window.location.hostname.split('.')[0].toUpperCase();
   }
 
   get knowledgeBaseUrl(): string {

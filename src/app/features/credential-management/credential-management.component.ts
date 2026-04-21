@@ -18,6 +18,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { MatIcon } from '@angular/material/icon';
 import { CredentialProcedureWithClass, Filter, FilterConfig } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 
 import { SubjectComponent } from './components/subject-component/subject-component.component';
 import { FormsModule } from '@angular/forms';
@@ -84,6 +85,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   @ViewChild('searchInput') public searchInput!: ElementRef<HTMLInputElement>;
   public displayedColumns: string[] = ['subject', 'organization_identifier', 'credential_type', 'updated', 'status'];
   public dataSource = new MatTableDataSource<CredentialProcedureWithClass>();
+  public userRole: RoleType = RoleType.LEAR;
+  public canWrite = true;
   public isAdminOrganizationIdentifier = false;
   public isSearchByOrganizationFilterChecked = false;
   public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
@@ -110,8 +113,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    } as const;
 
   public ngOnInit() {
+    this.userRole = this.authService.getUserRole();
+    this.canWrite = this.userRole !== RoleType.SYSADMIN_READONLY;
+    this.isAdminOrganizationIdentifier = this.userRole === RoleType.TENANT_ADMIN;
     this.initializeCredentialTable();
-    this.isAdminOrganizationIdentifier = this.authService.hasAdminOrganizationIdentifier();
   }
 
   public ngAfterViewInit(): void {
@@ -174,7 +179,17 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {
-        this.dataSource.data = this.statusService.addStatusClass(data.credential_procedures);
+        const activeCredentials = data.credential_procedures.filter(
+          p => p.credential_procedure.status !== 'ARCHIVED'
+        );
+        this.dataSource.data = this.statusService.addStatusClass(activeCredentials);
+
+        // Show tenant column when cross-tenant data is present (platform admin view)
+        const hasTenantData = data.credential_procedures.some(p => !!p.credential_procedure.tenant);
+        if (hasTenantData && !this.displayedColumns.includes('tenant')) {
+          this.displayedColumns = ['tenant', ...this.displayedColumns];
+        }
+
         this.isLoading = false;
         this.cd.detectChanges();
         this.dataSource.paginator = this.paginator;
@@ -207,6 +222,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         }
         case 'organization_identifier': {
           return item.credential_procedure.organization_identifier.toLowerCase();
+        }
+        case 'tenant': {
+          return (item.credential_procedure.tenant ?? '').toLowerCase();
         }
         default:
           return '';

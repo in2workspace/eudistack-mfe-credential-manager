@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Home logo**: removed `<a href="/">` wrapper that triggered a full browser navigation and lost the `:4443` port through nginx's root 302 redirect, landing on a non-existent origin.
+- **Wallet icon 404**: replaced the broken relative path `../../../assets/icons/wallet.png` with `assets/icons/wallet.png`, which now resolves against the MFE `<base href="/">` under `/issuer/` instead of the host root.
+- **Wallet URL tenant-aware**: `walletUrl` on the Home landing is now derived from `window.location.origin` (`${origin}/wallet/`) instead of the static `environment.wallet_url`, so the QR and "Go to wallet" link follow the current tenant subdomain automatically.
+- **Docs link**: `theme.json#content.knowledgeBaseUrl` now points to `https://in2workspace.github.io/eudistack-platform-docs/` so the "Docs" and "Learn more" links have a valid target.
+- `AuthService` spec: removed two tests for `resolveRole` (method deleted in 6752953, EUDI-065).
+- `CredentialDetailsService` spec: provided a mock `AuthService` — the service now injects it since 0737343 (EUDI-065) added `canWrite = getUserRole() !== SYSADMIN_READONLY`, which caused `NullInjectorError: No provider for _HttpClient` transitively through `OidcSecurityService`.
+- `CredentialManagementComponent` spec: added `getUserRole` to the `AuthService` mock and updated the admin-flag assertion — `ngOnInit` calls `getUserRole()` instead of `hasAdminOrganizationIdentifier()` since 0737343.
+- `LearCredentialMachineIssuanceSchemaProvider` spec: updated the `power.custom.data` assertion to match the intentional alignment with Employee schema in 4ec3633 (EUDISTACK-160): `Onboarding` now `isAdminRequired: true`, added `ProductOffering`, and `Attest` action in `Certification`.
+
 ## [3.0.1] - 2026-04-17
 
 ### Changed
@@ -12,7 +25,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Remove unused dependencies("@angular-builders/jest") from the project.
 
+## [3.1.0] - 2026-04-20
+
+### Added (EUDI-064: Tenant validation)
+
+- **`tenantGuard`** — Angular route guard that validates the tenant exists before rendering protected routes.
+- **`TenantNotFoundComponent`** — user-friendly error page for unknown tenant subdomains.
+- **`tenants.constants`** — central registry of valid tenants.
+- Guard applied to `home`, `settings`, `organization/credentials`, and `credential-offer` routes.
+- i18n keys for tenant-not-found page (ca/en/es).
+
+### Added (EUDI-065: Role-based UI visibility)
+
+- **`UserRole` enum extended** with `SYSADMIN_READONLY` and `TENANT_ADMIN` values.
+- **`AuthService.getUserRole()`** — resolves role from token powers + hostname:
+  - SysAdmin from `platform` subdomain → `SYSADMIN_READONLY`
+  - SysAdmin from any other subdomain → `TENANT_ADMIN`
+  - `organizationId == admin_organization_id` → `TENANT_ADMIN`
+  - Otherwise → `LEAR`
+- **Platform read-only view** — "New credential" and "New credential (on behalf)" buttons hidden; credential details accessible but Withdraw/Revoke/Sign buttons hidden.
+- **TenantAdmin** sees "New credential (on behalf)" button; **LEAR** only sees "New credential".
+
+### Fixed (EUDI-064)
+
+- **Remove `iam_url` from `secureRoutes`** — prevents Bearer token on `/oidc/token` endpoint (was causing 401 on multi-tenant login).
+- **Add tenant column** to credential management table (shown dynamically when cross-tenant data is present).
+
+### Deprecated
+
+- **`AuthService.hasAdminOrganizationIdentifier()`** — use `getUserRole()` instead.
+
 ### Fixed
+
 - Fix incorrect labels in Issuer UI and correct Spanish i18n typos
 - Unified light blue buttons to primary color 
 - Fix credential details grouping to display section titles using the second-to-last key to handle different path depths.
