@@ -209,13 +209,14 @@ export class AuthService{
     this.userPowers = this.extractPowersFromClaims(userData);
   }
 
-  public hasPower(tmfFunction: string, tmfAction: string): boolean {
+  public hasPower(tmfFunction: string, tmfAction: string, tmfDomain?: string): boolean {
     return this.userPowers.some((power: Power) => {
-      if (power.function === tmfFunction) {
-        const action = power.action;
-        return action === tmfAction || (Array.isArray(action) && action.includes(tmfAction));
-      }
-      return false;
+      if (power.function !== tmfFunction) return false;
+      const action = power.action;
+      const actionMatches = action === tmfAction || (Array.isArray(action) && action.includes(tmfAction));
+      if (!actionMatches) return false;
+      if (tmfDomain === undefined) return true;
+      return typeof power.domain === 'string' && power.domain.toLowerCase() === tmfDomain.toLowerCase();
     });
   }
 
@@ -241,9 +242,15 @@ export class AuthService{
       return tenant === 'platform' ? RoleType.SYSADMIN_READONLY : RoleType.TENANT_ADMIN;
     }
 
-    // TenantAdmin: orgId == admin_organization_id
+    // TenantAdmin: orgId == admin_organization_id AND the Onboarding/Execute
+    // power is scoped to the current tenant (prevents cross-tenant bypass where
+    // a credential issued for domain=KPMG is presented on the DOME tenant).
     const mandatorData = this.mandatorSubject.getValue();
-    if (mandatorData && environment.admin_organization_id === mandatorData.organizationIdentifier) {
+    if (
+      mandatorData &&
+      environment.admin_organization_id === mandatorData.organizationIdentifier &&
+      this.hasPower('Onboarding', 'Execute', tenant)
+    ) {
       return RoleType.TENANT_ADMIN;
     }
 
@@ -275,7 +282,8 @@ export class AuthService{
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
         if (isAuthenticated) {
           this.userPowers = this.extractPowersFromClaims(userData);
-          const canEnter = this.hasPower('Onboarding', 'Execute') || this.isSysAdmin();
+          const tenant = window.location.hostname.split('.')[0];
+          const canEnter = this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
           if (!canEnter) {
             this.logout();
             return;

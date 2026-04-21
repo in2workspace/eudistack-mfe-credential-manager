@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (EUDI-065: cross-tenant TenantAdmin bypass)
+
+- **`AuthService.handleLoginCallback`** now requires the `Onboarding/Execute` power's `domain` to match the current tenant (`window.location.hostname.split('.')[0]`, case-insensitive). Previously the login gate only matched `function + action`, so a credential issued for `domain=KPMG` was accepted on `dome.<host>` and granted access to the DOME Credential Manager. SysAdmin bypass (`organization/EUDISTACK/System/Administration`) preserved.
+- **`AuthService.getUserRole`** now only resolves `TENANT_ADMIN` when the user also holds an `Onboarding/Execute` power scoped to the current tenant, closing the same bypass at the UI role-resolution layer.
+- **`AuthService.hasPower`** gained an optional `tmfDomain` parameter for domain-scoped power checks; previous two-arg calls remain unchanged.
+
 ### Fixed
 
 - **Home logo**: removed `<a href="/">` wrapper that triggered a full browser navigation and lost the `:4443` port through nginx's root 302 redirect, landing on a non-existent origin.

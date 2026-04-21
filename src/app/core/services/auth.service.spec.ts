@@ -34,7 +34,7 @@ const mockUserDataWithClaims: UserDataAuthenticationResponse = {
     {
       function: 'Onboarding',
       action: 'Execute',
-      domain: 'domain',
+      domain: 'localhost',
       type: 'type'
     }
   ],
@@ -250,6 +250,9 @@ describe('AuthService', () => {
       (service as any).mandatorSubject.next({
         organizationIdentifier: 'VATES-B60645900'
       });
+      (service as any).userPowers = [
+        { function: 'Onboarding', action: 'Execute', domain: 'localhost', type: 'domain' }
+      ];
 
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
@@ -336,6 +339,36 @@ describe('AuthService', () => {
 
     service.handleLoginCallback();
     expect(logoutSpy).toHaveBeenCalled();
+  });
+
+  it('fa logout si el power Onboarding/Execute no correspon al tenant actual (cross-tenant bypass)', () => {
+    const crossTenantUserData: UserDataAuthenticationResponse = {
+      ...mockUserDataWithClaims,
+      power: [{ function: 'Onboarding', action: 'Execute', domain: 'kpmg', type: 'domain' }]
+    };
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, hostname: 'dome.example.com' }
+    });
+
+    try {
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: true,
+        userData: crossTenantUserData,
+        accessToken: 'cross-tenant-token'
+      }));
+      const logoutSpy = jest.spyOn(service, 'logout');
+
+      service.handleLoginCallback();
+      expect(logoutSpy).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation
+      });
+    }
   });
 
   it('accepta login d\'un SysAdmin sense power Onboarding/Execute', (done) => {
