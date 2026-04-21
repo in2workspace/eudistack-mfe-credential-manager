@@ -22,7 +22,7 @@
   "content": {
     "links": [],
     "footer": null,
-    "knowledgeBaseUrl": null,
+    "knowledgeBaseUrl": "https://in2workspace.github.io/eudistack-platform-docs/",
     "onboardingUrl": null,
     "supportUrl": null,
     "walletUrl": "/wallet",
