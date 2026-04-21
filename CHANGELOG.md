@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Home logo**: removed `<a href="/">` wrapper that triggered a full browser navigation and lost the `:4443` port through nginx's root 302 redirect, landing on a non-existent origin.
+- **Wallet icon 404**: replaced the broken relative path `../../../assets/icons/wallet.png` with `assets/icons/wallet.png`, which now resolves against the MFE `<base href="/">` under `/issuer/` instead of the host root.
+- **Wallet URL tenant-aware**: `walletUrl` on the Home landing is now derived from `window.location.origin` (`${origin}/wallet/`) instead of the static `environment.wallet_url`, so the QR and "Go to wallet" link follow the current tenant subdomain automatically.
+- **Docs link**: `theme.json#content.knowledgeBaseUrl` now points to `https://in2workspace.github.io/eudistack-platform-docs/` so the "Docs" and "Learn more" links have a valid target.
 - `AuthService` spec: removed two tests for `resolveRole` (method deleted in 6752953, EUDI-065).
 - `CredentialDetailsService` spec: provided a mock `AuthService` — the service now injects it since 0737343 (EUDI-065) added `canWrite = getUserRole() !== SYSADMIN_READONLY`, which caused `NullInjectorError: No provider for _HttpClient` transitively through `OidcSecurityService`.
 - `CredentialManagementComponent` spec: added `getUserRole` to the `AuthService` mock and updated the admin-flag assertion — `ngOnInit` calls `getUserRole()` instead of `hasAdminOrganizationIdentifier()` since 0737343.

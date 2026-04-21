@@ -1,7 +1,6 @@
 import { Component, ElementRef, inject, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { environment } from 'src/environments/environment';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -15,7 +14,7 @@ import { ThemeService } from 'src/app/core/services/theme.service';
 export class HomeComponent{
   @ViewChild('loginSection') loginSection!: ElementRef<HTMLElement>;
   @ViewChild('header') header!: ElementRef;
-  public walletUrl = environment.wallet_url ?? '';
+  public walletUrl = `${window.location.origin}/wallet/`;
 
   private readonly themeService = inject(ThemeService);
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;

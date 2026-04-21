@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HomeComponent } from './home.component';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { environment } from 'src/environments/environment';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -56,8 +55,8 @@ describe('HomeComponent', () => {
     expect(component.logoSrc).toBe('https://example.com/logo.png');
   });
 
-  it('should set walletUrl from environment and knowledge_base_url from theme', () => {
-    expect(component.walletUrl).toBe(environment.wallet_url ?? '');
+  it('should derive walletUrl from current origin and read knowledge_base_url from theme', () => {
+    expect(component.walletUrl).toBe(`${window.location.origin}/wallet/`);
     expect(component.knowledge_base_url).toBe('https://knowledgebase.example.com/');
   });
 
