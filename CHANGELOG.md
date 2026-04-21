@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.4] - 2026-04-21
+
+### Changed (format selector always visible per tenant)
+
+- **`credential-issuance.component.html`** — The "select credential format" radio group is now rendered whenever a credential type is selected, regardless of how many formats are enabled for the current tenant. The gate `@if(availableFormats.length > 1)` was changed to `> 0`. Motivation: with per-tenant filtering through `/.well-known/openid-credential-issuer`, tenants restricted to a single format (e.g. `kpmg` → SD-JWT only, `dome` → W3C only) previously saw no format indicator at all. Now the single available option renders as a selected radio, giving the user explicit confirmation of the format being issued and keeping the UI consistent across tenants.
+
 ## [3.1.3] - 2026-04-21
 
 ### Changed (EUDI-065: cross-tenant rejection UX)
