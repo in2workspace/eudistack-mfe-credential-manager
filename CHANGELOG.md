@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.3] - 2026-04-21
+
+### Changed (EUDI-065: cross-tenant rejection UX)
+
+- **`AuthService.rejectCrossTenantSession`** replaces the silent logout triggered by `checkAuth$` and `handleLoginCallback` when the session belongs to a different tenant. It now resets the authenticated state, navigates to `/home` so the dialog is not shown over the protected dashboard (the OIDC library auto-navigates to `postLoginRoute` before our gate reacts), and reuses the existing **"Access Denied"** dialog (`error.policy.title` / `error.policy.message`) already shown by the accessLevel guards. On dismiss, the user is logged out. A re-entrancy flag prevents double dialogs when both gates fire.
+- Unit tests updated to await the router-promise chain that now precedes the logout.
+
 ## [3.1.2] - 2026-04-21
 
 ### Fixed (EUDI-065: cross-tenant session reuse)

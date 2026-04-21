@@ -5,6 +5,8 @@ import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-au
 import { UserDataAuthenticationResponse } from '../models/dto/user-data-authentication-response.dto';
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { environment } from 'src/environments/environment';
+import { TranslateService } from '@ngx-translate/core';
+import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 
 const mockUserDataWithClaims: UserDataAuthenticationResponse = {
   id: 'id',
@@ -110,11 +112,20 @@ describe('AuthService', () => {
       registerForEvents: jest.fn().mockReturnValue(of())
     };
 
+    const translateServiceMock = {
+      instant: jest.fn((key: string) => key),
+    };
+    const dialogWrapperServiceMock = {
+      openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         AuthService,
         { provide: OidcSecurityService, useValue: oidcSecurityServiceMock },
-        { provide: PublicEventsService, useValue: mockPublicEventsService }
+        { provide: PublicEventsService, useValue: mockPublicEventsService },
+        { provide: TranslateService, useValue: translateServiceMock },
+        { provide: DialogWrapperService, useValue: dialogWrapperServiceMock },
       ]
     });
 
@@ -324,7 +335,7 @@ describe('AuthService', () => {
     expect(service.getMandateeEmail()).toBe('jhonDoe@example.com');
   });
 
-  it('fa logout si autenticat pero sense power Onboarding Execute', () => {
+  it('fa logout si autenticat pero sense power Onboarding Execute', async () => {
     const userDataWithoutOnboarding: UserDataAuthenticationResponse = {
       ...mockUserDataWithClaims,
       power: [{ function: 'OtherFunction', action: 'Write', domain: 'domain', type: 'type' }]
@@ -338,10 +349,11 @@ describe('AuthService', () => {
     const logoutSpy = jest.spyOn(service, 'logout');
 
     service.handleLoginCallback();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
     expect(logoutSpy).toHaveBeenCalled();
   });
 
-  it('fa logout si el power Onboarding/Execute no correspon al tenant actual (cross-tenant bypass)', () => {
+  it('fa logout si el power Onboarding/Execute no correspon al tenant actual (cross-tenant bypass)', async () => {
     const crossTenantUserData: UserDataAuthenticationResponse = {
       ...mockUserDataWithClaims,
       power: [{ function: 'Onboarding', action: 'Execute', domain: 'kpmg', type: 'domain' }]
@@ -362,6 +374,7 @@ describe('AuthService', () => {
       const logoutSpy = jest.spyOn(service, 'logout');
 
       service.handleLoginCallback();
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
       expect(logoutSpy).toHaveBeenCalled();
     } finally {
       Object.defineProperty(window, 'location', {
@@ -393,7 +406,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('fa logout si autenticat pero sense mandatee/mandator (no powers)', () => {
+  it('fa logout si autenticat pero sense mandatee/mandator (no powers)', async () => {
     oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
       isAuthenticated: true,
       userData: mockUserDataNoVCNoCert,
@@ -402,6 +415,7 @@ describe('AuthService', () => {
     const logoutSpy = jest.spyOn(service, 'logout');
 
     service.handleLoginCallback();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
     expect(logoutSpy).toHaveBeenCalled();
   });
 

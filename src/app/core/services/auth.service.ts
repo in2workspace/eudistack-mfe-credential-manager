@@ -2,6 +2,7 @@ import { inject, Injectable, WritableSignal, signal, DestroyRef } from '@angular
 import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, take, tap } from 'rxjs/operators';
+import { TranslateService } from '@ngx-translate/core';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
@@ -9,6 +10,8 @@ import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { environment } from 'src/environments/environment';
+import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
+import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +34,9 @@ export class AuthService{
   private readonly destroy$ = inject(DestroyRef);
   private readonly oidcSecurityService = inject(OidcSecurityService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(DialogWrapperService);
+  private readonly translate = inject(TranslateService);
+  private crossTenantDialogOpen = false;
 
   public constructor() {
     this.subscribeToAuthEvents();
@@ -108,8 +114,8 @@ export class AuthService{
       if (isAuthenticated) {
         this.userPowers = this.extractPowersFromClaims(userData);
         if (!this.isAuthorizedForCurrentTenant()) {
-          console.error('Checking authentication: session scoped to a different tenant, logging out.');
-          this.logout();
+          console.error('Checking authentication: session scoped to a different tenant.');
+          this.rejectCrossTenantSession();
           return;
         }
 
@@ -134,6 +140,36 @@ export class AuthService{
   private isAuthorizedForCurrentTenant(): boolean {
     const tenant = window.location.hostname.split('.')[0];
     return this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
+  }
+
+  /**
+   * Surfaces the existing "Access Denied" dialog used by accessLevel guards,
+   * then logs the user out once they dismiss it. Guards against concurrent
+   * invocations from checkAuth$ and handleLoginCallback.
+   *
+   * Navigates to `/home` first so the dialog is not shown on top of the
+   * protected dashboard (the OIDC library navigates to postLoginRoute as
+   * soon as the silent checkAuth reports a valid session, before our gate
+   * can react).
+   */
+  private rejectCrossTenantSession(): void {
+    if (this.crossTenantDialogOpen) return;
+    this.crossTenantDialogOpen = true;
+
+    this.isAuthenticatedSubject.next(false);
+    this.userDataSubject.next(null);
+    this.tokenSubject.next('');
+    this.userPowers = [];
+
+    this.router.navigate(['/home']).finally(() => {
+      const title = this.translate.instant('error.policy.title');
+      const message = this.translate.instant('error.policy.message');
+      const dialogRef = this.dialog.openErrorInfoDialog(DialogComponent, message, title);
+      dialogRef.afterClosed().pipe(take(1)).subscribe(() => {
+        this.crossTenantDialogOpen = false;
+        this.logout();
+      });
+    });
   }
 
 
@@ -295,7 +331,7 @@ export class AuthService{
         if (isAuthenticated) {
           this.userPowers = this.extractPowersFromClaims(userData);
           if (!this.isAuthorizedForCurrentTenant()) {
-            this.logout();
+            this.rejectCrossTenantSession();
             return;
           }
 
