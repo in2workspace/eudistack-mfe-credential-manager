@@ -4,6 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { environment } from 'src/environments/environment';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
 
 const MOCK_KNOWLEDGE_BASE_URL = 'https://knowledgebase.example.com/';
 
@@ -30,26 +31,12 @@ describe('CredentialOfferOnboardingComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize walletUrl with the value from the environment', () => {
-    const expectedUrl = environment.wallet_url;
-    expect(component.walletUrl).toBe(expectedUrl);
+  it('should derive walletUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletUrl).toBe(WALLET_BASE_URL);
   });
 
-  it('should initialize walletUrl with default URL if environment.wallet_url is undefined', () => {
-    const originalWalletUrl = environment.wallet_url;
-    environment.wallet_url = undefined as any;
-
-    const fixture = TestBed.createComponent(CredentialOfferOnboardingComponent);
-    const testComponent = fixture.componentInstance;
-
-    expect(testComponent.walletUrl).toBe('https://wallet.dome-marketplace.eu/');
-
-    environment.wallet_url = originalWalletUrl;
-  });
-
-  it('should initialize walletTestUrl with the value from the environment', () => {
-    const expectedTestUrl = environment.wallet_url_test;
-    expect(component.walletTestUrl).toBe(expectedTestUrl);
+  it('should derive walletTestUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletTestUrl).toBe(WALLET_BASE_URL);
   });
 
   it('should get showWalletSameDeviceUrlTest', () => {

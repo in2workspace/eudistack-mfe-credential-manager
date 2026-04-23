@@ -49,10 +49,11 @@ jobs:
 
       - name: Generate env.js
         env:
+          # Atlassian-style: client_id derived at runtime as `${CLIENT_ID_PREFIX}${tenant}`.
+          # Leave CLIENT_ID empty unless a single fixed client_id is required.
+          CLIENT_ID_PREFIX: ${{ vars.CLIENT_ID_PREFIX }}
           CLIENT_ID: ${{ vars.CLIENT_ID }}
           SERVER_URL: ${{ vars.SERVER_URL }}
-          WALLET_URL: ${{ vars.WALLET_URL }}
-          WALLET_URL_TEST: ${{ vars.WALLET_URL_TEST }}
           SHOW_WALLET_URL_TEST: ${{ vars.SHOW_WALLET_URL_TEST }}
         run: |
           sudo apt-get update && sudo apt-get install -y gettext-base

@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
 
 @Component({
     selector: 'app-home',
@@ -14,7 +15,7 @@ import { ThemeService } from 'src/app/core/services/theme.service';
 export class HomeComponent{
   @ViewChild('loginSection') loginSection!: ElementRef<HTMLElement>;
   @ViewChild('header') header!: ElementRef;
-  public walletUrl = `${window.location.origin}/wallet/`;
+  public walletUrl = `${WALLET_BASE_URL}/`;
 
   private readonly themeService = inject(ThemeService);
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;

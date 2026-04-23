@@ -5,6 +5,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { NgIf } from '@angular/common';
 import { environment } from 'src/environments/environment';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
 
 const MOCK_KNOWLEDGE_BASE_URL = 'https://knowledgebase.example.com/';
 
@@ -40,9 +41,8 @@ describe('CredentialOfferComponent', () => {
     expect(component.walletUsersGuideUrl).toBe(expectedGuideUrl);
   });
 
-  it('should initialize walletSameDeviceUrl with the correct value from the environment', () => {
-    const expectedUrl = environment.wallet_url + '/protocol/callback';
-    expect(component.walletSameDeviceUrl).toBe(expectedUrl);
+  it('should derive walletSameDeviceUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletSameDeviceUrl).toBe(WALLET_SAME_DEVICE_URL);
   });
 
   it('should compute walletSameDeviceUrl$ correctly when credentialOfferUri$ is provided', () => {
@@ -50,7 +50,7 @@ describe('CredentialOfferComponent', () => {
     (component as any).credentialOfferUri$ = () => credentialOfferUriMock;
 
     const expectedComputedUrl =
-      environment.wallet_url + '/protocol/callback?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
+      WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
 
     expect(component.walletSameDeviceUrl$()).toBe(expectedComputedUrl);
   });
@@ -59,9 +59,8 @@ describe('CredentialOfferComponent', () => {
     expect(component.showWalletSameDeviceUrlTest).toBe(environment.show_wallet_url_test);
   });
 
-  it('should initialize walletSameDeviceTestUrl with the correct value from the environment', () => {
-    const expectedTestUrl = environment.wallet_url_test + '/protocol/callback';
-    expect(component.walletSameDeviceTestUrl).toBe(expectedTestUrl);
+  it('should derive walletSameDeviceTestUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletSameDeviceTestUrl).toBe(WALLET_SAME_DEVICE_URL);
   });
 
   it('should compute walletSameDeviceTestUrl$ correctly when credentialOfferUri$ is provided', () => {
@@ -69,7 +68,7 @@ describe('CredentialOfferComponent', () => {
     (component as any).credentialOfferUri$ = () => credentialOfferUriMock;
 
     const expectedComputedTestUrl =
-      environment.wallet_url_test + '/protocol/callback?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
+      WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
 
     expect(component.walletSameDeviceTestUrl$()).toBe(expectedComputedTestUrl);
   });

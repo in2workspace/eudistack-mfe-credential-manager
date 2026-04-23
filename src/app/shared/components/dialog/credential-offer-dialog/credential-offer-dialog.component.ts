@@ -5,6 +5,7 @@ import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { environment } from 'src/environments/environment';
+import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
 
 export interface CredentialOfferDialogData {
   credentialOfferUri: string;
@@ -31,9 +32,9 @@ export class CredentialOfferDialogComponent {
   public copied = false;
   public readonly qrColor = '#000000';
 
-  public readonly walletSameDeviceUrl = environment.wallet_url + '/protocol/callback';
+  public readonly walletSameDeviceUrl = WALLET_SAME_DEVICE_URL;
   public readonly showWalletSameDeviceUrlTest = environment.show_wallet_url_test;
-  public readonly walletSameDeviceTestUrl = environment.wallet_url_test + '/protocol/callback';
+  public readonly walletSameDeviceTestUrl = WALLET_SAME_DEVICE_URL;
 
   public get walletSameDeviceFullUrl(): string {
     const httpsUrl = this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri);
