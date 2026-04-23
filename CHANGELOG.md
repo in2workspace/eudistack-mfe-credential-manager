@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [3.4.0] - 2026-04-23
+
+### Changed (EUDI-094 — auto-deploy to all tenants on release)
+
+- **`.github/workflows/deploy.yml`** — eliminado el input `tenant`. El deploy publica un build único a `s3://.../issuer/` e invalida todas las CloudFront STG del entorno (en lugar de una sola por tenant).
+- **`.github/workflows/release.yml`** — el release dispara `deploy.yml` automáticamente tras el tag (`--ref main`) sin parametrizar tenant.
+
 ## [3.3.0] - 2026-04-23
 
 ### Changed (EUDI-094 — wallet URL derived from origin)

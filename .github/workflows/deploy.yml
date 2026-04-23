@@ -10,11 +10,6 @@ on:
         options:
           - stg
         default: 'stg'
-      tenant:
-        description: 'Tenant (used as CloudFront distribution key and host: <tenant>-<env>.eudistack.net)'
-        required: true
-        type: string
-        default: 'sandbox'
 
 permissions:
   contents: read
@@ -26,10 +21,8 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       SPA_PREFIX: issuer
-      TENANT: ${{ inputs.tenant }}
       S3_BUCKET: eudistack-${{ inputs.environment }}-s3-ew1-spa
-      CF_COMMENT: eudistack-${{ inputs.environment }}-cdn-ew1-${{ inputs.tenant }}
-      SITE_HOST: ${{ inputs.tenant }}-${{ inputs.environment }}.eudistack.net
+      CF_COMMENT_PREFIX: eudistack-${{ inputs.environment }}-cdn-ew1-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -91,35 +84,25 @@ jobs:
             --cache-control "no-store" \
             --content-type "application/javascript"
 
-      - name: Invalidate CloudFront
+      - name: Invalidate all tenant CloudFront distributions
         run: |
           set -euo pipefail
-          DIST_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Comment=='${CF_COMMENT}'] | [0].Id" \
+
+          DIST_IDS=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?starts_with(Comment, '${CF_COMMENT_PREFIX}')].Id" \
             --output text)
 
-          if [ -z "${DIST_ID}" ] || [ "${DIST_ID}" = "None" ]; then
-            echo "::error::CloudFront distribution for tenant '${TENANT}' not found"
+          if [ -z "${DIST_IDS}" ]; then
+            echo "::error::No CloudFront distributions found for prefix '${CF_COMMENT_PREFIX}'"
             exit 1
           fi
 
-          aws cloudfront create-invalidation \
-            --distribution-id "${DIST_ID}" \
-            --paths "/${SPA_PREFIX}/*"
-
-          echo "### 🚀 Deployed to S3 + CloudFront" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tenant:** ${TENANT}" >> $GITHUB_STEP_SUMMARY
-          echo "- **SPA prefix:** /${SPA_PREFIX}/" >> $GITHUB_STEP_SUMMARY
-          echo "- **Distribution:** ${DIST_ID}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL:** https://${SITE_HOST}/${SPA_PREFIX}/" >> $GITHUB_STEP_SUMMARY
-
-      - name: Smoke test
-        run: |
-          SITE_URL="https://${SITE_HOST}/${SPA_PREFIX}/"
-          sleep 30
-          HTTP_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "${SITE_URL}" --max-time 15 || echo "000")
-          if [ "${HTTP_STATUS}" = "200" ]; then
-            echo "Smoke test passed (HTTP ${HTTP_STATUS})"
-          else
-            echo "::warning::Smoke test returned HTTP ${HTTP_STATUS} for ${SITE_URL}"
-          fi
+          echo "### Deployed to S3 + CloudFront" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bucket:** s3://${S3_BUCKET}/${SPA_PREFIX}/" >> $GITHUB_STEP_SUMMARY
+          echo "- **Invalidations:**" >> $GITHUB_STEP_SUMMARY
+          for DIST_ID in ${DIST_IDS}; do
+            aws cloudfront create-invalidation \
+              --distribution-id "${DIST_ID}" \
+              --paths "/${SPA_PREFIX}/*" >/dev/null
+            echo "  - ${DIST_ID}" >> $GITHUB_STEP_SUMMARY
+          done
