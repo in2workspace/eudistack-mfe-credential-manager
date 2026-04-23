@@ -47,15 +47,6 @@ jobs:
       - name: Build
         run: npm run build -- --output-path=./dist/out --configuration "production" --base-href=/${SPA_PREFIX}/ --deploy-url=/${SPA_PREFIX}/
 
-      - name: Inject tenant assets
-        run: |
-          ASSETS_DIR="dist/out/assets"
-          git clone --depth 1 https://github.com/in2workspace/eudistack-platform-assets.git /tmp/platform-assets
-          mkdir -p "${ASSETS_DIR}/tenant"
-          cp -r /tmp/platform-assets/tenants/${TENANT}/* "${ASSETS_DIR}/tenant/"
-          cp /tmp/platform-assets/tenants/${TENANT}/theme.json "${ASSETS_DIR}/theme.json"
-          echo "Injected ${TENANT} tenant assets"
-
       - name: Generate env.js
         env:
           CLIENT_ID: ${{ vars.CLIENT_ID }}
