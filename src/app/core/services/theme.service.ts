@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { Theme } from '../models/theme.model';
+import { resolveTenant } from '../constants/tenants.constants';
 
 /** Default semantic tokens — neutral, brand-independent colors for content areas. */
 const SEMANTIC_DEFAULTS: Record<string, string> = {
@@ -82,7 +83,7 @@ export class ThemeService {
   }
 
   get tenantDomain(): string {
-    return window.location.hostname.split('.')[0].toUpperCase();
+    return resolveTenant(window.location.hostname).toUpperCase();
   }
 
   get knowledgeBaseUrl(): string {

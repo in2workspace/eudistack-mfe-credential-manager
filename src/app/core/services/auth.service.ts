@@ -13,6 +13,7 @@ import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wr
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { MeService } from './me.service';
 import { MeResponse } from '../models/dto/me-response.dto';
+import { resolveTenant } from '../constants/tenants.constants';
 
 @Injectable({
   providedIn: 'root'
@@ -167,7 +168,7 @@ export class AuthService{
   }
 
   private isAuthorizedForCurrentTenant(): boolean {
-    const tenant = window.location.hostname.split('.')[0];
+    const tenant = resolveTenant(window.location.hostname);
     return this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
   }
 
