@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-04-23
+
+### Changed (EUDI-094 — wallet URL derived from origin)
+
+- **`src/app/core/constants/wallet.constants.ts`** (nuevo) — Expone `WALLET_BASE_URL` y `WALLET_SAME_DEVICE_URL` derivados de `globalThis.location.origin`. Alinea el wallet con la estrategia Atlassian-style same-origin (`<tenant>-stg.eudistack.net/wallet`) ya usada por `iam_url`.
+- **`home.component.ts`**, **`credential-offer-onboarding.component.ts`**, **`credential-offer.component.ts`**, **`credential-offer-dialog.component.ts`** — sustituidos `environment.wallet_url` / `environment.wallet_url_test` por las constantes dinámicas. Los deeplinks (`/protocol/callback?credential_offer_uri=…`) se generan ahora por tenant sin necesidad de build-time vars.
+
+### Removed
+
+- **`wallet_url`** y **`wallet_url_test`** en `environment.ts`, `environment.deployment.ts`, `global.d.ts`, `assets/env.template.js`, `assets/env.js` y `deploy.yml`. Las GitHub vars `WALLET_URL` / `WALLET_URL_TEST` dejan de ser necesarias (eliminables desde el repo settings).
+
+### Added (EUDI-094 — runtime OIDC client_id per tenant)
+
+- **`assets/env.template.js`** — nueva sustitución `${CLIENT_ID_PREFIX}`. Si está presente, el runtime compone `client_id = prefix + tenant` (patrón `vc-auth-client-<tenant>`); si está vacío, cae al `${CLIENT_ID}` fijo. Replica el contrato ya usado en dev local.
+- **`.github/workflows/deploy.yml`** — pasa `CLIENT_ID_PREFIX: ${{ vars.CLIENT_ID_PREFIX }}` al paso de envsubst.
+
+### Tests
+
+- **`credential-offer-onboarding.component.spec.ts`**, **`credential-offer.component.spec.ts`** — actualizados para validar la derivación dinámica (`WALLET_BASE_URL` / `WALLET_SAME_DEVICE_URL`) en lugar del env estático.
+
 ## [3.2.2] - 2026-04-23
 
 ### Fixed (EUDI-064 post-release — env suffix in tenant resolution)
