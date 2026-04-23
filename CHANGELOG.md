@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (EUDI-094 multi-tenant rollout)
+
+- No code change required. The runtime-derived `client_id`
+  (`vc-auth-client-{hostname-first-label}`) is now honoured end-to-end
+  against the verifier once `clients.yaml` registers the per-tenant
+  entries with the env suffix (`-sandbox-stg`, `-cgcom-stg`, `-kpmg-stg`).
+  Login flow validated on STG post-verifier redeploy (2026-04-23).
+
 ## [3.4.0] - 2026-04-23
 
 ### Changed (EUDI-094 — auto-deploy to all tenants on release)
