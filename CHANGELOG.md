@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.2] - 2026-04-23
+
+### Fixed (EUDI-064 post-release — env suffix in tenant resolution)
+
+- **`tenants.constants.ts`** — `resolveTenant()` ahora elimina los sufijos de entorno `-stg`, `-dev`, `-pre` antes del lookup en `KNOWN_TENANTS`. Motivación: en STG el host es `sandbox-stg.eudistack.net` y el guard `isKnownTenant` devolvía `false`, redirigiendo al usuario a `/tenant-not-found`. Replica la lógica que ya hace `TenantDomainWebFilter` en el backend (core-issuer).
+- **`buildFallbackUrl()`** — preserva el sufijo de entorno del host actual al reconstruir la URL de fallback. Evita que un usuario en STG salte a PROD (p.ej. `patata-stg.eudistack.net` → `sandbox-stg.eudistack.net`, no `sandbox.eudistack.net`).
+- **`auth.service.ts`**, **`theme.service.ts`** — sustituidos los `hostname.split('.')[0]` ad-hoc por `resolveTenant()`. Centraliza la resolución y elimina divergencia con backend.
+- **`index.html`** — favicon apuntaba a un placeholder `data:;base64,=` vacío; ahora apunta a `assets/favicon.svg` como default (el `ThemeService` lo sobreescribe en runtime).
+- **`tenant-not-found.component`** — añadido logo EUDIStack en la pantalla (antes sólo había texto).
+
 ## [3.2.1] - 2026-04-21
 
 ### Changed (format selector always visible per tenant)
