@@ -5,6 +5,7 @@ import { MatIcon } from '@angular/material/icon';
 import { environment } from 'src/environments/environment';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
 
 @Component({
     selector: 'app-credential-offer',
@@ -20,7 +21,7 @@ export class CredentialOfferComponent{
   public walletUsersGuideUrl = this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.WALLET;
   public credentialOfferUri$ = input.required<string>();
 
-  public readonly walletSameDeviceUrl = environment.wallet_url + '/protocol/callback';
+  public readonly walletSameDeviceUrl = WALLET_SAME_DEVICE_URL;
   public walletSameDeviceUrl$ = computed<string>(()=>{
     const httpsUrl = this.extractCredentialOfferHttpsUrl(this.credentialOfferUri$());
     return this.walletSameDeviceUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
@@ -28,7 +29,7 @@ export class CredentialOfferComponent{
 
   //TEST URLS
   public readonly showWalletSameDeviceUrlTest =  environment.show_wallet_url_test;
-  public readonly walletSameDeviceTestUrl = environment.wallet_url_test + '/protocol/callback';
+  public readonly walletSameDeviceTestUrl = WALLET_SAME_DEVICE_URL;
 
   public walletSameDeviceTestUrl$ = computed<string>(()=>{
     const httpsUrl = this.extractCredentialOfferHttpsUrl(this.credentialOfferUri$());

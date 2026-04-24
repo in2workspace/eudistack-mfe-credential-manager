@@ -5,8 +5,6 @@ interface Window {
         client_id?: string;
         iam_url?: string;
         server_url?: string;
-        wallet_url?: string;
-        wallet_url_test?: string;
         show_wallet_url_test: string;
         procedures?: string;
         saveCredential?: string;

@@ -4,6 +4,7 @@ import { environment } from 'src/environments/environment';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
 
 @Component({
     selector: 'app-credential-offer-onboarding',
@@ -16,7 +17,7 @@ export class CredentialOfferOnboardingComponent{
   public qrColor = "#2d58a7";
   public walletUsersGuideUrl = this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.WALLET;
 
-  public walletUrl = environment.wallet_url || 'https://wallet.dome-marketplace.eu/';
-  public walletTestUrl = environment.wallet_url_test || 'https://wallet.dome-marketplace.eu/';
-  public readonly showWalletSameDeviceUrlTest =  environment.show_wallet_url_test;
+  public walletUrl = WALLET_BASE_URL;
+  public walletTestUrl = WALLET_BASE_URL;
+  public readonly showWalletSameDeviceUrlTest = environment.show_wallet_url_test;
 }
