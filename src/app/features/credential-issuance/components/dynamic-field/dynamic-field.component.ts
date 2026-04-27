@@ -46,7 +46,13 @@ export class DynamicFieldComponent {
   });
 
   public fieldName$ = input.required<string>();
+  public fieldPath$ = input('');
   public parentFormGroup$ = input.required<FormGroup>();
+
+  public controlId$ = computed<string>(() => {
+    const path = this.fieldPath$();
+    return path || this.fieldName$();
+  });
 
   
   public childControl$ = computed<FormControl | null>(() => {

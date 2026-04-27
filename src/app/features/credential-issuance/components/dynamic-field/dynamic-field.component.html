@@ -1,5 +1,7 @@
 @let fieldSchema = fieldSchema$();
 @let fieldName = fieldName$();
+@let fieldPath = fieldPath$();
+@let controlId = controlId$();
 @let controlSchema = controlSchema$();
 @let groupSchema = groupSchema$();
 @let control = childControl$();
@@ -17,6 +19,7 @@
             @for (field of groupSchema.groupFields; track field.key) {
               <app-dynamic-field 
                 [fieldName$]="field.key" 
+                [fieldPath$]="fieldPath ? fieldPath + '.' + field.key : field.key"
                 [fieldSchema$]="field" 
                 [parentFormGroup$]="group">
               </app-dynamic-field>
@@ -34,9 +37,9 @@
           <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ "credentialIssuance." + fieldName | translate }}</mat-label>
           @let controlType = controlSchema.controlType;
           @if (controlType === 'number' || controlType === 'text') {
-            <input matInput [type]="controlType" [formControlName]="fieldName" [id]="fieldName" [class]="fieldSchema.classes"/>
+            <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"/>
           }@else if(controlType === 'selector'){
-              <mat-select [formControlName]="fieldName" [id]="fieldName" [class]="fieldSchema.classes">
+              <mat-select [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes">
                 <mat-option [value]="" disabled>{{ "credentialIssuance.selectA" | translate }}{{ "credentialDetails." + fieldName | translate }}</mat-option>
                 @for(option of controlSchema.multiOptions; track $index){
                   <mat-option [value]="option.value">
