@@ -42,13 +42,18 @@
               </svg>
           </a>
           <p class="scroller">{{ "home.scroll" | translate }}</p>
-          <a class="btn btn-link" (click)="scrollToLoginSection()">
+          <a class="btn btn-link" 
+            (click)="scrollToLoginSection()" 
+            role="button" 
+            tabindex="0" 
+            aria-label="Desplazarse a la sección de inicio de sesión">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="64"
               height="64"
               viewBox="0 0 24 24"
               aria-hidden="true"
+              focusable="false"
             >
               <defs>
                 <pattern
