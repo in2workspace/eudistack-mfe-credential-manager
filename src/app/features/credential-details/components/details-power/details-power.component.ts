@@ -1,11 +1,11 @@
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { CapitalizePipe } from './../../../../shared/pipes/capitalize.pipe';
 import { Component, inject, InjectionToken } from '@angular/core';
-import { FunctionActions } from '../../helpers/credential-details-helpers';
+import { FunctionActions, groupActionsByFunction } from '../../helpers/credential-details-helpers';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ThemeService } from 'src/app/core/services/theme.service';
+import { Power } from 'src/app/core/models/entity/lear-credential';
 
-export const detailsPowerToken = new InjectionToken<FunctionActions[]>('DETAILS_POWER');
+export const detailsPowerToken = new InjectionToken<Power[]>('DETAILS_POWER');
 
 @Component({
     selector: 'app-details-power',
@@ -14,9 +14,8 @@ export const detailsPowerToken = new InjectionToken<FunctionActions[]>('DETAILS_
     styleUrl: './details-power.component.scss'
 })
 export class DetailsPowerComponent {
-  public powers: FunctionActions[] = inject(detailsPowerToken);
-  private readonly themeService = inject(ThemeService);
-  // if at some point more than one domain is possible, it should be extracted from each power
-  public domain: string = this.themeService.tenantDomain;
+  public readonly powers = inject(detailsPowerToken);
+  public readonly domain = this.powers[0]?.domain ?? '';
+  public readonly groupedPowers: FunctionActions[] = groupActionsByFunction(this.powers);
 
 }

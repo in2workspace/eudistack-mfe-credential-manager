@@ -1,7 +1,6 @@
 import { InjectionToken, Type } from '@angular/core';
 import { DetailsPowerComponent, detailsPowerToken } from '../components/details-power/details-power.component';
 import { CompliantCredentialsComponent, compliantCredentialsToken } from '../components/compliant-credentials/compliant-credentials.component';
-import { groupActionsByFunction } from '../helpers/credential-details-helpers';
 import { Power, CompliantCredential } from 'src/app/core/models/entity/lear-credential';
 
 export interface CustomClaimRenderer {
@@ -18,7 +17,7 @@ export interface SchemaOverride {
 const powerOverride: CustomClaimRenderer = {
   component: DetailsPowerComponent,
   token: detailsPowerToken,
-  transformValue: (powers: Power[]) => groupActionsByFunction(powers),
+  transformValue: (powers: Power[]) => powers ?? [],
 };
 
 const OVERRIDES: Record<string, SchemaOverride> = {
