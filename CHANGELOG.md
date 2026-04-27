@@ -14,8 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entries with the env suffix (`-sandbox-stg`, `-cgcom-stg`, `-kpmg-stg`).
   Login flow validated on STG post-verifier redeploy (2026-04-23).
 
-## [3.4.0] - 2026-04-23
+ ### Added 
+- Add ARIA label to navbar menu and hide decorative SVGs from screen readers (PRB-002)
 
+## [3.4.0] - 2026-04-23
+  
 ### Changed (EUDI-094 — auto-deploy to all tenants on release)
 
 - **`.github/workflows/deploy.yml`** — eliminado el input `tenant`. El deploy publica un build único a `s3://.../issuer/` e invalida todas las CloudFront STG del entorno (en lugar de una sola por tenant).
