@@ -20,13 +20,14 @@ import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/a
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { ThemeService } from 'src/app/core/services/theme.service';
 
 
 @Injectable() //provided in Issuance Component
 export class CredentialIssuanceService {
 
   // CREDENTIAL TYPE SELECTOR
-  public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]> = ISSUANCE_CREDENTIAL_TYPES_ARRAY;
+  public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]>;
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
   // FORMAT SELECTOR
@@ -126,10 +127,20 @@ export class CredentialIssuanceService {
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly themeService = inject(ThemeService);
 
   constructor() {
+    this.credentialTypesArr = this.resolveCredentialTypesByTenant();
     // Load credential configurations once so format options are available
     this.metadataService.loadMetadata().subscribe();
+  }
+
+  private resolveCredentialTypesByTenant(): Readonly<IssuanceCredentialType[]> {
+    if (this.themeService.tenantDomain === 'KPMG') {
+      return ['learcredential.employee'];
+    }
+
+    return ISSUANCE_CREDENTIAL_TYPES_ARRAY;
   }
 
   public updateSelectedType(selectedCredentialType: IssuanceCredentialType, select: MatSelect) {

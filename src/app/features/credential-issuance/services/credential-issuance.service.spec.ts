@@ -56,6 +56,30 @@ describe('CredentialIssuanceService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('should expose only employee credential type for KPMG tenant', () => {
+    TestBed.resetTestingModule();
+
+    TestBed.configureTestingModule({
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        CredentialIssuanceService,
+        { provide: DialogWrapperService, useValue: dialogService },
+        { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: ActivatedRoute, useValue: { snapshot: { pathFromRoot: [] } } },
+        { provide: IssuanceSchemaBuilder, useValue: mockSchemaBuilder },
+        IssuanceRequestFactoryService,
+        CountryService,
+        { provide: CredentialProcedureService, useValue: mockProcedureService },
+        { provide: CredentialIssuerMetadataService, useValue: { loadMetadata: jest.fn(() => of(undefined)), findConfigurationsForType: jest.fn(() => []) } },
+        { provide: ThemeService, useValue: { tenantDomain: 'KPMG' } }
+      ]
+    });
+
+    const kpmgService = TestBed.inject(CredentialIssuanceService);
+    expect(kpmgService.credentialTypesArr).toEqual(['learcredential.employee']);
+  });
+
   describe('openLeaveConfirm', () => {
     it('should return true when user confirms', () => {
       jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
