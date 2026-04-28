@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { CredentialOfferRefreshComponent } from './credential-offer-refresh.component';
 import { CredentialOfferRefreshService } from './services/credential-offer-refresh.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -102,7 +102,7 @@ describe('CredentialOfferRefreshComponent', () => {
       let resolveRequest!: () => void;
 
       refreshService.refreshCredentialOffer.mockReturnValue(
-        new (require('rxjs').Observable)((observer: any) => {
+        new Observable<void>(observer => {
           resolveRequest = () => { observer.next(); observer.complete(); };
         })
       );
