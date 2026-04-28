@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { CredentialOfferRefreshService } from './credential-offer-refresh.service';
+import { CredentialOfferRefreshService } from './services/credential-offer-refresh.service';
 
 type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 

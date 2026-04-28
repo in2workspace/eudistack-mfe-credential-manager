@@ -3,7 +3,7 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
 import { CredentialOfferRefreshComponent } from './credential-offer-refresh.component';
-import { CredentialOfferRefreshService } from './credential-offer-refresh.service';
+import { CredentialOfferRefreshService } from './services/credential-offer-refresh.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
 const TOKEN = 'test-token-123';
