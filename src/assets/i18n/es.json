@@ -417,5 +417,16 @@
     "title": "Tenant no encontrado",
     "message": "El subdominio «{{hostname}}» no corresponde a ningún tenant válido.",
     "cta": "Ir al entorno sandbox"
+  },
+  "credential-offer-refresh": {
+    "title": "Solicitar nueva oferta de credencial",
+    "description": "Haz clic en el botón para recibir una nueva oferta de credencial por correo electrónico.",
+    "send-btn": "Enviar nueva oferta",
+    "loading": "Enviando tu oferta de credencial...",
+    "success-title": "Oferta de credencial enviada",
+    "success-description": "Se ha enviado una nueva oferta de credencial a tu correo electrónico. Por favor, revisa tu bandeja de entrada.",
+    "error-title": "Algo ha ido mal",
+    "error-description": "No hemos podido enviar una nueva oferta de credencial. Por favor, inténtalo de nuevo más tarde.",
+    "retry-btn": "Reintentar"
   }
 }

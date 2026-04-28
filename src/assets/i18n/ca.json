@@ -417,5 +417,16 @@
     "title": "Tenant no trobat",
     "message": "El subdomini «{{hostname}}» no correspon a cap tenant vàlid.",
     "cta": "Anar a l'entorn sandbox"
+  },
+  "credential-offer-refresh": {
+    "title": "Sol·licitar nova oferta de credencial",
+    "description": "Fes clic al botó per rebre una nova oferta de credencial per correu electrònic.",
+    "send-btn": "Enviar nova oferta",
+    "loading": "Enviant la teva oferta de credencial...",
+    "success-title": "Oferta de credencial enviada",
+    "success-description": "S'ha enviat una nova oferta de credencial al teu correu electrònic. Si us plau, revisa la teva safata d'entrada.",
+    "error-title": "Alguna cosa ha anat malament",
+    "error-description": "No hem pogut enviar una nova oferta de credencial. Si us plau, torna-ho a intentar més tard.",
+    "retry-btn": "Tornar a intentar"
   }
 }
