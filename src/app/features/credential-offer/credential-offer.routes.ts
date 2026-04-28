@@ -6,11 +6,4 @@ export default [
     path: '',
     component: CredentialOfferStepperComponent
   },
-  {
-    path: 'refresh/:token',
-    loadComponent: () =>
-      import('./credential-offer-refresh/credential-offer-refresh.component').then(
-        (m) => m.CredentialOfferRefreshComponent
-      )
-  }
 ] as Routes;
