@@ -136,6 +136,7 @@ export class CredentialIssuanceService {
   }
 
   private resolveCredentialTypesByTenant(): Readonly<IssuanceCredentialType[]> {
+    // TODO: Review and remove hardcoding across the entire credential issuance flow (tenant filtering, type resolution, and schema selection).
     if (this.themeService.tenantDomain === 'KPMG') {
       return ['learcredential.employee'];
     }
