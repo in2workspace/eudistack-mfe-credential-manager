@@ -1,9 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { environment } from 'src/environments/environment';
+import { CredentialOfferRefreshService } from './credential-offer-refresh.service';
 
 type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -15,7 +14,7 @@ type RefreshState = 'idle' | 'loading' | 'success' | 'error';
 })
 export class CredentialOfferRefreshComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly http = inject(HttpClient);
+  private readonly refreshService = inject(CredentialOfferRefreshService);
   private readonly themeService = inject(ThemeService);
 
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
@@ -28,10 +27,9 @@ export class CredentialOfferRefreshComponent implements OnInit {
 
   sendOffer(): void {
     this.state.set('loading');
-    this.http.post<void>(`${environment.server_url}/credential-offer/refresh/${this.token}`, null)
-      .subscribe({
-        next: () => this.state.set('success'),
-        error: () => this.state.set('error')
-      });
+    this.refreshService.refreshCredentialOffer(this.token).subscribe({
+      next: () => this.state.set('success'),
+      error: () => this.state.set('error')
+    });
   }
 }
