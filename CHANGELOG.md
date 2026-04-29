@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Test case in `credential-issuance.service.spec.ts` to validate the new email population logic.
+- Test case in `issuance-request-factory.service.spec.ts` to validate the new email population logic.
 
 ### Fixed (EUDI-094 multi-tenant rollout)
 
