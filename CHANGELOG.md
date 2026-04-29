@@ -21,6 +21,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Página de refresco de oferta de credencial** (`credential-offer/refresh/:token`) — nueva ruta pública en el MFE que sustituye la plantilla Thymeleaf del backend. Muestra una página de confirmación con look & feel por tenant (logo, colores CSS variables). El usuario pulsa "Enviar nueva oferta" para disparar el `POST` al backend; los escáneres de email ATP no activan el reenvío al seguir el enlace `GET`.
 - Traducciones añadidas para la nueva página en inglés, español y catalán (`credential-offer-refresh.*`).
 
+## [3.4.1] - 2026-04-27
+
+### Fixed (V3 multi-tenant rollout)
+
+- **Credential type labels in management table** (`credential-management.component.ts/.html`) now resolve versioned W3C keys with fallback logic (`.N -> .1`) so raw i18n keys are no longer shown.
+- **Cross-tenant details domain** (`credential-details/components/details-power/*`, `credential-details/services/custom-renderer-registry.ts`) now displays the real domain from credential `power` data instead of the active browser tenant (platform view bug).
+- **Country selector ordering** (`shared/services/country.service.ts`) now sorts by translated country label (locale-aware) instead of translation key order.
+- **Issuance type restriction for KPMG** (`credential-issuance.service.ts`) now limits available types to `learcredential.employee` to prevent unsupported machine issuance errors.
+- **Responsive horizontal overflow in credential table** (`credential-management.component.scss`) now keeps horizontal scroll inside the table container to avoid top-bar white-gap artifacts on narrow viewports.
+- **Duplicate field ids in dynamic issuance forms** (`dynamic-field.component.ts/.html`, `credential-issuance.component.html`) now use full field paths for control ids, fixing incorrect focus jumps between repeated fields (e.g., mandatee vs mandator).
+
+### Tests
+
+- Updated and validated unit tests in `credential-management.component.spec.ts`.
+- Updated and validated unit tests in `country.service.spec.ts`.
+- Updated and validated unit tests in `credential-issuance.service.spec.ts`.
+- Updated and validated unit tests in `details-power.component.spec.ts`.
+- Updated and validated unit tests in `dynamic-field.component.spec.ts`.
+
 ## [3.4.0] - 2026-04-23
 
 ### Changed (EUDI-094 — auto-deploy to all tenants on release)

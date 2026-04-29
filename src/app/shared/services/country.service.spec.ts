@@ -1,11 +1,25 @@
 import { TestBed } from '@angular/core/testing';
+import { TranslateService } from '@ngx-translate/core';
 import { CountryService, Country } from './country.service';
 
 describe('CountryService', () => {
   let service: CountryService;
+  const translateMock: Partial<TranslateService> = {
+    currentLang: 'es',
+    instant: jest.fn((key: string | string[]) => {
+      if (key === 'countries.spain') return 'España';
+      if (key === 'countries.sweden') return 'Suecia';
+      if (key === 'countries.germany') return 'Alemania';
+      if (key === 'countries.france') return 'Francia';
+      if (typeof key === 'string') return key;
+      return key;
+    }),
+  };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [{ provide: TranslateService, useValue: translateMock }],
+    });
     service = TestBed.inject(CountryService);
   });
 
@@ -122,5 +136,15 @@ describe('CountryService', () => {
         { label: 'countries.spain', value: 'ES' },
       ])
     );
+  });
+
+  it('should sort selector options by translated label instead of the english key', () => {
+    const options = service.getCountriesAsSelectorOptions();
+    const spainIndex = options.findIndex(option => option.value === 'ES');
+    const swedenIndex = options.findIndex(option => option.value === 'SE');
+
+    expect(spainIndex).toBeGreaterThanOrEqual(0);
+    expect(swedenIndex).toBeGreaterThanOrEqual(0);
+    expect(spainIndex).toBeLessThan(swedenIndex);
   });
 });

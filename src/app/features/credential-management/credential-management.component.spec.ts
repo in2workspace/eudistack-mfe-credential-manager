@@ -273,6 +273,30 @@ describe('CredentialManagementComponent', () => {
   expect(component.searchPlaceholder).toBe(component['filtersMap'].subject.placeholderTranslationLabel);
 });
 
+it('should return direct translated credential type when key exists', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.learcredential.employee.w3c.4') {
+      return 'LEAR Credential Employee v4';
+    }
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee v4');
+});
+
+it('should fallback to .1 translation when current version key is missing', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.learcredential.employee.w3c.1') {
+      return 'LEAR Credential Employee';
+    }
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee');
+});
+
 it('should subscribe to searchSubject and update dataSource.filter (and call firstPage if paginator exists)', fakeAsync(() => {
   // Attach paginator mock with firstPage spy
   component.dataSource['_paginator'] = { firstPage: jest.fn() } as any;

@@ -3,17 +3,16 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TranslateModule } from '@ngx-translate/core';
 
 import { DetailsPowerComponent, detailsPowerToken } from './details-power.component';
-import { FunctionActions } from '../../helpers/credential-details-helpers';
-import { ThemeService } from 'src/app/core/services/theme.service';
+import { Power } from 'src/app/core/models/entity/lear-credential';
 
 describe('DetailsPowerComponent', () => {
   let component: DetailsPowerComponent;
   let fixture: ComponentFixture<DetailsPowerComponent>;
 
-  const mockPowers: FunctionActions[] = [
-    { function: 'firstFunction', actions: ['read', 'write'] },
-    { function: 'secondFunction', actions: ['execute'] },
-    { function: 'thirdFunction', actions: ['delete', 'update', 'create'] }
+  const mockPowers: Power[] = [
+    { domain: 'tenant-a', function: 'firstFunction', action: ['read', 'write'], type: 't1' },
+    { domain: 'tenant-a', function: 'secondFunction', action: ['execute'], type: 't1' },
+    { domain: 'tenant-a', function: 'thirdFunction', action: ['delete', 'update', 'create'], type: 't1' }
   ];
 
   beforeEach(async () => {
@@ -25,7 +24,6 @@ describe('DetailsPowerComponent', () => {
       ],
       providers: [
         { provide: detailsPowerToken, useValue: mockPowers },
-        { provide: ThemeService, useValue: { tenantDomain: 'TENANT' } }
       ]
     }).compileComponents();
 
@@ -40,6 +38,10 @@ describe('DetailsPowerComponent', () => {
 
   it('should inject the powers array correctly', () => {
     expect(component.powers).toBe(mockPowers);
+  });
+
+  it('should inject the real domain correctly', () => {
+    expect(component.domain).toBe('tenant-a');
   });
 
 });
