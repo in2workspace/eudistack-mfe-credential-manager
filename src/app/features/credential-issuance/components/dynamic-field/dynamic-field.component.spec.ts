@@ -31,6 +31,7 @@ describe('DynamicFieldComponent', () => {
 
     componentRef.setInput('parentFormGroup$', mockGroup);
     componentRef.setInput('fieldName$', 'prop');
+    componentRef.setInput('fieldPath$', 'mandator.prop');
     componentRef.setInput('fieldSchema$', mockControlSchema);
   });
 
@@ -39,6 +40,10 @@ describe('DynamicFieldComponent', () => {
   });
 
   describe('computed properties', () => {
+    it('controlId$() should use the full field path when provided', () => {
+      expect(component.controlId$()).toBe('mandator.prop');
+    });
+
     it('parentFormGroup$() should return the FormGroup passed via parentFormGroup$', () => {
       expect(component.parentFormGroup$()).toBe(mockGroup);
     });

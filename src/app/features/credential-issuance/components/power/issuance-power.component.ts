@@ -84,9 +84,10 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   }
 
   public removePower(funcName: string): void {
+    const translatedPowerName = this.translate.instant(`power.${funcName.toLocaleLowerCase()}`);
     const dialogData: DialogData = {
         title: this.translate.instant("power.remove-dialog.title"),
-        message: this.translate.instant("power.remove-dialog.message") + funcName,
+      message: `${this.translate.instant("power.remove-dialog.message")} (${translatedPowerName})`,
         confirmationType: 'sync',
         status: `default`
     }

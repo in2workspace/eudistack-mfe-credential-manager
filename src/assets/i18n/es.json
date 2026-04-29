@@ -224,8 +224,8 @@
     "invalid_power_title": "Acceso Denegado",
     "invalid_power_message": "No tienes la política necesaria para acceder",
     "remove-dialog": {
-      "title":"Eliminar power",
-      "message": "¿Seguro que quieres eliminar este power?"
+      "title":"Eliminar poder",
+      "message": "¿Seguro que quieres eliminar este poder?"
     }
   },
   "credentialIssuance": {
