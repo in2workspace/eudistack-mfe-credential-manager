@@ -417,5 +417,16 @@
     "title": "Tenant not found",
     "message": "The subdomain \"{{hostname}}\" does not match any valid tenant.",
     "cta": "Go to sandbox environment"
+  },
+  "credential-offer-refresh": {
+    "title": "Request New Credential Offer",
+    "description": "Click the button below to receive a new credential offer by email.",
+    "send-btn": "Send New Offer",
+    "loading": "Sending your credential offer...",
+    "success-title": "Credential Offer Sent",
+    "success-description": "A new credential offer has been sent to your email. Please check your inbox.",
+    "error-title": "Something Went Wrong",
+    "error-description": "We were unable to send a new credential offer. Please try again later.",
+    "retry-btn": "Try Again"
   }
 }

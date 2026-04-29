@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entries with the env suffix (`-sandbox-stg`, `-cgcom-stg`, `-kpmg-stg`).
   Login flow validated on STG post-verifier redeploy (2026-04-23).
 
+<<<<<<< fix/Accesibilidad-WCAG
+=======
+## [3.5.0] - 2026-04-28
+
+### Added
+
+- **Página de refresco de oferta de credencial** (`credential-offer/refresh/:token`) — nueva ruta pública en el MFE que sustituye la plantilla Thymeleaf del backend. Muestra una página de confirmación con look & feel por tenant (logo, colores CSS variables). El usuario pulsa "Enviar nueva oferta" para disparar el `POST` al backend; los escáneres de email ATP no activan el reenvío al seguir el enlace `GET`.
+- Traducciones añadidas para la nueva página en inglés, español y catalán (`credential-offer-refresh.*`).
+
+## [3.4.1] - 2026-04-27
+
+>>>>>>> main
 ### Fixed (V3 multi-tenant rollout)
 
 - **Credential type labels in management table** (`credential-management.component.ts/.html`) now resolve versioned W3C keys with fallback logic (`.N -> .1`) so raw i18n keys are no longer shown.
