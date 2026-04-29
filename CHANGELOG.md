@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Responsive horizontal overflow in credential table** (`credential-management.component.scss`) now keeps horizontal scroll inside the table container to avoid top-bar white-gap artifacts on narrow viewports.
 - **Duplicate field ids in dynamic issuance forms** (`dynamic-field.component.ts/.html`, `credential-issuance.component.html`) now use full field paths for control ids, fixing incorrect focus jumps between repeated fields (e.g., mandatee vs mandator).
 
-### Added 
+### Added
 
 - Add ARIA label to navbar menu and hide decorative SVGs from screen readers (PRB-002)
 
