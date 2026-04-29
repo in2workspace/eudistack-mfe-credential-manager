@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Populate root `email` from `mandator.email` for `LearCredentialMachine` issuance requests (fix delivery 400).
 
+### Added
+
+- Test case in `credential-issuance.service.spec.ts` to validate the new email population logic.
+
 ### Fixed (EUDI-094 multi-tenant rollout)
 
 - No code change required. The runtime-derived `client_id`
