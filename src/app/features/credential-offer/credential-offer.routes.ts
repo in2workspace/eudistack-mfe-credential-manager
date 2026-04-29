@@ -5,5 +5,5 @@ export default [
   {
     path: '',
     component: CredentialOfferStepperComponent
-  }
+  },
 ] as Routes;
