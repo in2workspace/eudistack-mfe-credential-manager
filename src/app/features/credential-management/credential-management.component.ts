@@ -7,7 +7,7 @@ import { CredentialProcedureService } from 'src/app/core/services/credential-pro
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatSort, MatSortHeader } from '@angular/material/sort';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from "../../core/models/dto/credential-procedures-response.dto";
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgClass, DatePipe } from '@angular/common';
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -24,7 +24,6 @@ import { SubjectComponent } from './components/subject-component/subject-compone
 import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
-import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
 import { RouterLink } from '@angular/router';
 
@@ -60,7 +59,6 @@ import { RouterLink } from '@angular/router';
         SubjectComponent,
         TranslatePipe,
         CapitalizePipe,
-        AddPrefixPipe,
         SkeletonLoaderComponent,
         RouterLink
     ],
@@ -102,6 +100,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly router = inject(Router);
   private readonly statusService = inject(LifeCycleStatusService);
   private readonly cd = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
   private readonly searchSubject = new Subject<string>();
 
   private readonly filtersMap: Record<Filter, FilterConfig> = {
@@ -171,6 +170,28 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public onSearchStringChange(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.searchSubject.next(filterValue);
+  }
+
+  public getCredentialTypeLabel(credentialType: string): string {
+    const prefixedKey = `credentialManagement.${credentialType}`;
+    const translated = this.translate.instant(prefixedKey);
+    if (translated !== prefixedKey) {
+      return translated;
+    }
+
+    const fallbackVersionKey = prefixedKey.replace(/\.\d+$/, '.1');
+    const fallbackVersionTranslated = this.translate.instant(fallbackVersionKey);
+    if (fallbackVersionTranslated !== fallbackVersionKey) {
+      return fallbackVersionTranslated;
+    }
+
+    const fallbackWithoutVersionKey = prefixedKey.replace(/\.\d+$/, '');
+    const fallbackWithoutVersionTranslated = this.translate.instant(fallbackWithoutVersionKey);
+    if (fallbackWithoutVersionTranslated !== fallbackWithoutVersionKey) {
+      return fallbackWithoutVersionTranslated;
+    }
+
+    return credentialType;
   }
 
   private initializeCredentialTable(): void {

@@ -156,7 +156,7 @@ describe('IssuancePowerComponent', () => {
 
     (dialog.openDialogWithCallback as jest.Mock).mockImplementation((_, data: DialogData, cb: any) => {
       expect(data.title).toBe('power.remove-dialog.title');
-      expect(data.message).toBe('power.remove-dialog.messagepw');
+      expect(data.message).toBe('power.remove-dialog.message (power.pw)');
       return cb();
     });
 

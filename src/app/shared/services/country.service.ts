@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { COUNTRIES } from 'src/app/core/constants/countries.constants';
 import { SelectorOption } from '../../core/models/entity/lear-credential-issuance';
 
@@ -13,6 +14,7 @@ export interface Country {
 })
 export class CountryService {
   private readonly countries: Country[];
+  private readonly translate = inject(TranslateService);
 
   constructor(){
     this.countries = this.mapCountriesToTranslationLabel(COUNTRIES);
@@ -60,9 +62,19 @@ export class CountryService {
   }
 
   public getCountriesAsSelectorOptions(): SelectorOption[]{
-    return this.getSortedCountries().map(country => ({
+    return [...this.countries]
+      .sort((a, b) => this.getTranslatedCountryLabel(a).localeCompare(
+        this.getTranslatedCountryLabel(b),
+        this.translate.currentLang ?? undefined,
+        { sensitivity: 'base' }
+      ))
+      .map(country => ({
       label: country.name,
       value: country.isoCountryCode
     }))
+  }
+
+  private getTranslatedCountryLabel(country: Country): string {
+    return this.translate.instant(country.name);
   }
 }
