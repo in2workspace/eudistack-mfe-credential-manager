@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2026-04-30
+
+### Added
+
+- Add ARIA label to navbar menu and hide decorative SVGs from screen readers (PRB-002)
+
+
 ## [3.5.1] - 2026-04-29
 
 ### Fixed
@@ -40,10 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Responsive horizontal overflow in credential table** (`credential-management.component.scss`) now keeps horizontal scroll inside the table container to avoid top-bar white-gap artifacts on narrow viewports.
 - **Duplicate field ids in dynamic issuance forms** (`dynamic-field.component.ts/.html`, `credential-issuance.component.html`) now use full field paths for control ids, fixing incorrect focus jumps between repeated fields (e.g., mandatee vs mandator).
 
-### Added
-
-- Add ARIA label to navbar menu and hide decorative SVGs from screen readers (PRB-002)
-
 ### Tests
 
 - Updated and validated unit tests in `credential-management.component.spec.ts`.
@@ -53,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated and validated unit tests in `dynamic-field.component.spec.ts`.
 
 ## [3.4.0] - 2026-04-23
-  
+
 ### Changed (EUDI-094 — auto-deploy to all tenants on release)
 
 - **`.github/workflows/deploy.yml`** — eliminado el input `tenant`. El deploy publica un build único a `s3://.../issuer/` e invalida todas las CloudFront STG del entorno (en lugar de una sola por tenant).
