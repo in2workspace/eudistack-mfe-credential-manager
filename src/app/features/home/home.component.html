@@ -42,12 +42,18 @@
               </svg>
           </a>
           <p class="scroller">{{ "home.scroll" | translate }}</p>
-          <a class="btn btn-link" (click)="scrollToLoginSection()">
+          <button 
+            class="btn btn-link" 
+            (click)="scrollToLoginSection()" 
+            type="button" 
+            [attr.aria-label]="'home.scrollToLogin' | translate">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="64"
               height="64"
               viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
             >
               <defs>
                 <pattern
@@ -73,7 +79,7 @@
                 d="M8 10l4 4 4-4"
               />
             </svg>
-          </a>
+          </button>
         </div>
       </div>
     </section>
