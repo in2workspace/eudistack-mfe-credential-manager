@@ -19,7 +19,9 @@ export class HomeComponent{
 
   private readonly themeService = inject(ThemeService);
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
-  public knowledge_base_url = this.themeService.knowledgeBaseUrl;
+  public get knowledgeBaseUrl(): string | null {
+    return this.themeService.snapshot?.content?.knowledgeBaseUrl ?? null;
+  }
 
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
