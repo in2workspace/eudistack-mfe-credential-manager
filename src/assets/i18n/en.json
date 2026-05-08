@@ -416,6 +416,9 @@
   "tenantNotFound": {
     "title": "Tenant not found",
     "message": "The subdomain \"{{hostname}}\" does not match any valid tenant.",
-    "cta": "Go to sandbox environment"
+    "cta": "Go to sandbox environment",
+    "support": {
+      "guides": "Need help? Check out our guides"
+    }
   }
 }
