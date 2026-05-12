@@ -1,5 +1,6 @@
 export const API_PATH = Object.freeze({
     CREDENTIAL_OFFER: '/oid4vci/v1/credential-offer',
+    CREDENTIAL_OFFER_REFRESH: '/credential-offer/refresh',
     CONFIGURATION: '/issuance/v1/configuration',
     PROCEDURES: '/api/v1/issuances',
     REVOKE: '/w3c/v1/credentials/status/revoke',

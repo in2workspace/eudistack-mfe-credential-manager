@@ -36,11 +36,6 @@ export class CredentialOfferComponent{
     return this.walletSameDeviceTestUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
   });
 
-  /**
-   * Extracts the HTTPS credential offer URL from the openid-credential-offer:// URI.
-   * Input:  openid-credential-offer://?credential_offer_uri=https%3A%2F%2F...
-   * Output: https://...
-   */
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
     try {
       return new URL(oid4vciUri).searchParams.get('credential_offer_uri') ?? oid4vciUri;

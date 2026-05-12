@@ -272,4 +272,54 @@ describe('IssuanceRequestFactoryService', () => {
       }
     ]);
   });
+
+  // Regression: LearCredentialMachine onBehalf=true was sending email='' because
+  // getCredentialEmail fell through to mandatee.email, which machines don't have.
+  it('should use mandator email as root email for machine credential when onBehalf is true', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: {
+          firstName: 'Alice',
+          lastName: 'Smith',
+          email: 'alice@example.com',
+          organization: 'Org S.L.',
+          country: 'ES',
+          organizationIdentifier: 'VATES-999',
+          serialNumber: 'SN999'
+        },
+        mandatee: { domain: 'machine.org', ipAddress: '10.0.0.2' },
+        keys: { didKey: 'did:key:xyz' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+
+    expect(result.email).toBe('alice@example.com');
+  });
+
+  it('should return empty string as root email for machine onBehalf when mandator email is absent', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: {
+          firstName: 'Bob',
+          lastName: 'Jones',
+          organization: 'Org B',
+          country: 'ES',
+          organizationIdentifier: 'VATES-111',
+          serialNumber: 'SN111'
+          // email intentionally omitted
+        },
+        mandatee: { domain: 'nomail.org' },
+        keys: { didKey: 'did:key:nomail' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+
+    expect(result.email).toBe('');
+  });
 });

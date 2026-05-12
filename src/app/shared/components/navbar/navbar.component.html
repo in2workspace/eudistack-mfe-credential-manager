@@ -12,7 +12,7 @@
               <span id="username" class="username"> {{userName}} </span>
               <span id="organization" class="organization"> {{organization}} </span>
             </span>
-            <button mat-icon-button [matMenuTriggerFor]="menu" (menuOpened)="isMenuOpen = true" (menuClosed)="isMenuOpen = false" >
+            <button mat-icon-button [matMenuTriggerFor]="menu" (menuOpened)="isMenuOpen = true" (menuClosed)="isMenuOpen = false" aria-label="User menu">
               <mat-icon>{{ isMenuOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
             </button>
             <mat-menu #menu="matMenu">
