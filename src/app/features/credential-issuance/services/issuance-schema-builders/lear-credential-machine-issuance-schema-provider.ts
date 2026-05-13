@@ -15,6 +15,34 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
 
   public getSchema(): CredentialIssuanceTypedViewModelSchema<'learcredential.machine'> {
     const countriesSelectorOptions = this.countryService.getCountriesAsSelectorOptions();
+    const isSysAdmin = this.authService.isSysAdmin();
+
+    const powersData: any[] = [
+      {
+        "action": ["Create", "Update", "Delete"],
+        "function": "ProductOffering",
+        isAdminRequired: false
+      }
+    ];
+
+    if (isSysAdmin) {
+      powersData.push({
+        "action": ["Execute"],
+        "function": "Onboarding",
+        isAdminRequired: true
+      });
+      powersData.push({
+        "action": ["Upload", "Attest"],
+        "function": "Certification",
+        isAdminRequired: true
+      });
+    } else {
+      powersData.push({
+        "action": ["Upload"],
+        "function": "Certification",
+        isAdminRequired: false
+      });
+    }
 
     return {
       type: 'learcredential.machine',
@@ -78,8 +106,8 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
           {
             ...lastNameField
           },
-          { 
-            ...emailField 
+          {
+            ...emailField
           },
           {
             ...serialNumberField
@@ -106,30 +134,7 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
         groupFields: [],
         custom: {
           component: IssuancePowerComponent,
-          data: [
-                {
-                  action: ['Execute'],
-                  function: 'Onboarding',
-                  isAdminRequired: true
-                },
-                {
-                  action: [
-                      "Create",
-                      "Update",
-                      "Delete"
-                  ],
-                  function: "ProductOffering",
-                  isAdminRequired: false
-                },
-                {
-                  action: [
-                      "Upload",
-                      "Attest"
-                  ],
-                  function: "Certification",
-                  isAdminRequired: true
-                }
-          ]
+          data: powersData
         }
       },
     ]};
