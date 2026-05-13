@@ -48,5 +48,13 @@ export const routes: Routes = [
         (m) => m.default
       ),
   },
+  {
+    path: 'credential-offer-refresh/:token',
+    canActivate: [tenantGuard],
+    loadComponent: () =>
+      import('./features/credential-offer/credential-offer-refresh/credential-offer-refresh.component').then(
+        (m) => m.CredentialOfferRefreshComponent
+      )
+  },
   { path: '**', redirectTo: 'home' }
 ];

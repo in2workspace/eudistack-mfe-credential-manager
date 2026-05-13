@@ -4,7 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.5.3] - 2026-04-30
+
+### Changed
+- Simplified credential offer URL extraction to support HTTPS wallet URL format directly
+
+## [3.5.2] - 2026-04-30
+
+### Added
+
+- Add ARIA label to navbar menu and hide decorative SVGs from screen readers (PRB-002)
+
+
+## [3.5.1] - 2026-04-29
+
+### Fixed
+
+- Populate root `email` from `mandator.email` for `LearCredentialMachine` issuance requests (fix delivery 400).
+
+### Added
+
+- Test case in `issuance-request-factory.service.spec.ts` to validate the new email population logic.
 
 ### Fixed (EUDI-094 multi-tenant rollout)
 
@@ -13,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against the verifier once `clients.yaml` registers the per-tenant
   entries with the env suffix (`-sandbox-stg`, `-cgcom-stg`, `-kpmg-stg`).
   Login flow validated on STG post-verifier redeploy (2026-04-23).
+
+## [3.5.0] - 2026-04-28
+
+### Added
+
+- **Página de refresco de oferta de credencial** (`credential-offer/refresh/:token`) — nueva ruta pública en el MFE que sustituye la plantilla Thymeleaf del backend. Muestra una página de confirmación con look & feel por tenant (logo, colores CSS variables). El usuario pulsa "Enviar nueva oferta" para disparar el `POST` al backend; los escáneres de email ATP no activan el reenvío al seguir el enlace `GET`.
+- Traducciones añadidas para la nueva página en inglés, español y catalán (`credential-offer-refresh.*`).
 
 ## [3.4.1] - 2026-04-27
 

@@ -129,6 +129,9 @@ export class IssuanceRequestFactoryService {
       if (!credentialData.onBehalf) {
         return this.authService.getMandateeEmail();
       }
+      if (credentialType === 'learcredential.machine') {
+        return credentialData.formData['mandator']?.['email'] ?? '';
+      }
       return credentialData.formData['mandatee']?.['email'] ?? '';
   }
 
