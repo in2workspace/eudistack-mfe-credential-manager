@@ -13,7 +13,7 @@ import { of, throwError } from 'rxjs';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
-import { ElementRef } from '@angular/core';
+import { ElementRef, signal } from '@angular/core';
 
 // helper to mock search input
 function createMockInput(initialValue = '') {
@@ -42,6 +42,7 @@ describe('CredentialManagementComponent', () => {
       hasPower: () => true,
       hasAdminOrganizationIdentifier: jest.fn().mockReturnValue(true),
       getUserRole: jest.fn().mockReturnValue(RoleType.TENANT_ADMIN),
+      roleType: signal(RoleType.TENANT_ADMIN),
     } as jest.Mocked<any>;
 
     await TestBed.configureTestingModule({
@@ -91,10 +92,22 @@ describe('CredentialManagementComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should derive isAdminOrganizationIdentifier from getUserRole on ngOnInit', () => {
-    component.ngOnInit();
-    expect(authService.getUserRole).toHaveBeenCalled();
-    expect(component.isAdminOrganizationIdentifier).toBe(true);
+  it('should return true for isAdminOrganizationIdentifier and canWrite when roleType is TENANT_ADMIN', () => {
+    authService.roleType.set(RoleType.TENANT_ADMIN);
+    expect(component.isAdminOrganizationIdentifier()).toBe(true);
+    expect(component.canWrite()).toBe(true);
+  });
+
+  it('should return false for canWrite and isAdminOrganizationIdentifier when roleType is SYSADMIN_READONLY', () => {
+    authService.roleType.set(RoleType.SYSADMIN_READONLY);
+    expect(component.canWrite()).toBe(false);
+    expect(component.isAdminOrganizationIdentifier()).toBe(false);
+  });
+
+  it('should return false for isAdminOrganizationIdentifier and true for canWrite when roleType is LEAR', () => {
+    authService.roleType.set(RoleType.LEAR);
+    expect(component.isAdminOrganizationIdentifier()).toBe(false);
+    expect(component.canWrite()).toBe(true);
   });
 
   it('should call initializeCredentialTable on ngOnInit', () => {
