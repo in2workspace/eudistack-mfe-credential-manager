@@ -1,5 +1,5 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, computed } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { Router } from '@angular/router';
@@ -83,16 +83,16 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   @ViewChild('searchInput') public searchInput!: ElementRef<HTMLInputElement>;
   public displayedColumns: string[] = ['subject', 'organization_identifier', 'credential_type', 'updated', 'status'];
   public dataSource = new MatTableDataSource<CredentialProcedureWithClass>();
-  public userRole: RoleType = RoleType.LEAR;
-  public canWrite = true;
-  public isAdminOrganizationIdentifier = false;
   public isSearchByOrganizationFilterChecked = false;
   public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
   public searchPlaceholder = CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT;
   public isLoading = true;
-
+  
   public hideSearchBar: boolean = true;
 
+  // computed
+  public readonly canWrite = computed(() => this.authService.roleType() !== RoleType.SYSADMIN_READONLY);
+  public readonly isAdminOrganizationIdentifier = computed(() => this.authService.roleType() === RoleType.TENANT_ADMIN);
 
   private readonly authService = inject(AuthService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
@@ -112,9 +112,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    } as const;
 
   public ngOnInit() {
-    this.userRole = this.authService.getUserRole();
-    this.canWrite = this.userRole !== RoleType.SYSADMIN_READONLY;
-    this.isAdminOrganizationIdentifier = this.userRole === RoleType.TENANT_ADMIN;
     this.initializeCredentialTable();
   }
 
@@ -128,7 +125,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   public navigateToCreateCredentialOnBehalf(): void {
-    const route = this.isAdminOrganizationIdentifier
+    const route = this.isAdminOrganizationIdentifier()
       ? ['/organization/credentials/create-on-behalf']
       : ['/organization/credentials/create'];
   
