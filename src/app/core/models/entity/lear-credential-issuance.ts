@@ -58,7 +58,7 @@ export interface BaseCredentialIssuanceViewModelField {
     staticValueGetter?: () => IssuanceStaticViewModel | null; // in case the value must be filled programatically (currently this happens when a field it is 'display: side' or 'pref_side' + onBehalf)
     custom?: { // the Issuance component has some default form templates (text/number input, selector); this field allows for using custom components (i.e. Powers)
       component: ComponentType<BaseIssuanceCustomFormChild<any>>,
-      data?: any 
+      data?: any
     }
 }
 
@@ -84,7 +84,7 @@ export interface CredentialIssuanceViewModelGroupFieldWithId extends CredentialI
 export type CredentialIssuanceViewModelField = CredentialIssuanceViewModelGroupField | CredentialIssuanceViewModelControlField;
 
 export interface CredentialIssuanceSchemaProvider<T extends IssuanceCredentialType> {
-  getSchema(): CredentialIssuanceTypedViewModelSchema<T>;
+  getSchema(onBehalf?: boolean): CredentialIssuanceTypedViewModelSchema<T>;
 }
 
 export type CredentialIssuanceTypedViewModelSchema<T extends IssuanceCredentialType> = {
@@ -106,7 +106,7 @@ export type IssuanceViewModelsTuple = [CredentialIssuanceViewModelSchemaWithId, 
 
 // Data collected in Issuance component (form) and sent to request factory
 export interface IssuanceRawCredentialPayload {
-  formData: Record<string, any>, 
+  formData: Record<string, any>,
   staticData: IssuanceStaticViewModel | null,
   onBehalf: boolean
 }

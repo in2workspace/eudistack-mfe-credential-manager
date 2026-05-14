@@ -13,8 +13,30 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
   private readonly authService = inject(AuthService);
   private readonly countryService = inject(CountryService);
 
-  public getSchema(): CredentialIssuanceTypedViewModelSchema<'learcredential.machine'> {
+  public getSchema(onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<'learcredential.machine'> {
     const countriesSelectorOptions = this.countryService.getCountriesAsSelectorOptions();
+    const isSysAdmin = this.authService.isSysAdmin();
+
+    const powersData: any[] = [
+      {
+        "action": ["Create", "Update", "Delete"],
+        "function": "ProductOffering",
+        isAdminRequired: false
+      }
+    ];
+
+    if (isSysAdmin || onBehalf) {
+      powersData.push({
+        "action": ["Execute"],
+        "function": "Onboarding",
+        isAdminRequired: true
+      });
+      powersData.push({
+        "action": ["Upload", "Attest"],
+        "function": "Certification",
+        isAdminRequired: true
+      });
+    }
 
     return {
       type: 'learcredential.machine',
@@ -78,8 +100,8 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
           {
             ...lastNameField
           },
-          { 
-            ...emailField 
+          {
+            ...emailField
           },
           {
             ...serialNumberField
@@ -106,30 +128,7 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
         groupFields: [],
         custom: {
           component: IssuancePowerComponent,
-          data: [
-                {
-                  action: ['Execute'],
-                  function: 'Onboarding',
-                  isAdminRequired: true
-                },
-                {
-                  action: [
-                      "Create",
-                      "Update",
-                      "Delete"
-                  ],
-                  function: "ProductOffering",
-                  isAdminRequired: false
-                },
-                {
-                  action: [
-                      "Upload",
-                      "Attest"
-                  ],
-                  function: "Certification",
-                  isAdminRequired: true
-                }
-          ]
+          data: powersData
         }
       },
     ]};

@@ -30,6 +30,7 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
   beforeEach(() => {
     authMock = {
       extractRawMandator: jest.fn(),
+      isSysAdmin: jest.fn(),
     } as any;
 
     countryMock = {
@@ -64,6 +65,7 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
     });
 
     it('includes the keys group with KeyGeneratorComponent', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
       const keysGroup = schema.schema.find(f => f.key === 'keys');
       expect(keysGroup).toBeDefined();
       expect(keysGroup?.type).toBe('group');
@@ -127,7 +129,10 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
       });
     });
 
-    it('includes the power group with IssuancePowerComponent', () => {
+    it('should include ALL powers if user IS sysAdmin', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(true);
+      const schema = service.getSchema();
+
       const power = schema.schema.find(f => f.key === 'power');
       expect(power).toBeDefined();
       expect(power?.type).toBe('group');
@@ -136,14 +141,61 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
         component: IssuancePowerComponent,
         data: [
           {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
+            isAdminRequired: false,
+          },
+          {
             action: ['Execute'],
             function: 'Onboarding',
             isAdminRequired: true,
           },
           {
+            action: ['Upload', 'Attest'],
+            function: 'Certification',
+            isAdminRequired: true,
+          },
+        ],
+      });
+    });
+
+    it('should include LIMITED powers if user is NOT sysAdmin (TenantAdmin or LEAR)', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      const schema = service.getSchema();
+
+      const power = schema.schema.find(f => f.key === 'power');
+      expect(power).toBeDefined();
+
+      expect(power?.custom).toMatchObject({
+        component: IssuancePowerComponent,
+        data: [
+          {
             action: ['Create', 'Update', 'Delete'],
             function: 'ProductOffering',
             isAdminRequired: false,
+          }
+        ],
+      });
+    });
+
+    it('should include ALL powers if user is NOT sysAdmin but is acting onBehalf', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      const schema = service.getSchema(true);
+      const power = schema.schema.find(f => f.key === 'power');
+      expect(power).toBeDefined();
+
+      expect(power?.custom).toMatchObject({
+        component: IssuancePowerComponent,
+        data: [
+          {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
+            isAdminRequired: false,
+          },
+          {
+            action: ['Execute'],
+            function: 'Onboarding',
+            isAdminRequired: true,
           },
           {
             action: ['Upload', 'Attest'],
