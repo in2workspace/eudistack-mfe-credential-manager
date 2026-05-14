@@ -23,7 +23,8 @@ describe('HomeComponent', () => {
 
     const themeServiceMock = {
       snapshot: {
-        branding: { logoUrl: 'https://example.com/logo.png' }
+        branding: { logoUrl: 'https://example.com/logo.png' },
+        content: { knowledgeBaseUrl: 'https://knowledgebase.example.com/' }
       },
       knowledgeBaseUrl: 'https://knowledgebase.example.com/',
     };
@@ -55,9 +56,9 @@ describe('HomeComponent', () => {
     expect(component.logoSrc).toBe('https://example.com/logo.png');
   });
 
-  it('should derive walletUrl from current origin and read knowledge_base_url from theme', () => {
+  it('should derive walletUrl from current origin and read knowledgeBaseUrl from theme', () => {
     expect(component.walletUrl).toBe(`${window.location.origin}/wallet/`);
-    expect(component.knowledge_base_url).toBe('https://knowledgebase.example.com/');
+    expect(component.knowledgeBaseUrl).toBe('https://knowledgebase.example.com/');
   });
 
   it('should call authService.login when login() is called', () => {

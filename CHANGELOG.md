@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Credential Issuance**: Fixed a role mismatch between the frontend UI and backend validation. Restricted powers (`Onboarding/Execute` and `Certification`) are now exclusively available in the power selector for `sysAdmin` and `TenantAdmin` users, including when creating a credential *on behalf of*.
 
+### Added
+
+- New link on the `tenant-not-found` screen to access the knowledge base.
+- Adaptation in `home` of the knowledge base link applying the same methodology as wallet PWA 3.4.0 (dynamic derivation of `KNOWLEDGE_BASE_URL` from the origin at runtime).
+
+### Changed
+
+- Improved eudistack logo image contrast: switched to dark logo for better readability.
+
+
 ## [3.5.4] - 2026-05-11
 
 ### Fixed

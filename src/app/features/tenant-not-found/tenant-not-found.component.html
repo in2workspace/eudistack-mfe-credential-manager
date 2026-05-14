@@ -1,10 +1,15 @@
 <section class="tenant-not-found">
   <div class="content">
-    <img class="logo" src="assets/logos/logo.svg" alt="EUDIStack" />
+    <img class="logo" src="assets/logos/logo-dark.svg" alt="EUDIStack" />
     <h1>{{ 'tenantNotFound.title' | translate }}</h1>
     <p>{{ 'tenantNotFound.message' | translate: { hostname: hostname } }}</p>
     <button type="button" class="primary" (click)="goToFallback()">
       {{ 'tenantNotFound.cta' | translate }}
     </button>
+    <div class="guides-section" *ngIf="guidesUrl">
+      <a [href]="guidesUrl"
+         target="_blank"
+         rel="noopener noreferrer">{{ 'tenantNotFound.support.guides' | translate }}</a>
+    </div>
   </div>
 </section>
