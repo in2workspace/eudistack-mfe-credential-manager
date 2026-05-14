@@ -14,7 +14,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
   private readonly countriesService = inject(CountryService);
 
 
-  public getSchema(): CredentialIssuanceTypedViewModelSchema<'learcredential.employee'> {
+  public getSchema(onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<'learcredential.employee'> {
 
     const countriesSelectorOptions = this.countriesService.getCountriesAsSelectorOptions();
     const isSysAdmin = this.authService.isSysAdmin();
@@ -27,7 +27,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
       }
     ];
 
-    if (isSysAdmin) {
+    if (isSysAdmin || onBehalf) {
       powersData.push({
         "action": ["Execute"],
         "function": "Onboarding",
@@ -37,12 +37,6 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
         "action": ["Upload", "Attest"],
         "function": "Certification",
         isAdminRequired: true
-      });
-    } else {
-      powersData.push({
-        "action": ["Upload"],
-        "function": "Certification",
-        isAdminRequired: false
       });
     }
 

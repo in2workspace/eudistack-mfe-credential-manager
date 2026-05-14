@@ -8,15 +8,15 @@ export class IssuanceSchemaBuilder {
     private readonly schemaProviders: CredentialIssuanceSchemaProvider<IssuanceCredentialType>[] = inject(CREDENTIAL_SCHEMA_PROVIDERS);
 
 
-  public getIssuanceFormSchema<T extends IssuanceCredentialType>(type: T): CredentialIssuanceTypedViewModelSchema<T>{
-    return this.getBuilder(type).getSchema();
+  public getIssuanceFormSchema<T extends IssuanceCredentialType>(type: T, onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<T>{
+    return this.getBuilder(type).getSchema(onBehalf);
   }
 
   public formSchemasBuilder<T extends IssuanceCredentialType>(
     credType: T,
     onBehalf: boolean
   ): IssuanceViewModelsTuple {
-    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType).schema;
+    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType, onBehalf).schema;
     const formViewModel: CredentialIssuanceViewModelSchemaWithId = [];
     const staticSchema: IssuanceStaticViewModel = {};
 
