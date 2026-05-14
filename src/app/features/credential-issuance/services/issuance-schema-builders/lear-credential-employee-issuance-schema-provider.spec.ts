@@ -28,6 +28,7 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
   beforeEach(() => {
     authMock = {
       extractRawMandator: jest.fn(),
+      isSysAdmin: jest.fn(),
     } as any;
 
     countryMock = {
@@ -61,6 +62,9 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     });
 
     it('should include mandatee group with correct fields', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      const schema = service.getSchema();
+
       const mand = schema.schema.find(f => f.key === 'mandatee');
       expect(mand).toBeDefined();
       expect(mand?.type).toBe('group');
@@ -109,7 +113,10 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     //   });
     // });
 
-    it('should include power group with IssuancePowerComponent i and correct data', () => {
+    it('should include ALL powers if user IS sysAdmin', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(true);
+      const schema = service.getSchema();
+
       const power = schema.schema.find(f => f.key === 'power');
       expect(power).toBeDefined();
       expect(power?.type).toBe('group');
@@ -119,19 +126,43 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
         component: IssuancePowerComponent,
         data: [
           {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
+            isAdminRequired: false,
+          },
+          {
             action: ['Execute'],
             function: 'Onboarding',
             isAdminRequired: true,
           },
+          {
+            action: ['Upload', 'Attest'],
+            function: 'Certification',
+            isAdminRequired: true,
+          },
+        ],
+      });
+    });
+
+    it('should include LIMITED powers if user is NOT sysAdmin (TenantAdmin or LEAR)', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      const schema = service.getSchema();
+
+      const power = schema.schema.find(f => f.key === 'power');
+      expect(power).toBeDefined();
+
+      expect(power?.custom).toMatchObject({
+        component: IssuancePowerComponent,
+        data: [
           {
             action: ['Create', 'Update', 'Delete'],
             function: 'ProductOffering',
             isAdminRequired: false,
           },
           {
-            action: ['Upload', 'Attest'],
+            action: ['Upload'],
             function: 'Certification',
-            isAdminRequired: true,
+            isAdminRequired: false, // Ahora pasamos a false porque este subset no requiere admin
           },
         ],
       });
