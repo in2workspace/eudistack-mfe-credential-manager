@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { signal, Signal, WritableSignal } from '@angular/core';
+import { signal, Signal, WritableSignal, computed } from '@angular/core';
 import { CredentialIssuanceComponent } from './credential-issuance.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ActivatedRoute } from '@angular/router';

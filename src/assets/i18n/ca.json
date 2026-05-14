@@ -416,7 +416,10 @@
   "tenantNotFound": {
     "title": "Tenant no trobat",
     "message": "El subdomini «{{hostname}}» no correspon a cap tenant vàlid.",
-    "cta": "Anar a l'entorn sandbox"
+    "cta": "Anar a l'entorn sandbox",
+    "support": {
+      "guides": "Necessites ajuda? Consulta les nostres guies"
+    }
   },
   "credential-offer-refresh": {
     "title": "Sol·licitar nova oferta de credencial",

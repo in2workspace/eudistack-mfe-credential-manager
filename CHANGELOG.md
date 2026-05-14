@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.5] - 2026-05-13
+
+### Added
+
+- New link on the `tenant-not-found` screen to access the knowledge base.
+- Adaptation in `home` of the knowledge base link applying the same methodology as wallet PWA 3.4.0 (dynamic derivation of `KNOWLEDGE_BASE_URL` from the origin at runtime).
+
+### Changed
+
+- Improved eudistack logo image contrast: switched to dark logo for better readability.
 ## [3.5.4] - 2026-05-11
 
 ### Fixed
