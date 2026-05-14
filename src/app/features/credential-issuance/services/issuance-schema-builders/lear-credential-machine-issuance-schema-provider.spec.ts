@@ -173,11 +173,34 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
             action: ['Create', 'Update', 'Delete'],
             function: 'ProductOffering',
             isAdminRequired: false,
+          }
+        ],
+      });
+    });
+
+    it('should include ALL powers if user is NOT sysAdmin but is acting onBehalf', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      const schema = service.getSchema(true);
+      const power = schema.schema.find(f => f.key === 'power');
+      expect(power).toBeDefined();
+
+      expect(power?.custom).toMatchObject({
+        component: IssuancePowerComponent,
+        data: [
+          {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
+            isAdminRequired: false,
           },
           {
-            action: ['Upload'],
+            action: ['Execute'],
+            function: 'Onboarding',
+            isAdminRequired: true,
+          },
+          {
+            action: ['Upload', 'Attest'],
             function: 'Certification',
-            isAdminRequired: false, // Ahora pasamos a false porque este subset no requiere admin
+            isAdminRequired: true,
           },
         ],
       });

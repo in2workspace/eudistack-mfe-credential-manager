@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Credential Issuance**: Fixed a role mismatch between the frontend UI and backend validation. Restricted powers (`Onboarding/Execute` and `Certification/Attest`) are now exclusively available in the power selector for `sysAdmin` users.
+- **Credential Issuance**: Fixed a role mismatch between the frontend UI and backend validation. Restricted powers (`Onboarding/Execute` and `Certification`) are now exclusively available in the power selector for `sysAdmin` users.
 
 ## [3.5.4] - 2026-05-11
 
