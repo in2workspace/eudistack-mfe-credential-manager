@@ -13,4 +13,5 @@ export interface MeResponse {
   role: 'SYSADMIN' | 'TENANT_ADMIN' | 'LEAR';
   readOnly: boolean;
   tenant: string;
+  tenantType: string;
 }

@@ -87,12 +87,14 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
   public searchPlaceholder = CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT;
   public isLoading = true;
-  
+
   public hideSearchBar: boolean = true;
 
   // computed
   public readonly canWrite = computed(() => this.authService.roleType() !== RoleType.SYSADMIN_READONLY);
-  public readonly isAdminOrganizationIdentifier = computed(() => this.authService.roleType() === RoleType.TENANT_ADMIN);
+  public readonly isAdminOrganizationIdentifier = computed(() =>
+    this.authService.roleType() === RoleType.TENANT_ADMIN && this.authService.tenantType() === 'multi_org'
+  );
 
   private readonly authService = inject(AuthService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
@@ -128,10 +130,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     const route = this.isAdminOrganizationIdentifier()
       ? ['/organization/credentials/create-on-behalf']
       : ['/organization/credentials/create'];
-  
+
     this.router.navigate(route);
   }
-  
+
   public onRowClick(row: CredentialProcedureBasicInfo): void {
     this.navigateToCredentialDetails(row);
   }
@@ -150,11 +152,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     if (this.hideSearchBar) {
 
       this.searchSubject.next('');
-      
+
       if (this.searchInput) {
         searchInputNativeEl.value = '';
       }
-  
+
       if (this.dataSource.paginator) {
         this.dataSource.paginator.firstPage();
       }

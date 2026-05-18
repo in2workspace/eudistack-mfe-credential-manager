@@ -27,6 +27,7 @@ export class AuthService{
   private readonly mandateeEmailSubject = new BehaviorSubject<string>('');
   private readonly nameSubject = new BehaviorSubject<string>('');
   public readonly roleType: WritableSignal<RoleType> = signal(RoleType.LEAR);
+  public readonly tenantType: WritableSignal<string> = signal('');
 
 
 
@@ -149,10 +150,14 @@ export class AuthService{
    */
   private refreshRoleFromBackend(): void {
     this.meService.fetchMe().pipe(take(1)).subscribe({
-      next: (me) => this.roleType.set(this.mapRoleToFrontend(me)),
+      next: (me) => {
+        this.roleType.set(this.mapRoleToFrontend(me));
+        this.tenantType.set(me.tenantType);
+      },
       error: (err) => {
         console.error('Failed to resolve role from backend; defaulting to LEAR', err);
         this.roleType.set(RoleType.LEAR);
+        this.tenantType.set('simple');
       }
     });
   }
