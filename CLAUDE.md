@@ -29,7 +29,7 @@ Standalone components. Routes lazy-loaded. Strict conventions:
 
 ## Multi-tenancy
 
-- `KNOWN_TENANTS` list duplicated here and in Wallet PWA — keep in sync (tech debt EUDI-048).
+- `KNOWN_TENANTS` lives in `src/app/core/constants/tenants.constants.ts` and is **duplicated verbatim** in `eudistack-core-wallet-pwa` (same path). Any change here MUST be mirrored there until EUDI-048 moves the list to the edge (API Gateway).
 - All HTTP calls propagate `X-Tenant-Id` via `TenantHttpInterceptor`.
 
 ## Common commands
