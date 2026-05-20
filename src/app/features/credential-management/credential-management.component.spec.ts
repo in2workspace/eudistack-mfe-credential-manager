@@ -43,6 +43,7 @@ describe('CredentialManagementComponent', () => {
       hasAdminOrganizationIdentifier: jest.fn().mockReturnValue(true),
       getUserRole: jest.fn().mockReturnValue(RoleType.TENANT_ADMIN),
       roleType: signal(RoleType.TENANT_ADMIN),
+      tenantType: signal('multi_org'),
     } as jest.Mocked<any>;
 
     await TestBed.configureTestingModule({
