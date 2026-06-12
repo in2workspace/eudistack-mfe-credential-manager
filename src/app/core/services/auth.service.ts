@@ -13,7 +13,7 @@ import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wr
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { MeService } from './me.service';
 import { MeResponse } from '../models/dto/me-response.dto';
-import { resolveTenant } from '../constants/tenants.constants';
+import { TenantService } from './tenant.service';
 
 @Injectable({
   providedIn: 'root'
@@ -40,6 +40,7 @@ export class AuthService{
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
   private readonly meService = inject(MeService);
+  private readonly tenantService = inject(TenantService);
   private crossTenantDialogOpen = false;
 
   public constructor() {
@@ -173,7 +174,7 @@ export class AuthService{
   }
 
   private isAuthorizedForCurrentTenant(): boolean {
-    const tenant = resolveTenant(window.location.hostname);
+    const tenant = this.tenantService.tenant();
     return this.isSysAdmin() || this.hasPower('Onboarding', 'Execute', tenant);
   }
 

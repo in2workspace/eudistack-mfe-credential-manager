@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
+import { TenantService } from './tenant.service';
 import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { UserDataAuthenticationResponse } from '../models/dto/user-data-authentication-response.dto';
 import { RoleType } from '../models/enums/auth-rol-type.enum';
@@ -87,6 +88,7 @@ const mockUserDataNoVCNoCert: UserDataAuthenticationResponse = {
 describe('AuthService', () => {
   let service: AuthService;
   let mockPublicEventsService: jest.Mocked<any>;
+  let tenantServiceMock: { tenant: jest.Mock };
 
   let oidcSecurityServiceMock: {
     checkAuth: jest.Mock,
@@ -126,6 +128,7 @@ describe('AuthService', () => {
         tenant: 'sandbox'
       }))
     };
+    tenantServiceMock = { tenant: jest.fn().mockReturnValue('localhost') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -135,6 +138,7 @@ describe('AuthService', () => {
         { provide: TranslateService, useValue: translateServiceMock },
         { provide: DialogWrapperService, useValue: dialogWrapperServiceMock },
         { provide: MeService, useValue: meServiceMock },
+        { provide: TenantService, useValue: tenantServiceMock },
       ]
     });
 
@@ -356,29 +360,17 @@ describe('AuthService', () => {
       power: [{ function: 'Onboarding', action: 'Execute', domain: 'kpmg', type: 'domain' }]
     };
 
-    const originalLocation = window.location;
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...originalLocation, hostname: 'dome.example.com' }
-    });
+    tenantServiceMock.tenant.mockReturnValue('dome');
+    oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+      isAuthenticated: true,
+      userData: crossTenantUserData,
+      accessToken: 'cross-tenant-token'
+    }));
+    const logoutSpy = jest.spyOn(service, 'logout');
 
-    try {
-      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
-        isAuthenticated: true,
-        userData: crossTenantUserData,
-        accessToken: 'cross-tenant-token'
-      }));
-      const logoutSpy = jest.spyOn(service, 'logout');
-
-      service.handleLoginCallback();
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
-      expect(logoutSpy).toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: originalLocation
-      });
-    }
+    service.handleLoginCallback();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    expect(logoutSpy).toHaveBeenCalled();
   });
 
   it('accepta login d\'un SysAdmin sense power Onboarding/Execute', (done) => {

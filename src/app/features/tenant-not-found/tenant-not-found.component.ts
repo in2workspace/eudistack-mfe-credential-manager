@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
-import { buildFallbackUrl } from 'src/app/core/constants/tenants.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
 @Component({
@@ -12,7 +12,7 @@ import { ThemeService } from 'src/app/core/services/theme.service';
   imports: [NgIf, TranslatePipe],
 })
 export class TenantNotFoundComponent {
-  public readonly fallbackUrl = buildFallbackUrl();
+  public readonly fallbackUrl = inject(TenantService).buildFallbackUrl();
   public readonly hostname = window.location.hostname;
   private readonly themeService = inject(ThemeService);
   public readonly guidesUrl = this.themeService.knowledgeBaseUrl

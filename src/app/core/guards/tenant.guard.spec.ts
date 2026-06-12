@@ -1,19 +1,25 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
 import { tenantGuard } from './tenant.guard';
+import { TenantService } from '../services/tenant.service';
 
 describe('tenantGuard', () => {
   let routerMock: jest.Mocked<Pick<Router, 'createUrlTree'>>;
+  let tenantServiceMock: { tenant: jest.Mock };
   const fakeUrlTree = {} as UrlTree;
 
   beforeEach(() => {
     routerMock = {
       createUrlTree: jest.fn().mockReturnValue(fakeUrlTree),
     };
+    tenantServiceMock = {
+      tenant: jest.fn().mockReturnValue(''),
+    };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: routerMock },
+        { provide: TenantService, useValue: tenantServiceMock },
       ],
     });
   });
@@ -22,28 +28,21 @@ describe('tenantGuard', () => {
     return TestBed.runInInjectionContext(() => tenantGuard(null as any, null as any)) as boolean | UrlTree;
   }
 
-  function mockHostname(hostname: string): void {
-    Object.defineProperty(window, 'location', {
-      value: { hostname },
-      writable: true,
-    });
-  }
-
   it('retorna true per un tenant conegut', () => {
-    mockHostname('dome.eudistack.net');
+    tenantServiceMock.tenant.mockReturnValue('dome');
     expect(runGuard()).toBe(true);
     expect(routerMock.createUrlTree).not.toHaveBeenCalled();
   });
 
-  it('retorna UrlTree a /tenant-not-found per un subdomain desconegut', () => {
-    mockHostname('patata.eudistack.net');
+  it('retorna UrlTree a /tenant-not-found per un tenant desconegut', () => {
+    tenantServiceMock.tenant.mockReturnValue('');
     const result = runGuard();
     expect(result).toBe(fakeUrlTree);
     expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/tenant-not-found']);
   });
 
   it('accepta localhost per desenvolupament', () => {
-    mockHostname('localhost');
+    tenantServiceMock.tenant.mockReturnValue('localhost');
     expect(runGuard()).toBe(true);
   });
 });

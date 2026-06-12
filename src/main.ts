@@ -18,9 +18,13 @@ import { LearCredentialMachineIssuanceSchemaProvider } from './app/features/cred
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { MatPaginatorIntlService } from './app/shared/services/mat-paginator-intl.service';
 import { ThemeService } from './app/core/services/theme.service';
+import { TenantService } from './app/core/services/tenant.service';
 
-function initializeTheme(themeService: ThemeService): () => Promise<void> {
-  return () => themeService.load();
+function initializeApp(tenantService: TenantService, themeService: ThemeService): () => Promise<void> {
+  return async () => {
+    await tenantService.resolve();
+    await themeService.load();
+  };
 }
 
 overrideDefaultValueAccessor();
@@ -30,8 +34,8 @@ bootstrapApplication(AppComponent, {
         provideHttpClient(withInterceptorsFromDi()),
         {
             provide: APP_INITIALIZER,
-            useFactory: initializeTheme,
-            deps: [ThemeService],
+            useFactory: initializeApp,
+            deps: [TenantService, ThemeService],
             multi: true
         },
         {

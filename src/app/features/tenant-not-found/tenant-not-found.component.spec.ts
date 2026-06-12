@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { TenantNotFoundComponent } from './tenant-not-found.component';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { TenantService } from 'src/app/core/services/tenant.service';
 
 describe('TenantNotFoundComponent', () => {
   let fixture: ComponentFixture<TenantNotFoundComponent>;
@@ -14,11 +15,15 @@ describe('TenantNotFoundComponent', () => {
       },
       knowledgeBaseUrl: 'https://docs.example.com/',
     };
+    const tenantServiceMock = {
+      buildFallbackUrl: jest.fn().mockReturnValue('https://sandbox.eudistack.net/issuer/home'),
+    };
 
     await TestBed.configureTestingModule({
       imports: [TenantNotFoundComponent, TranslateModule.forRoot()],
       providers: [
         { provide: ThemeService, useValue: themeServiceMock },
+        { provide: TenantService, useValue: tenantServiceMock },
       ],
     }).compileComponents();
 
