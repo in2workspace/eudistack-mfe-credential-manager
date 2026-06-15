@@ -2,7 +2,7 @@
   <div class="content">
     <img class="logo" src="assets/logos/logo-dark.svg" alt="EUDIStack" />
     <h1>{{ 'tenantNotFound.title' | translate }}</h1>
-    <p>{{ 'tenantNotFound.message' | translate: { hostname: hostname } }}</p>
+    <p>{{ 'tenantNotFound.message' | translate: { tenant: tenant } }}</p>
     <button type="button" class="primary" (click)="goToFallback()">
       {{ 'tenantNotFound.cta' | translate }}
     </button>

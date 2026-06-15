@@ -17,6 +17,7 @@ describe('TenantNotFoundComponent', () => {
     };
     const tenantServiceMock = {
       buildFallbackUrl: jest.fn().mockReturnValue('https://sandbox.eudistack.net/issuer/home'),
+      tenant: jest.fn().mockReturnValue('sandbox'),
     };
 
     await TestBed.configureTestingModule({

@@ -13,7 +13,7 @@ import { ThemeService } from 'src/app/core/services/theme.service';
 })
 export class TenantNotFoundComponent {
   public readonly fallbackUrl = inject(TenantService).buildFallbackUrl();
-  public readonly hostname = window.location.hostname;
+  public readonly tenant = inject(TenantService).tenant();
   private readonly themeService = inject(ThemeService);
   public readonly guidesUrl = this.themeService.knowledgeBaseUrl
     ? this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.USERS_TROUBLESHOOTING
