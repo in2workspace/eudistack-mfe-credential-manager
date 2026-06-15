@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added (15-06-2026)
+- Added `cgcom` to the list of known tenants.
+
 ## [3.5.10] - 15-06-2026
 
 ### Added (15-06-2026)
