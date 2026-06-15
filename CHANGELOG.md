@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.10] - 15-06-2026
+
 ### Added (15-06-2026)
 
 - **`TenantService`**: a new signal-based service that centralizes tenant resolution. On initialization, the app first tries to resolve the tenant from `window.location.hostname` (existing behavior). If the hostname is not recognized, it performs a `GET assets/tenants/custom-domain.json` request and looks up the hostname as a key in the domain-to-tenant map, validating that the resolved value is a known tenant. The tenant is resolved **before** the theme is loaded (`TenantService.resolve()` → `ThemeService.load()`).
