@@ -5,13 +5,10 @@
   // e.g. kpmg.eudistack.net → kpmg, kpmg.127.0.0.1.nip.io → kpmg
   const tenant = window.location.hostname.split(".")[0];
 
-  // OIDC Client ID: per-tenant client registered in the Verifier
-  const clientIdPrefix = "${CLIENT_ID_PREFIX}";
-  if (clientIdPrefix) {
-    window["env"]["client_id"] = clientIdPrefix + tenant;
-  } else {
-    window["env"]["client_id"] = "${CLIENT_ID}";
-  }
+  // OIDC Client ID: tenant is resolved at runtime
+  window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
+  // Allows to overwrite the client_id (use in case the client_id is by environment, not by tenant)
+  window["env"]["client_id"] = "${CLIENT_ID}";
 
   // IAM URL: OIDC authority (Verifier as IdP) — same origin + /verifier path
   window["env"]["iam_url"] = window.location.origin + "/verifier";

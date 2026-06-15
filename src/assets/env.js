@@ -3,6 +3,7 @@
 
   // Environment variables
   window["env"]["iam_url"] = "${IAM_URL}";
+  window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
   window["env"]["client_id"] = "${CLIENT_ID}";
   window["env"]["server_url"] = "${SERVER_URL}";
   window["env"]["show_wallet_url_test"] = "${SHOW_WALLET_URL_TEST}";

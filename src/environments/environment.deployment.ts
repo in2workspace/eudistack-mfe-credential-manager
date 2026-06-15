@@ -2,6 +2,7 @@
 
 export const environment = {
   production: true,
+  client_id_prefix: window["env"]["client_id_prefix"],
   // OIDC client identifier — resolved per tenant at runtime (REQUIRED)
   client_id: window["env"]["client_id"],
   // Keycloak URL (REQUIRED)

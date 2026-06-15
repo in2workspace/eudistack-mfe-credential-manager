@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { Theme } from '../models/theme.model';
-import { resolveTenant } from '../constants/tenants.constants';
+import { TenantService } from './tenant.service';
 
 /** Default semantic tokens — neutral, brand-independent colors for content areas. */
 const SEMANTIC_DEFAULTS: Record<string, string> = {
@@ -54,6 +54,7 @@ const SAFE_LIGHTNESS_MAX = 0.65;
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly theme$ = new BehaviorSubject<Theme | null>(null);
+  private readonly tenantService = inject(TenantService);
 
   constructor(
     private readonly http: HttpClient,
@@ -83,7 +84,7 @@ export class ThemeService {
   }
 
   get tenantDomain(): string {
-    return resolveTenant(window.location.hostname).toUpperCase();
+    return this.tenantService.tenant().toUpperCase();
   }
 
   get knowledgeBaseUrl(): string {

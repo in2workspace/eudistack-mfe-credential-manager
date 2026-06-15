@@ -1,13 +1,12 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { isKnownTenant } from '../constants/tenants.constants';
+import { TenantService } from '../services/tenant.service';
 
 export const tenantGuard: CanActivateFn = () => {
+  const tenantService = inject(TenantService);
   const router = inject(Router);
 
-  if (isKnownTenant(window.location.hostname)) {
-    return true;
-  }
-
-  return router.createUrlTree(['/tenant-not-found']);
+  return tenantService.tenant() !== ''
+    ? true
+    : router.createUrlTree(['/tenant-not-found']);
 };
