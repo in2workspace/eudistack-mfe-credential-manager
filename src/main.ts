@@ -5,7 +5,7 @@ import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
 import { ServeErrorInterceptor } from './app/core/interceptors/server-error-interceptor';
-import { AuthInterceptor, AuthModule } from 'angular-auth-oidc-client';
+import { AuthInterceptor, AuthModule, StsConfigLoader } from 'angular-auth-oidc-client';
 import { HTTP_INTERCEPTORS, HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { RouterModule } from "@angular/router";
 import { routes } from "./app/app.routes";
@@ -19,11 +19,60 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 import { MatPaginatorIntlService } from './app/shared/services/mat-paginator-intl.service';
 import { ThemeService } from './app/core/services/theme.service';
 import { TenantService } from './app/core/services/tenant.service';
+import { from, map } from 'rxjs';
+import { OpenIdConfiguration } from 'angular-auth-oidc-client';
 
 function initializeApp(tenantService: TenantService, themeService: ThemeService): () => Promise<void> {
   return async () => {
     await tenantService.resolve();
     await themeService.load();
+  };
+}
+
+class TenantAwareStsConfigLoader implements StsConfigLoader {
+  constructor(private readonly tenantService: TenantService) {}
+
+  loadConfigs() {
+    return from(this.tenantService.resolve()).pipe(
+      map(() => {
+        const tenant = this.tenantService.tenant();
+
+        return [
+          buildOidcConfig(tenant) as OpenIdConfiguration
+        ];
+      })
+    );
+  }
+}
+
+function oidcConfigFactory(tenantService: TenantService): StsConfigLoader {
+  return new TenantAwareStsConfigLoader(tenantService);
+}
+
+function buildOidcConfig(tenant: string): OpenIdConfiguration {
+  if (environment.client_id_prefix && !tenant) {
+    throw new Error('Cannot build OIDC config because tenant could not be resolved.');
+  }
+
+  const clientIdPrefix = environment.client_id_prefix;
+  const clientId = clientIdPrefix ? `${clientIdPrefix}${tenant}` : environment.client_id;
+
+  return {
+    logLevel: 1,
+    postLoginRoute: IAM_POST_LOGIN_ROUTE,
+    authority: environment.iam_url,
+    redirectUrl: IAM_REDIRECT_URI,
+    postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
+    clientId,
+    scope: IAM_PARAMS.SCOPE,
+    responseType: IAM_PARAMS.GRANT_TYPE,
+    silentRenew: true,
+    useRefreshToken: true,
+    historyCleanupOff: false,
+    ignoreNonceAfterRefresh: true,
+    triggerRefreshWhenIdTokenExpired: false,
+    autoUserInfo: false,
+    secureRoutes: [environment.server_url].filter((route): route is string => route !== undefined),
   };
 }
 
@@ -59,23 +108,11 @@ bootstrapApplication(AppComponent, {
                 deps: [HttpClient]
             }
         }), AuthModule.forRoot({
-            config: {
-                logLevel: 1, // DEBUG: temporary to diagnose auth flow
-                postLoginRoute: IAM_POST_LOGIN_ROUTE,
-                authority: environment.iam_url,
-                redirectUrl: IAM_REDIRECT_URI,
-                postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
-                clientId: environment.client_id ?? IAM_PARAMS.CLIENT_ID,
-                scope: IAM_PARAMS.SCOPE,
-                responseType: IAM_PARAMS.GRANT_TYPE,
-                silentRenew: true,
-                useRefreshToken: true,
-                historyCleanupOff: false,
-                ignoreNonceAfterRefresh: true,
-                triggerRefreshWhenIdTokenExpired: false,
-                autoUserInfo: false,
-                secureRoutes: [environment.server_url].filter((route): route is string => route !== undefined),
-            },
+            loader: {
+                provide: StsConfigLoader,
+                useFactory: oidcConfigFactory,
+                deps: [TenantService]
+            }
         })),
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ServeErrorInterceptor, multi: true },

@@ -4,16 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.6.0] - 2026-06-12
+## [3.5.10] - 2026-06-12
 
 ### Added
 
-- **`TenantService`**: nou servei signal-based que centralitza la resolució de tenant. En inicialitzar-se, l'app primer intenta resoldre el tenant a partir de `window.location.hostname` (comportament existent); si el hostname no és reconegut, fa `GET assets/tenants/custom-domain.json` i busca el hostname com a clau al mapa domini→tenant, validant que el valor obtingut sigui un tenant conegut. El tenant es resol **abans** que el tema (`TenantService.resolve()` → `ThemeService.load()`).
+- **`TenantService`**: a new signal-based service that centralizes tenant resolution. On initialization, the app first tries to resolve the tenant from `window.location.hostname` (existing behavior). If the hostname is not recognized, it performs a `GET assets/tenants/custom-domain.json` request and looks up the hostname as a key in the domain-to-tenant map, validating that the resolved value is a known tenant. The tenant is resolved **before** the theme is loaded (`TenantService.resolve()` → `ThemeService.load()`).
 
 ### Changed
 
-- `ThemeService`, `AuthService` i `tenantGuard` llegeixen ara el tenant des del signal `TenantService.tenant()` en comptes de cridar `resolveTenant(window.location.hostname)` directament.
-- Les funcions de `tenants.constants.ts` (`resolveTenant`, `buildFallbackUrl`, `stripEnvSuffix`, etc.) s'han mogut a `TenantService` com a mètodes privats/públics. Les constants (`KNOWN_TENANTS`, `FALLBACK_TENANT`, `MFE_HOME_PATH`, `ENV_SUFFIXES`) es mantenen a `tenants.constants.ts`.
+- `ThemeService`, `AuthService`, and the `TenantNotFound` flow in `tenantGuard` now read the tenant from the `TenantService.tenant()` signal instead of calling `resolveTenant(window.location.hostname)` directly.
+- The functions from `tenants.constants.ts` (`resolveTenant`, `buildFallbackUrl`, `stripEnvSuffix`, etc.) have been moved to `TenantService` as private/public methods. The constants (`KNOWN_TENANTS`, `FALLBACK_TENANT`, `MFE_HOME_PATH`, `ENV_SUFFIXES`) remain in `tenants.constants.ts`.
+- Client configuration now runs after the tenant has been resolved, since when no `CLIENT_ID` value is provided, the client ID is configured as `CLIENT_ID_PREFIX` + tenant.
 
 ## [3.5.9] - 2026-05-28
 
