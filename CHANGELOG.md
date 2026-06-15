@@ -4,13 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.5.10] - 2026-06-12
+## [Unreleased]
 
-### Added
+### Added (15-06-2026)
 
 - **`TenantService`**: a new signal-based service that centralizes tenant resolution. On initialization, the app first tries to resolve the tenant from `window.location.hostname` (existing behavior). If the hostname is not recognized, it performs a `GET assets/tenants/custom-domain.json` request and looks up the hostname as a key in the domain-to-tenant map, validating that the resolved value is a known tenant. The tenant is resolved **before** the theme is loaded (`TenantService.resolve()` → `ThemeService.load()`).
 
-### Changed
+### Changed (15-06-2026)
 
 - `ThemeService`, `AuthService`, and the `TenantNotFound` flow in `tenantGuard` now read the tenant from the `TenantService.tenant()` signal instead of calling `resolveTenant(window.location.hostname)` directly.
 - The functions from `tenants.constants.ts` (`resolveTenant`, `buildFallbackUrl`, `stripEnvSuffix`, etc.) have been moved to `TenantService` as private/public methods. The constants (`KNOWN_TENANTS`, `FALLBACK_TENANT`, `MFE_HOME_PATH`, `ENV_SUFFIXES`) remain in `tenants.constants.ts`.
