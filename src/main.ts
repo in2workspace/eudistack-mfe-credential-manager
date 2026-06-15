@@ -11,7 +11,6 @@ import { RouterModule } from "@angular/router";
 import { routes } from "./app/app.routes";
 import { httpTranslateLoader } from "./app/core/services/translate-http-loader.factory";
 import { overrideDefaultValueAccessor } from './app/core/overrides/value-accessor.overrides';
-import { IAM_PARAMS, IAM_POST_LOGIN_ROUTE, IAM_POST_LOGOUT_URI, IAM_REDIRECT_URI } from './app/core/constants/iam.constants';
 import { CREDENTIAL_SCHEMA_PROVIDERS } from './app/features/credential-issuance/services/issuance-schema-builders/issuance-schema-builder';
 import { LearCredentialEmployeeSchemaProvider } from './app/features/credential-issuance/services/issuance-schema-builders/lear-credential-employee-issuance-schema-provider';
 import { LearCredentialMachineIssuanceSchemaProvider } from './app/features/credential-issuance/services/issuance-schema-builders/lear-credential-machine-issuance-schema-provider';
@@ -19,60 +18,12 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 import { MatPaginatorIntlService } from './app/shared/services/mat-paginator-intl.service';
 import { ThemeService } from './app/core/services/theme.service';
 import { TenantService } from './app/core/services/tenant.service';
-import { from, map } from 'rxjs';
-import { OpenIdConfiguration } from 'angular-auth-oidc-client';
+import { oidcConfigFactory } from './app/core/auth/oid-config.factory';
 
 function initializeApp(tenantService: TenantService, themeService: ThemeService): () => Promise<void> {
   return async () => {
     await tenantService.resolve();
     await themeService.load();
-  };
-}
-
-class TenantAwareStsConfigLoader implements StsConfigLoader {
-  constructor(private readonly tenantService: TenantService) {}
-
-  loadConfigs() {
-    return from(this.tenantService.resolve()).pipe(
-      map(() => {
-        const tenant = this.tenantService.tenant();
-
-        return [
-          buildOidcConfig(tenant) as OpenIdConfiguration
-        ];
-      })
-    );
-  }
-}
-
-function oidcConfigFactory(tenantService: TenantService): StsConfigLoader {
-  return new TenantAwareStsConfigLoader(tenantService);
-}
-
-function buildOidcConfig(tenant: string): OpenIdConfiguration {
-  if (environment.client_id_prefix && !tenant) {
-    throw new Error('Cannot build OIDC config because tenant could not be resolved.');
-  }
-
-  const clientIdPrefix = environment.client_id_prefix;
-  const clientId = clientIdPrefix ? `${clientIdPrefix}${tenant}` : environment.client_id;
-
-  return {
-    logLevel: 1,
-    postLoginRoute: IAM_POST_LOGIN_ROUTE,
-    authority: environment.iam_url,
-    redirectUrl: IAM_REDIRECT_URI,
-    postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
-    clientId,
-    scope: IAM_PARAMS.SCOPE,
-    responseType: IAM_PARAMS.GRANT_TYPE,
-    silentRenew: true,
-    useRefreshToken: true,
-    historyCleanupOff: false,
-    ignoreNonceAfterRefresh: true,
-    triggerRefreshWhenIdTokenExpired: false,
-    autoUserInfo: false,
-    secureRoutes: [environment.server_url].filter((route): route is string => route !== undefined),
   };
 }
 
