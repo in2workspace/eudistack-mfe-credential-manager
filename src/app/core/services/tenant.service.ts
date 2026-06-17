@@ -27,8 +27,7 @@ export class TenantService {
 
     try {
       const config = await firstValueFrom(
-        //todo remove /issuer
-        this.http.get<CustomDomainConfig>('/issuer/assets/tenants/custom-domain.json')
+        this.http.get<CustomDomainConfig>('/assets/tenants/custom-domain.json')
       );
       const entry = config.domains[window.location.hostname];
       if (entry && this.isValidTenant(entry.tenantId)) {
