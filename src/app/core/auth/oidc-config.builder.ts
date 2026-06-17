@@ -7,15 +7,16 @@ import {
   IAM_REDIRECT_URI,
 } from '../constants/iam.constants';
 
-export function buildOidcConfig(tenant: string, apiBase: string, iamUrl: string): OpenIdConfiguration {
+export function buildOidcConfig(tenant: string, apiBase: string, iamUrl: string, canonical: boolean): OpenIdConfiguration {
   if (environment.client_id_prefix && !tenant) {
     throw new Error('Cannot build OIDC config because tenant could not be resolved.');
   }
 
+  const customSuffix = canonical ? '' : '-custom';
   const clientIdPrefix = environment.client_id_prefix;
   const clientId = clientIdPrefix
-    ? `${clientIdPrefix}${tenant}`
-    : environment.client_id;
+    ? `${clientIdPrefix}${tenant}${customSuffix}`
+    : `${environment.client_id}${customSuffix}`;
 
   return {
     logLevel: 1,
