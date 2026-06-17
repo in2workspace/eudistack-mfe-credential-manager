@@ -6,17 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.5.13] - 15-06-2026
+## [3.5.14] - 17-06-2026
+
+## Fixed 
+- fixed navbar component to use takeUntilDestroyed instead of take(1) to avoid memory loss for race conditions.
+
+## [3.5.13] - 17-06-2026
+
 ### Fixed
 - Fixed custom-domain.json URL by removing `/issuer` path.
 
-## [3.5.12] - 15-06-2026
+## [3.5.12] - 17-06-2026
 
 ### Fixed
 - Resolved assets, API and IAM URLs handling correctly:
   - Assets now use absolute paths to avoid adding the `/issuer` prefix.
   - API and IAM URLs now use the appropriate canonical or non-canonical base URL.
 - Add suffix "-custom" to client ID when base URL is non-canonical.
+
+## [3.5.11] - 15-06-2026
 
 ## Added (15-06-2026)
 - Added `cgcom` to the list of known tenants.
