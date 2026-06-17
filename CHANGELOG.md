@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.13] - 15-06-2026
+### Fixed
+- Fixed custom-domain.json URL by removing `/issuer` path.
+
 ## [3.5.12] - 15-06-2026
 
 ### Fixed
