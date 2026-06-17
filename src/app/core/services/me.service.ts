@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
 import { API_PATH } from '../constants/api-paths.constants';
 import { MeResponse } from '../models/dto/me-response.dto';
+import { TenantService } from './tenant.service';
 
 /**
  * Calls the Issuer `GET /api/v1/me` endpoint to resolve the caller's role
@@ -14,7 +14,9 @@ import { MeResponse } from '../models/dto/me-response.dto';
 @Injectable({ providedIn: 'root' })
 export class MeService {
   private readonly http = inject(HttpClient);
-  private readonly url = `${environment.server_url}${API_PATH.ME}`;
+  private readonly tenantService = inject(TenantService);
+
+  private get url() { return `${this.tenantService.apiBase()}${API_PATH.ME}`; }
 
   public fetchMe(): Observable<MeResponse> {
     return this.http.get<MeResponse>(this.url);

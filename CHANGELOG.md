@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.12] - 15-06-2026
+
+### Fixed
+- Resolved assets and API URL handling correctly:
+  - Assets now use absolute paths to avoid adding the `/issuer` prefix.
+  - API URLs now use the appropriate canonical or non-canonical base URL.
+
 ## Added (15-06-2026)
 - Added `cgcom` to the list of known tenants.
 

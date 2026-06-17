@@ -7,7 +7,7 @@ import {
   IAM_REDIRECT_URI,
 } from '../constants/iam.constants';
 
-export function buildOidcConfig(tenant: string): OpenIdConfiguration {
+export function buildOidcConfig(tenant: string, apiBase: string): OpenIdConfiguration {
   if (environment.client_id_prefix && !tenant) {
     throw new Error('Cannot build OIDC config because tenant could not be resolved.');
   }
@@ -32,8 +32,6 @@ export function buildOidcConfig(tenant: string): OpenIdConfiguration {
     ignoreNonceAfterRefresh: true,
     triggerRefreshWhenIdTokenExpired: false,
     autoUserInfo: false,
-    secureRoutes: [environment.server_url].filter(
-      (route): route is string => route !== undefined
-    ),
+    secureRoutes: [apiBase || '/'].filter((r): r is string => !!r),
   };
 }

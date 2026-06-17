@@ -9,6 +9,7 @@ import {DialogWrapperService} from "../../shared/components/dialog/dialog-wrappe
 import {TranslateService} from "@ngx-translate/core";
 import {Router} from "@angular/router";
 import { API_PATH } from '../constants/api-paths.constants';
+import { TenantService } from './tenant.service';
 import { CredentialProceduresResponse } from '../models/dto/credential-procedures-response.dto';
 import { CredentialProcedureDetails, CredentialStatus, LifeCycleStatus } from '../models/entity/lear-credential';
 
@@ -43,7 +44,8 @@ describe('CredentialProcedureService', () => {
       provideHttpClientTesting(),
       { provide: DialogWrapperService, useValue: { openErrorInfoDialog: jest.fn(), openWarningDialog: jest.fn() } },
       { provide: TranslateService, useValue: { instant: jest.fn((key: string) => key) } },
-      { provide: Router, useValue: { navigate: jest.fn() } }
+      { provide: Router, useValue: { navigate: jest.fn() } },
+      { provide: TenantService, useValue: { apiBase: () => environment.server_url } }
     ]
 });
 

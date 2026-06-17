@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { CredentialIssuerMetadataService } from './credential-issuer-metadata.service';
 import { environment } from 'src/environments/environment';
 import { API_PATH } from '../constants/api-paths.constants';
+import { TenantService } from './tenant.service';
 
 describe('CredentialIssuerMetadataService', () => {
   let service: CredentialIssuerMetadataService;
@@ -36,7 +37,8 @@ describe('CredentialIssuerMetadataService', () => {
       providers: [
         CredentialIssuerMetadataService,
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: TenantService, useValue: { apiBase: () => environment.server_url } }
       ]
     });
     service = TestBed.inject(CredentialIssuerMetadataService);
