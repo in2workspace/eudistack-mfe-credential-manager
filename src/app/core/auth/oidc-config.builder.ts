@@ -7,7 +7,7 @@ import {
   IAM_REDIRECT_URI,
 } from '../constants/iam.constants';
 
-export function buildOidcConfig(tenant: string, apiBase: string): OpenIdConfiguration {
+export function buildOidcConfig(tenant: string, apiBase: string, iamUrl: string): OpenIdConfiguration {
   if (environment.client_id_prefix && !tenant) {
     throw new Error('Cannot build OIDC config because tenant could not be resolved.');
   }
@@ -20,7 +20,7 @@ export function buildOidcConfig(tenant: string, apiBase: string): OpenIdConfigur
   return {
     logLevel: 1,
     postLoginRoute: IAM_POST_LOGIN_ROUTE,
-    authority: environment.iam_url,
+    authority: iamUrl,
     redirectUrl: IAM_REDIRECT_URI,
     postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
     clientId,

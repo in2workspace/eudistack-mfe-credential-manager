@@ -11,7 +11,7 @@ export class TenantAwareStsConfigLoader implements StsConfigLoader {
       map(() => {
         const tenant = this.tenantService.tenant();
 
-        return [buildOidcConfig(tenant, this.tenantService.apiBase())];
+        return [buildOidcConfig(tenant, this.tenantService.apiBase(), this.tenantService.iamUrl())];
       })
     );
   }

@@ -3,15 +3,18 @@ import { TestBed, fakeAsync, tick } from "@angular/core/testing";
 import { TranslateService } from "@ngx-translate/core";
 import { throwError, of } from "rxjs";
 import { DialogWrapperService } from "src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service";
-import { environment } from "src/environments/environment";
 import { ServeErrorInterceptor } from "./server-error-interceptor";
 import { DialogComponent } from "src/app/shared/components/dialog/dialog-component/dialog.component";
+import { TenantService } from "../services/tenant.service";
+import { signal } from "@angular/core";
 
+const TEST_IAM_URL = 'https://verifier.test.example.org';
 
 describe('ServeErrorInterceptor', () => {
   let interceptor: ServeErrorInterceptor;
   let dialogServiceSpy: { openErrorInfoDialog: jest.Mock };
   let translateServiceSpy: { instant: jest.Mock };
+  let tenantServiceMock: { iamUrl: () => string };
   let httpRequest: Partial<HttpRequest<any>>;
   let httpHandler: { handle: jest.Mock };
 
@@ -20,10 +23,12 @@ describe('ServeErrorInterceptor', () => {
     httpHandler = { handle: jest.fn() };
     dialogServiceSpy = { openErrorInfoDialog: jest.fn().mockReturnValue('') };
     translateServiceSpy = { instant: jest.fn() };
+    tenantServiceMock = { iamUrl: signal(TEST_IAM_URL) };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: DialogWrapperService, useValue: dialogServiceSpy },
+        { provide: TenantService, useValue: tenantServiceMock },
         ServeErrorInterceptor,
         { provide: TranslateService, useValue: translateServiceSpy }
       ]
@@ -129,7 +134,7 @@ describe('ServeErrorInterceptor', () => {
     });
 
 it('should handle errors silently for IAM endpoint and rethrow error', done => {
-  const iamUrl = environment.iam_url;
+  const iamUrl = TEST_IAM_URL;
   const httpErrorResponse = new HttpErrorResponse({
     status: 401,
     statusText: 'Unauthorized',
