@@ -3,7 +3,6 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
 import { CredentialProceduresResponse } from '../models/dto/credential-procedures-response.dto';
 import { CredentialOfferResponse } from '../models/dto/credential-offer-response.dto';
 import { CredentialProcedureDetails, LEARCredential } from '../models/entity/lear-credential';
@@ -15,23 +14,25 @@ import { LEARCredentialDataNormalizer } from 'src/app/features/credential-detail
 import { API_PATH } from '../constants/api-paths.constants';
 import { CredentialRevokeRequestDto } from '../models/dto/credential-revoke-request.dto';
 import { CredentialProcedureDetailsResponse } from '../models/dto/credential-procedure-details-response';
+import { TenantService } from './tenant.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CredentialProcedureService {
 
-  private readonly organizationProcedures = `${environment.server_url}${API_PATH.PROCEDURES}`;
-  private readonly saveCredential = `${environment.server_url}${API_PATH.SAVE_CREDENTIAL}`;
-  private readonly credentialOfferUrl = `${environment.server_url}${API_PATH.CREDENTIAL_OFFER}`;
-  private readonly signCredentialUrl = `${environment.server_url}${API_PATH.SIGN_CREDENTIAL}`;
-  private readonly revokeCredentialUrl = `${environment.server_url}${API_PATH.REVOKE}`;
-
   private readonly http = inject(HttpClient);
+  private readonly tenantService = inject(TenantService);
   private readonly normalizer = new LEARCredentialDataNormalizer();
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+
+  private get organizationProcedures() { return `${this.tenantService.apiBase()}${API_PATH.PROCEDURES}`; }
+  private get saveCredential() { return `${this.tenantService.apiBase()}${API_PATH.SAVE_CREDENTIAL}`; }
+  private get credentialOfferUrl() { return `${this.tenantService.apiBase()}${API_PATH.CREDENTIAL_OFFER}`; }
+  private get signCredentialUrl() { return `${this.tenantService.apiBase()}${API_PATH.SIGN_CREDENTIAL}`; }
+  private get revokeCredentialUrl() { return `${this.tenantService.apiBase()}${API_PATH.REVOKE}`; }
 
   public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
     return this.http.get<CredentialProceduresResponse>(this.organizationProcedures).pipe(
