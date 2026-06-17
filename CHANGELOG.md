@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.12] - 17-06-2026
+
+## Fixed (17-06-2026)
+- fixed navbar component to use takeUntilDestroyed instead of take(1) to avoid memory loss for race conditions.
+
+## [3.5.11] - 15-06-2026
+
 ## Added (15-06-2026)
 - Added `cgcom` to the list of known tenants.
 
