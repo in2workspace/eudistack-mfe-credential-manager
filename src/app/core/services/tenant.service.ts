@@ -1,28 +1,39 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ENV_SUFFIXES, FALLBACK_TENANT, KNOWN_TENANTS, MFE_HOME_PATH } from '../constants/tenants.constants';
+import { environment } from 'src/environments/environment';
+import { CustomDomainConfig } from '../models/custom-domain-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class TenantService {
   private readonly http = inject(HttpClient);
   private readonly _tenant = signal<string>('');
+  private readonly _canonical = signal<boolean>(false);
+  private readonly _iamUrl = signal<string>('');
   readonly tenant = this._tenant.asReadonly();
+  readonly canonical = this._canonical.asReadonly();
+  readonly iamUrl = this._iamUrl.asReadonly();
+  readonly apiBase = computed(() => this.canonical() ? (environment.server_url ?? '') : '');
 
   async resolve(): Promise<void> {
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
     if (this.isValidTenant(tenantFromHostname)) {
       this._tenant.set(tenantFromHostname);
+      this._canonical.set(true);
+      this._iamUrl.set(environment.iam_url ?? '');
       return;
     }
 
     try {
-      const map = await firstValueFrom(
-        this.http.get<Record<string, string>>('assets/tenants/custom-domain.json')
+      const config = await firstValueFrom(
+        this.http.get<CustomDomainConfig>('/assets/tenants/custom-domain.json')
       );
-      const tenantFromJson = map[window.location.hostname];
-      if (tenantFromJson && this.isValidTenant(tenantFromJson)) {
-        this._tenant.set(tenantFromJson);
+      const entry = config.domains[window.location.hostname];
+      if (entry && this.isValidTenant(entry.tenantId)) {
+        this._tenant.set(entry.tenantId);
+        this._canonical.set(false);
+        this._iamUrl.set(config.env[entry.envId]?.verifier ?? '');
       }
     } catch {
       // JSON not found or network error — tenant stays '' → guard redirects to /tenant-not-found
