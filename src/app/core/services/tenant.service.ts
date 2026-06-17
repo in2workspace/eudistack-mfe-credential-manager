@@ -11,10 +11,11 @@ export class TenantService {
   private readonly _canonical = signal<boolean>(false);
   readonly tenant = this._tenant.asReadonly();
   readonly canonical = this._canonical.asReadonly();
-  readonly apiBase = computed(() => this.canonical() ? environment.server_url : '');
+  readonly apiBase = computed(() => this.canonical() ? (environment.server_url ?? '') : '');
 
   async resolve(): Promise<void> {
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
+    console.log("TenantService: tenantFromHostname", tenantFromHostname);
     if (this.isValidTenant(tenantFromHostname)) {
       this._tenant.set(tenantFromHostname);
       this._canonical.set(true);
@@ -25,8 +26,12 @@ export class TenantService {
       const map = await firstValueFrom(
         this.http.get<Record<string, string>>('/assets/tenants/custom-domain.json')
       );
+      console.log("TenantService: map", map);
+      console.log("TenantService: window.location.hostname", window.location.hostname);
       const tenantFromJson = map[window.location.hostname];
+      console.log("TenantService: tenantFromJson", tenantFromJson);
       if (tenantFromJson && this.isValidTenant(tenantFromJson)) {
+
         this._tenant.set(tenantFromJson);
         this._canonical.set(false);
       }
