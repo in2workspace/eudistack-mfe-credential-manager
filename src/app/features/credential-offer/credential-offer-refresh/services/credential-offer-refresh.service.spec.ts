@@ -16,7 +16,7 @@ describe('CredentialOfferRefreshService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         CredentialOfferRefreshService,
-        { provide: TenantService, useValue: { serverUrl: () => environment.server_url } }
+        { provide: TenantService, useValue: { serverUrl: environment.server_url } }
       ]
     });
 

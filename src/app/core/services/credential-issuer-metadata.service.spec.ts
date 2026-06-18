@@ -38,7 +38,7 @@ describe('CredentialIssuerMetadataService', () => {
         CredentialIssuerMetadataService,
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TenantService, useValue: { serverUrl: () => environment.server_url } }
+        { provide: TenantService, useValue: { serverUrl: environment.server_url } }
       ]
     });
     service = TestBed.inject(CredentialIssuerMetadataService);
