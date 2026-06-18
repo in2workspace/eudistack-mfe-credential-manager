@@ -28,11 +28,11 @@ export class CredentialProcedureService {
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
 
-  private get organizationProcedures() { return `${this.tenantService.apiBase()}${API_PATH.PROCEDURES}`; }
-  private get saveCredential() { return `${this.tenantService.apiBase()}${API_PATH.SAVE_CREDENTIAL}`; }
-  private get credentialOfferUrl() { return `${this.tenantService.apiBase()}${API_PATH.CREDENTIAL_OFFER}`; }
-  private get signCredentialUrl() { return `${this.tenantService.apiBase()}${API_PATH.SIGN_CREDENTIAL}`; }
-  private get revokeCredentialUrl() { return `${this.tenantService.apiBase()}${API_PATH.REVOKE}`; }
+  private get organizationProcedures() { return `${this.tenantService.serverUrl}${API_PATH.PROCEDURES}`; }
+  private get saveCredential() { return `${this.tenantService.serverUrl}${API_PATH.SAVE_CREDENTIAL}`; }
+  private get credentialOfferUrl() { return `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER}`; }
+  private get signCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.SIGN_CREDENTIAL}`; }
+  private get revokeCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.REVOKE}`; }
 
   public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
     return this.http.get<CredentialProceduresResponse>(this.organizationProcedures).pipe(

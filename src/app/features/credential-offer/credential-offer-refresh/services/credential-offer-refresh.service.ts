@@ -11,7 +11,7 @@ export class CredentialOfferRefreshService {
 
   refreshCredentialOffer(token: string): Observable<void> {
     return this.http.post<void>(
-      `${this.tenantService.apiBase()}${API_PATH.CREDENTIAL_OFFER_REFRESH}/${token}`,
+      `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER_REFRESH}/${token}`,
       null
     );
   }

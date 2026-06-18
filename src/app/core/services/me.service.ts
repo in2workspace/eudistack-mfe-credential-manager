@@ -16,7 +16,7 @@ export class MeService {
   private readonly http = inject(HttpClient);
   private readonly tenantService = inject(TenantService);
 
-  private get url() { return `${this.tenantService.apiBase()}${API_PATH.ME}`; }
+  private get url() { return `${this.tenantService.serverUrl}${API_PATH.ME}`; }
 
   public fetchMe(): Observable<MeResponse> {
     return this.http.get<MeResponse>(this.url);
