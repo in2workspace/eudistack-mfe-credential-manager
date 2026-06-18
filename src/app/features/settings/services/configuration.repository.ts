@@ -9,7 +9,7 @@ export class ConfigurationRepository {
   private readonly http = inject(HttpClient);
   private readonly tenantService = inject(TenantService);
 
-  private get configurationUrl() { return this.tenantService.apiBase() + API_PATH.CONFIGURATION; }
+  private get configurationUrl() { return this.tenantService.serverUrl + API_PATH.CONFIGURATION; }
 
   saveConfig(payload: SignatureConfigPayload): Observable<void> {
     return this.http.post<void>(this.configurationUrl, payload);

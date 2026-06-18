@@ -45,7 +45,7 @@ describe('CredentialProcedureService', () => {
       { provide: DialogWrapperService, useValue: { openErrorInfoDialog: jest.fn(), openWarningDialog: jest.fn() } },
       { provide: TranslateService, useValue: { instant: jest.fn((key: string) => key) } },
       { provide: Router, useValue: { navigate: jest.fn() } },
-      { provide: TenantService, useValue: { apiBase: () => environment.server_url } }
+      { provide: TenantService, useValue: { serverUrl: environment.server_url } }
     ]
 });
 

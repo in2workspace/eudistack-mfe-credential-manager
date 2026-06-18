@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.15] - 18-06-2026
+
+### Changed
+
+- **`TenantService`**: replaced the `apiBase` computed signal (which returned an empty string for non-canonical tenants) with a plain `serverUrl` property that always resolves to `environment.server_url || window.location.origin + "/issuer"`. This ensures API calls work correctly for non-canonical hostname deployments.
+- **`iamUrl`**: for canonical tenants, now falls back to `window.location.origin + "/verifier"` when `environment.iam_url` is not configured; for non-canonical tenants, `environment.iam_url` takes priority over the `config.env` value.
+- All HTTP services updated to use `tenantService.serverUrl` (plain property) instead of `tenantService.apiBase()` (signal call): `CredentialIssuerMetadataService`, `CredentialProcedureService`, `MeService`, `CredentialOfferRefreshService`, `ConfigurationRepository`.
+- **`env.template.js`**: `iam_url` is now injectable via `${IAM_URL}` environment variable substitution instead of being hardcoded to `window.location.origin + "/verifier"`.
+
+
+
 ## [3.5.14] - 17-06-2026
 
 ## Fixed 

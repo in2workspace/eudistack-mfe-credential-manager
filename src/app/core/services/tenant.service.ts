@@ -14,14 +14,15 @@ export class TenantService {
   readonly tenant = this._tenant.asReadonly();
   readonly canonical = this._canonical.asReadonly();
   readonly iamUrl = this._iamUrl.asReadonly();
-  readonly apiBase = computed(() => this.canonical() ? (environment.server_url ?? '') : '');
+  readonly serverUrl = environment.server_url || (window.location.origin + "/issuer");
 
   async resolve(): Promise<void> {
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
+
     if (this.isValidTenant(tenantFromHostname)) {
       this._tenant.set(tenantFromHostname);
       this._canonical.set(true);
-      this._iamUrl.set(environment.iam_url ?? '');
+      this._iamUrl.set(environment.iam_url || window.location.origin + "/verifier");
       return;
     }
 
@@ -33,7 +34,7 @@ export class TenantService {
       if (entry && this.isValidTenant(entry.tenantId)) {
         this._tenant.set(entry.tenantId);
         this._canonical.set(false);
-        this._iamUrl.set(config.env[entry.envId]?.verifier ?? '');
+        this._iamUrl.set(environment.iam_url || config.env[entry.envId]?.verifier || '');
       }
     } catch {
       // JSON not found or network error — tenant stays '' → guard redirects to /tenant-not-found

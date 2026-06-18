@@ -13,7 +13,7 @@ export class CredentialIssuerMetadataService {
   private readonly configurations = signal<Record<string, CredentialConfigurationDto> | null>(null);
 
   loadMetadata(): Observable<void> {
-    const url = this.tenantService.apiBase() + API_PATH.CREDENTIAL_ISSUER_METADATA;
+    const url = this.tenantService.serverUrl + API_PATH.CREDENTIAL_ISSUER_METADATA;
     return this.http.get<CredentialIssuerMetadataDto>(url).pipe(
       tap(meta => this.configurations.set(meta.credential_configurations_supported)),
       map(() => void 0),
