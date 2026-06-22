@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Added (15-06-2026)
 - Added `cgcom` to the list of known tenants.
 
+## Changed (17-06-2026)
+- Resolved multiple Critical and High severity vulnerabilities in Angular build dependencies.
+
 ## [3.5.10] - 15-06-2026
 
 ### Added (15-06-2026)
