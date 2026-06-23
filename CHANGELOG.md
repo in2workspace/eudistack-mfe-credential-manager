@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.16] - 23-06-2026
+- Resolve wallet URL dynamically.
+- Update custom-domain.json model.
+
 ## [3.5.15] - 18-06-2026
 
 ### Changed
