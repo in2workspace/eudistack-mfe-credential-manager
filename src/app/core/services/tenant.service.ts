@@ -47,12 +47,39 @@ export class TenantService {
 
       if (!isCanonical) {
         const entry = config.domains[window.location.hostname];
+
         if (entry && this.isValidTenant(entry.tenantId)) {
           this._tenant.set(entry.tenantId);
           this._canonical.set(false);
+
           const resolvedEnvId = entry.envId || tenantConfig?.defaultEnv;
-          this._iamUrl.set(environment.iam_url || (resolvedEnvId ? tenantConfig?.env[resolvedEnvId]?.verifier : undefined) || '');
-          this._walletUrl.set(tenantConfig?.env[resolvedEnvId ?? '']?.wallet ?? WALLET_ORIGIN_BASE_URL);
+          const resolvedIamUrl = environment.iam_url
+            || (resolvedEnvId ? tenantConfig?.env[resolvedEnvId]?.verifier : undefined)
+            || '';
+          const resolvedWalletUrl = resolvedEnvId
+            ? tenantConfig?.env[resolvedEnvId]?.wallet
+            : undefined;
+
+          if (!resolvedEnvId) {
+            console.warn(
+              `[TenantResolver] Could not resolve environment for hostname "${window.location.hostname}" and tenant "${entry.tenantId}".`
+            );
+          }
+
+          if (!resolvedIamUrl) {
+            console.warn(
+              `[TenantResolver] Could not resolve IAM URL for hostname "${window.location.hostname}", tenant "${entry.tenantId}" and env "${resolvedEnvId ?? 'unknown'}".`
+            );
+          }
+
+          if (!resolvedWalletUrl) {
+            console.warn(
+              `[TenantResolver] Could not resolve wallet URL for hostname "${window.location.hostname}", tenant "${entry.tenantId}" and env "${resolvedEnvId ?? 'unknown'}". Falling back to default wallet URL.`
+            );
+          }
+
+          this._iamUrl.set(resolvedIamUrl);
+          this._walletUrl.set(resolvedWalletUrl ?? WALLET_ORIGIN_BASE_URL);
         }
       }
 
