@@ -1,9 +1,5 @@
 // Atlassian-style same-origin wallet routing.
 // The wallet SPA is hosted at `<origin>/wallet/` on every tenant, so we derive
 // its URL from `window.location.origin` rather than a build-time env var.
-export const WALLET_ORIGIN_BASE_URL = `${globalThis.location.origin}/wallet`;
-export const WALLET_CALLBACK_PATH = '/protocol/callback';
-export const WALLET_SAME_DEVICE_URL = `${WALLET_ORIGIN_BASE_URL}${WALLET_CALLBACK_PATH}`;
-
-/** @deprecated Use TenantService.walletUrl() instead */
-export const WALLET_BASE_URL = WALLET_ORIGIN_BASE_URL;
+export const WALLET_BASE_URL = `${globalThis.location.origin}/wallet`;
+export const WALLET_SAME_DEVICE_URL = `${WALLET_BASE_URL}/protocol/callback`;
