@@ -3,83 +3,95 @@ import { CredentialOfferComponent } from './credential-offer.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { NgIf } from '@angular/common';
-import { environment } from 'src/environments/environment';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
+import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
 
 const MOCK_KNOWLEDGE_BASE_URL = 'https://knowledgebase.example.com/';
+const ENV_WALLET_BASE = 'https://wallet.env.es';
+const DEFAULT_WALLET_BASE = 'https://wallet.main.es';
+
+function walletCallbackUrl(base: string, offerUri: string): string {
+  return base + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(offerUri);
+}
 
 describe('CredentialOfferComponent', () => {
   let component: CredentialOfferComponent;
 
-  beforeEach(async () => {
-    const themeServiceMock = {
-      knowledgeBaseUrl: MOCK_KNOWLEDGE_BASE_URL,
+  function setup(walletUrl: string, defaultWalletUrl: string | null) {
+    const themeServiceMock = { knowledgeBaseUrl: MOCK_KNOWLEDGE_BASE_URL };
+    const tenantServiceMock = {
+      walletUrl: jest.fn().mockReturnValue(walletUrl),
+      defaultWalletUrl: jest.fn().mockReturnValue(defaultWalletUrl),
     };
 
-    await TestBed.configureTestingModule({
-      imports: [ NgIf, QRCodeComponent, TranslateModule.forRoot(), CredentialOfferComponent],
+    TestBed.configureTestingModule({
+      imports: [NgIf, QRCodeComponent, TranslateModule.forRoot(), CredentialOfferComponent],
       providers: [
         { provide: ThemeService, useValue: themeServiceMock },
+        { provide: TenantService, useValue: tenantServiceMock },
       ],
-    }).compileComponents();
+    });
 
     const fixture = TestBed.createComponent(CredentialOfferComponent);
     component = fixture.componentInstance;
-  });
+  }
 
   it('should create the component', () => {
+    setup(ENV_WALLET_BASE, null);
     expect(component).toBeTruthy();
   });
 
   it('should set the QR color to "#000000"', () => {
+    setup(ENV_WALLET_BASE, null);
     expect(component.qrColor).toBe('#000000');
   });
 
   it('should initialize walletUsersGuideUrl with the correct value from theme', () => {
+    setup(ENV_WALLET_BASE, null);
     const expectedGuideUrl = MOCK_KNOWLEDGE_BASE_URL + '/books/dome-digital-wallet-user-guide';
     expect(component.walletUsersGuideUrl).toBe(expectedGuideUrl);
   });
 
-  it('should derive walletSameDeviceUrl from the current origin (Atlassian-style)', () => {
-    expect(component.walletSameDeviceUrl).toBe(WALLET_SAME_DEVICE_URL);
+  describe('without defaultEnv', () => {
+    beforeEach(() => setup(ENV_WALLET_BASE, null));
+
+    it('showEnvWallet should be false', () => {
+      expect(component.showEnvWallet).toBe(false);
+    });
+
+    it('walletMainUrl$ should use the env wallet URL', () => {
+      const offerUri = 'mockCredentialOfferUri';
+      (component as any).credentialOfferUri$ = () => offerUri;
+      expect(component.walletMainUrl$()).toBe(walletCallbackUrl(ENV_WALLET_BASE, offerUri));
+    });
   });
 
-  it('should compute walletSameDeviceUrl$ correctly when credentialOfferUri$ is provided', () => {
-    const credentialOfferUriMock = 'mockCredentialOfferUri';
-    (component as any).credentialOfferUri$ = () => credentialOfferUriMock;
+  describe('with defaultEnv', () => {
+    beforeEach(() => setup(ENV_WALLET_BASE, DEFAULT_WALLET_BASE));
 
-    const expectedComputedUrl =
-      WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
+    it('showEnvWallet should be true', () => {
+      expect(component.showEnvWallet).toBe(true);
+    });
 
-    expect(component.walletSameDeviceUrl$()).toBe(expectedComputedUrl);
-  });
+    it('walletMainUrl$ should use the defaultEnv wallet URL', () => {
+      const offerUri = 'mockCredentialOfferUri';
+      (component as any).credentialOfferUri$ = () => offerUri;
+      expect(component.walletMainUrl$()).toBe(walletCallbackUrl(DEFAULT_WALLET_BASE, offerUri));
+    });
 
-  it('should get showWalletSameDeviceUrlTest', () => {
-    expect(component.showWalletSameDeviceUrlTest).toBe(environment.show_wallet_url_test);
-  });
-
-  it('should derive walletSameDeviceTestUrl from the current origin (Atlassian-style)', () => {
-    expect(component.walletSameDeviceTestUrl).toBe(WALLET_SAME_DEVICE_URL);
-  });
-
-  it('should compute walletSameDeviceTestUrl$ correctly when credentialOfferUri$ is provided', () => {
-    const credentialOfferUriMock = 'mockCredentialOfferUri';
-    (component as any).credentialOfferUri$ = () => credentialOfferUriMock;
-
-    const expectedComputedTestUrl =
-      WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(credentialOfferUriMock);
-
-    expect(component.walletSameDeviceTestUrl$()).toBe(expectedComputedTestUrl);
+    it('walletEnvUrl$ should use the environment wallet URL', () => {
+      const offerUri = 'mockCredentialOfferUri';
+      (component as any).credentialOfferUri$ = () => offerUri;
+      expect(component.walletEnvUrl$()).toBe(walletCallbackUrl(ENV_WALLET_BASE, offerUri));
+    });
   });
 
   it('should emit refreshCredential when onRefreshCredentialClick is called', () => {
+    setup(ENV_WALLET_BASE, null);
     const eventMock = { preventDefault: jest.fn() } as unknown as Event;
-
     const emitSpy = jest.spyOn(component.refreshCredential, 'emit');
-
     component.onRefreshCredentialClick(eventMock);
-
     expect(eventMock.preventDefault).toHaveBeenCalled();
     expect(emitSpy).toHaveBeenCalled();
   });

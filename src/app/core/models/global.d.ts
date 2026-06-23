@@ -6,7 +6,6 @@ interface Window {
         client_id?: string;
         iam_url?: string;
         server_url?: string;
-        show_wallet_url_test: string;
         procedures?: string;
         saveCredential?: string;
         credential_offer_url?: string;

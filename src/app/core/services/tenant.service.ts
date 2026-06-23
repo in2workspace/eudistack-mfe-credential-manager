@@ -1,7 +1,8 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ENV_SUFFIXES, FALLBACK_TENANT, KNOWN_TENANTS, MFE_HOME_PATH } from '../constants/tenants.constants';
+import { WALLET_ORIGIN_BASE_URL } from '../constants/wallet.constants';
 import { environment } from 'src/environments/environment';
 import { CustomDomainConfig } from '../models/custom-domain-config.model';
 
@@ -11,33 +12,56 @@ export class TenantService {
   private readonly _tenant = signal<string>('');
   private readonly _canonical = signal<boolean>(false);
   private readonly _iamUrl = signal<string>('');
+  private readonly _walletUrl = signal<string>(WALLET_ORIGIN_BASE_URL);
+  private readonly _defaultWalletUrl = signal<string | null>(null);
   readonly tenant = this._tenant.asReadonly();
   readonly canonical = this._canonical.asReadonly();
   readonly iamUrl = this._iamUrl.asReadonly();
+  /** Environment-specific wallet base URL (without callback path). */
+  readonly walletUrl = this._walletUrl.asReadonly();
+  /** Main wallet base URL from the tenant's defaultEnv. Null when defaultEnv is not configured. */
+  readonly defaultWalletUrl = this._defaultWalletUrl.asReadonly();
   readonly serverUrl = environment.server_url || (window.location.origin + "/issuer");
 
   async resolve(): Promise<void> {
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
+    const isCanonical = this.isValidTenant(tenantFromHostname);
 
-    if (this.isValidTenant(tenantFromHostname)) {
+    if (isCanonical) {
       this._tenant.set(tenantFromHostname);
       this._canonical.set(true);
       this._iamUrl.set(environment.iam_url || window.location.origin + "/verifier");
-      return;
+      // walletUrl already defaults to WALLET_ORIGIN_BASE_URL
     }
 
     try {
       const config = await firstValueFrom(
         this.http.get<CustomDomainConfig>('/assets/tenants/custom-domain.json')
       );
-      const entry = config.domains[window.location.hostname];
-      if (entry && this.isValidTenant(entry.tenantId)) {
-        this._tenant.set(entry.tenantId);
-        this._canonical.set(false);
-        this._iamUrl.set(environment.iam_url || config.env[entry.envId]?.verifier || '');
+
+      const tenantId = isCanonical
+        ? tenantFromHostname
+        : config.domains[window.location.hostname]?.tenantId;
+
+      const tenantConfig = tenantId ? config.tenants[tenantId] : undefined;
+
+      if (!isCanonical) {
+        const entry = config.domains[window.location.hostname];
+        if (entry && this.isValidTenant(entry.tenantId)) {
+          this._tenant.set(entry.tenantId);
+          this._canonical.set(false);
+          const resolvedEnvId = entry.envId || tenantConfig?.defaultEnv;
+          this._iamUrl.set(environment.iam_url || (resolvedEnvId ? tenantConfig?.env[resolvedEnvId]?.verifier : undefined) || '');
+          this._walletUrl.set(tenantConfig?.env[resolvedEnvId ?? '']?.wallet ?? WALLET_ORIGIN_BASE_URL);
+        }
+      }
+
+      if (tenantConfig?.defaultEnv) {
+        this._defaultWalletUrl.set(tenantConfig.env[tenantConfig.defaultEnv]?.wallet ?? null);
       }
     } catch {
-      // JSON not found or network error — tenant stays '' → guard redirects to /tenant-not-found
+      // JSON not found or network error — wallet URL stays as origin fallback for canonical;
+      // for non-canonical, tenant stays '' → guard redirects to /tenant-not-found
     }
   }
 

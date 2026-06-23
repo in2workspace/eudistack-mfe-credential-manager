@@ -2,10 +2,10 @@ import { Component, computed, EventEmitter, inject, input, Output } from '@angul
 import { TranslatePipe } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { MatIcon } from '@angular/material/icon';
-import { environment } from 'src/environments/environment';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
+import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
 
 @Component({
     selector: 'app-credential-offer',
@@ -13,27 +13,28 @@ import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants'
     styleUrls: ['./credential-offer.component.scss'],
     imports: [QRCodeComponent, TranslatePipe, MatIcon]
 })
-export class CredentialOfferComponent{
+export class CredentialOfferComponent {
   private readonly themeService = inject(ThemeService);
+  private readonly tenantService = inject(TenantService);
   @Output() public refreshCredential = new EventEmitter<void>();
   public qrColor = "#000000";
   public copied = false;
   public walletUsersGuideUrl = this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.WALLET;
   public credentialOfferUri$ = input.required<string>();
 
-  public readonly walletSameDeviceUrl = WALLET_SAME_DEVICE_URL;
-  public walletSameDeviceUrl$ = computed<string>(()=>{
+  public get showEnvWallet(): boolean {
+    return this.tenantService.defaultWalletUrl() !== null;
+  }
+
+  public walletMainUrl$ = computed<string>(() => {
+    const base = this.tenantService.defaultWalletUrl() ?? this.tenantService.walletUrl();
     const httpsUrl = this.extractCredentialOfferHttpsUrl(this.credentialOfferUri$());
-    return this.walletSameDeviceUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+    return base + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
   });
 
-  //TEST URLS
-  public readonly showWalletSameDeviceUrlTest =  environment.show_wallet_url_test;
-  public readonly walletSameDeviceTestUrl = WALLET_SAME_DEVICE_URL;
-
-  public walletSameDeviceTestUrl$ = computed<string>(()=>{
+  public walletEnvUrl$ = computed<string>(() => {
     const httpsUrl = this.extractCredentialOfferHttpsUrl(this.credentialOfferUri$());
-    return this.walletSameDeviceTestUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+    return this.tenantService.walletUrl() + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
   });
 
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
@@ -44,15 +45,14 @@ export class CredentialOfferComponent{
     }
   }
 
-public copyQrContent(): void {
-  navigator.clipboard.writeText(this.credentialOfferUri$());
-  this.copied = true;
-  setTimeout(() => this.copied = false, 2000);
-}
+  public copyQrContent(): void {
+    navigator.clipboard.writeText(this.credentialOfferUri$());
+    this.copied = true;
+    setTimeout(() => this.copied = false, 2000);
+  }
 
-public onRefreshCredentialClick(event:Event): void{
-  event.preventDefault();
-  this.refreshCredential.emit();
-}
-
+  public onRefreshCredentialClick(event: Event): void {
+    event.preventDefault();
+    this.refreshCredential.emit();
+  }
 }

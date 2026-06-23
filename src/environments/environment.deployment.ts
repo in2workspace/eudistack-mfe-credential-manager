@@ -9,6 +9,4 @@ export const environment = {
   iam_url: window["env"]["iam_url"],
   // Issuer API base URL (REQUIRED)
   server_url: window["env"]["server_url"],
-  // Determines whether to show the wallet "test" deeplink alongside the PRD one (REQUIRED)
-  show_wallet_url_test: window["env"]["show_wallet_url_test"] === "true",
 };
