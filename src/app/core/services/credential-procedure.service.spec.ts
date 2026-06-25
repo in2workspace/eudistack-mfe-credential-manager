@@ -459,7 +459,47 @@ describe('get credential offer by c-code', () => {
       req.flush({}, error);
     });
   });
-  
-  
+
+  describe('archiveCredential', () => {
+    const procedureId = 'proc-123';
+    const archiveUrl = `${proceduresURL}/${procedureId}`;
+
+    it('should send PATCH to the correct URL with status ARCHIVED', () => {
+      service.archiveCredential(procedureId).subscribe({
+        next: (result) => expect(result).toBeUndefined(),
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ status: 'ARCHIVED' });
+      req.flush(null);
+    });
+
+    it('should propagate a 5xx server error via handleError', () => {
+      service.archiveCredential(procedureId).subscribe({
+        next: () => fail('should have failed with 500 error'),
+        error: (err: HttpErrorResponse) => {
+          expect(err.status).toBe(500);
+        },
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      req.flush('Internal Server Error', serverErrorResp);
+    });
+
+    it('should propagate a timeout-like error (status 0) via handleError', () => {
+      const timeoutError = new HttpErrorResponse({ status: 0, statusText: 'Unknown Error' });
+
+      service.archiveCredential(procedureId).subscribe({
+        next: () => fail('should have failed'),
+        error: (err: HttpErrorResponse) => {
+          expect(err.status).toBe(0);
+        },
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      req.flush(null, timeoutError);
+    });
+  });
 
 });

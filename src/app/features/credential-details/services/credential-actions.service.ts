@@ -30,7 +30,7 @@ export class CredentialActionsService {
     const signCredentialAfterConfirm = (): Observable<boolean> => {
       return this.signCredential(procedureId);
     }
-    
+
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, signCredentialAfterConfirm);
   }
 
@@ -70,6 +70,24 @@ export class CredentialActionsService {
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, withdrawCredentialAfterConfirm);
   }
 
+  //ARCHIVE CREDENTIAL
+
+  public openArchiveCredentialDialog(procedureId: string): void {
+
+    const dialogData: DialogData = {
+      title: this.translate.instant("credentialDetails.archiveCredentialConfirm.title"),
+      message: this.translate.instant("credentialDetails.archiveCredentialConfirm.message"),
+      confirmationType: 'async',
+      status: 'error'
+    };
+
+    const archiveCredentialAfterConfirm = (): Observable<boolean> => {
+      return this.archiveCredential(procedureId);
+    }
+
+    this.dialog.openDialogWithCallback(DialogComponent, dialogData, archiveCredentialAfterConfirm);
+  }
+
   //executes backend callback by CREDENTIAL ID
   private executeCredentialBackendAction(
     id: string,
@@ -77,7 +95,7 @@ export class CredentialActionsService {
     titleKey: string,
     messageKey: string
   ): Observable<boolean> {
-  
+
     return action(id).pipe(
       switchMap(() => {
         const dialogData: DialogData = {
@@ -86,7 +104,7 @@ export class CredentialActionsService {
           confirmationType: 'none',
           status: 'default'
         };
-  
+
         const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
         return dialogRef.afterClosed();
       }),
@@ -98,7 +116,7 @@ export class CredentialActionsService {
   }
 
   private executeActionByProcedureId(
-    procedureId: string, 
+    procedureId: string,
     action: (id: string) => Observable<void>,
     titleKey: string,
     messageKey: string
@@ -107,7 +125,7 @@ export class CredentialActionsService {
       console.error('No procedure id.');
       return EMPTY;
     }
-  
+
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
   }
 
@@ -121,7 +139,7 @@ export class CredentialActionsService {
       console.error("Couldn't get credential list from credential.");
       return EMPTY;
     }
-  
+
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
   }
 
@@ -150,6 +168,15 @@ export class CredentialActionsService {
       (procedureId) => this.credentialProcedureService.withdrawCredential(procedureId),
       "credentialDetails.withdrawCredentialSuccess.title",
       "credentialDetails.withdrawCredentialSuccess.message"
+    );
+  }
+
+  private archiveCredential(procedureId: string): Observable<boolean> {
+    return this.executeActionByProcedureId(
+      procedureId,
+      (procedureId) => this.credentialProcedureService.archiveCredential(procedureId),
+      "credentialDetails.archiveCredentialSuccess.title",
+      "credentialDetails.archiveCredentialSuccess.message"
     );
   }
 }

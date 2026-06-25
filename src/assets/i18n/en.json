@@ -64,6 +64,7 @@
     "VALID": "VALID",
     "REVOKED": "REVOKED",
     "EXPIRED": "EXPIRED",
+    "ARCHIVED": "ARCHIVED",
     "PEND_DOWNLOAD": "TO DOWNLOAD",
     "ISSUED": "ISSUED",
     "type" : "type",
@@ -116,6 +117,7 @@
     "digestSri": "digest SRI",
     "revoke": "revoke",
     "withdraw": "withdraw",
+    "archive": "archive",
     "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
     "signCredentialConfirm": {
       "title": "Sign Credential",
@@ -140,6 +142,14 @@
     "withdrawCredentialSuccess": {
       "title": "Credential withdrawn",
       "message": "The credential was withdrawn successfully."
+    },
+    "archiveCredentialConfirm": {
+      "title": "Archive Credential",
+      "message": "Are you sure you want to archive this credential? This action is permanent and cannot be undone."
+    },
+    "archiveCredentialSuccess": {
+      "title": "Credential archived",
+      "message": "The credential was archived successfully."
     }
   },
   "credentialOffer": {
@@ -183,6 +193,8 @@
     "cancel": "Cancel",
     "create": "Create Credential",
     "buttonAdmin": "New credential (on behalf)",
+    "tabActive": "Active",
+    "tabArchived": "Archived",
     "search": "Search by",
     "searchPlaceholderSubject": "Joe Doe",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -204,6 +216,13 @@
       "title": "No credentials yet",
       "description": "Create your first credential to get started.",
       "action": "Create Credential"
+    },
+    "tabActive": "Active",
+    "tabArchived": "Archived",
+    "archivedTitle": "Archived credentials",
+    "archivedEmptyState": {
+      "title": "No archived credentials",
+      "description": "When you archive a credential it will appear here."
     }
   },
   "power": {

@@ -95,6 +95,12 @@ export class CredentialProcedureService {
     );
   }
 
+  public archiveCredential(procedureId: string): Observable<void> {
+    return this.http.patch<void>(`${this.organizationProcedures}/${procedureId}`, { status: 'ARCHIVED' }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   public getCredentialOfferByTransactionCode(transactionCode: string): Observable<CredentialOfferResponse> {
     console.error('Getting credential offer by transaction code: ' + transactionCode);
     return this.http.get<CredentialOfferResponse>(`${this.credentialOfferUrl}/transaction-code/${transactionCode}`).pipe(
@@ -159,20 +165,20 @@ export class CredentialProcedureService {
   private readonly handleCredentialOfferError = (error: HttpErrorResponse): Observable<never> => {
     const errorStatus = error?.status ?? error?.error?.status ?? 0;
     let errorMessage = this.translate.instant("error.credentialOffer.unexpected");
-  
+
     if (errorStatus === 404) {
       errorMessage = this.translate.instant("error.credentialOffer.not-found");
     } else if (errorStatus === 409) {
       errorMessage = this.translate.instant("error.credentialOffer.conflict");
     }
-  
+
     this.dialog.openErrorInfoDialog(DialogComponent, errorMessage);
     setTimeout(()=>{
       this.router.navigate(['/home']);
     }, 0);
-    
+
     return throwError(() => error);
   };
-  
+
 
 }

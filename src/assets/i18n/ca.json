@@ -64,6 +64,7 @@
     "VALID": "VÀLID",
     "REVOKED": "REVOCAT",
     "EXPIRED": "EXPIRAT",
+    "ARCHIVED": "ARXIVAT",
     "PEND_DOWNLOAD": "PER DESCARREGAR",
     "ISSUED": "EMÈS",
     "type" : "tipus",
@@ -116,6 +117,7 @@
     "digestSri": "Empremta SRI",
     "revoke": "revocar",
     "withdraw": "retirar",
+    "archive": "arxivar",
         "revokeTooltip": "Aquesta credencial no pot ser revocada perquè és de tipus legacy. Per consultar com revocar aquest tipus de credencial, consulti la nostra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guia</a>.",
     "signCredentialConfirm": {
       "title": "Signar credencial",
@@ -140,6 +142,14 @@
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
       "message": "La credencial ha estat retirada correctament."
+    },
+    "archiveCredentialConfirm": {
+      "title": "Arxivar Credencial",
+      "message": "Estàs segur que vols arxivar aquesta credencial? Aquesta acció és definitiva i no es pot desfer."
+    },
+    "archiveCredentialSuccess": {
+      "title": "Credencial arxivada",
+      "message": "La credencial ha estat arxivada correctament."
     }
   },
   "credentialOffer": {
@@ -183,6 +193,8 @@
     "cancel": "Cancel·lar",
     "create" : "Crear Credencial",
     "buttonAdmin": "Nova Credencial (en nom de)",
+    "tabActive": "Actives",
+    "tabArchived": "Arxivades",
     "search": "Buscar per",
     "searchPlaceholderSubject": "Joan Garcia",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -204,6 +216,13 @@
       "title": "Encara no hi ha credencials",
       "description": "Crea la teva primera credencial per començar.",
       "action": "Crear Credencial"
+    },
+    "tabActive": "Actives",
+    "tabArchived": "Arxivades",
+    "archivedTitle": "Credencials arxivades",
+    "archivedEmptyState": {
+      "title": "Sense credencials arxivades",
+      "description": "Quan arxivi una credencial apareixerà aquí."
     }
   },
     "power": {

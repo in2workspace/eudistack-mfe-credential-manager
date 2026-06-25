@@ -12,7 +12,7 @@ import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton } from '../helpers/actions-helpers';
+import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 
@@ -90,7 +90,12 @@ export class CredentialDetailsService {
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
-    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$()
+    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$() || this.showArchiveCredentialButton$()
+  });
+
+  public showArchiveCredentialButton$ = computed<boolean>(() => {
+    const status = this.lifeCycleStatus$();
+    return this.canWrite && !!status && statusHasArchiveCredentialButton(status);
   });
 
   private readonly actionsService = inject(CredentialActionsService);
@@ -189,6 +194,21 @@ export class CredentialDetailsService {
     return this.actionsService.openRevokeCredentialDialog(issuanceId);
   }
 
+  public openArchiveCredentialDialog(): void {
+    if(this.lifeCycleStatus$() !== 'WITHDRAWN' && this.lifeCycleStatus$() !== 'REVOKED' && this.lifeCycleStatus$() !== 'EXPIRED'){
+      console.error("Only credentials with status WITHDRAWN, REVOKED or EXPIRED can be archived.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+    const procedureId = this.getProcedureId();
+    if(!procedureId){
+      console.error("Couldn't get procedure id from credential.");
+      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+      return;
+    }
+    return this.actionsService.openArchiveCredentialDialog(procedureId);
+  }
+
   private getProcedureId(): string{
     return this.procedureId$();
   }
@@ -223,7 +243,7 @@ private evaluateField(
     ...custom,
     value: this.safeCompute(custom.value, credential, custom.token.toString())
   });
-  
+
 
   if (field.type === 'key-value') {
     const keyValueField = field;
@@ -298,7 +318,7 @@ private evaluateField(
   private extendFields(fields: EvaluatedDetailsField[], injector: Injector): EvaluatedExtendedDetailsField[] {
       return fields.map((field) => {
         let extended: EvaluatedExtendedDetailsField = { ...field };
-  
+
         if (field.custom) {
           const childInjector = Injector.create({
             parent: injector,
@@ -306,20 +326,20 @@ private evaluateField(
               { provide: field.custom.token, useValue: field.custom.value }
             ]
           });
-  
+
           extended.portal = new ComponentPortal(
             field.custom.component,
             null,
             childInjector
           );
         }
-  
+
         if (field.type === 'group') {
           const groupField = field;
           extended = { ...extended } as EvaluatedExtendedDetailsGroupField;
           extended.value = this.extendFields(groupField.value, injector);
         }
-  
+
         return extended;
       });
     }
@@ -327,9 +347,9 @@ private evaluateField(
   private setViewModels(schema: EvaluatedViewModelSchema, injector: Injector){
     const extendedMainSchema = this.extendFields(schema.main, injector);
     const extendedSideSchema = this.extendFields(schema.side, injector);
-    
+
     this.mainViewModel$.set(extendedMainSchema);
-    this.sideViewModel$.set(extendedSideSchema);     
+    this.sideViewModel$.set(extendedSideSchema);
   }
 
 }

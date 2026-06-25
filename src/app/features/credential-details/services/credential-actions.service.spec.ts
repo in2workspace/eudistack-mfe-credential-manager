@@ -1,7 +1,7 @@
 import { DialogComponent } from './../../../shared/components/dialog/dialog-component/dialog.component';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { CredentialActionsService } from './credential-actions.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
@@ -19,6 +19,7 @@ describe('CredentialActionsService', () => {
     mockCredentialProcedure = {
       signCredential: jest.fn().mockReturnValue(of(void 0)),
       revokeCredential: jest.fn().mockReturnValue(of(void 0)),
+      archiveCredential: jest.fn().mockReturnValue(of(void 0)),
     };
 
     const afterClosedSpy = jest.fn().mockReturnValue(of(true));
@@ -120,7 +121,7 @@ describe('CredentialActionsService', () => {
   });
 
   describe('executeActionByCredentialId', () => {
-    // todo test 
+    // todo test
     // it('should error and return EMPTY if no credentialId', done => {
     //   const result$ = service['executeActionByCredentialId']('', jest.fn(), 'tKey', 'mKey');
     //   result$.subscribe({
@@ -162,6 +163,58 @@ describe('CredentialActionsService', () => {
       (service as any).revokeCredential('abc').subscribe(() => {
         expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc');
         done();
+      });
+    });
+  });
+
+  describe('openArchiveCredentialDialog', () => {
+    it('should call openDialogWithCallback with correct DialogData', () => {
+      const issuanceId = 'cred789';
+      service.openArchiveCredentialDialog(issuanceId);
+      expect(mockDialog.openDialogWithCallback).toHaveBeenCalledTimes(1);
+      const [_, dialogData, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      expect(dialogData.title).toBe('credentialDetails.archiveCredentialConfirm.title');
+      expect(dialogData.message).toBe('credentialDetails.archiveCredentialConfirm.message');
+      expect(dialogData.confirmationType).toBe('async');
+      expect(typeof callback).toBe('function');
+    });
+  });
+
+  describe('archiveCredential (callback behaviour)', () => {
+    it('callback success: should call credentialProcedureService.archiveCredential with the procedureId', done => {
+      const procedureId = 'proc-archive-001';
+      service.openArchiveCredentialDialog(procedureId);
+
+      const [_, __, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      (callback() as any).subscribe(() => {
+        expect(mockCredentialProcedure.archiveCredential).toHaveBeenCalledWith(procedureId);
+        expect(mockDialog.openDialog).toHaveBeenCalled();
+        expect(mockRouter.navigate).toHaveBeenCalledWith(['/organization/credentials']);
+        done();
+      });
+    });
+
+    it('callback no confirmation: should NOT call archiveCredential if dialog is not confirmed', () => {
+      const procedureId = 'proc-archive-002';
+      service.openArchiveCredentialDialog(procedureId);
+      expect(mockCredentialProcedure.archiveCredential).not.toHaveBeenCalled();
+    });
+
+    it('callback 5xx error: callback should propagate error from archiveCredential', done => {
+      const procedureId = 'proc-archive-003';
+      const serverError = new Error('500 Server Error');
+      (mockCredentialProcedure.archiveCredential as jest.Mock).mockReturnValue(
+        new Observable((obs) => obs.error(serverError))
+      );
+
+      service.openArchiveCredentialDialog(procedureId);
+      const [_, __, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      (callback() as any).subscribe({
+        next: () => fail('should have errored'),
+        error: (err: Error) => {
+          expect(err).toBe(serverError);
+          done();
+        },
       });
     });
   });

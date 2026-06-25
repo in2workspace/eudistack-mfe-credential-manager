@@ -25,7 +25,8 @@ import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { MatTabsModule } from '@angular/material/tabs';
 
 
 
@@ -60,7 +61,9 @@ import { RouterLink } from '@angular/router';
         TranslatePipe,
         CapitalizePipe,
         SkeletonLoaderComponent,
-        RouterLink
+        RouterLink,
+        RouterLinkActive,
+        MatTabsModule
     ],
     animations: [
         trigger('openClose', [
