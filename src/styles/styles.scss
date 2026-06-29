@@ -60,3 +60,20 @@ button, input, select, textarea {
 .mat-mdc-snack-bar-action {
   color: white !important;
 }
+
+// Credential nav tabs: force ink-bar visible on active link.
+// Angular Material only activates the indicator when the mat-tab-nav-panel has
+// rendered content; since active/archived are sibling routes (the panel is empty),
+// we drive the indicator visibility directly from the routerLinkActive class.
+.credential-nav-tabs {
+  .mat-mdc-tab-link.mdc-tab--active {
+    .mdc-tab-indicator {
+      opacity: 1 !important;
+
+      .mdc-tab-indicator__content--underline {
+        opacity: 1 !important;
+        border-color: var(--primary-color) !important;
+      }
+    }
+  }
+}
