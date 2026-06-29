@@ -215,7 +215,20 @@
     "emptyState": {
       "title": "Encara no hi ha credencials",
       "description": "Crea la teva primera credencial per començar.",
-      "action": "Crear Credencial"
+      "action": "Crear Credencial",
+      "noMatches": {
+        "title": "Cap coincidència",
+        "description": "Cap credencial coincideix amb els filtres aplicats.",
+        "action": "Netejar filtre"
+      }
+    },
+    "filterByStatus": {
+      "label": "Filtrar per estat",
+      "all": "Tots els estats"
+    },
+    "loadError": {
+      "title": "Error en carregar les credencials",
+      "description": "No s'han pogut carregar les credencials. Si us plau, recarrega la pàgina o torna-ho a intentar més tard."
     },
     "tabActive": "Actives",
     "tabArchived": "Arxivades",

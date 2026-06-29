@@ -215,7 +215,20 @@
     "emptyState": {
       "title": "Aún no hay credenciales",
       "description": "Crea tu primera credencial para comenzar.",
-      "action": "Crear Credencial"
+      "action": "Crear Credencial",
+      "noMatches": {
+        "title": "Sin coincidencias",
+        "description": "Ninguna credencial coincide con los filtros aplicados.",
+        "action": "Limpiar filtro"
+      }
+    },
+    "filterByStatus": {
+      "label": "Filtrar por estado",
+      "all": "Todos los estados"
+    },
+    "loadError": {
+      "title": "Error al cargar las credenciales",
+      "description": "No se han podido cargar las credenciales. Por favor, recarga la página o inténtalo de nuevo más tarde."
     },
     "tabActive": "Activas",
     "tabArchived": "Archivadas",
