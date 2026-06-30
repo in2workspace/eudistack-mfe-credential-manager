@@ -38,6 +38,7 @@ describe('CredentialDetailsComponent', () => {
     showRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
     enableRevokeCredentialButton$: ReturnType<typeof signal<boolean>>;
     showWithdrawCredentialButton$: ReturnType<typeof signal<boolean>>;
+    showArchiveCredentialButton$: ReturnType<typeof signal<boolean>>;
     showActionsButtonsContainer$: ReturnType<typeof signal<boolean>>;
 
     setProcedureId: jest.Mock;
@@ -86,6 +87,7 @@ describe('CredentialDetailsComponent', () => {
       showRevokeCredentialButton$: showRev$,
       enableRevokeCredentialButton$: enableRev$,
       showWithdrawCredentialButton$: showWithdraw$,
+      showArchiveCredentialButton$: signal<boolean>(false),
       showActionsButtonsContainer$: showActions$,
 
       setProcedureId: jest.fn(),
