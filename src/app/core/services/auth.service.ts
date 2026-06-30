@@ -28,6 +28,8 @@ export class AuthService{
   private readonly nameSubject = new BehaviorSubject<string>('');
   public readonly roleType: WritableSignal<RoleType> = signal(RoleType.LEAR);
   public readonly tenantType: WritableSignal<string> = signal('');
+  public readonly isSysAdminRole: WritableSignal<boolean> = signal(false);
+  public readonly organizationIdentifier: WritableSignal<string> = signal('');
 
 
 
@@ -154,6 +156,8 @@ export class AuthService{
       next: (me) => {
         this.roleType.set(this.mapRoleToFrontend(me));
         this.tenantType.set(me.tenantType);
+        this.isSysAdminRole.set(me.role === 'SYSADMIN');
+        this.organizationIdentifier.set(me.organizationIdentifier);
       },
       error: (err) => {
         console.error('Failed to resolve role from backend; defaulting to LEAR', err);
