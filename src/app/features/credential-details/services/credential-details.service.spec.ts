@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { CredentialDetailsService } from './credential-details.service';
 import { FormBuilder } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -40,6 +41,10 @@ describe('CredentialDetailsService', () => {
 
   const mockAuthService = {
     getUserRole: jest.fn().mockReturnValue(RoleType.LEAR),
+    roleType: signal(RoleType.LEAR),
+    tenantType: signal('simple'),
+    isSysAdminRole: signal(false),
+    organizationIdentifier: signal(''),
   } as any;
 
   beforeEach(() => {
@@ -447,6 +452,7 @@ describe('extendFields', () => {
 
     it('returns false when user has SYSADMIN_READONLY role (canWrite = false)', () => {
       mockAuthService.getUserRole.mockReturnValue(RoleType.SYSADMIN_READONLY);
+      mockAuthService.roleType.set(RoleType.SYSADMIN_READONLY);
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         imports: [TranslateModule.forRoot()],
