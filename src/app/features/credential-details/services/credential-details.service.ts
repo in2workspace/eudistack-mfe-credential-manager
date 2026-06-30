@@ -67,17 +67,30 @@ export class CredentialDetailsService {
     Boolean(this.sideViewModel$()?.length)
   );
 
-  //BUTTONS — hidden when platform read-only view
-  private readonly canWrite = inject(AuthService).getUserRole() !== RoleType.SYSADMIN_READONLY;
+  //BUTTONS — hidden when platform read-only view or multi-org tenant admin (Caso A, SoD)
+  private readonly authService = inject(AuthService);
+  private readonly canWrite = computed<boolean>(() => {
+    if (this.authService.roleType() === RoleType.SYSADMIN_READONLY) return false;
+    if (this.authService.roleType() === RoleType.TENANT_ADMIN
+      && this.authService.tenantType() === 'multi_org'
+      && !this.authService.isSysAdminRole()) {
+      // Caso A: can only action on credentials from their own organization
+      const userOrg = this.authService.organizationIdentifier();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const credentialOrg = (this.credential$() as any)?.credentialSubject?.mandate?.mandator?.organizationIdentifier as string | undefined;
+      return !!userOrg && !!credentialOrg && userOrg === credentialOrg;
+    }
+    return true;
+  });
 
   public showSignCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite && !!status && statusHasSignCredentialButton(status);
+    return this.canWrite() && !!status && statusHasSignCredentialButton(status);
   });
 
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite && !!status && statusHasRevokeCredentialButton(status);
+    return this.canWrite() && !!status && statusHasRevokeCredentialButton(status);
   });
 
   public enableRevokeCredentialButton$ = computed<boolean>(() => {
@@ -86,7 +99,7 @@ export class CredentialDetailsService {
 
   public showWithdrawCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite && !!status && statusHasWithdrawCredentialButton(status);
+    return this.canWrite() && !!status && statusHasWithdrawCredentialButton(status);
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
@@ -95,7 +108,7 @@ export class CredentialDetailsService {
 
   public showArchiveCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite && !!status && statusHasArchiveCredentialButton(status);
+    return this.canWrite() && !!status && statusHasArchiveCredentialButton(status);
   });
 
   private readonly actionsService = inject(CredentialActionsService);
