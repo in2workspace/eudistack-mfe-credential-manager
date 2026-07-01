@@ -230,8 +230,6 @@
       "title": "Error en carregar les credencials",
       "description": "No s'han pogut carregar les credencials. Si us plau, recarrega la pàgina o torna-ho a intentar més tard."
     },
-    "tabActive": "Actives",
-    "tabArchived": "Arxivades",
     "archivedTitle": "Credencials arxivades",
     "archivedEmptyState": {
       "title": "Sense credencials arxivades",
