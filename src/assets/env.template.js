@@ -1,9 +1,7 @@
 (function(window) {
   window.env = window.env || {};
 
-  // Atlassian-style: tenant = first segment of hostname
-  // e.g. kpmg.eudistack.net → kpmg, kpmg.127.0.0.1.nip.io → kpmg
-  const tenant = window.location.hostname.split(".")[0];
+  // Tenant is resolved in-app (TenantService); no need to compute it here.
 
   // OIDC Client ID: tenant is resolved at runtime
   window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
