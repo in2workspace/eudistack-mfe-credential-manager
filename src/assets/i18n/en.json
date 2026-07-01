@@ -230,8 +230,6 @@
       "title": "Error loading credentials",
       "description": "The credentials could not be loaded. Please reload the page or try again later."
     },
-    "tabActive": "Active",
-    "tabArchived": "Archived",
     "archivedTitle": "Archived credentials",
     "archivedEmptyState": {
       "title": "No archived credentials",
