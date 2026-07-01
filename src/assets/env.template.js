@@ -1,10 +1,6 @@
 (function(window) {
   window.env = window.env || {};
 
-  // Atlassian-style: tenant = first segment of hostname
-  // e.g. kpmg.eudistack.net → kpmg, kpmg.127.0.0.1.nip.io → kpmg
-  const tenant = window.location.hostname.split(".")[0];
-
   // OIDC Client ID: tenant is resolved at runtime
   window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
   // Allows to overwrite the client_id (use in case the client_id is by environment, not by tenant)
