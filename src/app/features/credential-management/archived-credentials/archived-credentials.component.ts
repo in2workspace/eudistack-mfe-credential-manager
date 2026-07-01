@@ -209,7 +209,7 @@ export class ArchivedCredentialsComponent implements OnInit, AfterViewInit {
   private setFilterPredicate(filter: Filter): void {
     this.dataSource.filterPredicate = (data: CredentialProcedureBasicInfo, filterString: string) => {
       const searchString = filterString.trim().toLowerCase();
-      return data.credential_procedure[filter].toLowerCase().includes(searchString);
+      return (data.credential_procedure[filter] ?? '').toLowerCase().includes(searchString);
     };
   }
 
