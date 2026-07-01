@@ -39,7 +39,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
     ]
 })
 export class CredentialDetailsComponent implements OnInit {
-  
+
   //SIGNALS
   //Credential data
   public credentialValidFrom$: Signal<string>;
@@ -60,7 +60,8 @@ export class CredentialDetailsComponent implements OnInit {
   public enableRevokeCredentialButton$: Signal<boolean>;
   public showWithdrawCredentialButton$: Signal<boolean>;
   public showActionsButtonsContainer$: Signal<boolean>;
-  
+  public showArchiveCredentialButton$: Signal<boolean>;
+
   //OBSERVABLES
   public isLoading$: Observable<boolean>;
 
@@ -92,6 +93,7 @@ export class CredentialDetailsComponent implements OnInit {
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
     this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showActionsButtonsContainer$ = this.detailsService.showActionsButtonsContainer$;
+    this.showArchiveCredentialButton$ = this.detailsService.showArchiveCredentialButton$;
   }
 
   public ngOnInit(): void {
@@ -113,7 +115,12 @@ export class CredentialDetailsComponent implements OnInit {
   public openRevokeCredentialDialog(){
     this.detailsService.openRevokeCredentialDialog();
   }
-  
+
+  // ARCHIVE
+  public openArchiveCredentialDialog(){
+    this.detailsService.openArchiveCredentialDialog();
+  }
+
   // DATA FETCHING
   private getProcedureId(): void {
     const id = this.route.snapshot.paramMap.get('id')!;

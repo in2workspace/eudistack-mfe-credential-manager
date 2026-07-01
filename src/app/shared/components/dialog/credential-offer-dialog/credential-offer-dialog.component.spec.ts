@@ -3,34 +3,23 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { CredentialOfferDialogComponent, CredentialOfferDialogData } from './credential-offer-dialog.component';
-import { TenantService } from 'src/app/core/services/tenant.service';
-import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
+import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
+import { environment } from 'src/environments/environment';
 
 describe('CredentialOfferDialogComponent', () => {
   let component: CredentialOfferDialogComponent;
   let mockDialogRef: jest.Mocked<MatDialogRef<CredentialOfferDialogComponent>>;
-  let mockTenantService: { walletUrl: jest.Mock; defaultWalletUrl: jest.Mock };
 
   const HTTPS_OFFER_URL = 'https://example.com/offer/123';
-  const ENV_WALLET_BASE = 'https://wallet.env.es';
-  const DEFAULT_WALLET_BASE = 'https://wallet.main.es';
+  const WALLET_URL = 'https://wallet.tenant.es/protocol/callback';
   const mockData: CredentialOfferDialogData = {
-    credentialOfferUri: `openid-credential-offer://?credential_offer_uri=${encodeURIComponent(HTTPS_OFFER_URL)}`,
+    credentialOfferUri: `${WALLET_URL}?credential_offer_uri=${encodeURIComponent(HTTPS_OFFER_URL)}`,
   };
 
-  function walletCallbackUrl(base: string, offerUrl: string): string {
-    return base + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(offerUrl);
-  }
-
-  function buildService(walletUrl: string, defaultWalletUrl: string | null) {
-    mockTenantService = {
-      walletUrl: jest.fn().mockReturnValue(walletUrl),
-      defaultWalletUrl: jest.fn().mockReturnValue(defaultWalletUrl),
-    };
-  }
-
-  function setup() {
-    mockDialogRef = { close: jest.fn() } as unknown as jest.Mocked<MatDialogRef<CredentialOfferDialogComponent>>;
+  beforeEach(() => {
+    mockDialogRef = {
+      close: jest.fn(),
+    } as unknown as jest.Mocked<MatDialogRef<CredentialOfferDialogComponent>>;
 
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot(), NoopAnimationsModule],
@@ -38,80 +27,72 @@ describe('CredentialOfferDialogComponent', () => {
         CredentialOfferDialogComponent,
         { provide: MAT_DIALOG_DATA, useValue: mockData },
         { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: TenantService, useValue: mockTenantService },
       ],
     });
 
     component = TestBed.inject(CredentialOfferDialogComponent);
-  }
-
-  afterEach(() => jest.resetAllMocks());
-
-  describe('without defaultEnv (single wallet URL)', () => {
-    beforeEach(() => {
-      buildService(ENV_WALLET_BASE, null);
-      setup();
-    });
-
-    it('should create the component', () => expect(component).toBeTruthy());
-
-    it('showEnvWallet should be false', () => {
-      expect(component.showEnvWallet).toBe(false);
-    });
-
-    it('walletMainFullUrl should use the env wallet URL', () => {
-      expect(component.walletMainFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
-    });
   });
 
-  describe('with defaultEnv (dual wallet URLs)', () => {
-    beforeEach(() => {
-      buildService(ENV_WALLET_BASE, DEFAULT_WALLET_BASE);
-      setup();
-    });
-
-    it('showEnvWallet should be true', () => {
-      expect(component.showEnvWallet).toBe(true);
-    });
-
-    it('walletMainFullUrl should use the defaultEnv wallet URL', () => {
-      expect(component.walletMainFullUrl).toBe(walletCallbackUrl(DEFAULT_WALLET_BASE, HTTPS_OFFER_URL));
-    });
-
-    it('walletEnvFullUrl should use the environment wallet URL', () => {
-      expect(component.walletEnvFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
-    });
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  describe('credential offer URI extraction', () => {
-    beforeEach(() => {
-      buildService(ENV_WALLET_BASE, null);
-      setup();
-    });
+  it('should create the component', () => {
+    expect(component).toBeTruthy();
+  });
 
-    it('should extract the inner HTTPS URL from the wallet callback URI', () => {
-      expect(component.walletMainFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
+  it('should set qrColor to "#000000"', () => {
+    expect(component.qrColor).toBe('#000000');
+  });
+
+  it('should derive walletSameDeviceUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletSameDeviceUrl).toBe(WALLET_SAME_DEVICE_URL);
+  });
+
+  it('should derive walletSameDeviceTestUrl from the current origin (Atlassian-style)', () => {
+    expect(component.walletSameDeviceTestUrl).toBe(WALLET_SAME_DEVICE_URL);
+  });
+
+  it('should expose showWalletSameDeviceUrlTest from environment', () => {
+    expect(component.showWalletSameDeviceUrlTest).toBe(environment.show_wallet_url_test);
+  });
+
+  describe('walletSameDeviceFullUrl', () => {
+    it('should extract the inner HTTPS URL from the wallet callback URL', () => {
+      const expected = WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(HTTPS_OFFER_URL);
+      expect(component.walletSameDeviceFullUrl).toBe(expected);
     });
 
     it('should fall back to the raw URI when credential_offer_uri param is absent', () => {
-      const rawUri = 'https://wallet.env.es/protocol/callback?other_param=value';
+      const rawUri = 'https://wallet.tenant.es/protocol/callback?other_param=value';
       (component as any).data = { credentialOfferUri: rawUri };
-      expect(component.walletMainFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, rawUri));
+      const expected = WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(rawUri);
+      expect(component.walletSameDeviceFullUrl).toBe(expected);
     });
 
     it('should fall back to the raw string when credentialOfferUri is not a valid URL', () => {
       const rawUri = 'not-a-valid-url';
       (component as any).data = { credentialOfferUri: rawUri };
-      expect(component.walletMainFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, rawUri));
+      const expected = WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(rawUri);
+      expect(component.walletSameDeviceFullUrl).toBe(expected);
+    });
+  });
+
+  describe('walletSameDeviceTestFullUrl', () => {
+    it('should extract the inner HTTPS URL from the wallet callback URL', () => {
+      const expected = WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(HTTPS_OFFER_URL);
+      expect(component.walletSameDeviceTestFullUrl).toBe(expected);
+    });
+
+    it('should fall back to the raw URI when credential_offer_uri param is absent', () => {
+      const rawUri = 'https://wallet.tenant.es/protocol/callback?other_param=value';
+      (component as any).data = { credentialOfferUri: rawUri };
+      const expected = WALLET_SAME_DEVICE_URL + '?credential_offer_uri=' + encodeURIComponent(rawUri);
+      expect(component.walletSameDeviceTestFullUrl).toBe(expected);
     });
   });
 
   describe('copyOfferUri()', () => {
-    beforeEach(() => {
-      buildService(ENV_WALLET_BASE, null);
-      setup();
-    });
-
     it('should write credentialOfferUri to clipboard, set copied=true, then reset after 2s', fakeAsync(() => {
       const writeTextMock = jest.fn().mockResolvedValue(undefined);
       Object.defineProperty(navigator, 'clipboard', {
@@ -131,11 +112,6 @@ describe('CredentialOfferDialogComponent', () => {
   });
 
   describe('close()', () => {
-    beforeEach(() => {
-      buildService(ENV_WALLET_BASE, null);
-      setup();
-    });
-
     it('should call dialogRef.close()', () => {
       component.close();
       expect(mockDialogRef.close).toHaveBeenCalled();
