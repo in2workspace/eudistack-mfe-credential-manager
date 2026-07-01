@@ -9,7 +9,6 @@ import {DialogWrapperService} from "../../shared/components/dialog/dialog-wrappe
 import {TranslateService} from "@ngx-translate/core";
 import {Router} from "@angular/router";
 import { API_PATH } from '../constants/api-paths.constants';
-import { TenantService } from './tenant.service';
 import { CredentialProceduresResponse } from '../models/dto/credential-procedures-response.dto';
 import { CredentialProcedureDetails, CredentialStatus, LifeCycleStatus } from '../models/entity/lear-credential';
 
@@ -44,8 +43,7 @@ describe('CredentialProcedureService', () => {
       provideHttpClientTesting(),
       { provide: DialogWrapperService, useValue: { openErrorInfoDialog: jest.fn(), openWarningDialog: jest.fn() } },
       { provide: TranslateService, useValue: { instant: jest.fn((key: string) => key) } },
-      { provide: Router, useValue: { navigate: jest.fn() } },
-      { provide: TenantService, useValue: { serverUrl: environment.server_url } }
+      { provide: Router, useValue: { navigate: jest.fn() } }
     ]
 });
 
@@ -461,7 +459,47 @@ describe('get credential offer by c-code', () => {
       req.flush({}, error);
     });
   });
-  
-  
+
+  describe('archiveCredential', () => {
+    const procedureId = 'proc-123';
+    const archiveUrl = `${proceduresURL}/${procedureId}`;
+
+    it('should send PATCH to the correct URL with status ARCHIVED', () => {
+      service.archiveCredential(procedureId).subscribe({
+        next: (result) => expect(result).toBeUndefined(),
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ status: 'ARCHIVED' });
+      req.flush(null);
+    });
+
+    it('should propagate a 5xx server error via handleError', () => {
+      service.archiveCredential(procedureId).subscribe({
+        next: () => fail('should have failed with 500 error'),
+        error: (err: HttpErrorResponse) => {
+          expect(err.status).toBe(500);
+        },
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      req.flush('Internal Server Error', serverErrorResp);
+    });
+
+    it('should propagate a timeout-like error (status 0) via handleError', () => {
+      const timeoutError = new HttpErrorResponse({ status: 0, statusText: 'Unknown Error' });
+
+      service.archiveCredential(procedureId).subscribe({
+        next: () => fail('should have failed'),
+        error: (err: HttpErrorResponse) => {
+          expect(err.status).toBe(0);
+        },
+      });
+
+      const req = httpMock.expectOne(archiveUrl);
+      req.flush(null, timeoutError);
+    });
+  });
 
 });
