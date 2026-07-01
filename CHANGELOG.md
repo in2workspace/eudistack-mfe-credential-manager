@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (30-06-2026)
+### Fixed (01-07-2026)
 
 - **EUD-129 — SoD AC-08 refinement: SYSADMIN vs Caso A distinction**
   - `AuthService`: added `isSysAdminRole` signal (set from `GET /api/v1/me` `role === 'SYSADMIN'`) and `organizationIdentifier` signal to distinguish system admins mapped as `TENANT_ADMIN` from actual Caso A credentials.
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `CredentialManagementComponent.canWrite`: Caso A can create credentials (only `SYSADMIN_READONLY` is blocked); the org-level restriction applies only to actions on existing credentials.
   - Test specs updated: `mockAuthService` extended with `roleType`, `tenantType`, `isSysAdminRole` and `organizationIdentifier` signals; `credential-details.component.spec.ts` mock extended with `showArchiveCredentialButton$`; `credential-management.routes.spec.ts` updated for 3 routes (added `archived`).
 
-## [3.5.11] - 25-06-2026
+## [3.5.17] - 25-06-2026
 
 ### Added
 
