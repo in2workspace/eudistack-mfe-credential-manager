@@ -230,8 +230,6 @@
       "title": "Error al cargar las credenciales",
       "description": "No se han podido cargar las credenciales. Por favor, recarga la página o inténtalo de nuevo más tarde."
     },
-    "tabActive": "Activas",
-    "tabArchived": "Archivadas",
     "archivedTitle": "Credenciales archivadas",
     "archivedEmptyState": {
       "title": "Sin credenciales archivadas",
