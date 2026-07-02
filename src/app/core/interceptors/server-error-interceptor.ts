@@ -4,13 +4,12 @@ import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse
 import { catchError, Observable, throwError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { TenantService } from '../services/tenant.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable()
 export class ServeErrorInterceptor implements HttpInterceptor {
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
-  private readonly tenantService = inject(TenantService);
 
   public intercept(
     request: HttpRequest<unknown>,
@@ -19,8 +18,7 @@ export class ServeErrorInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
         // ignore IAM endpoint; its errors are handled in a lower level
-        const iamUrl = this.tenantService.iamUrl();
-        if (iamUrl && request.url.startsWith(iamUrl)) {
+        if (typeof environment.iam_url === 'string' && request.url.startsWith(environment.iam_url)) {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }

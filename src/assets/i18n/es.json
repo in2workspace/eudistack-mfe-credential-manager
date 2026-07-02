@@ -65,6 +65,7 @@
     "VALID": "VÁLIDO",
     "REVOKED": "REVOCADO",
     "EXPIRED": "EXPIRADO",
+    "ARCHIVED": "ARCHIVADO",
     "PEND_DOWNLOAD": "POR DESCARGAR",
     "ISSUED": "EMITIDO",
     "status": "estatus",
@@ -116,6 +117,7 @@
     "digestSri": "Huella SRI",
     "revoke": "revocar",
     "withdraw": "retirar",
+    "archive": "archivar",
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
     "signCredentialConfirm": {
       "title": "Firmar credencial",
@@ -140,6 +142,14 @@
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
       "message": "La credencial ha sido retirada correctamente."
+    },
+    "archiveCredentialConfirm": {
+      "title": "Archivar Credencial",
+      "message": "¿Estás seguro de que deseas archivar esta credencial? Esta acción es definitiva y no se puede deshacer."
+    },
+    "archiveCredentialSuccess": {
+      "title": "Credencial archivada",
+      "message": "La credencial ha sido archivada correctamente."
     }
   },
   "credentialOffer": {
@@ -183,6 +193,8 @@
     "cancel": "Cancelar",
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
+    "tabActive": "Activas",
+    "tabArchived": "Archivadas",
     "search": "Buscar por",
     "searchPlaceholderSubject": "Juan García",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -204,6 +216,13 @@
       "title": "Aún no hay credenciales",
       "description": "Crea tu primera credencial para comenzar.",
       "action": "Crear Credencial"
+    },
+    "tabActive": "Activas",
+    "tabArchived": "Archivadas",
+    "archivedTitle": "Credenciales archivadas",
+    "archivedEmptyState": {
+      "title": "Sin credenciales archivadas",
+      "description": "Cuando archives una credencial aparecerá aquí."
     }
   },
   "power": {

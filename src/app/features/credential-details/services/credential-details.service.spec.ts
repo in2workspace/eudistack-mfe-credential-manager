@@ -25,6 +25,7 @@ describe('CredentialDetailsService', () => {
   const mockCredentialActionsService = {
     openSignCredentialDialog: jest.fn(),
     openRevokeCredentialDialog: jest.fn(),
+    openArchiveCredentialDialog: jest.fn(),
   };
 
   const mockMetadataService = {
@@ -39,6 +40,10 @@ describe('CredentialDetailsService', () => {
 
   const mockAuthService = {
     getUserRole: jest.fn().mockReturnValue(RoleType.LEAR),
+    roleType: jest.fn().mockReturnValue(RoleType.LEAR),
+    tenantType: jest.fn().mockReturnValue('simple'),
+    isSysAdminRole: jest.fn().mockReturnValue(false),
+    organizationIdentifier: jest.fn().mockReturnValue(''),
   } as any;
 
   beforeEach(() => {
@@ -405,9 +410,105 @@ describe('extendFields', () => {
     const extendedGroup = result[0];
 
     // Assert top-level call and recursive call
-    expect(spy).toHaveBeenCalledWith([nested], injector);
+      expect(spy).toHaveBeenCalledWith([nested], injector);
     expect(extendedGroup.value).toEqual([nested]);
   });
 });
+
+  describe('showArchiveCredentialButton$', () => {
+    beforeEach(() => {
+      service.credentialProcedureDetails$.set(undefined);
+    });
+
+    it('returns false when lifeCycleStatus is undefined', () => {
+      expect(service.showArchiveCredentialButton$()).toBe(false);
+    });
+
+    it('returns true for terminal status WITHDRAWN', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(true);
+    });
+
+    it('returns true for terminal status REVOKED', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'REVOKED', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(true);
+    });
+
+    it('returns true for terminal status EXPIRED', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'EXPIRED', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(true);
+    });
+
+    it('returns false for non-terminal status VALID', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'VALID', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(false);
+    });
+
+    it('returns false for non-terminal status DRAFT', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'DRAFT', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(false);
+    });
+
+    it('returns false when user has SYSADMIN_READONLY role (canWrite = false)', () => {
+      mockAuthService.roleType.mockReturnValue(RoleType.SYSADMIN_READONLY);
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(service.showArchiveCredentialButton$()).toBe(false);
+      mockAuthService.roleType.mockReturnValue(RoleType.LEAR);
+    });
+  });
+
+  describe('openArchiveCredentialDialog', () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      service.procedureId$.set('proc-archive-001');
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should open error dialog and NOT call actionsService when status is not terminal (VALID)', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'VALID', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockDialogWrapperService.openErrorInfoDialog).toHaveBeenCalled();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).not.toHaveBeenCalled();
+    });
+
+    it('should open error dialog and NOT call actionsService when status is DRAFT', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'DRAFT', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockDialogWrapperService.openErrorInfoDialog).toHaveBeenCalled();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).not.toHaveBeenCalled();
+    });
+
+    it('should open error dialog when procedureId is empty even with terminal status', () => {
+      service.procedureId$.set('');
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockDialogWrapperService.openErrorInfoDialog).toHaveBeenCalled();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).not.toHaveBeenCalled();
+    });
+
+    it('should call actionsService.openArchiveCredentialDialog with procedureId for WITHDRAWN status', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).toHaveBeenCalledWith('proc-archive-001');
+      expect(mockDialogWrapperService.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it('should call actionsService.openArchiveCredentialDialog with procedureId for REVOKED status', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'REVOKED', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).toHaveBeenCalledWith('proc-archive-001');
+    });
+
+    it('should call actionsService.openArchiveCredentialDialog with procedureId for EXPIRED status', () => {
+      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'EXPIRED', credential: { vc: { credentialStatus: {} } } } as any);
+      service.openArchiveCredentialDialog();
+      expect(mockCredentialActionsService.openArchiveCredentialDialog).toHaveBeenCalledWith('proc-archive-001');
+    });
+  });
 
 });

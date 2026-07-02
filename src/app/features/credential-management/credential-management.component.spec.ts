@@ -340,4 +340,72 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // no error and no paginator call
 }));
 
+  describe('ARCHIVED filtering in initializeCredentialTable', () => {
+    const makeProc = (id: string, status: string): CredentialProcedureBasicInfo => ({
+      credential_procedure: {
+        procedure_id: id,
+        subject: `Subject ${id}`,
+        status: status as any,
+        updated: '2025-01-01',
+        credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
+        email: 'a@b.com',
+        organization_identifier: 'VATES-000000',
+      },
+    });
+
+    it('should exclude ARCHIVED credentials from dataSource', fakeAsync(() => {
+      const archivedProc = makeProc('arch-1', 'ARCHIVED');
+      const mockResponse = { credential_procedures: [archivedProc] } as CredentialProceduresResponse;
+      credentialProcedureSpy.mockReturnValue(of(mockResponse));
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
+
+      component['initializeCredentialTable']();
+      tick();
+
+      expect(component.dataSource.data).toEqual([]);
+    }));
+
+    it('should include non-ARCHIVED credentials in dataSource', fakeAsync(() => {
+      const draftProc = makeProc('draft-1', 'DRAFT');
+      const withClass: CredentialProcedureWithClass[] = [{ ...draftProc, statusClass: 'status-draft' }];
+      const mockResponse = { credential_procedures: [draftProc] } as CredentialProceduresResponse;
+      credentialProcedureSpy.mockReturnValue(of(mockResponse));
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+
+      component['initializeCredentialTable']();
+      tick();
+
+      expect(component.dataSource.data).toEqual(withClass);
+    }));
+
+    it('should only pass non-ARCHIVED items to addStatusClass', fakeAsync(() => {
+      const archivedProc = makeProc('arch-2', 'ARCHIVED');
+      const validProc = makeProc('valid-1', 'VALID');
+      const withdrawnProc = makeProc('withdrawn-1', 'WITHDRAWN');
+      const statusSpy = jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
+
+      const mockResponse = {
+        credential_procedures: [archivedProc, validProc, withdrawnProc],
+      } as CredentialProceduresResponse;
+      credentialProcedureSpy.mockReturnValue(of(mockResponse));
+
+      component['initializeCredentialTable']();
+      tick();
+
+      expect(statusSpy).toHaveBeenCalledWith([validProc, withdrawnProc]);
+      expect(statusSpy).not.toHaveBeenCalledWith(expect.arrayContaining([archivedProc]));
+    }));
+
+    it('should show empty dataSource when all credentials are ARCHIVED', fakeAsync(() => {
+      const procs = [makeProc('a1', 'ARCHIVED'), makeProc('a2', 'ARCHIVED'), makeProc('a3', 'ARCHIVED')];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: procs } as CredentialProceduresResponse));
+
+      component['initializeCredentialTable']();
+      tick();
+
+      expect(component.dataSource.data).toHaveLength(0);
+    }));
+  });
+
 });

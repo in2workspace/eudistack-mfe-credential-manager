@@ -60,3 +60,9 @@ button, input, select, textarea {
 .mat-mdc-snack-bar-action {
   color: white !important;
 }
+
+/* Fix for Angular Material Tabs ink-bar visibility when using sibling routes (no mat-tab-nav-panel) */
+.mat-mdc-tab-link.mdc-tab--active .mdc-tab-indicator {
+  visibility: visible;
+  opacity: 1;
+}

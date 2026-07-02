@@ -7,7 +7,7 @@
   window["env"]["client_id"] = "${CLIENT_ID}";
 
   // IAM URL: OIDC authority (Verifier as IdP) — same origin + /verifier path
-  window["env"]["iam_url"] = "${IAM_URL}";
+  window["env"]["iam_url"] = window.location.origin + "/verifier";
 
   // Issuer API: relative path (same origin, no CORS)
   window["env"]["server_url"] = "${SERVER_URL}";
