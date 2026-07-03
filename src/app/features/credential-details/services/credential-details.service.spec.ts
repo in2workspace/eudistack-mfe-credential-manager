@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { CredentialDetailsService } from './credential-details.service';
 import { FormBuilder } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -40,10 +41,10 @@ describe('CredentialDetailsService', () => {
 
   const mockAuthService = {
     getUserRole: jest.fn().mockReturnValue(RoleType.LEAR),
-    roleType: jest.fn().mockReturnValue(RoleType.LEAR),
-    tenantType: jest.fn().mockReturnValue('simple'),
-    isSysAdminRole: jest.fn().mockReturnValue(false),
-    organizationIdentifier: jest.fn().mockReturnValue(''),
+    roleType: signal(RoleType.LEAR),
+    tenantType: signal('simple'),
+    isSysAdminRole: signal(false),
+    organizationIdentifier: signal(''),
   } as any;
 
   beforeEach(() => {
@@ -450,10 +451,25 @@ describe('extendFields', () => {
     });
 
     it('returns false when user has SYSADMIN_READONLY role (canWrite = false)', () => {
-      mockAuthService.roleType.mockReturnValue(RoleType.SYSADMIN_READONLY);
-      service.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
-      expect(service.showArchiveCredentialButton$()).toBe(false);
-      mockAuthService.roleType.mockReturnValue(RoleType.LEAR);
+      mockAuthService.getUserRole.mockReturnValue(RoleType.SYSADMIN_READONLY);
+      mockAuthService.roleType.set(RoleType.SYSADMIN_READONLY);
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [TranslateModule.forRoot()],
+        providers: [
+          CredentialDetailsService,
+          FormBuilder,
+          { provide: CredentialProcedureService, useValue: mockCredentialProcedureService },
+          { provide: CredentialActionsService, useValue: mockCredentialActionsService },
+          { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
+          { provide: DialogWrapperService, useValue: mockDialogWrapperService },
+          { provide: Router, useValue: mockRouter },
+          { provide: AuthService, useValue: mockAuthService },
+        ],
+      });
+      const readOnlyService = TestBed.inject(CredentialDetailsService);
+      readOnlyService.credentialProcedureDetails$.set({ lifeCycleStatus: 'WITHDRAWN', credential: { vc: { credentialStatus: {} } } } as any);
+      expect(readOnlyService.showArchiveCredentialButton$()).toBe(false);
     });
   });
 

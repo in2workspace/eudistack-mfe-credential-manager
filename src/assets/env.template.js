@@ -1,6 +1,8 @@
 (function(window) {
   window.env = window.env || {};
 
+  // Tenant is resolved in-app (TenantService); no need to compute it here.
+
   // OIDC Client ID: tenant is resolved at runtime
   window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
   // Allows to overwrite the client_id (use in case the client_id is by environment, not by tenant)

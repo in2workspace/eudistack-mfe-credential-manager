@@ -63,6 +63,7 @@ describe('CredentialDetailsComponent', () => {
     const enableRev$ = signal<boolean>(true);
     const showWithdraw$ = signal<boolean>(false);
     const showActions$ = signal<boolean>(true);
+    const showArchive$ = signal<boolean>(false);
     const credentialStatus$ = signal(mockCredentialStatus);
     const procedureId$ = signal<string>('the-id');
     const email$ = signal<string>('subject@email.com');
@@ -87,8 +88,8 @@ describe('CredentialDetailsComponent', () => {
       showRevokeCredentialButton$: showRev$,
       enableRevokeCredentialButton$: enableRev$,
       showWithdrawCredentialButton$: showWithdraw$,
-      showArchiveCredentialButton$: signal<boolean>(false),
       showActionsButtonsContainer$: showActions$,
+      showArchiveCredentialButton$: showArchive$,
 
       setProcedureId: jest.fn(),
       loadCredentialModels: jest.fn(),

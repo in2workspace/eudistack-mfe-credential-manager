@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (01-07-2026)
+## [3.5.18] - 02-07-2026
+
+### Added
+
+- **EUD-94 — Filter and sort credential set**
+  - `CredentialManagementComponent`: added status filter (`mat-select`) alongside the text search input.
+  - `CredentialManagementComponent`: implemented compound filtering (`applyCompoundFilter`) using JSON serialization to filter by text and status simultaneously (AND evaluation).
+  - `CredentialManagementComponent`: split generic empty state into three distinct states: "Load Error" (API failure), "No Credentials" (empty tenant), and "No Matches" (filters applied but no results, includes a "Clear filters" button).
+  - `i18n`: added translations for the new filter dropdown, options, and empty states in `ca.json`, `en.json`, and `es.json`.
+
+### Fixed
 
 - **EUD-129 — SoD AC-08 refinement: SYSADMIN vs Caso A distinction**
   - `AuthService`: added `isSysAdminRole` signal (set from `GET /api/v1/me` `role === 'SYSADMIN'`) and `organizationIdentifier` signal to distinguish system admins mapped as `TENANT_ADMIN` from actual Caso A credentials.

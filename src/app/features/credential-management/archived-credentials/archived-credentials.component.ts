@@ -88,7 +88,8 @@ export class ArchivedCredentialsComponent implements OnInit, AfterViewInit {
   private readonly translate = inject(TranslateService);
   private readonly searchSubject = new Subject<string>();
 
-  private readonly filtersMap: Record<Filter, FilterConfig> = {
+  /** FilterConfig map for text-search filters only (archived view has no status filter dropdown). */
+  private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
     subject: {
       filterName: 'subject',
       translationLabel: CREDENTIAL_MANAGEMENT_SUBJECT,
@@ -209,12 +210,13 @@ export class ArchivedCredentialsComponent implements OnInit, AfterViewInit {
   private setFilterPredicate(filter: Filter): void {
     this.dataSource.filterPredicate = (data: CredentialProcedureBasicInfo, filterString: string) => {
       const searchString = filterString.trim().toLowerCase();
-      return (data.credential_procedure[filter] ?? '').toLowerCase().includes(searchString);
+      return data.credential_procedure[filter].toLowerCase().includes(searchString);
     };
   }
 
   private setFilterLabelAndPlaceholder(filter: Filter): void {
-    const filterConfig: FilterConfig = this.filtersMap[filter];
+    const filterConfig: FilterConfig | undefined = this.filtersMap[filter];
+    if (!filterConfig) return;
     this.searchLabel = filterConfig.translationLabel;
     this.searchPlaceholder = filterConfig.placeholderTranslationLabel;
   }

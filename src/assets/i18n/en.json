@@ -215,10 +215,21 @@
     "emptyState": {
       "title": "No credentials yet",
       "description": "Create your first credential to get started.",
-      "action": "Create Credential"
+      "action": "Create Credential",
+      "noMatches": {
+        "title": "No matches",
+        "description": "No credentials match the applied filters.",
+        "action": "Clear filter"
+      }
     },
-    "tabActive": "Active",
-    "tabArchived": "Archived",
+    "filterByStatus": {
+      "label": "Filter by status",
+      "all": "All statuses"
+    },
+    "loadError": {
+      "title": "Error loading credentials",
+      "description": "The credentials could not be loaded. Please reload the page or try again later."
+    },
     "archivedTitle": "Archived credentials",
     "archivedEmptyState": {
       "title": "No archived credentials",
