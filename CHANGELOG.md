@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.20] - 07-07-2026
+
+### Fixed
+- In issuances table pages, do not throw blocking error when an issuance object doesn't include a required field. Treat it as empty instead.
+
 ## [3.5.19] - 07-07-2026
 
 ### Reverted
