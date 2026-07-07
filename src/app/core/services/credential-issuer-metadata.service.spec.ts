@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { CredentialIssuerMetadataService } from './credential-issuer-metadata.service';
 import { environment } from 'src/environments/environment';
 import { API_PATH } from '../constants/api-paths.constants';
@@ -36,7 +35,7 @@ describe('CredentialIssuerMetadataService', () => {
     TestBed.configureTestingModule({
       providers: [
         CredentialIssuerMetadataService,
-        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TenantService, useValue: { serverUrl: environment.server_url } }
       ]
     });
