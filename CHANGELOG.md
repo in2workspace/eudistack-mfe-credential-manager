@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Reverted (07-07-2026)
+## [3.5.19] - 07-07-2026
+
+### Reverted
 
 - Reverted accidental overwrite of wallet and OIDC config files caused by merging EUD-129 branch over EUD-94 work: `oidc-config.builder.ts`, `tenant-aware-sts-config.loader.ts`, `iam.constants.ts`, `wallet.constants.ts`, `server-error-interceptor.ts`, `credential-issuer-metadata.service.ts`, `credential-procedure.service.ts`, `me.service.ts`, `tenant.service.ts`, `credential-offer-refresh.service.ts`, `credential-offer-onboarding.component.ts/html`, `credential-offer.component.ts/html`, `configuration.repository.ts`, `credential-offer-dialog.component.ts/html`, `navbar.component.ts`, `environments/environment.ts`, `global.d.ts`.
+- Restored `package-lock.json` to the state of the EUD-94 branch, undoing the lockfile overwrite introduced by the EUD-129 merge.
 
 ## [3.5.18] - 02-07-2026
 
