@@ -5,6 +5,5 @@ export const environment = {
   client_id_prefix: 'vc-auth-client-',
   client_id: 'vc-auth-client',
   iam_url: 'https://keycloak-dev.ssihub.org/realms/in2-issuer',
-  server_url: 'http://localhost:8081',
-  show_wallet_url_test: false,
+  server_url: 'http://localhost:8081'
 };
