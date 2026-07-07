@@ -25,7 +25,7 @@ export class NavbarComponent implements OnInit {
 
   private readonly translate = inject(TranslateService);
   private readonly authService = inject(AuthService);
-  
+
   public ngOnInit() {
     this.logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
 

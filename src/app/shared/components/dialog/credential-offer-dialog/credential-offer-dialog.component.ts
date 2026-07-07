@@ -4,8 +4,8 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { environment } from 'src/environments/environment';
-import { WALLET_SAME_DEVICE_URL } from 'src/app/core/constants/wallet.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
+import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
 
 export interface CredentialOfferDialogData {
   credentialOfferUri: string;
@@ -28,22 +28,25 @@ export interface CredentialOfferDialogData {
 export class CredentialOfferDialogComponent {
   public readonly data = inject<CredentialOfferDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<CredentialOfferDialogComponent>);
+  private readonly tenantService = inject(TenantService);
 
   public copied = false;
   public readonly qrColor = '#000000';
 
-  public readonly walletSameDeviceUrl = WALLET_SAME_DEVICE_URL;
-  public readonly showWalletSameDeviceUrlTest = environment.show_wallet_url_test;
-  public readonly walletSameDeviceTestUrl = WALLET_SAME_DEVICE_URL;
-
-  public get walletSameDeviceFullUrl(): string {
-    const httpsUrl = this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri);
-    return this.walletSameDeviceUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+  /** True when the tenant has a defaultEnv configured — shows both main and environment wallet links. */
+  public get showEnvWallet(): boolean {
+    return this.tenantService.defaultWalletUrl() !== null;
   }
 
-  public get walletSameDeviceTestFullUrl(): string {
-    const httpsUrl = this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri);
-    return this.walletSameDeviceTestUrl + '?credential_offer_uri=' + encodeURIComponent(httpsUrl);
+  /** Main wallet link: from defaultEnv when configured, otherwise the environment wallet. */
+  public get walletMainFullUrl(): string {
+    const base = this.tenantService.defaultWalletUrl() ?? this.tenantService.walletUrl();
+    return base + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri));
+  }
+
+  /** Environment-specific wallet link, shown alongside the main link when defaultEnv is configured. */
+  public get walletEnvFullUrl(): string {
+    return this.tenantService.walletUrl() + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri));
   }
 
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {

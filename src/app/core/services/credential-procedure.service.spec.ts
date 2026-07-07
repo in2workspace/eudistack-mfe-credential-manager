@@ -11,6 +11,7 @@ import {Router} from "@angular/router";
 import { API_PATH } from '../constants/api-paths.constants';
 import { CredentialProceduresResponse } from '../models/dto/credential-procedures-response.dto';
 import { CredentialProcedureDetails, CredentialStatus, LifeCycleStatus } from '../models/entity/lear-credential';
+import { TenantService } from './tenant.service';
 
 const notFoundErrorResp = new HttpErrorResponse({
   error: '404 error',
@@ -43,7 +44,8 @@ describe('CredentialProcedureService', () => {
       provideHttpClientTesting(),
       { provide: DialogWrapperService, useValue: { openErrorInfoDialog: jest.fn(), openWarningDialog: jest.fn() } },
       { provide: TranslateService, useValue: { instant: jest.fn((key: string) => key) } },
-      { provide: Router, useValue: { navigate: jest.fn() } }
+      { provide: Router, useValue: { navigate: jest.fn() } },
+      { provide: TenantService, useValue: { serverUrl: environment.server_url } }
     ]
 });
 
@@ -387,7 +389,7 @@ describe('get credential offer by c-code', () => {
     it('should show expired message and redirect on 404 error', () => {
       const error = new HttpErrorResponse({ status: 404, error: {} });
       const spy = jest.spyOn(service as any, 'redirectToDashboard');
-  
+
       service['handleCredentialOfferError'](error).subscribe({
         error: err => {
           expect(translateSpy.instant).toHaveBeenCalledWith('error.credentialOffer.not-found');
@@ -397,11 +399,11 @@ describe('get credential offer by c-code', () => {
         }
       });
     });
-  
+
     it('should show specific message and redirect on 409 error', () => {
       const error = new HttpErrorResponse({ status: 409, error: {} });
       const spy = jest.spyOn(service as any, 'redirectToDashboard');
-  
+
       service['handleCredentialOfferError'](error).subscribe({
         error: err => {
           expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.credentialOffer.conflict');
@@ -410,11 +412,11 @@ describe('get credential offer by c-code', () => {
         }
       });
     });
-  
+
     it('should show unexpected message and redirect on other errors', () => {
       const error = new HttpErrorResponse({ status: 500, error: {} });
       const spy = jest.spyOn(service as any, 'redirectToDashboard');
-  
+
       service['handleCredentialOfferError'](error).subscribe({
         error: err => {
           expect(translateSpy.instant).toHaveBeenCalledWith('error.credentialOffer.unexpected');
@@ -430,31 +432,31 @@ describe('get credential offer by c-code', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const transactionCode = 'test-code';
       const error = new HttpErrorResponse({ status: 404, error: {} });
-  
+
       service.getCredentialOfferByTransactionCode(transactionCode).subscribe({
         next: () => fail('Expected error'),
         error: err => {
           expect(err).toBe(error);
         }
       });
-  
+
       const req = httpMock.expectOne(`${credentialOfferUrl}/transaction-code/${transactionCode}`);
       req.flush({}, error);
     });
   });
-  
+
   describe('fetchCredentialOfferByCTransactionCode', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const cTransactionCode = 'test-code';
       const error = new HttpErrorResponse({ status: 409, error: {} });
-  
+
       service.fetchCredentialOfferByCTransactionCode(cTransactionCode).subscribe({
         next: () => fail('Expected error'),
         error: err => {
           expect(err).toBe(error);
         }
       });
-  
+
       const req = httpMock.expectOne(`${credentialOfferUrl}/c-transaction-code/${cTransactionCode}`);
       req.flush({}, error);
     });

@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { CredentialOfferRefreshService } from './credential-offer-refresh.service';
 import { environment } from 'src/environments/environment';
 import { API_PATH } from 'src/app/core/constants/api-paths.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
 
 describe('CredentialOfferRefreshService', () => {
   let service: CredentialOfferRefreshService;
@@ -15,6 +16,7 @@ describe('CredentialOfferRefreshService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         CredentialOfferRefreshService,
+        { provide: TenantService, useValue: { serverUrl: environment.server_url } }
       ]
     });
 
