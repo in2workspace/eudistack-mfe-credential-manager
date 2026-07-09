@@ -45,6 +45,14 @@ export class AuthService{
   private readonly tenantService = inject(TenantService);
   private crossTenantDialogOpen = false;
 
+  /**
+   * Guards the one-shot silent SSO redirect (see trySilentSsoOnce): the
+   * Verifier's frame-ancestors CSP blocks the iframe-based silent renew, so
+   * the SSO check has to be a full-page redirect with prompt=none instead.
+   * Cleared on logout() so a later visit can retry.
+   */
+  private static readonly SSO_SILENT_ATTEMPT_KEY = 'sso_silent_attempted';
+
   public constructor() {
     this.subscribeToAuthEvents();
     this.checkAuth$().subscribe();
@@ -117,7 +125,7 @@ export class AuthService{
   public checkAuth$(): Observable<LoginResponse> {
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
-      tap(({ isAuthenticated, userData}) => {
+      tap(({ isAuthenticated, userData }) => {
       if (isAuthenticated) {
         this.userPowers = this.extractPowersFromClaims(userData);
         if (!this.isAuthorizedForCurrentTenant()) {
@@ -137,12 +145,31 @@ export class AuthService{
       } else {
         this.isAuthenticatedSubject.next(false);
         console.error('Checking authentication: not authenticated.');
+        this.trySilentSsoOnce();
       }
     }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
     }));
+  }
+
+  /**
+   * Silently asks the Verifier, via a full-page redirect with prompt=none,
+   * whether an SSO session already exists (e.g. one created moments earlier
+   * on another tenant app sharing the same rootDomain cookie). Runs at most
+   * once per browser session: on return, checkAuth$() either finds a valid
+   * session (isAuthenticated=true) or the Verifier replies with
+   * error=login_required/interaction_required, which checkAuth$() already
+   * treats as a normal "not authenticated" state without surfacing an
+   * error dialog, falling back to the regular QR login shown on /home.
+   */
+  private trySilentSsoOnce(): void {
+    if (sessionStorage.getItem(AuthService.SSO_SILENT_ATTEMPT_KEY)) {
+      return;
+    }
+    sessionStorage.setItem(AuthService.SSO_SILENT_ATTEMPT_KEY, 'true');
+    this.oidcSecurityService.authorize(undefined, { customParams: { prompt: 'none' } });
   }
 
   /**
