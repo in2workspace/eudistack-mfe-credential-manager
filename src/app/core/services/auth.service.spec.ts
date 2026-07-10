@@ -99,6 +99,8 @@ describe('AuthService', () => {
   };
 
   beforeEach(() => {
+    sessionStorage.clear();
+
     oidcSecurityServiceMock = {
       checkAuth: jest.fn().mockReturnValue(of({
         isAuthenticated: false,
