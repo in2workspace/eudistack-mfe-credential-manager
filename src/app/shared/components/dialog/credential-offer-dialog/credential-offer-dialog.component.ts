@@ -33,18 +33,16 @@ export class CredentialOfferDialogComponent {
   public copied = false;
   public readonly qrColor = '#000000';
 
-  /** True when the tenant has a defaultEnv configured — shows both main and environment wallet links. */
   public get showEnvWallet(): boolean {
-    return this.tenantService.defaultWalletUrl() !== null;
+    const def = this.tenantService.defaultWalletUrl();
+    return def !== null && def !== this.tenantService.walletUrl();
   }
 
-  /** Main wallet link: from defaultEnv when configured, otherwise the environment wallet. */
   public get walletMainFullUrl(): string {
     const base = this.tenantService.defaultWalletUrl() ?? this.tenantService.walletUrl();
     return base + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri));
   }
 
-  /** Environment-specific wallet link, shown alongside the main link when defaultEnv is configured. */
   public get walletEnvFullUrl(): string {
     return this.tenantService.walletUrl() + WALLET_CALLBACK_PATH + '?credential_offer_uri=' + encodeURIComponent(this.extractCredentialOfferHttpsUrl(this.data.credentialOfferUri));
   }
