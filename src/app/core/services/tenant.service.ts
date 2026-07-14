@@ -81,11 +81,12 @@ export class TenantService {
           this._iamUrl.set(resolvedIamUrl);
           this._walletUrl.set(resolvedWalletUrl ?? WALLET_ORIGIN_BASE_URL);
         }
+        
+        if (tenantConfig?.defaultEnv) {
+          this._defaultWalletUrl.set(tenantConfig.env[tenantConfig.defaultEnv]?.wallet ?? null);
+        }
       }
 
-      if (tenantConfig?.defaultEnv) {
-        this._defaultWalletUrl.set(tenantConfig.env[tenantConfig.defaultEnv]?.wallet ?? null);
-      }
     } catch {
       // JSON not found or network error — wallet URL stays as origin fallback for canonical;
       // for non-canonical, tenant stays '' → guard redirects to /tenant-not-found
