@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.22] - 16-07-2026
+
+### Added
+
+- **EUD-97 — Protect revocation against non-revocable states and out-of-scope credentials**
+  - `CredentialProcedureService`: new `handleRevocationError`, chained after `handleError` in `revokeCredential`. Maps `409` → "credential not revocable" dialog, `403` → "not authorized" dialog, using the existing `openErrorInfoDialog` pattern. Unlike `handleCredentialOfferError`, it does **not** redirect — the operator stays on the credential detail view so the reason for the denial remains visible (AC-07, AC-08).
+  - `i18n`: added `error.revocation.notRevocable` / `error.revocation.forbidden` keys in `es.json`, `en.json`, `ca.json`.
+  - Tests: new specs for `handleRevocationError` (409/403) in `credential-procedure.service.spec.ts`, verifying the correct dialog opens and no navigation occurs.
+  - Confirmed existing `statusHasRevokeCredentialButton` (`actions-helpers.ts`) already returns `true` only for `VALID` — defense-in-depth for EC-02, already covered by `actions-helpers.spec.ts`.
+
 ## [3.5.19] - 07-07-2026
 
 ### Reverted
