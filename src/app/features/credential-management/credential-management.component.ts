@@ -264,28 +264,50 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     });
   }
 
+  /**
+   * Safely lowercases a credential procedure field value.
+   * Returns '' and logs a console.error when the value is missing or not a string,
+   * so filtering/sorting never crashes on records with absent fields (e.g. subject
+   * missing on LEAR_CREDENTIAL_MACHINE procedures).
+   */
+  private getSafeLowerCaseValue(value: unknown, fieldName: string, procedureId?: string): string {
+    if (typeof value !== 'string') {
+      console.error('Invalid credential procedure field value', {
+        fieldName,
+        procedureId,
+        value,
+        valueType: typeof value
+      });
+      return '';
+    }
+
+    return value.toLowerCase();
+  }
+
   private setDataSortingAccessor(): void{
     this.dataSource.sortingDataAccessor = (item: CredentialProcedureBasicInfo, property: string) => {
+      const procedure = item.credential_procedure;
+      const procedureId = procedure?.procedure_id;
       switch (property) {
         case 'status': {
-          const status = item.credential_procedure.status.toLowerCase();
+          const status = this.getSafeLowerCaseValue(procedure?.status, 'status', procedureId);
           return status === 'withdrawn' ? 'draft' : status;
         }
         case 'subject': {
-          return item.credential_procedure.subject.toLowerCase();
+          return this.getSafeLowerCaseValue(procedure?.subject, 'subject', procedureId);
         }
         case 'updated': {
-          const t = Date.parse(item.credential_procedure.updated);
+          const t = Date.parse(procedure?.updated ?? '');
           return Number.isFinite(t) ? t : 0;
         }
         case 'credential_type': {
-          return item.credential_procedure.credential_type.toLowerCase();
+          return this.getSafeLowerCaseValue(procedure?.credential_type, 'credential_type', procedureId);
         }
         case 'organization_identifier': {
-          return item.credential_procedure.organization_identifier.toLowerCase();
+          return this.getSafeLowerCaseValue(procedure?.organization_identifier, 'organization_identifier', procedureId);
         }
         case 'tenant': {
-          return (item.credential_procedure.tenant ?? '').toLowerCase();
+          return this.getSafeLowerCaseValue(procedure?.tenant, 'tenant', procedureId);
         }
         default:
           return '';
@@ -313,12 +335,15 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         // Malformed filter string — treat as no filter
       }
 
+      const procedure = data.credential_procedure;
+
       const subjectMatch = parsed.subject
-        ? data.credential_procedure.subject.toLowerCase().includes(parsed.subject.trim().toLowerCase())
+        ? this.getSafeLowerCaseValue(procedure?.subject, 'subject', procedure?.procedure_id)
+            .includes(parsed.subject.trim().toLowerCase())
         : true;
 
       const statusMatch = parsed.status
-        ? data.credential_procedure.status === parsed.status
+        ? procedure?.status === parsed.status
         : true;
 
       return subjectMatch && statusMatch;

@@ -17,6 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: new specs for `handleRevocationError` (409/403) in `credential-procedure.service.spec.ts`, verifying the correct dialog opens and no navigation occurs.
   - Confirmed existing `statusHasRevokeCredentialButton` (`actions-helpers.ts`) already returns `true` only for `VALID` — defense-in-depth for EC-02, already covered by `actions-helpers.spec.ts`.
 
+## [3.5.21] - 10-07-2026
+
+### Added
+
+- `AuthService`: when `checkAuth$()` resolves as not authenticated, attempt a one-shot silent SSO check via a full-page redirect with `prompt=none` (`trySilentSsoOnce`), guarded by a `sessionStorage` flag so it only runs once per browser session. This lets a session already established on another tenant app (sharing the same root-domain cookie) be picked up without showing the QR login unnecessarily; the Verifier's `frame-ancestors` CSP prevents doing this via a silent iframe renew.
+
+## [3.5.20] - 07-07-2026
+
+### Fixed
+- In issuances table pages, do not throw blocking error when an issuance object doesn't include a required field. Treat it as empty instead.
+
 ## [3.5.19] - 07-07-2026
 
 ### Reverted

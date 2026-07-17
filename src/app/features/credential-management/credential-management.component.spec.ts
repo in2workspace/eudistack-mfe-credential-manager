@@ -763,6 +763,64 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   });
 
   // ---------------------------------------------------------------------------
+  // Missing/invalid fields — do not crash on absent subject (e.g. LEAR_CREDENTIAL_MACHINE)
+  // ---------------------------------------------------------------------------
+  describe('Safe field access (missing subject / fields)', () => {
+    beforeEach(() => {
+      (component as any).setDataSortingAccessor();
+      component.ngAfterViewInit(); // sets compound filterPredicate
+    });
+
+    it('sorting: returns "" and logs console.error when subject is missing', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const item = {
+        credential_procedure: {
+          procedure_id: 'machine-1',
+          status: 'VALID' as any,
+          updated: '2025-01-01',
+          credential_type: 'LEAR_CREDENTIAL_MACHINE',
+          organization_identifier: 'VATES-000000',
+          // subject intentionally absent
+        },
+      } as any;
+
+      expect(() => component.dataSource.sortingDataAccessor(item, 'subject')).not.toThrow();
+      expect(component.dataSource.sortingDataAccessor(item, 'subject')).toBe('');
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Invalid credential procedure field value',
+        expect.objectContaining({ fieldName: 'subject', procedureId: 'machine-1', valueType: 'undefined' })
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('sorting: returns 0 for updated when field is absent', () => {
+      const item = { credential_procedure: { procedure_id: 'x' } } as any;
+      expect(() => component.dataSource.sortingDataAccessor(item, 'updated')).not.toThrow();
+      expect(component.dataSource.sortingDataAccessor(item, 'updated')).toBe(0);
+    });
+
+    it('filtering: does not crash and excludes record when subject is missing', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const item = {
+        credential_procedure: {
+          procedure_id: 'machine-1',
+          status: 'VALID' as any,
+          // subject intentionally absent
+        },
+      } as any;
+      const filter = JSON.stringify({ subject: 'alice', status: '' });
+
+      expect(() => component.dataSource.filterPredicate!(item, filter)).not.toThrow();
+      expect(component.dataSource.filterPredicate!(item, filter)).toBe(false);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Invalid credential procedure field value',
+        expect.objectContaining({ fieldName: 'subject', procedureId: 'machine-1' })
+      );
+      errorSpy.mockRestore();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // T8 — Empty States & Edge Cases (AC-04, EC-01, ES-02, ES-03)
   // ---------------------------------------------------------------------------
   describe('T8 — Empty States & Edge Cases', () => {
