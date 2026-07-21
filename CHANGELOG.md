@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.23] - 2026-07-21
+
+### Added
+
+- **EUD-98 — Conocer el resultado de la revocación y dejar traza del motivo**
+  - i18n: `credentialDetails.revokeCredentialSuccess.message` (es/en/ca) now explicitly confirms the credential's status was published to the revocation list, not just "revoked" (AC-05). No code change — `executeCredentialBackendAction` already consumes this key via `translate.instant`.
+  - Tests: new `revokeCredential (callback behaviour)` spec in `credential-actions.service.spec.ts`, asserting the success dialog shows the `revokeCredentialSuccess` i18n keys and that a revoke error never shows a misleading success dialog (AC-05, AC-06 regression — `handleRevocationError` coverage already present from EUD-97).
+
 ## [3.5.22] - 16-07-2026
 
 ### Added
