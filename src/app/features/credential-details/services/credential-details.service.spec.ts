@@ -32,6 +32,7 @@ describe('CredentialDetailsService', () => {
   const mockMetadataService = {
     loadMetadata: jest.fn().mockReturnValue(of(void 0)),
     getConfigurationById: jest.fn().mockReturnValue(undefined),
+    getAllConfigurations: jest.fn().mockReturnValue(null),
   };
 
   const mockDialogWrapperService = {
@@ -258,6 +259,48 @@ describe('Load models', () => {
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
     expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+  });
+});
+
+describe('resolveSchema legacy fallback', () => {
+  it('resolves a legacy machine by VC type and normalizes tmf_ powers + emailAddress', () => {
+    const machineConfig = {
+      format: 'jwt_vc_json',
+      credential_definition: { type: ['VerifiableCredential', 'LEARCredentialMachine'] },
+      credential_metadata: {
+        display: [{ name: 'LEAR Credential Machine (DOME v2)', locale: 'en' }],
+        claims: [{ path: ['credentialSubject', 'mandate', 'power'], display: [] }],
+      },
+    };
+    mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+    mockMetadataService.getAllConfigurations.mockReturnValue({ 'learcredential.machine.w3c.2': machineConfig });
+
+    const vc = {
+      type: ['VerifiableCredential', 'LEARCredentialMachine'],
+      credentialSubject: {
+        mandate: {
+          power: [{ id: 'p1', tmf_domain: 'DOME', tmf_function: 'Certification', tmf_action: ['Attest'] }],
+          mandator: { emailAddress: 'jesus.ruiz@in2.es' },
+        },
+      },
+    } as any;
+    const data = { credential_configuration_id: 'LEAR_CREDENTIAL_MACHINE', credential: { vc } } as any;
+
+    const result = (service as any).resolveSchema(data, vc);
+
+    expect(result.schema).toBeDefined();
+    const normalizedPower = result.vcForEvaluation.credentialSubject.mandate.power[0];
+    expect(normalizedPower.function).toBe('Certification');
+    expect(normalizedPower.action).toEqual(['Attest']);
+    expect(result.vcForEvaluation.credentialSubject.mandate.mandator.email).toBe('jesus.ruiz@in2.es');
+  });
+
+  it('still throws when neither exact nor legacy resolution matches', () => {
+    mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+    mockMetadataService.getAllConfigurations.mockReturnValue({});
+    const vc = { type: ['VerifiableCredential', 'UnknownCredential'] } as any;
+    const data = { credential_configuration_id: 'UNKNOWN', credential: { vc } } as any;
+    expect(() => (service as any).resolveSchema(data, vc)).toThrow(/No schema available/);
   });
 });
 

@@ -14,6 +14,7 @@ import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
+import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 
 
 @Injectable() //provided in component
@@ -43,7 +44,12 @@ export class CredentialDetailsService {
   public credentialDisplayName$ = computed<string>(() => {
     const configId = this.credentialType$();
     if (!configId) return '';
-    const config = this.metadataService.getConfigurationById(configId);
+    let config = this.metadataService.getConfigurationById(configId);
+    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
+    if (!config) {
+      config = matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
+    }
+    // --- end LEGACY fallback ---
     const displays = config?.credential_metadata?.display;
     if (displays?.length) {
       const lang = navigator?.language?.split('-')[0] ?? 'en';
@@ -158,6 +164,19 @@ export class CredentialDetailsService {
         };
       }
     }
+
+    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
+    // Pre-versioned credentials store a legacy configuration id that no longer
+    // matches the issuer metadata; resolve them by their VC type instead.
+    const legacyMatch = matchLegacyConfig(vc.type, this.metadataService.getAllConfigurations());
+    if (legacyMatch?.config?.credential_metadata?.claims?.length) {
+      const normalizedVc = normalizeLegacyCredential((data.rawVc ?? vc) as LEARCredential);
+      return {
+        schema: this.dynamicSchemaBuilder.buildSchema(legacyMatch.configId, legacyMatch.config, normalizedVc),
+        vcForEvaluation: normalizedVc,
+      };
+    }
+    // --- end LEGACY fallback ---
 
     throw new Error(
       `No schema available for credential "${configId ?? 'unknown'}". ` +

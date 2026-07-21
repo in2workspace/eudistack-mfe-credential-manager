@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.23] - 21-07-2026
+
+### Fixed
+
+- **Render legacy (pre-versioned) credentials in the details view**
+  - Migrated credentials store a legacy `credential_configuration_id` (e.g. `LEAR_CREDENTIAL_EMPLOYEE`) that no longer matches the issuer metadata, so `CredentialDetailsService.resolveSchema` threw `No schema available for credential ...` and neither the schema nor the display name resolved.
+  - Added a self-contained, removable legacy compatibility layer in `credential-details/legacy/legacy-credential-support.ts`:
+    - `matchLegacyConfig`: resolves a credential by matching its VC `type[]` against `credential_definition.type`, choosing the highest version that still declares the legacy type name (employee → `w3c.3`, machine → `w3c.2`, label → `w3c.1`).
+    - `normalizeLegacyCredential`: rewrites DOME v1 data shapes so existing renderers work unchanged — `tmf_domain`/`tmf_function`/`tmf_action` → `domain`/`function`/`action` (which previously crashed `DetailsPowerComponent`), and `mandator.emailAddress` → `email`.
+  - `CredentialDetailsService`: wired the fallback into `resolveSchema` and `credentialDisplayName$`, guarded so it runs only when the exact metadata lookup fails; the original `throw` is kept when nothing matches.
+  - `CredentialIssuerMetadataService`: added generic `getAllConfigurations()` accessor.
+  - Tests: new `legacy-credential-support.spec.ts`; added `resolveSchema` legacy-fallback specs and extended the metadata mock in `credential-details.service.spec.ts`.
+
 ## [3.5.22] - 16-07-2026
 
 ### Added

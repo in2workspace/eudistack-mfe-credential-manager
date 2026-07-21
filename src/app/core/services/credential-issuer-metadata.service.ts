@@ -33,4 +33,8 @@ export class CredentialIssuerMetadataService {
   getConfigurationById(configId: string): CredentialConfigurationDto | undefined {
     return this.configurations()?.[configId] ?? undefined;
   }
+
+  getAllConfigurations(): Record<string, CredentialConfigurationDto> | null {
+    return this.configurations();
+  }
 }
