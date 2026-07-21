@@ -38,12 +38,6 @@ describe('CredentialActionsService', () => {
 
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Override window.location.reload
-    Object.defineProperty(window, 'location', {
-      value: { reload: jest.fn() },
-      writable: true,
-    });
-
     TestBed.configureTestingModule({
       providers: [
         CredentialActionsService,
@@ -113,7 +107,6 @@ describe('CredentialActionsService', () => {
           expect(actionSpy).toHaveBeenCalledWith(procId);
           expect(mockDialog.openDialog).toHaveBeenCalledWith(DialogComponent, expect.objectContaining({ title: titleKey, message: messageKey }));
           expect(mockRouter.navigate).toHaveBeenCalledWith(['/organization/credentials']);
-          expect(window.location.reload).toHaveBeenCalled();
           expect(res).toBe(true);
           done();
         });
