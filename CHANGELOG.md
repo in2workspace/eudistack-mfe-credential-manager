@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.24] - 21-07-2026
+
+### Changed
+
+- Only show the revocation button for credentials whose credential status is of type `BitstringStatusListEntry`. This hides the button for legacy credentials that have `PlainListEntity` credential status.
+
 ## [3.5.23] - 21-07-2026
 
 ### Fixed

@@ -1,4 +1,4 @@
-import { matchLegacyConfig, normalizeLegacyCredential } from './legacy-credential-support';
+import { matchLegacyConfig, normalizeLegacyCredential, stripLegacyVersionSuffix } from './legacy-credential-support';
 import { CredentialConfigurationDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 
 function cfg(type: string[]): CredentialConfigurationDto {
@@ -55,6 +55,26 @@ describe('matchLegacyConfig', () => {
     expect(matchLegacyConfig(undefined, CONFIGS)).toBeNull();
     expect(matchLegacyConfig([], CONFIGS)).toBeNull();
     expect(matchLegacyConfig(['LEARCredentialEmployee'], null)).toBeNull();
+  });
+});
+
+describe('stripLegacyVersionSuffix', () => {
+  it('removes a trailing "(DOME vN)" suffix', () => {
+    expect(stripLegacyVersionSuffix('LEAR Credential Employee (DOME v3)')).toBe('LEAR Credential Employee');
+    expect(stripLegacyVersionSuffix('Credencial LEAR Máquina (DOME v2)')).toBe('Credencial LEAR Máquina');
+  });
+
+  it('removes a trailing "(vN)" suffix without the DOME prefix', () => {
+    expect(stripLegacyVersionSuffix('Some Credential (v1)')).toBe('Some Credential');
+  });
+
+  it('leaves names without a version suffix unchanged', () => {
+    expect(stripLegacyVersionSuffix('LEAR Credential Employee')).toBe('LEAR Credential Employee');
+    expect(stripLegacyVersionSuffix('Gaia-X Label Credential')).toBe('Gaia-X Label Credential');
+  });
+
+  it('does not strip non-version parentheticals', () => {
+    expect(stripLegacyVersionSuffix('Credential (Beta)')).toBe('Credential (Beta)');
   });
 });
 
