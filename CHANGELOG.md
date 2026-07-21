@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.5.21] - 10-07-2026
 
+### Fixed
+- Navbar logout button disappearing after closing the credential-offer QR dialog: removed the unnecessary `location.reload()` call in `CredentialIssuanceService.submitCredentialPayload()`, which forced a full-page reload and raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
 ### Added
 
 - `AuthService`: when `checkAuth$()` resolves as not authenticated, attempt a one-shot silent SSO check via a full-page redirect with `prompt=none` (`trySilentSsoOnce`), guarded by a `sessionStorage` flag so it only runs once per browser session. This lets a session already established on another tenant app (sharing the same root-domain cookie) be picked up without showing the QR login unnecessarily; the Verifier's `frame-ancestors` CSP prevents doing this via a silent iframe renew.

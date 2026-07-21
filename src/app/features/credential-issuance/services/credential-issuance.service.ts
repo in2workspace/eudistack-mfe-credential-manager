@@ -322,8 +322,7 @@ export class CredentialIssuanceService {
           }
           return this.openSuccessfulCreateDialog();
         }),
-        switchMap(() => from(this.navigateToCredentials())),
-        tap(() => location.reload())
+        switchMap(() => from(this.navigateToCredentials()))
       );
     }
 
