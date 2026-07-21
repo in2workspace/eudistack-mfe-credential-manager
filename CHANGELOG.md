@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.24] - 21-07-2026
+
+### Fixed
+
+- Navbar logout button disappearing after closing the "Credential revoked" dialog (also reproducible after signing, withdrawing or archiving a credential): removed the same unnecessary `location.reload()` call — already fixed in `CredentialIssuanceService` in 3.5.21 — that remained in `CredentialActionsService.executeCredentialBackendAction()`, shared by `signCredential`, `revokeCredential`, `withdrawCredential` and `archiveCredential`. The full-page reload raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
+- Updated `credential-actions.service.spec.ts` to drop the now-obsolete `window.location.reload` assertion/mock.
+
 ## [3.5.23] - 21-07-2026
 
 ### Fixed
