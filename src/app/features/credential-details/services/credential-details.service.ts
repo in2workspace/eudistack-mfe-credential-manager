@@ -12,7 +12,7 @@ import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton } from '../helpers/actions-helpers';
+import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 
@@ -96,11 +96,13 @@ export class CredentialDetailsService {
 
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite() && !!status && statusHasRevokeCredentialButton(status);
+    return this.canWrite() && !!status && statusHasRevokeCredentialButton(status) && credentialStatusHasRevokeCredentialButton(this.credentialStatus$());
   });
 
   public enableRevokeCredentialButton$ = computed<boolean>(() => {
-    return !!this.credentialStatus$();
+    return credentialStatusHasRevokeCredentialButton(
+      this.credentialStatus$(),
+    );
   });
 
   public showWithdrawCredentialButton$ = computed<boolean>(() => {
@@ -211,9 +213,19 @@ export class CredentialDetailsService {
       this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
       return;
     }
-    if(!this.credentialStatus$()){
-      console.error("Only credentials with statusCredential field can be revoked.");
-      this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
+
+    if (
+    !credentialStatusHasRevokeCredentialButton(
+      this.credentialStatus$(),
+    )
+    ) {
+      console.error(
+        'Only credentials with a supported credential status can be revoked.',
+      );
+      this.dialog.openErrorInfoDialog(
+        DialogComponent,
+        'error.unknown_error',
+      );
       return;
     }
 

@@ -208,34 +208,121 @@ describe('CredentialDetailsService', () => {
       expect(service.showSideTemplateCard$()).toBe(true);
     });
 
-    it('enableRevokeCredentialButton$() is false when no status, true when credentialStatus set', () => {
-      service.credentialProcedureDetails$.set({ credential: { vc: { validFrom: '', validUntil: '', credentialStatus: undefined } } } as any);
-      expect(service.enableRevokeCredentialButton$()).toBe(false);
+      describe('revoke credential validation', () => {
+        it('enableRevokeCredentialButton$() returns false when credentialStatus is undefined', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: undefined,
+              },
+            },
+          } as any);
 
-      service.credentialProcedureDetails$.set({
-        credential: {
-          vc: { validFrom: '', validUntil: '', credentialStatus: {status:'ANY'} }
-        }
-      } as any);
-      expect(service.enableRevokeCredentialButton$()).toBe(true);
-    });
+          expect(service.enableRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('enableRevokeCredentialButton$() returns true for BitstringStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.enableRevokeCredentialButton$()).toBe(true);
+        });
+
+        it('enableRevokeCredentialButton$() returns false for PlainListEntity', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'PlainListEntity',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.enableRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('showRevokeCredentialButton$() returns true for VALID and BitstringStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'VALID',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(true);
+        });
+
+        it('showRevokeCredentialButton$() returns false for VALID and PlainListEntity', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'VALID',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'PlainListEntity',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('showRevokeCredentialButton$() returns false for a non-VALID lifecycle status', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'DRAFT',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(false);
+        });
+      });
 
 
-    it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
-      expect(service.showSignCredentialButton$()).toBe(false);
-      expect(service.showRevokeCredentialButton$()).toBe(false);
-    });
+      it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
+        expect(service.showSignCredentialButton$()).toBe(false);
+        expect(service.showRevokeCredentialButton$()).toBe(false);
+      });
 
-     it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
-      service.credentialProcedureDetails$.set({
-        lifeCycleStatus: 'PEND_SIGNATURE',
-        credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
-      } as any);
+      it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
+        service.credentialProcedureDetails$.set({
+          lifeCycleStatus: 'PEND_SIGNATURE',
+          credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
+        } as any);
 
-      expect(service.showSignCredentialButton$()).toBe(true);
-      expect(service.showActionsButtonsContainer$()).toBe(true);
-    });
-});
+        expect(service.showSignCredentialButton$()).toBe(true);
+        expect(service.showActionsButtonsContainer$()).toBe(true);
+      });
+  });
 
 
 describe('Load models', () => {

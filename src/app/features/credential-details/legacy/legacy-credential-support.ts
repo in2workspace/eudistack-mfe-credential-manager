@@ -114,6 +114,17 @@ export function normalizeLegacyCredential<T>(vc: T): T {
   return clone as T;
 }
 
+/**
+ * Removes a trailing version-marker parenthetical from a display name
+ * (e.g. "LEAR Credential Employee (DOME v3)" -> "LEAR Credential Employee").
+ *
+ * The legacy fallback may resolve a higher-versioned schema than the credential's
+ * actual vintage, so the schema's own "(DOME vN)" suffix would be misleading.
+ */
+export function stripLegacyVersionSuffix(name: string): string {
+  return name.replace(/\s*\((?:DOME\s*)?v\d+\)\s*$/i, '').trim();
+}
+
 /** Extracts the trailing numeric version from a config id (e.g. "...w3c.3" -> 3). */
 function parseConfigVersion(configId: string): number {
   const lastSegment = configId.split('.').pop();
