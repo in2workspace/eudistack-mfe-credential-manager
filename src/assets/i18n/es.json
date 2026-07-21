@@ -340,6 +340,10 @@
       "not-found": "Esta oferta de credencial no es válida. Puede que ya se haya descargado, haya caducado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico. Si ha caducado o no puedes encontrar una válida, contacta con el Representante Legal de tu empresa para solicitar una nueva.",
       "conflict": "La oferta de credencial no es válida. Puede que ya se haya descargado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico."
     },
+    "revocation": {
+      "notRevocable": "Esta credencial ya está revocada o ha expirado y no puede revocarse de nuevo.",
+      "forbidden": "No tienes permiso para revocar esta credencial."
+    },
     "server_mail_error": {
       "title": "Error del Servidor de Correo",
       "message": "Se produjo un error con el servidor de correo. Por favor, inténtalo de nuevo más tarde para enviar un recordatorio; si el problema persiste, contacta con nuestro equipo de soporte."

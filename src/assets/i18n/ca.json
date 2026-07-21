@@ -340,6 +340,10 @@
       "not-found": "Aquesta oferta de credencial no és vàlida. Pot ser que ja s'hagi descarregat, hagi caducat o hagi estat reemplaçada per una de nova. Si has rebut una nova oferta, consulta el teu correu electrònic. Si ha caducat o no pots trobar-ne cap de vàlida, contacta amb el Representant Legal de la teva empresa per sol·licitar-ne una de nova.",
       "conflict": "L'oferta de credencial no és vàlida. Pot ser que ja s'hagi descarregat o hagi estat reemplaçada per una de nova. Si has rebut una nova oferta, consulta el teu correu electrònic."
     },
+    "revocation": {
+      "notRevocable": "Aquesta credencial ja està revocada o ha caducat i no es pot tornar a revocar.",
+      "forbidden": "No tens permís per revocar aquesta credencial."
+    },
     "serverMailError": {
       "title": "Error del servidor de correu",
       "message": "S'ha produït un error amb el servidor de correu. Si us plau, torneu-ho a intentar més tard per enviar un recordatori; si el problema persisteix, poseu-vos en contacte amb el nostre equip de suport."
