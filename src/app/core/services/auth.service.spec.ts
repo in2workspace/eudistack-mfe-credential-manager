@@ -531,6 +531,91 @@ describe('AuthService', () => {
   });
 
   // --------------------------------------------------------------------------
+  // public routes vs silent-SSO
+  // --------------------------------------------------------------------------
+  describe('rutes públiques i silent-SSO', () => {
+    let originalLocation: Location;
+
+    const setPathname = (pathname: string) => {
+      Object.defineProperty(globalThis, 'location', {
+        value: { pathname },
+        writable: true,
+        configurable: true,
+      });
+    };
+
+    beforeEach(() => {
+      originalLocation = globalThis.location;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(globalThis, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('isOnPublicRoute(): true per a /issuer/credential-offer', () => {
+      setPathname('/issuer/credential-offer');
+      expect((service as any).isOnPublicRoute()).toBe(true);
+    });
+
+    it('isOnPublicRoute(): true per a /issuer/credential-offer-refresh/:token', () => {
+      setPathname('/issuer/credential-offer-refresh/87934cc5-6e26-47c7-9bfd-453d5c6f8148');
+      expect((service as any).isOnPublicRoute()).toBe(true);
+    });
+
+    it('isOnPublicRoute(): true per a la variant sense baseHref /credential-offer', () => {
+      setPathname('/credential-offer');
+      expect((service as any).isOnPublicRoute()).toBe(true);
+    });
+
+    it('isOnPublicRoute(): false per a una ruta protegida', () => {
+      setPathname('/issuer/organization/credentials');
+      expect((service as any).isOnPublicRoute()).toBe(false);
+    });
+
+    it('isOnPublicRoute(): false quan "credential-offer" no està al principi del path (startsWith, no includes)', () => {
+      setPathname('/issuer/organization/credential-offer-audit');
+      expect((service as any).isOnPublicRoute()).toBe(false);
+    });
+
+    it('checkAuth$: NO dispara el silent-SSO en ruta pública quan no autenticat', (done) => {
+      sessionStorage.clear();
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(true);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('checkAuth$: dispara el silent-SSO en ruta protegida quan no autenticat', (done) => {
+      sessionStorage.clear();
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(oidcSecurityServiceMock.authorize).toHaveBeenCalledWith(
+          undefined,
+          { customParams: { prompt: 'none' } }
+        );
+        done();
+      });
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // subscribeToAuthEvents
   // --------------------------------------------------------------------------
   describe('subscribeToAuthEvents', () => {

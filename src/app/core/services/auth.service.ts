@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
-import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
+import { IAM_POST_LOGIN_ROUTE, PUBLIC_ROUTE_PREFIXES } from '../constants/iam.constants';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
@@ -145,13 +145,31 @@ export class AuthService{
       } else {
         this.isAuthenticatedSubject.next(false);
         console.error('Checking authentication: not authenticated.');
-        this.trySilentSsoOnce();
+        if (!this.isOnPublicRoute()) {
+          this.trySilentSsoOnce();
+        }
       }
     }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
     }));
+  }
+
+  /**
+   * True when the current browser location is one of the public routes that
+   * must stay reachable without a session (see PUBLIC_ROUTE_PREFIXES).
+   *
+   * Reads `location.pathname` rather than `router.url` on purpose: this runs
+   * from the constructor's checkAuth$() at bootstrap, before the Angular
+   * router has resolved the initial navigation, so `router.url` is not yet
+   * reliable. `pathname` includes the baseHref (e.g. `/issuer/...`), so
+   * PUBLIC_ROUTE_PREFIXES lists both the app-relative and `/issuer`-prefixed
+   * variants and the match is anchored with `startsWith`.
+   */
+  private isOnPublicRoute(): boolean {
+    const path = globalThis.location.pathname;
+    return PUBLIC_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
   }
 
   /**
