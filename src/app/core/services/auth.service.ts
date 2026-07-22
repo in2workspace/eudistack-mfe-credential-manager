@@ -163,9 +163,9 @@ export class AuthService{
    * Reads `location.pathname` rather than `router.url` on purpose: this runs
    * from the constructor's checkAuth$() at bootstrap, before the Angular
    * router has resolved the initial navigation, so `router.url` is not yet
-   * reliable. `pathname` includes the baseHref (e.g. `/issuer/...`), so
-   * PUBLIC_ROUTE_PREFIXES lists both the app-relative and `/issuer`-prefixed
-   * variants and the match is anchored with `startsWith`.
+   * reliable. `pathname` includes any shell / deployment path prefix (e.g.
+   * `/issuer/...` in the Portal Console), so PUBLIC_ROUTE_PREFIXES lists both
+   * the app-relative and the `/issuer`-prefixed variants and the match is anchored with `startsWith`.
    */
   private isOnPublicRoute(): boolean {
     const path = globalThis.location.pathname;
