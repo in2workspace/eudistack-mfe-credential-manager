@@ -32,6 +32,7 @@ describe('CredentialDetailsService', () => {
   const mockMetadataService = {
     loadMetadata: jest.fn().mockReturnValue(of(void 0)),
     getConfigurationById: jest.fn().mockReturnValue(undefined),
+    getAllConfigurations: jest.fn().mockReturnValue(null),
   };
 
   const mockDialogWrapperService = {
@@ -207,34 +208,121 @@ describe('CredentialDetailsService', () => {
       expect(service.showSideTemplateCard$()).toBe(true);
     });
 
-    it('enableRevokeCredentialButton$() is false when no status, true when credentialStatus set', () => {
-      service.credentialProcedureDetails$.set({ credential: { vc: { validFrom: '', validUntil: '', credentialStatus: undefined } } } as any);
-      expect(service.enableRevokeCredentialButton$()).toBe(false);
+      describe('revoke credential validation', () => {
+        it('enableRevokeCredentialButton$() returns false when credentialStatus is undefined', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: undefined,
+              },
+            },
+          } as any);
 
-      service.credentialProcedureDetails$.set({
-        credential: {
-          vc: { validFrom: '', validUntil: '', credentialStatus: {status:'ANY'} }
-        }
-      } as any);
-      expect(service.enableRevokeCredentialButton$()).toBe(true);
-    });
+          expect(service.enableRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('enableRevokeCredentialButton$() returns true for BitstringStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.enableRevokeCredentialButton$()).toBe(true);
+        });
+
+        it('enableRevokeCredentialButton$() returns false for PlainListEntity', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'PlainListEntity',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.enableRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('showRevokeCredentialButton$() returns true for VALID and BitstringStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'VALID',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(true);
+        });
+
+        it('showRevokeCredentialButton$() returns false for VALID and PlainListEntity', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'VALID',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'PlainListEntity',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(false);
+        });
+
+        it('showRevokeCredentialButton$() returns false for a non-VALID lifecycle status', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'DRAFT',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(false);
+        });
+      });
 
 
-    it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
-      expect(service.showSignCredentialButton$()).toBe(false);
-      expect(service.showRevokeCredentialButton$()).toBe(false);
-    });
+      it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
+        expect(service.showSignCredentialButton$()).toBe(false);
+        expect(service.showRevokeCredentialButton$()).toBe(false);
+      });
 
-     it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
-      service.credentialProcedureDetails$.set({
-        lifeCycleStatus: 'PEND_SIGNATURE',
-        credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
-      } as any);
+      it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
+        service.credentialProcedureDetails$.set({
+          lifeCycleStatus: 'PEND_SIGNATURE',
+          credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
+        } as any);
 
-      expect(service.showSignCredentialButton$()).toBe(true);
-      expect(service.showActionsButtonsContainer$()).toBe(true);
-    });
-});
+        expect(service.showSignCredentialButton$()).toBe(true);
+        expect(service.showActionsButtonsContainer$()).toBe(true);
+      });
+  });
 
 
 describe('Load models', () => {
@@ -258,6 +346,48 @@ describe('Load models', () => {
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
     expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+  });
+});
+
+describe('resolveSchema legacy fallback', () => {
+  it('resolves a legacy machine by VC type and normalizes tmf_ powers + emailAddress', () => {
+    const machineConfig = {
+      format: 'jwt_vc_json',
+      credential_definition: { type: ['VerifiableCredential', 'LEARCredentialMachine'] },
+      credential_metadata: {
+        display: [{ name: 'LEAR Credential Machine (DOME v2)', locale: 'en' }],
+        claims: [{ path: ['credentialSubject', 'mandate', 'power'], display: [] }],
+      },
+    };
+    mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+    mockMetadataService.getAllConfigurations.mockReturnValue({ 'learcredential.machine.w3c.2': machineConfig });
+
+    const vc = {
+      type: ['VerifiableCredential', 'LEARCredentialMachine'],
+      credentialSubject: {
+        mandate: {
+          power: [{ id: 'p1', tmf_domain: 'DOME', tmf_function: 'Certification', tmf_action: ['Attest'] }],
+          mandator: { emailAddress: 'jesus.ruiz@in2.es' },
+        },
+      },
+    } as any;
+    const data = { credential_configuration_id: 'LEAR_CREDENTIAL_MACHINE', credential: { vc } } as any;
+
+    const result = (service as any).resolveSchema(data, vc);
+
+    expect(result.schema).toBeDefined();
+    const normalizedPower = result.vcForEvaluation.credentialSubject.mandate.power[0];
+    expect(normalizedPower.function).toBe('Certification');
+    expect(normalizedPower.action).toEqual(['Attest']);
+    expect(result.vcForEvaluation.credentialSubject.mandate.mandator.email).toBe('jesus.ruiz@in2.es');
+  });
+
+  it('still throws when neither exact nor legacy resolution matches', () => {
+    mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+    mockMetadataService.getAllConfigurations.mockReturnValue({});
+    const vc = { type: ['VerifiableCredential', 'UnknownCredential'] } as any;
+    const data = { credential_configuration_id: 'UNKNOWN', credential: { vc } } as any;
+    expect(() => (service as any).resolveSchema(data, vc)).toThrow(/No schema available/);
   });
 });
 
