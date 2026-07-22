@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.5.26] - 22-07-2026
+## [3.5.27] - 22-07-2026
 
 ### Added
 
 - **EUD-98 — Know the result of the revocation and leave a trace of the reason**
   - i18n: `credentialDetails.revokeCredentialSuccess.message` (es/en/ca) now explicitly confirms the credential's status was published to the revocation list, not just "revoked" (AC-05). No code change — `executeCredentialBackendAction` already consumes this key via `translate.instant`.
   - Tests: new `revokeCredential (callback behaviour)` spec in `credential-actions.service.spec.ts`, asserting the success dialog shows the `revokeCredentialSuccess` i18n keys and that a revoke error never shows a misleading success dialog (AC-05, AC-06 regression — `handleRevocationError` coverage already present from EUD-97).
+
+### Fixed [3.5.26] - 22-07-2026
+
+- **Public credential-offer pages bounced to home / dashboard by the silent-SSO redirect**
+  - Visiting `credential-offer` or `credential-offer-refresh/:token` without a session briefly rendered the page and then redirected away: `AuthService`'s constructor runs `checkAuth$()` at bootstrap on every route, and when not authenticated it fired `trySilentSsoOnce()` (a full-page `prompt=none` redirect to the Verifier). The Verifier replied `error=login_required` and sent the browser to the fixed `redirectUrl` (app root → `home`), discarding the original offer URL.
+  - `AuthService`: added `isOnPublicRoute()` and gated `trySilentSsoOnce()` behind it, so the silent-SSO redirect is skipped on the auth-guard-free public routes. The helper reads `location.pathname` (not `router.url`) because it runs from the constructor before the Angular router has resolved the initial navigation.
+  - `iam.constants.ts`: new `PUBLIC_ROUTE_PREFIXES`, matched with an anchored `startsWith` against `location.pathname`. Since `pathname` includes the app baseHref, both the app-relative (`/credential-offer`, `/credential-offer-refresh`) and `/issuer`-prefixed variants are listed. Kept in sync with the auth-guard-free routes in `app.routes.ts`.
+  - Tests: added `AuthService` specs covering `isOnPublicRoute()` (public vs protected paths) and that `checkAuth$()` skips the silent-SSO redirect on public routes while still firing it on protected ones.
 
 ### Changed [3.5.25] - 21-07-2026
 
