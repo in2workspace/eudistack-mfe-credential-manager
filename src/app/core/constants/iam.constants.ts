@@ -15,12 +15,12 @@ export const IAM_REDIRECT_URI = `${globalThis.location.origin}${baseHref}`;
  * unauthenticated visitor is not bounced to the dashboard / login.
  *
  * Matched with `startsWith` against `location.pathname` (anchored, not a
- * substring match). Because `location.pathname` includes the app baseHref
- * (`/issuer/...`), both the app-relative and the `/issuer`-prefixed variants
- * are listed.
+ * substring match). Because `location.pathname` includes any shell / deployment
+ * path prefix (e.g. `/issuer/...` in the Portal Console), both the app-relative
+ * and the `/issuer`-prefixed variants are listed.
  *
- * Keep in sync with the auth-guard-free routes in `app.routes.ts`
- * (currently `credential-offer` and `credential-offer-refresh/:token`).
+ * Keep in sync with the routes that are not protected by `AutoLoginPartialRoutesGuard`
+ * in `app.routes.ts` (currently `credential-offer` and `credential-offer-refresh/:token`).
  */
 export const PUBLIC_ROUTE_PREFIXES = [
   '/credential-offer',
