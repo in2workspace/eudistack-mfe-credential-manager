@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed [3.5.26] - 22-07-2026
+
+- **Public credential-offer pages bounced to home / dashboard by the silent-SSO redirect**
+  - Visiting `credential-offer` or `credential-offer-refresh/:token` without a session briefly rendered the page and then redirected away: `AuthService`'s constructor runs `checkAuth$()` at bootstrap on every route, and when not authenticated it fired `trySilentSsoOnce()` (a full-page `prompt=none` redirect to the Verifier). The Verifier replied `error=login_required` and sent the browser to the fixed `redirectUrl` (app root → `home`), discarding the original offer URL.
+  - `AuthService`: added `isOnPublicRoute()` and gated `trySilentSsoOnce()` behind it, so the silent-SSO redirect is skipped on the auth-guard-free public routes. The helper reads `location.pathname` (not `router.url`) because it runs from the constructor before the Angular router has resolved the initial navigation.
+  - `iam.constants.ts`: new `PUBLIC_ROUTE_PREFIXES`, matched with an anchored `startsWith` against `location.pathname`. Since `pathname` includes the app baseHref, both the app-relative (`/credential-offer`, `/credential-offer-refresh`) and `/issuer`-prefixed variants are listed. Kept in sync with the auth-guard-free routes in `app.routes.ts`.
+  - Tests: added `AuthService` specs covering `isOnPublicRoute()` (public vs protected paths) and that `checkAuth$()` skips the silent-SSO redirect on public routes while still firing it on protected ones.
+
 ### Changed [3.5.25] - 21-07-2026
 
 - Only show the revocation button for credentials whose credential status is of type `BitstringStatusListEntry`. This hides the button for legacy credentials that have `PlainListEntity` credential status.
