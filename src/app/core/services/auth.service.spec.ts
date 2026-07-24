@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
@@ -89,6 +90,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockPublicEventsService: jest.Mocked<any>;
   let tenantServiceMock: { tenant: jest.Mock };
+  let routerMock: { navigate: jest.Mock, url: string };
 
   let oidcSecurityServiceMock: {
     checkAuth: jest.Mock,
@@ -131,6 +133,7 @@ describe('AuthService', () => {
       }))
     };
     tenantServiceMock = { tenant: jest.fn().mockReturnValue('localhost') };
+    routerMock = { navigate: jest.fn().mockResolvedValue(true), url: '/' };
 
     TestBed.configureTestingModule({
       providers: [
@@ -141,6 +144,7 @@ describe('AuthService', () => {
         { provide: DialogWrapperService, useValue: dialogWrapperServiceMock },
         { provide: MeService, useValue: meServiceMock },
         { provide: TenantService, useValue: tenantServiceMock },
+        { provide: Router, useValue: routerMock },
       ]
     });
 
@@ -166,9 +170,9 @@ describe('AuthService', () => {
     expect(oidcSecurityServiceMock.authorize).toHaveBeenCalled();
   });
 
-  it('logout(): truca logoffLocal', () => {
+  it('logout(): truca logoff (RP-Initiated Logout)', () => {
     service.logout();
-    expect(oidcSecurityServiceMock.logoffLocal).toHaveBeenCalled();
+    expect(oidcSecurityServiceMock.logoff).toHaveBeenCalled();
   });
 
   // --------------------------------------------------------------------------
@@ -467,9 +471,15 @@ describe('AuthService', () => {
   // logout()
   // --------------------------------------------------------------------------
   describe('logout', () => {
-    it('crida logoffLocal i neteja la sessio', () => {
+    it('crida logoff (RP-Initiated Logout) i neteja la sessio', () => {
       service.logout();
-      expect(oidcSecurityServiceMock.logoffLocal).toHaveBeenCalled();
+      expect(oidcSecurityServiceMock.logoff).toHaveBeenCalled();
+    });
+
+    it('si logoff() falla, navega a /home com a fallback', () => {
+      oidcSecurityServiceMock.logoff.mockReturnValueOnce(throwError(() => new Error('network error')));
+      service.logout();
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
     });
   });
 

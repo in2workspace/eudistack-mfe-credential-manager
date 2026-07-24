@@ -258,8 +258,13 @@ export class AuthService{
   }
 
 
+  /**
+   * Triggers RP-Initiated Logout (OIDC) against the Verifier's end_session_endpoint
+   * so the SSO session is actually terminated server-side (EUDISTACK-551 Single Logout).
+   * logoffLocal() alone only clears this tab's tokens and never reaches the Verifier,
+   * leaving the SSO session ACTIVE for every other app/tab sharing it.
+   */
   public logout(): void {
-    this.oidcSecurityService.logoffLocal();
     this.isAuthenticatedSubject.next(false);
     this.userDataSubject.next(null);
     this.tokenSubject.next('');
@@ -268,7 +273,12 @@ export class AuthService{
     this.nameSubject.next('');
     this.userPowers = [];
     sessionStorage.clear();
-    this.router.navigate(['/home']);
+    this.oidcSecurityService.logoff().subscribe({
+      error: (err) => {
+        console.error('RP-Initiated Logout failed, falling back to local navigation', err);
+        this.router.navigate(['/home']);
+      }
+    });
   }
 
   public authorize(){
