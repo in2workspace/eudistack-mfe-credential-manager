@@ -471,7 +471,7 @@ describe('AuthService', () => {
   // logout()
   // --------------------------------------------------------------------------
   describe('logout', () => {
-    it('crida logoff (RP-Initiated Logout) i neteja la sessio', () => {
+    it('crida logoff (RP-Initiated Logout) sense netejar sessionStorage abans', () => {
       service.logout();
       expect(oidcSecurityServiceMock.logoff).toHaveBeenCalled();
     });

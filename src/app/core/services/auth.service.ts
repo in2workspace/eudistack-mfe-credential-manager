@@ -263,19 +263,25 @@ export class AuthService{
    * so the SSO session is actually terminated server-side (EUDISTACK-551 Single Logout).
    * logoffLocal() alone only clears this tab's tokens and never reaches the Verifier,
    * leaving the SSO session ACTIVE for every other app/tab sharing it.
+   *
+   * Local state (subjects, sessionStorage) is only cleared in the error fallback:
+   * angular-auth-oidc-client stores its tokens in sessionStorage and reads the
+   * id_token from there to build the id_token_hint for the redirect, so clearing
+   * it beforehand would leave logoff() with nothing to send and no navigation
+   * would ever happen — the tab would look logged in until a manual reload.
    */
   public logout(): void {
-    this.isAuthenticatedSubject.next(false);
-    this.userDataSubject.next(null);
-    this.tokenSubject.next('');
-    this.mandatorSubject.next(null);
-    this.mandateeEmailSubject.next('');
-    this.nameSubject.next('');
-    this.userPowers = [];
-    sessionStorage.clear();
     this.oidcSecurityService.logoff().subscribe({
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
+        this.isAuthenticatedSubject.next(false);
+        this.userDataSubject.next(null);
+        this.tokenSubject.next('');
+        this.mandatorSubject.next(null);
+        this.mandateeEmailSubject.next('');
+        this.nameSubject.next('');
+        this.userPowers = [];
+        sessionStorage.clear();
         this.router.navigate(['/home']);
       }
     });
