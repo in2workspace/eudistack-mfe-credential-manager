@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.28] - 24-07-2026
+
+### Added
+
+- **Calidalia tenant**: added `'calidalia'` to `KNOWN_TENANTS` (`tenants.constants.ts`) so the tenant guard resolves the hostname instead of redirecting to `/tenant-not-found`.
+
 ## [3.5.27] - 22-07-2026
 
 ### Added
