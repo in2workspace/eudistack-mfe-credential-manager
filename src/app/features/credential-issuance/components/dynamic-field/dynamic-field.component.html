@@ -6,6 +6,7 @@
 @let groupSchema = groupSchema$();
 @let control = childControl$();
 @let group = childGroup$();
+@let errorId = errorId$();
 
 <div class="container">
   @if(parentFormGroup$() && fieldSchema) {
@@ -26,20 +27,25 @@
             }
       } @else if(controlSchema){
         <!-- INDIVIDUAL CONTROLS -->
-        <!-- Currently only text, number and select are included. If other input types are needed in the future, they can be added here or a
+        <!-- Currently text, number, date and select are included. If other input types are needed in the future, they can be added here or a
           custom component can be used -->
         @if(controlSchema?.hint){
           <div class="field-hint">
             {{ "credentialIssuance.hint." + controlSchema?.hint | translate }}
           </div>
         }
+        @let showError = !!(control?.invalid && control?.touched);
         <mat-form-field [formGroup]="parentFormGroup$()">
           <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ "credentialIssuance." + fieldName | translate }}</mat-label>
           @let controlType = controlSchema.controlType;
-          @if (controlType === 'number' || controlType === 'text') {
-            <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"/>
+          @if (controlType === 'number' || controlType === 'text' || controlType === 'date') {
+            <!-- aria-invalid lo gestiona internamente matInput vía su ErrorStateMatcher; aquí solo enlazamos el mat-error -->
+            <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
+                   [attr.aria-describedby]="showError ? errorId : null"/>
           }@else if(controlType === 'selector'){
-              <mat-select [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes">
+              <!-- aria-invalid lo gestiona internamente mat-select vía su ErrorStateMatcher; aquí solo enlazamos el mat-error -->
+              <mat-select [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
+                          [attr.aria-describedby]="showError ? errorId : null">
                 <mat-option [value]="" disabled>{{ "credentialIssuance.selectA" | translate }}{{ "credentialDetails." + fieldName | translate }}</mat-option>
                 @for(option of controlSchema.multiOptions; track $index){
                   <mat-option [value]="option.value">
@@ -48,8 +54,8 @@
                 }
               </mat-select>
           }
-          @if (control?.invalid && control?.touched) {
-             <mat-error>{{ getErrorMessage(control) | translate: getErrorsArgs(control) }}</mat-error>
+          @if (showError) {
+             <mat-error [id]="errorId" role="alert">{{ getErrorMessage(control) | translate: getErrorsArgs(control) }}</mat-error>
           }
         </mat-form-field>
       }
