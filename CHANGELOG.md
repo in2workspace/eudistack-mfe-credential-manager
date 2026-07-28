@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **EUD-72 — Credential catalogue settings screen (US-02)**
+  - New `/settings/catalog` lazy route with `CredentialCatalogComponent`: one `mat-slide-toggle` per credential type of the global registry, "Save changes" enabled only when the selection differs from the persisted state, and skeleton / load-error / forbidden / save-error states (AC-01, AC-02).
+  - `CredentialCatalogService` (`getCatalog()` / `updateCatalog(ids)`) against `GET|PUT /admin/v1/credential-catalog`, replace-all semantics. The URL is built from `TenantService.serverUrl` — not `environment.server_url` — because `AuthInterceptor` only attaches the Bearer to URLs matching the OIDC `secureRoutes`, whose value is that same `serverUrl`. No tenant header is sent: the Issuer resolves the tenant from the request host.
+  - `catalog.models.ts`: `CredentialCatalogEntry` and `UpdateCredentialCatalogRequest`, mirroring the backend DTOs. `API_PATH.CREDENTIAL_CATALOG` added.
+  - EC-01: an accessible `role="status"` warning explains that disabling every type and saving sends an empty set, which makes the backend drop the tenant configuration and re-enable *all* types — it does not block issuance. Copy from the implementation manual, pending PO/UX confirmation.
+  - Authorization is read from `AuthService.roleType()` (resolved by `GET /api/v1/me`), not from `settingsGuard`: the guard checks `hasPower('CredentialIssuer','Configure')`, a power the Issuer API never reads. The sidenav entry is hidden from a LEAR (the API answers 403 on both verbs); the platform-tenant SysAdmin sees the screen read-only — toggles disabled, no Save — matching the backend, which now allows that role to read but not write. A 403 still renders a dedicated state as defence in depth.
+  - `loadError` and `saveError` are separate signals so a failed `PUT` keeps the edited list on screen instead of replacing it and discarding the admin's changes.
+  - i18n: `catalog.*` and `sidenav.catalog` added to `es`, `en` and `ca`.
+  - `navbar.component.ts`: comment documenting the known discrepancy of the Settings entry gate (power ignored by the API, and stricter than `settingsGuard`, which also accepts `isSysAdmin()`). Behaviour intentionally unchanged; realignment tracked separately.
+  - Tests: `credential-catalog.service.spec.ts` (GET/PUT payloads, URL from `TenantService`, 400/403/500 propagation) and `credential-catalog.component.spec.ts` (toggle rendering and accessible names, save-button enablement, EC-01 warning, load/forbidden/save error states, retry, read-only SysAdmin, and a regression test for the failed-save case). `settings.component.spec.ts` covers the nav-link visibility per role.
+
 ## [3.5.27] - 22-07-2026
 
 ### Added

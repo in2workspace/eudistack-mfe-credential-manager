@@ -29,7 +29,28 @@
   "sidenav": {
     "settings": "Configuración",
     "schemes": "Esquemas",
+    "catalog": "Catálogo de credenciales",
     "trushFramework": "TF"
+  },
+  "catalog": {
+    "title": "Catálogo de credenciales",
+    "description": "Seleccione qué tipos de credencial puede emitir su organización.",
+    "save": "Guardar cambios",
+    "retry": "Reintentar",
+    "read-only": "Está consultando el catálogo en modo lectura. No puede guardar cambios.",
+    "empty-set-warning": "Ningún tipo está habilitado. Mientras no guarde al menos uno, el sistema seguirá permitiendo todos los tipos (comportamiento por defecto).",
+    "toggle-aria": "Habilitar {{name}} para este tenant",
+    "error": {
+      "load": {
+        "title": "No se pudo cargar el catálogo",
+        "description": "Inténtelo de nuevo. Si el problema persiste, contacte con el administrador."
+      },
+      "forbidden": {
+        "title": "No tiene permiso para gestionar el catálogo",
+        "description": "Solo el administrador de la organización puede consultar o modificar los tipos de credencial emitibles."
+      },
+      "save": "No se pudieron guardar los cambios. Sus selecciones se han conservado."
+    }
   },
   "mandator": {
     "organizationid": "Número VAT de empresa",

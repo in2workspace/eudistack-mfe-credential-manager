@@ -29,7 +29,28 @@
   "sidenav": {
     "settings": "Configuració",
     "schemes": "Esquemes",
+    "catalog": "Catàleg de credencials",
     "trushFramework": "TF"
+  },
+  "catalog": {
+    "title": "Catàleg de credencials",
+    "description": "Seleccioneu quins tipus de credencial pot emetre la vostra organització.",
+    "save": "Desar canvis",
+    "retry": "Torna-ho a provar",
+    "read-only": "Esteu consultant el catàleg en mode lectura. No podeu desar canvis.",
+    "empty-set-warning": "Cap tipus està habilitat. Mentre no en deseu com a mínim un, el sistema continuarà permetent tots els tipus (comportament per defecte).",
+    "toggle-aria": "Habilitar {{name}} per a aquest tenant",
+    "error": {
+      "load": {
+        "title": "No s'ha pogut carregar el catàleg",
+        "description": "Torneu-ho a provar. Si el problema persisteix, contacteu amb l'administrador."
+      },
+      "forbidden": {
+        "title": "No teniu permís per gestionar el catàleg",
+        "description": "Només l'administrador de l'organització pot consultar o modificar els tipus de credencial emetibles."
+      },
+      "save": "No s'han pogut desar els canvis. Les vostres seleccions s'han conservat."
+    }
   },
   "mandator": {
     "organizationid": "Número VAT de l'empresa",

@@ -49,6 +49,22 @@ export class NavbarComponent implements OnInit {
     this.authService.logout();
   }
 
+  /**
+   * Gates the "Settings" entry of the user menu.
+   *
+   * KNOWN DISCREPANCY (documented in EUD-72, kept as-is on purpose — realignment pending
+   * its own ticket):
+   *  1. The Issuer API never reads the `CredentialIssuer/Configure` power. Backend roles come
+   *     from `Onboarding/Execute` + `admin_organization_id` (TenantAdmin) or
+   *     `System/Administration` (SysAdmin) — see `AccessTokenServiceImpl.resolveRole()`.
+   *     Passing this check therefore says nothing about what the API will allow.
+   *  2. This check is stricter than `settingsGuard`, which also accepts `isSysAdmin()`. A pure
+   *     SysAdmin cannot see this entry yet can reach `/settings` by URL.
+   *
+   * Screens inside `/settings` that the API actually gates by role must not rely on this;
+   * they read `AuthService.roleType()` (backed by `GET /api/v1/me`) instead — see
+   * `SettingsComponent.canSeeCatalog` and `CredentialCatalogComponent`.
+   */
   public isCredentialIssuerAndConfigure():boolean {
     if(this.authService.hasPower('CredentialIssuer', 'Configure')) return true;
     return false;

@@ -15,6 +15,18 @@
           <span>{{ "sidenav.schemes" | translate }}</span> 
          </div>
       </a>
+      @if (canSeeCatalog()) {
+        <a mat-list-item
+           routerLink="/settings/catalog"
+           routerLinkActive="settings__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }"
+           data-testid="nav-catalog">
+           <div class="settings__nav-item">
+            <mat-icon>category</mat-icon>
+            <span>{{ "sidenav.catalog" | translate }}</span>
+           </div>
+        </a>
+      }
       <a mat-list-item
          routerLink="/organization/credentials"
          routerLinkActive="settings__nav-link--active"

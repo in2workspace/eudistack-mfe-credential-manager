@@ -6,6 +6,16 @@ export default [
   { path: '', component: SettingsComponent,
     children: [
         { path: 'schemes', component: CredentialIssuanceComponent },
+        // Credential catalog (EUD-72). No guard of its own: children inherit the
+        // parent's canActivate from app.routes.ts. The API additionally enforces
+        // tenant-admin, which settingsGuard does not — the component handles 403.
+        {
+          path: 'catalog',
+          loadComponent: () =>
+            import('./catalog/credential-catalog.component').then(
+              m => m.CredentialCatalogComponent
+            )
+        },
       ]
    },
 ] as Routes;
