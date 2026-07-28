@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialIssuanceService } from './credential-issuance.service';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { CountryService } from 'src/app/shared/services/country.service';
@@ -113,5 +113,72 @@ describe('CredentialIssuanceService', () => {
       expect(mockSelect.value).toBe('learcredential.employee');
       expect((service as any).selectedCredentialType$()).toBe('learcredential.employee');
     });
+  });
+
+  describe('isFormValid$ / gate hardening (EUD-73 T11)', () => {
+    const REQUIRED_FIELD_SCHEMA: any = [
+      {
+        id: 1,
+        key: 'firstName',
+        type: 'control',
+        controlType: 'text',
+        display: 'main',
+        validators: [{ name: 'required' }],
+      },
+    ];
+
+    function selectTypeWithSchema(schema: any) {
+      mockSchemaBuilder.formSchemasBuilder.mockReturnValue([schema, {}]);
+      service.updateSelectedType('learcredential.employee', {} as any);
+    }
+
+    it('ES-02: sin tipo seleccionado, isFormValid$ es false (fail-closed) y no se envía la petición', fakeAsync(() => {
+      tick();
+      TestBed.flushEffects();
+      expect(service.isFormValid$()).toBe(false);
+
+      service.openSubmitDialog();
+
+      expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
+    }));
+
+    it('ES-02: un schema con 0 campos también es fail-closed (FormGroup resultante sería VALID en Angular)', fakeAsync(() => {
+      selectTypeWithSchema([]);
+      tick();
+      TestBed.flushEffects();
+
+      expect(service.isFormValid$()).toBe(false);
+    }));
+
+    it('AC-02: campo obligatorio vacío bloquea isFormValid$ y no se envía la petición', fakeAsync(() => {
+      selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
+      tick();
+      TestBed.flushEffects();
+
+      expect(service.isFormValid$()).toBe(false);
+
+      service.openSubmitDialog();
+
+      expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
+    }));
+
+    it('AC-04 / ES-03: corregir el campo revalida el estado actual del FormGroup (no un flag cacheado)', fakeAsync(() => {
+      selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
+      tick();
+      expect(service.isFormValid$()).toBe(false);
+
+      service.form$().get('firstName')!.setValue('Alice');
+      tick();
+      TestBed.flushEffects();
+
+      expect(service.isFormValid$()).toBe(true);
+
+      // Anti-caché (§20 D-5): vaciar de nuevo debe volver a bloquear, no quedarse "pegado" en true
+      service.form$().get('firstName')!.setValue('');
+      tick();
+      TestBed.flushEffects();
+
+      expect(service.isFormValid$()).toBe(false);
+    }));
   });
 });

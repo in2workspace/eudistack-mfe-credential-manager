@@ -207,4 +207,85 @@ it('getBuilder with no match throws', () => {
   });
 
   });
+
+  describe('buildValidatorEntriesFromRule (AC-06)', () => {
+    it('required + date → required + date validators', () => {
+      const entries = service.buildValidatorEntriesFromRule({
+        key: 'birthDate',
+        required: true,
+        basicType: 'date',
+      });
+      expect(entries).toEqual([{ name: 'required' }, { name: 'date' }]);
+    });
+
+    it('required + number → required + numeric validators', () => {
+      const entries = service.buildValidatorEntriesFromRule({
+        key: 'amount',
+        required: true,
+        basicType: 'number',
+      });
+      expect(entries).toEqual([{ name: 'required' }, { name: 'numeric' }]);
+    });
+
+    it('optional text → sin entries', () => {
+      expect(
+        service.buildValidatorEntriesFromRule({
+          key: 'note',
+          required: false,
+          basicType: 'text',
+        })
+      ).toEqual([]);
+    });
+
+    it('nunca produce minLength, maxLength, pattern ni unicode (alcance acotado AD-2)', () => {
+      const entries = service.buildValidatorEntriesFromRule({
+        key: 'x',
+        required: true,
+        basicType: 'date',
+      });
+      const names = entries.map((e) => e.name);
+      expect(names).not.toContain('minLength');
+      expect(names).not.toContain('maxLength');
+      expect(names).not.toContain('pattern');
+      expect(names).not.toContain('unicode');
+    });
+  });
+
+  describe('buildValidatorEntriesForField (AC-06)', () => {
+    it('delega en el resolver provisional para un campo del conjunto obligatorio', () => {
+      const entries = service.buildValidatorEntriesForField({ key: 'firstName' });
+      expect(entries).toEqual([{ name: 'required' }]);
+    });
+
+    it('delega en el resolver provisional para un campo opcional (EC-02)', () => {
+      const entries = service.buildValidatorEntriesForField({ key: 'optionalNote' });
+      expect(entries).toEqual([]);
+    });
+
+    it('propaga basicType date cuando se declara explícitamente', () => {
+      const entries = service.buildValidatorEntriesForField({
+        key: 'anyField',
+        required: true,
+        basicType: 'date',
+      });
+      expect(entries).toEqual([{ name: 'required' }, { name: 'date' }]);
+    });
+  });
+
+  describe('regression — legacy schema builder unchanged (R-2)', () => {
+    it('formSchemasBuilder sigue devolviendo campos main intactos', () => {
+      const raw = [
+        {
+          key: 'main',
+          type: 'control',
+          controlType: 'text',
+          display: 'main',
+          validators: [{ name: 'required' }],
+        } as any,
+      ];
+      builderMock.getSchema.mockReturnValue({ type: TYPE, schema: raw });
+      const [form] = service.formSchemasBuilder(TYPE, false);
+      expect((form[0] as any).validators).toEqual([{ name: 'required' }]);
+    });
+  });
 });

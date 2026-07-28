@@ -21,6 +21,40 @@ describe('WrappedBuiltInValidators', () => {
     });
   });
 
+  describe('required — EC-03 whitespace-only', () => {
+    const validator = WrappedBuiltInValidators.required();
+
+    it('trata solo espacios como vacío (input boundary)', () => {
+      expect(validator(new FormControl('   '))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+    });
+
+    it('trata tabulaciones y saltos de línea como vacío', () => {
+      expect(validator(new FormControl('\t'))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+      expect(validator(new FormControl('\n'))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+    });
+
+    it('acepta contenido real rodeado de espacios', () => {
+      expect(validator(new FormControl(' a '))).toBeNull();
+    });
+
+    it('no regresiona sobre valores no-string (0 y false no son "vacíos")', () => {
+      expect(validator(new FormControl(0 as any))).toBeNull();
+      expect(validator(new FormControl(false as any))).toBeNull();
+    });
+
+    it('no muta el valor del control (validador puro)', () => {
+      const ctrl = new FormControl('   ');
+      validator(ctrl);
+      expect(ctrl.value).toBe('   ');
+    });
+  });
+
   describe('email', () => {
     const validator = WrappedBuiltInValidators.email();
 
