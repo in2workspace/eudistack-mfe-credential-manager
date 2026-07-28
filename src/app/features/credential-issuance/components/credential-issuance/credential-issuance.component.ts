@@ -119,10 +119,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
 
   public onSubmit(): void {
     const isFormValid = this.isFormValid$();
-    const formValue = this.formValue$();
     if (!isFormValid) {
       console.error('Invalid form: ');
-      console.error(formValue);
       return;
     }
 

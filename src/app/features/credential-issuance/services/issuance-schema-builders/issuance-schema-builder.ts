@@ -1,5 +1,12 @@
 import { inject, Injectable, InjectionToken } from "@angular/core";
 import { CredentialIssuanceTypedViewModelSchema, CredentialIssuanceSchemaProvider, IssuanceCredentialType, IssuanceStaticViewModel, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchema, IssuanceViewModelsTuple, CredentialIssuanceViewModelGroupField, CredentialIssuanceViewModelSchemaWithId, CredentialIssuanceViewModelGroupFieldWithId } from "src/app/core/models/entity/lear-credential-issuance";
+import { ValidatorEntryUnion } from "src/app/shared/validators/credential-issuance/all-validators";
+import {
+  FieldValidationRule,
+  FieldValidationRuleInput,
+  FieldValidationRuleResolver,
+  PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER,
+} from "src/app/shared/validators/credential-issuance/field-validation-rule.resolver";
 
 export const CREDENTIAL_SCHEMA_PROVIDERS = new InjectionToken<CredentialIssuanceSchemaProvider<IssuanceCredentialType>[]>('CREDENTIAL_SCHEMA_PROVIDERS');
 
@@ -7,9 +14,43 @@ export const CREDENTIAL_SCHEMA_PROVIDERS = new InjectionToken<CredentialIssuance
 export class IssuanceSchemaBuilder {
     private readonly schemaProviders: CredentialIssuanceSchemaProvider<IssuanceCredentialType>[] = inject(CREDENTIAL_SCHEMA_PROVIDERS);
 
+    // AD-1 safe-deploy: implementación provisional hasta que EUD-50/58/59 declaren el catálogo real.
+    // El swap a una implementación metadata-driven es un cambio de esta asignación, no del resto de la clase.
+    private readonly fieldValidationRuleResolver: FieldValidationRuleResolver =
+      PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER;
+
 
   public getIssuanceFormSchema<T extends IssuanceCredentialType>(type: T, onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<T>{
     return this.getBuilder(type).getSchema(onBehalf);
+  }
+
+  /** AD-1: traduce una FieldValidationRule ya resuelta a ValidatorEntry[] (alcance acotado: required + tipo básico). */
+  public buildValidatorEntriesFromRule(rule: FieldValidationRule): ValidatorEntryUnion[] {
+    const entries: ValidatorEntryUnion[] = [];
+    if (rule.required) {
+      entries.push({ name: 'required' });
+    }
+    switch (rule.basicType) {
+      case 'date':
+        entries.push({ name: 'date' });
+        break;
+      case 'number':
+        entries.push({ name: 'numeric' });
+        break;
+      case 'text':
+      default:
+        break;
+    }
+    return entries;
+  }
+
+  /**
+   * Punto único de integración del resolver genérico (AD-1). Consumible por el mapper de EUD-71
+   * (claims-to-schema.mapper.ts, aún no existe) sin alterar los campos legacy de common-issuance-schema-fields.ts (R-2).
+   */
+  public buildValidatorEntriesForField(input: FieldValidationRuleInput): ValidatorEntryUnion[] {
+    const rule = this.fieldValidationRuleResolver.resolve(input);
+    return this.buildValidatorEntriesFromRule(rule);
   }
 
   public formSchemasBuilder<T extends IssuanceCredentialType>(
