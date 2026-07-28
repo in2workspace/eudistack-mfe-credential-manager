@@ -350,6 +350,8 @@
     },
     "form":{
       "required": "Camp obligatori.",
+      "date": "Format de data no vàlid.",
+      "number": "Introduïu un valor numèric.",
       "min": "El mínim és {{0}}",
       "max": "El màxim és {{0}}",
       "minLength": "Mínim de caràcters: {{0}}",
