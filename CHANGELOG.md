@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.29] - 28-07-2026
+
+### Added
+
+- **EUD-73 — Validar el formulario antes de emitir** (FR-07, FR-08)
+  - Validación client-side previa al desencadenado de la emisión: bloqueo con feedback contextual por campo cuando un obligatorio está vacío o el formato no corresponde al tipo básico declarado (AC-01…AC-05).
+  - `FieldValidationRuleResolver` + `ProvisionalFieldValidationRuleResolver` (`shared/validators/credential-issuance/field-validation-rule.resolver.ts`): seam genérico de safe-deploy que deriva `{ key, required, basicType }` desacoplado de la definición final del catálogo de credenciales (AC-06, EC-01, EC-02).
+  - `BasicTypeValidators.date()` / `.numeric()` (`shared/validators/credential-issuance/basic-type-validators.ts`), registrados en `CUSTOM_VALIDATORS_FACTORY_MAP`; alcance acotado a tipo básico (sin min/max/pattern) (AC-03, ES-01).
+  - Claves i18n `error.form.date` / `error.form.number` en `es`/`en`/`ca`.
+  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: punto único de integración del resolver, listo para el mapper de EUD-71 sin alterar los campos legacy existentes (AC-06).
+  - `controlType: 'date'` en `DynamicFieldComponent` (`input[type="date"]`) y refuerzo de accesibilidad: `aria-describedby` vinculado al `mat-error`, `role="alert"`, `id` estable por campo (NFR-A-EUD73-01).
+  - `WrappedBuiltInValidators.required()` ahora trata un valor de solo espacios como vacío (EC-03).
+  - `CredentialIssuanceService.isSubmissionAllowed()`: hardening fail-closed del gate de envío ante schema/tipo ausente o `FormGroup` sin controles (ES-02); revalidación sobre el estado actual del formulario, no un flag cacheado (AC-04, ES-03).
+
+### Security
+
+- **EUD-73**: eliminado el volcado de los valores del formulario (PII) en `console.error` desde `CredentialIssuanceComponent.onSubmit()` al bloquear un envío inválido.
+
 ## [3.5.28] - 24-07-2026
 
 ### Added
