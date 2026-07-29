@@ -1,6 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatIcon } from '@angular/material/icon';
 import { take } from 'rxjs';
@@ -50,25 +51,18 @@ export class NavbarComponent implements OnInit {
   }
 
   /**
-   * Gates the "Settings" entry of the user menu.
+   * Gates the "Settings" entry of the user menu. Deliberately the same predicate as
+   * `settingsGuard` (`PoliciesService.checkSettingsPolicy`) and
+   * `SettingsComponent.canSeeCatalog`, so the menu never offers a destination the
+   * guard would reject — the discrepancy this used to carry is what kept tenant
+   * admins out of Settings (EUD-72 §2.3/§7.2).
    *
-   * KNOWN DISCREPANCY (documented in EUD-72, kept as-is on purpose — realignment pending
-   * its own ticket):
-   *  1. The Issuer API never reads the `CredentialIssuer/Configure` power. Backend roles come
-   *     from `Onboarding/Execute` + `admin_organization_id` (TenantAdmin) or
-   *     `System/Administration` (SysAdmin) — see `AccessTokenServiceImpl.resolveRole()`.
-   *     Passing this check therefore says nothing about what the API will allow.
-   *  2. This check is stricter than `settingsGuard`, which also accepts `isSysAdmin()`. A pure
-   *     SysAdmin cannot see this entry yet can reach `/settings` by URL.
-   *
-   * Screens inside `/settings` that the API actually gates by role must not rely on this;
-   * they read `AuthService.roleType()` (backed by `GET /api/v1/me`) instead — see
-   * `SettingsComponent.canSeeCatalog` and `CredentialCatalogComponent`.
+   * No separate "role resolved" flag is needed: `roleType()` reports LEAR until
+   * `GET /api/v1/me` answers, which already evaluates to false here. The entry
+   * therefore appears one round trip after login — invisible in practice, since it
+   * lives inside a click-triggered `mat-menu`.
    */
-  public isCredentialIssuerAndConfigure():boolean {
-    if(this.authService.hasPower('CredentialIssuer', 'Configure')) return true;
-    return false;
-  }
+  public readonly canSeeSettings = computed(() => this.authService.roleType() !== RoleType.LEAR);
 
   //currently not used
   public changeLanguage(languageCode: string): void {

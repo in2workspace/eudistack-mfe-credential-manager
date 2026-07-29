@@ -1,5 +1,7 @@
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { NavbarComponent } from './navbar.component';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +13,9 @@ import { OverlayContainer } from '@angular/cdk/overlay';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
 class MockAuthService {
+  resolvedRole = signal<RoleType | null>(null);
+  roleType = computed(() => this.resolvedRole() ?? RoleType.LEAR);
+
   getMandator() {
     return of({ organization: 'Test Organization' });
   }
@@ -19,9 +24,6 @@ class MockAuthService {
   }
   logout() {
     return of(void 0);
-  }
-  hasPower() {
-    return true; 
   }
 }
 
@@ -128,6 +130,46 @@ describe('NavbarComponent', () => {
 
     logoutLink.click();
     expect(component.logout).toHaveBeenCalled();
+  });
+
+  /**
+   * The entry must mirror `settingsGuard` exactly, or the menu offers a
+   * destination the guard rejects (EUD-72 §2.3).
+   */
+  describe('settings menu entry', () => {
+    const openMenu = async () => {
+      (fixture.nativeElement.querySelector('button[mat-icon-button]') as HTMLElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    const settingsEntry = () =>
+      Array.from(overlayContainerElement.querySelectorAll('button[mat-menu-item]'))
+        .find(b => b.textContent?.includes('navbar.menu.settings'));
+
+    it('is hidden while the backend role is unresolved', async () => {
+      expect(authService.resolvedRole()).toBeNull();
+      await openMenu();
+      expect(settingsEntry()).toBeUndefined();
+    });
+
+    it('is hidden for LEAR', async () => {
+      authService.resolvedRole.set(RoleType.LEAR);
+      await openMenu();
+      expect(settingsEntry()).toBeUndefined();
+    });
+
+    it('is visible for TENANT_ADMIN', async () => {
+      authService.resolvedRole.set(RoleType.TENANT_ADMIN);
+      await openMenu();
+      expect(settingsEntry()).toBeTruthy();
+    });
+
+    it('is visible for SYSADMIN_READONLY', async () => {
+      authService.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+      await openMenu();
+      expect(settingsEntry()).toBeTruthy();
+    });
   });
 
   it('should display the correct username and mandator', () => {

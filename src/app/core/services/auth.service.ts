@@ -1,13 +1,13 @@
-import { inject, Injectable, WritableSignal, signal, DestroyRef } from '@angular/core';
+import { computed, inject, Injectable, Signal, WritableSignal, signal, DestroyRef } from '@angular/core';
 import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, filter, take, tap } from 'rxjs/operators';
+import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE, PUBLIC_ROUTE_PREFIXES } from '../constants/iam.constants';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
@@ -26,12 +26,42 @@ export class AuthService{
   private readonly mandatorSubject = new BehaviorSubject<EmployeeMandator | null>(null);
   private readonly mandateeEmailSubject = new BehaviorSubject<string>('');
   private readonly nameSubject = new BehaviorSubject<string>('');
-  public readonly roleType: WritableSignal<RoleType> = signal(RoleType.LEAR);
+  /**
+   * Single source of truth for the caller's role. `null` means "the backend has
+   * not answered yet" — a state that must stay distinguishable from LEAR, since
+   * `GET /api/v1/me` only lands one round trip after bootstrap.
+   *
+   * Writable (and public) so specs can drive it, mirroring how `roleType` used
+   * to be exposed. Production code writes it only from `refreshRoleFromBackend()`.
+   */
+  public readonly resolvedRole: WritableSignal<RoleType | null> = signal(null);
+
+  /**
+   * The role as UI code consumes it. Collapses "not resolved yet" into LEAR,
+   * which is the safe default for deny-if-not-admin predicates
+   * (`roleType() !== LEAR`): the gate stays shut until the backend says otherwise.
+   *
+   * Beware the reverse shape: deny-if-read-only predicates
+   * (`roleType() !== SYSADMIN_READONLY`, e.g. `canWrite` in credential-management
+   * and the catalog) read as *permissive* while unresolved. Those screens sit
+   * behind guards today; anything new that needs the distinction must read
+   * `resolvedRole()` and handle `null` explicitly.
+   */
+  public readonly roleType: Signal<RoleType> = computed(() => this.resolvedRole() ?? RoleType.LEAR);
+
   public readonly tenantType: WritableSignal<string> = signal('');
   public readonly isSysAdminRole: WritableSignal<boolean> = signal(false);
   public readonly organizationIdentifier: WritableSignal<string> = signal('');
 
+  /**
+   * Created here rather than inside `resolveRole$()`: `toObservable` needs an
+   * injection context, and field initializers run inside one. Same pattern as
+   * `CredentialIssuanceService`.
+   */
+  private readonly resolvedRole$ = toObservable(this.resolvedRole);
 
+  /** Dedupes concurrent `resolveRole$()` callers into a single `GET /api/v1/me`. */
+  private roleFetchInFlight = false;
 
   private userPowers: Power[] = [];
 
@@ -192,24 +222,55 @@ export class AuthService{
 
   /**
    * Fetches the authoritative role from the Issuer (`GET /api/v1/me`) and
-   * updates the `roleType` signal. The backend resolves TenantAdmin using
+   * resolves `resolvedRole`. The backend resolves TenantAdmin using
    * `tenant_config.admin_organization_id`, so this is the single source of
-   * truth. UI guards and components must read from `roleType()`.
+   * truth. UI components read `roleType()`; guards use `resolveRole$()`.
+   *
+   * A failed call still *resolves* (to LEAR): "we asked and could not tell" is a
+   * final answer, otherwise `resolveRole$()` would hang and block navigation.
    */
   private refreshRoleFromBackend(): void {
-    this.meService.fetchMe().pipe(take(1)).subscribe({
+    this.roleFetchInFlight = true;
+    this.meService.fetchMe().pipe(
+      take(1),
+      finalize(() => { this.roleFetchInFlight = false; })
+    ).subscribe({
       next: (me) => {
-        this.roleType.set(this.mapRoleToFrontend(me));
         this.tenantType.set(me.tenantType);
         this.isSysAdminRole.set(me.role === 'SYSADMIN');
         this.organizationIdentifier.set(me.organizationIdentifier);
+        // Set last: resolving the role is what wakes up resolveRole$() subscribers,
+        // and they must not observe a half-populated session.
+        this.resolvedRole.set(this.mapRoleToFrontend(me));
       },
       error: (err) => {
         console.error('Failed to resolve role from backend; defaulting to LEAR', err);
-        this.roleType.set(RoleType.LEAR);
         this.tenantType.set('simple');
+        this.resolvedRole.set(RoleType.LEAR);
       }
     });
+  }
+
+  /**
+   * The backend's verdict on the current user's role, awaited once.
+   *
+   * Guards must use this instead of reading `roleType()`: that signal reports
+   * LEAR until `GET /api/v1/me` answers, so a synchronous read at navigation
+   * time would deny access to every administrator who happens to arrive first.
+   *
+   * Triggers the fetch if nothing has yet (a guard can run before bootstrap's
+   * `checkAuth$()` got there) and dedupes against an in-flight call. Emits
+   * asynchronously even when the role is already known: `toObservable` is
+   * effect-backed, so specs must await a tick rather than expect a sync value.
+   */
+  public resolveRole$(): Observable<RoleType> {
+    if (this.resolvedRole() === null && !this.roleFetchInFlight) {
+      this.refreshRoleFromBackend();
+    }
+    return this.resolvedRole$.pipe(
+      filter((role): role is RoleType => role !== null),
+      take(1)
+    );
   }
 
   private mapRoleToFrontend(me: MeResponse): RoleType {
@@ -245,6 +306,7 @@ export class AuthService{
     this.userDataSubject.next(null);
     this.tokenSubject.next('');
     this.userPowers = [];
+    this.resetResolvedRole();
 
     this.router.navigate(['/home']).finally(() => {
       const title = this.translate.instant('error.policy.title');
@@ -267,8 +329,18 @@ export class AuthService{
     this.mandateeEmailSubject.next('');
     this.nameSubject.next('');
     this.userPowers = [];
+    this.resetResolvedRole();
     sessionStorage.clear();
     this.router.navigate(['/home']);
+  }
+
+  /**
+   * Back to "unknown", not to LEAR: a second login in the same tab must re-ask
+   * the backend instead of inheriting the previous session's verdict.
+   */
+  private resetResolvedRole(): void {
+    this.resolvedRole.set(null);
+    this.roleFetchInFlight = false;
   }
 
   public authorize(){

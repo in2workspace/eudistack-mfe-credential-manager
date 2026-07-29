@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, Subject, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
 import { TenantService } from './tenant.service';
@@ -89,6 +89,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockPublicEventsService: jest.Mocked<any>;
   let tenantServiceMock: { tenant: jest.Mock };
+  let meServiceMock: { fetchMe: jest.Mock };
 
   let oidcSecurityServiceMock: {
     checkAuth: jest.Mock,
@@ -122,7 +123,7 @@ describe('AuthService', () => {
     const dialogWrapperServiceMock = {
       openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
     };
-    const meServiceMock = {
+    meServiceMock = {
       fetchMe: jest.fn().mockReturnValue(of({
         organizationIdentifier: 'ORG-TEST',
         role: 'LEAR',
@@ -272,18 +273,98 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('hasAdminOrganizationIdentifier', () => {
     it('true cuando el role es TENANT_ADMIN', () => {
-      service.roleType.set(RoleType.TENANT_ADMIN);
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
 
     it('true cuando el role es SYSADMIN_READONLY', () => {
-      service.roleType.set(RoleType.SYSADMIN_READONLY);
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
 
     it('false cuando el role es LEAR', () => {
-      service.roleType.set(RoleType.LEAR);
+      service.resolvedRole.set(RoleType.LEAR);
       expect(service.hasAdminOrganizationIdentifier()).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // resolvedRole / roleType / resolveRole$()
+  // --------------------------------------------------------------------------
+  describe('resolveRole$', () => {
+    it('roleType() reporta LEAR mentre el rol no esta resolt', () => {
+      expect(service.resolvedRole()).toBeNull();
+      expect(service.roleType()).toBe(RoleType.LEAR);
+    });
+
+    it('dispara fetchMe i emet el rol resolt pel backend', async () => {
+      meServiceMock.fetchMe.mockReturnValue(of({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'TENANT_ADMIN',
+        readOnly: false,
+        tenantType: 'simple'
+      }));
+
+      const role = await firstValueFrom(service.resolveRole$());
+
+      expect(meServiceMock.fetchMe).toHaveBeenCalledTimes(1);
+      expect(role).toBe(RoleType.TENANT_ADMIN);
+      expect(service.roleType()).toBe(RoleType.TENANT_ADMIN);
+    });
+
+    it('no torna a cridar fetchMe si el rol ja esta resolt', async () => {
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+
+      const role = await firstValueFrom(service.resolveRole$());
+
+      expect(role).toBe(RoleType.SYSADMIN_READONLY);
+      expect(meServiceMock.fetchMe).not.toHaveBeenCalled();
+    });
+
+    it('dedupeix crides concurrents en un sol GET /me', async () => {
+      const me$ = new Subject<any>();
+      meServiceMock.fetchMe.mockReturnValue(me$);
+
+      const first = firstValueFrom(service.resolveRole$());
+      const second = firstValueFrom(service.resolveRole$());
+
+      expect(meServiceMock.fetchMe).toHaveBeenCalledTimes(1);
+
+      me$.next({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'TENANT_ADMIN',
+        readOnly: false,
+        tenantType: 'simple'
+      });
+      me$.complete();
+
+      expect(await first).toBe(RoleType.TENANT_ADMIN);
+      expect(await second).toBe(RoleType.TENANT_ADMIN);
+    });
+
+    it('resol a LEAR si fetchMe falla, en lloc de quedar penjat', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      meServiceMock.fetchMe.mockReturnValue(throwError(() => new Error('boom')));
+
+      expect(await firstValueFrom(service.resolveRole$())).toBe(RoleType.LEAR);
+      expect(service.resolvedRole()).toBe(RoleType.LEAR);
+    });
+
+    it('logout() torna a l\'estat no resolt i força un nou GET /me', async () => {
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
+
+      service.logout();
+      expect(service.resolvedRole()).toBeNull();
+
+      meServiceMock.fetchMe.mockReturnValue(of({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'LEAR',
+        readOnly: false,
+        tenantType: 'simple'
+      }));
+
+      expect(await firstValueFrom(service.resolveRole$())).toBe(RoleType.LEAR);
+      expect(meServiceMock.fetchMe).toHaveBeenCalledTimes(1);
     });
   });
 

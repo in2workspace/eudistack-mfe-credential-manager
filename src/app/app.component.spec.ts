@@ -2,9 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 import { RouterOutlet, ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
-import { DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
+import { DebugElement, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { of, Subject } from 'rxjs';
@@ -27,6 +28,8 @@ describe('AppComponent', () => {
       return true;
     },
     hasPower: () => true,
+    // Read by the embedded navbar to gate its "Settings" entry.
+    roleType: signal(RoleType.LEAR),
   } as jest.Mocked<any>;
 
   let routerEventsSubject: Subject<any>;
