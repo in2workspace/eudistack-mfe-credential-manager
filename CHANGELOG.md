@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `navbar.component.ts`: comment documenting the known discrepancy of the Settings entry gate (power ignored by the API, and stricter than `settingsGuard`, which also accepts `isSysAdmin()`). Behaviour intentionally unchanged; realignment tracked separately.
   - Tests: `credential-catalog.service.spec.ts` (GET/PUT payloads, URL from `TenantService`, 400/403/500 propagation) and `credential-catalog.component.spec.ts` (toggle rendering and accessible names, save-button enablement, EC-01 warning, load/forbidden/save error states, retry, read-only SysAdmin, and a regression test for the failed-save case). `settings.component.spec.ts` covers the nav-link visibility per role.
 
+## [3.5.28] - 24-07-2026
+
+### Added
+
+- **Calidalia tenant**: added `'calidalia'` to `KNOWN_TENANTS` (`tenants.constants.ts`) so the tenant guard resolves the hostname instead of redirecting to `/tenant-not-found`.
+
 ## [3.5.27] - 22-07-2026
 
 ### Added
