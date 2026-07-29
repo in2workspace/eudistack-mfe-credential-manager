@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TranslateModule } from '@ngx-translate/core';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CredentialCatalogComponent } from './credential-catalog.component';
@@ -117,6 +117,59 @@ describe('CredentialCatalogComponent', () => {
       expect((el('#catalog-save-btn') as HTMLButtonElement).disabled).toBe(true);
     });
 
+    // The PUT response carries no body and the backend may store something other than what
+    // was sent, so the persisted state has to be re-read instead of assumed.
+    it('should re-read the catalog after a successful save', () => {
+      createComponent();
+      expect(catalogService.getCatalog).toHaveBeenCalledTimes(1);
+
+      const persisted: CredentialCatalogEntry[] = [
+        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: false },
+        { credentialConfigurationId: 'B', displayName: 'Type B', enabled: true }
+      ];
+      catalogService.getCatalog.mockReturnValue(of(persisted));
+
+      component.toggleEntry(entries()[0], false);
+      component.toggleEntry(entries()[1], true);
+      component.save();
+      fixture.detectChanges();
+
+      expect(catalogService.getCatalog).toHaveBeenCalledTimes(2);
+      expect(component.entries()).toEqual(persisted);
+      expect(switches()[0].getAttribute('aria-checked')).toBe('false');
+      expect(switches()[1].getAttribute('aria-checked')).toBe('true');
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it('should not re-read the catalog when there is nothing to save', () => {
+      createComponent();
+
+      component.save();
+
+      expect(catalogService.getCatalog).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the toggles disabled until the reload settles', () => {
+      createComponent();
+
+      const reload = new Subject<CredentialCatalogEntry[]>();
+      catalogService.getCatalog.mockReturnValue(reload);
+
+      component.toggleEntry(entries()[1], true);
+      component.save();
+      fixture.detectChanges();
+
+      expect(component.saving()).toBe(true);
+      expect(switches().every(t => t.disabled)).toBe(true);
+
+      reload.next(entries());
+      reload.complete();
+      fixture.detectChanges();
+
+      expect(component.saving()).toBe(false);
+      expect(switches().every(t => t.disabled)).toBe(false);
+    });
+
     it('should ignore a save with no pending changes', () => {
       createComponent();
 
@@ -162,6 +215,28 @@ describe('CredentialCatalogComponent', () => {
     it('should not warn while at least one type stays enabled', () => {
       createComponent();
 
+      expect(component.showEmptyWarning()).toBe(false);
+      expect(el('#catalog-empty-warning')).toBeNull();
+    });
+
+    // Saving an empty set makes the backend drop the tenant configuration, which re-enables
+    // every type. Without the post-save reload the view kept showing the toggles off until
+    // the admin left the page and came back.
+    it('should show every type re-enabled right after saving an empty set', () => {
+      createComponent();
+
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: true },
+        { credentialConfigurationId: 'B', displayName: 'Type B', enabled: true }
+      ]));
+
+      component.toggleEntry(entries()[0], false);
+      component.save();
+      fixture.detectChanges();
+
+      expect(catalogService.updateCatalog).toHaveBeenCalledWith([]);
+      expect(component.entries().every(e => e.enabled)).toBe(true);
+      expect(switches().every(t => t.getAttribute('aria-checked') === 'true')).toBe(true);
       expect(component.showEmptyWarning()).toBe(false);
       expect(el('#catalog-empty-warning')).toBeNull();
     });
@@ -215,6 +290,21 @@ describe('CredentialCatalogComponent', () => {
       expect(fixture.nativeElement.querySelectorAll('mat-slide-toggle').length).toBe(2);
       expect(component.entries().find(e => e.credentialConfigurationId === 'B')?.enabled).toBe(true);
       expect(component.hasChanges()).toBe(true);
+    });
+
+    it('should not report a save error when only the post-save reload fails', () => {
+      createComponent();
+
+      catalogService.getCatalog.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      component.toggleEntry(entries()[1], true);
+      component.save();
+      fixture.detectChanges();
+
+      expect(catalogService.updateCatalog).toHaveBeenCalledTimes(1);
+      expect(component.saveError()).toBe(false);
+      expect(el('#catalog-save-error')).toBeNull();
+      expect(el('#catalog-load-error')).toBeTruthy();
+      expect(el('#catalog-retry-btn')).toBeTruthy();
     });
 
     it('should clear the save error as soon as a toggle changes again', () => {

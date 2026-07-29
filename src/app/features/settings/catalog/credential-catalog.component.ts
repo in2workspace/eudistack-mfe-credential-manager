@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MatButton } from '@angular/material/button';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap, tap } from 'rxjs/operators';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
@@ -84,17 +84,8 @@ export class CredentialCatalogComponent implements OnInit {
     this.catalogService.getCatalog()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (list) => {
-          this.entries.set(list.map(e => ({ ...e })));
-          this.baseline.set(list.map(e => ({ ...e })));
-        },
-        error: (error: HttpErrorResponse) => {
-          if (error.status === 403) {
-            this.forbidden.set(true);
-          } else {
-            this.loadError.set(true);
-          }
-        }
+        next: (list) => this.applyCatalog(list),
+        error: (error: HttpErrorResponse) => this.applyLoadError(error)
       });
   }
 
@@ -117,12 +108,46 @@ export class CredentialCatalogComponent implements OnInit {
     this.saving.set(true);
     this.saveError.set(false);
 
+    /**
+     * Tells a failed PUT apart from a failed reload: the first must keep the edited toggles
+     * so nothing is lost, the second must not claim the save failed — it did not.
+     */
+    let persisted = false;
+
     this.catalogService.updateCatalog(enabledIds)
-      .pipe(finalize(() => this.saving.set(false)))
+      .pipe(
+        tap(() => { persisted = true; }),
+        // The response never echoes the stored set, and the backend does not always store
+        // what was sent: an empty set drops the tenant configuration and re-enables *every*
+        // type (EC-01). Re-reading is the only way for the list to show what was persisted.
+        switchMap(() => this.catalogService.getCatalog()),
+        finalize(() => this.saving.set(false))
+      )
       .subscribe({
-        next: () => this.baseline.set(this.entries().map(e => ({ ...e }))),
-        error: () => this.saveError.set(true)
+        next: (list) => this.applyCatalog(list),
+        error: (error: HttpErrorResponse) => {
+          if (persisted) {
+            // Saved, but the state on screen can no longer be trusted: fall back to the
+            // load-error state, which offers a retry, instead of showing a stale list.
+            this.applyLoadError(error);
+          } else {
+            this.saveError.set(true);
+          }
+        }
       });
+  }
+
+  private applyCatalog(list: CredentialCatalogEntry[]): void {
+    this.entries.set(list.map(e => ({ ...e })));
+    this.baseline.set(list.map(e => ({ ...e })));
+  }
+
+  private applyLoadError(error: HttpErrorResponse): void {
+    if (error.status === 403) {
+      this.forbidden.set(true);
+    } else {
+      this.loadError.set(true);
+    }
   }
 
   private enabledIdsOf(list: CredentialCatalogEntry[]): Set<string> {
