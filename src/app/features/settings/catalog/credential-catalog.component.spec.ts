@@ -2,10 +2,11 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { of, Subject, throwError } from 'rxjs';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { TenantService } from 'src/app/core/services/tenant.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialCatalogComponent } from './credential-catalog.component';
 import { CredentialCatalogService } from './credential-catalog.service';
@@ -18,10 +19,18 @@ describe('CredentialCatalogComponent', () => {
   let catalogService: { getCatalog: jest.Mock; updateCatalog: jest.Mock };
   let authService: { roleType: ReturnType<typeof signal<RoleType>> };
   let dialog: { openErrorInfoDialog: jest.Mock };
+  // 'sandbox' sees every credential type, so the cases that are not about tenant visibility
+  // are unaffected by it.
+  let tenantService: { tenant: ReturnType<typeof signal<string>> };
+
+  // Two distinct lineages, so both survive version filtering and the cases below still see
+  // the two rows they were written against.
+  const ID_A = 'learcredential.employee.w3c.1';
+  const ID_B = 'learcredential.machine.w3c.1';
 
   const entries = (): CredentialCatalogEntry[] => [
-    { credentialConfigurationId: 'A', displayName: 'Type A', enabled: true },
-    { credentialConfigurationId: 'B', displayName: 'Type B', enabled: false }
+    { credentialConfigurationId: ID_A, displayName: 'Type A', enabled: true },
+    { credentialConfigurationId: ID_B, displayName: 'Type B', enabled: false }
   ];
 
   /** Creates the component after the mocks have been arranged for the case under test. */
@@ -32,6 +41,10 @@ describe('CredentialCatalogComponent', () => {
   };
 
   const el = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+
+  const texts = (selector: string): string[] =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll(selector))
+      .map(e => e.textContent?.trim() ?? '');
 
   /** mat-slide-toggle renders a `button[role="switch"]`, not an input. */
   const switches = (): HTMLButtonElement[] =>
@@ -44,13 +57,15 @@ describe('CredentialCatalogComponent', () => {
     };
     authService = { roleType: signal(RoleType.TENANT_ADMIN) };
     dialog = { openErrorInfoDialog: jest.fn() };
+    tenantService = { tenant: signal('sandbox') };
 
     await TestBed.configureTestingModule({
       imports: [CredentialCatalogComponent, TranslateModule.forRoot(), NoopAnimationsModule],
       providers: [
         { provide: CredentialCatalogService, useValue: catalogService },
         { provide: AuthService, useValue: authService },
-        { provide: DialogWrapperService, useValue: dialog }
+        { provide: DialogWrapperService, useValue: dialog },
+        { provide: TenantService, useValue: tenantService }
       ]
     }).compileComponents();
   });
@@ -96,6 +111,228 @@ describe('CredentialCatalogComponent', () => {
     });
   });
 
+  describe('latest version only', () => {
+    const versioned: CredentialCatalogEntry[] = [
+      { credentialConfigurationId: 'learcredential.employee.w3c.1', displayName: 'Employee W3C v1', enabled: true },
+      { credentialConfigurationId: 'learcredential.employee.w3c.2', displayName: 'Employee W3C v2', enabled: false },
+      { credentialConfigurationId: 'learcredential.employee.sd.1', displayName: 'Employee SD-JWT v1', enabled: false }
+    ];
+
+    const labels = (): string[] => texts('.catalog__label');
+
+    it('should render only the newest version of each type and format', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      createComponent();
+
+      // sd.1 survives: a different format is a different thing to version, not a variant.
+      expect(labels()).toEqual(['Employee W3C v2', 'Employee SD-JWT v1']);
+    });
+
+    it('should keep the superseded versions out of the list but inside the payload', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      createComponent();
+
+      expect(component.visibleEntries().length).toBe(2);
+      expect(component.entries().length).toBe(3);
+    });
+
+    /**
+     * The PUT replaces the whole enabled set. Hiding w3c.1 must not drop it from the payload,
+     * or opening this screen and saving anything would silently disable it for the tenant.
+     */
+    it('should preserve a hidden enabled version when saving', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      createComponent();
+
+      component.toggleEntry(versioned[1], true);
+      component.save();
+
+      expect(catalogService.updateCatalog).toHaveBeenCalledWith([
+        'learcredential.employee.w3c.1',
+        'learcredential.employee.w3c.2'
+      ]);
+    });
+
+    it('should not warn about an empty set while a hidden version stays enabled', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      createComponent();
+
+      // Every visible toggle is off, yet the payload is non-empty, so the backend will not reset.
+      expect(component.visibleEntries().every(e => !e.enabled)).toBe(true);
+      expect(component.showEmptyWarning()).toBe(false);
+    });
+
+    /**
+     * The rest of the file relies on untranslated keys being echoed back, which is enough to
+     * assert a label exists. These cases assert the format and version actually reach the
+     * interpolation, so they need real strings.
+     */
+    const withTranslations = () => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', {
+        catalog: {
+          version: 'v{{version}}',
+          'toggle-aria': 'Enable {{name}}, format {{format}}, version {{version}}, for this tenant'
+        },
+        credentialIssuance: { format: { w3cVcDm: 'W3C VC Data Model v2.0', sdJwt: 'SD-JWT VC' } }
+      }, true);
+      translate.use('en');
+    };
+
+    it('should show the format and the version of each row', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      withTranslations();
+      createComponent();
+
+      expect(texts('.catalog__format')).toEqual(['W3C VC Data Model v2.0', 'SD-JWT VC']);
+      expect(texts('.catalog__version')).toEqual(['v2', 'v1']);
+    });
+
+    it('should read the format and version off the configuration id', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      createComponent();
+
+      expect(component.visibleEntries().map(r => [r.formatFamily, r.formatLabelKey, r.version])).toEqual([
+        ['w3c', 'credentialIssuance.format.w3cVcDm', 2],
+        ['sd', 'credentialIssuance.format.sdJwt', 1]
+      ]);
+    });
+
+    it('should show an unmapped format token raw instead of dropping the row', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'learcredential.employee.brandnew.1', displayName: 'Employee', enabled: true }
+      ]));
+      withTranslations();
+      createComponent();
+
+      expect(component.visibleEntries()[0].formatLabelKey).toBeNull();
+      expect(texts('.catalog__format')).toEqual(['brandnew']);
+    });
+
+    // Two formats of one type can share a display name, so the name alone is not a usable
+    // accessible name; the format and version have to be in there too.
+    it('should name each toggle by format and version as well', () => {
+      catalogService.getCatalog.mockReturnValue(of(versioned));
+      withTranslations();
+      createComponent();
+
+      expect(switches()[0].getAttribute('aria-label'))
+        .toBe('Enable Employee W3C v2, format W3C VC Data Model v2.0, version 2, for this tenant');
+      expect(switches()[1].getAttribute('aria-label'))
+        .toBe('Enable Employee SD-JWT v1, format SD-JWT VC, version 1, for this tenant');
+    });
+
+    it('should compare versions numerically', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'learcredential.employee.w3c.9', displayName: 'v9', enabled: false },
+        { credentialConfigurationId: 'learcredential.employee.w3c.10', displayName: 'v10', enabled: false }
+      ]));
+      createComponent();
+
+      expect(labels()).toEqual(['v10']);
+    });
+
+    it('should hide entries whose id carries no version', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'learcredential.employee.w3c.1', displayName: 'Versioned', enabled: true },
+        { credentialConfigurationId: 'LEAR_CREDENTIAL_EMPLOYEE', displayName: 'Legacy', enabled: true }
+      ]));
+      createComponent();
+
+      expect(labels()).toEqual(['Versioned']);
+    });
+
+    // Otherwise the admin gets a blank list with no explanation of what went wrong.
+    it('should fall back to the not-configured state when nothing is renderable', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'LEAR_CREDENTIAL_EMPLOYEE', displayName: 'Legacy', enabled: true }
+      ]));
+      createComponent();
+
+      expect(component.notConfigured()).toBe(true);
+      expect(el('#catalog-not-configured')).toBeTruthy();
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('tenant visibility', () => {
+    const registry: CredentialCatalogEntry[] = [
+      { credentialConfigurationId: 'learcredential.employee.w3c.1', displayName: 'Employee', enabled: true },
+      { credentialConfigurationId: 'doctorid.sd.1', displayName: 'Doctor ID', enabled: true },
+      { credentialConfigurationId: 'gx.labelcredential.w3c.2', displayName: 'Gaia-X Label', enabled: true }
+    ];
+
+    const namesFor = (tenant: string): string[] => {
+      catalogService.getCatalog.mockReturnValue(of(registry));
+      tenantService.tenant.set(tenant);
+      createComponent();
+      return texts('.catalog__label');
+    };
+
+    it('should show every type to sandbox', () => {
+      expect(namesFor('sandbox')).toEqual(['Employee', 'Doctor ID', 'Gaia-X Label']);
+    });
+
+    it('should show every type to platform', () => {
+      expect(namesFor('platform')).toEqual(['Employee', 'Doctor ID', 'Gaia-X Label']);
+    });
+
+    it('should show doctor id only to cgcom', () => {
+      expect(namesFor('cgcom')).toEqual(['Employee', 'Doctor ID']);
+    });
+
+    it('should show the label only to dome', () => {
+      expect(namesFor('dome')).toEqual(['Employee', 'Gaia-X Label']);
+    });
+
+    it('should hide both restricted types from any other tenant', () => {
+      expect(namesFor('kpmg')).toEqual(['Employee']);
+    });
+
+    it('should hide restricted types when the tenant did not resolve', () => {
+      expect(namesFor('')).toEqual(['Employee']);
+    });
+
+    /**
+     * Same rule as the version filter: hiding is presentation. Dropping a restricted type
+     * from the payload would disable it for the tenant, and the PUT replaces the whole set.
+     */
+    it('should keep a hidden restricted type enabled in the payload', () => {
+      catalogService.getCatalog.mockReturnValue(of(registry));
+      tenantService.tenant.set('kpmg');
+      createComponent();
+
+      component.toggleEntry(registry[0], false);
+      component.save();
+
+      expect(catalogService.updateCatalog).toHaveBeenCalledWith(['doctorid.sd.1', 'gx.labelcredential.w3c.2']);
+    });
+
+    it('should fall back to the not-configured state when every type is restricted away', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'doctorid.sd.1', displayName: 'Doctor ID', enabled: true }
+      ]));
+      tenantService.tenant.set('kpmg');
+      createComponent();
+
+      expect(component.notConfigured()).toBe(true);
+      expect(el('#catalog-not-configured')).toBeTruthy();
+    });
+
+    it('should combine with the version filter', () => {
+      catalogService.getCatalog.mockReturnValue(of([
+        { credentialConfigurationId: 'gx.labelcredential.w3c.1', displayName: 'Label v1', enabled: true },
+        { credentialConfigurationId: 'gx.labelcredential.w3c.2', displayName: 'Label v2', enabled: false },
+        { credentialConfigurationId: 'doctorid.sd.1', displayName: 'Doctor ID', enabled: true }
+      ]));
+      tenantService.tenant.set('dome');
+      createComponent();
+
+      // Label survives the tenant filter and only its newest version is offered; doctor id does not.
+      expect(texts('.catalog__label')).toEqual(['Label v2']);
+    });
+  });
+
   describe('save button (AC-02)', () => {
     it('should be disabled while there are no changes', () => {
       createComponent();
@@ -122,7 +359,7 @@ describe('CredentialCatalogComponent', () => {
       component.save();
       fixture.detectChanges();
 
-      expect(catalogService.updateCatalog).toHaveBeenCalledWith(['B']);
+      expect(catalogService.updateCatalog).toHaveBeenCalledWith([ID_B]);
       expect(component.hasChanges()).toBe(false);
       expect((el('#catalog-save-btn') as HTMLButtonElement).disabled).toBe(true);
     });
@@ -134,8 +371,8 @@ describe('CredentialCatalogComponent', () => {
       expect(catalogService.getCatalog).toHaveBeenCalledTimes(1);
 
       const persisted: CredentialCatalogEntry[] = [
-        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: false },
-        { credentialConfigurationId: 'B', displayName: 'Type B', enabled: true }
+        { credentialConfigurationId: ID_A, displayName: 'Type A', enabled: false },
+        { credentialConfigurationId: ID_B, displayName: 'Type B', enabled: true }
       ];
       catalogService.getCatalog.mockReturnValue(of(persisted));
 
@@ -199,7 +436,7 @@ describe('CredentialCatalogComponent', () => {
   describe('empty-set warning (EC-01)', () => {
     it('should warn when every type is disabled', () => {
       catalogService.getCatalog.mockReturnValue(of([
-        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: false }
+        { credentialConfigurationId: ID_A, displayName: 'Type A', enabled: false }
       ]));
       createComponent();
 
@@ -212,12 +449,12 @@ describe('CredentialCatalogComponent', () => {
 
     it('should appear as soon as the admin switches the last toggle off', () => {
       catalogService.getCatalog.mockReturnValue(of([
-        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: true }
+        { credentialConfigurationId: ID_A, displayName: 'Type A', enabled: true }
       ]));
       createComponent();
       expect(el('#catalog-empty-warning')).toBeNull();
 
-      component.toggleEntry({ credentialConfigurationId: 'A', displayName: 'Type A', enabled: true }, false);
+      component.toggleEntry({ credentialConfigurationId: ID_A, displayName: 'Type A', enabled: true }, false);
       fixture.detectChanges();
 
       expect(el('#catalog-empty-warning')).toBeTruthy();
@@ -389,7 +626,7 @@ describe('CredentialCatalogComponent', () => {
       expect(el('#catalog-save-error')).toBeTruthy();
       expect(el('#catalog-load-error')).toBeNull();
       expect(fixture.nativeElement.querySelectorAll('mat-slide-toggle').length).toBe(2);
-      expect(component.entries().find(e => e.credentialConfigurationId === 'B')?.enabled).toBe(true);
+      expect(component.entries().find(e => e.credentialConfigurationId === ID_B)?.enabled).toBe(true);
       expect(component.hasChanges()).toBe(true);
     });
 

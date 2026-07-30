@@ -39,7 +39,8 @@
     "retry": "Reintentar",
     "read-only": "Está consultando el catálogo en modo lectura. No puede guardar cambios.",
     "empty-set-warning": "Debe quedar habilitado al menos un tipo de credencial. Habilite uno para poder guardar.",
-    "toggle-aria": "Habilitar {{name}} para este tenant",
+    "version": "v{{version}}",
+    "toggle-aria": "Habilitar {{name}}, formato {{format}}, versión {{version}}, para este tenant",
     "error": {
       "load": {
         "title": "No se pudo cargar el catálogo",

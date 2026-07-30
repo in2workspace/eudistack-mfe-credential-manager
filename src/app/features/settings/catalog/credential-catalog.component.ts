@@ -5,13 +5,19 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { finalize, switchMap, tap } from 'rxjs/operators';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
+import {
+  keepLatestCredentialConfigurations,
+  parseCredentialConfigurationId
+} from 'src/app/core/helpers/credential-configuration-id';
+import { filterCredentialConfigurationsForTenant } from 'src/app/core/helpers/credential-type-visibility';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { TenantService } from 'src/app/core/services/tenant.service';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { guardUnloadWhileUnsaved, UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
-import { CredentialCatalogEntry } from './catalog.models';
+import { CredentialCatalogEntry, CredentialCatalogRow, FORMAT_FAMILY_LABEL_KEYS } from './catalog.models';
 import { CredentialCatalogService } from './credential-catalog.service';
 
 /**
@@ -46,6 +52,13 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
   public readonly forbidden = signal(false);
   /** The tenant has no credential type configured at all (404, or an empty list). */
   public readonly notConfigured = signal(false);
+  /**
+   * The whole registry as the backend returned it, superseded versions included.
+   *
+   * This — not `visibleEntries` — is what the PUT is built from, because the PUT has
+   * replace-all semantics: dropping a hidden entry from the payload would disable it for
+   * the tenant. Hiding a version must stay a presentation concern.
+   */
   public readonly entries = signal<CredentialCatalogEntry[]>([]);
 
   /** Last persisted state, used to tell whether there is anything to save. */
@@ -54,8 +67,19 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
   private readonly authService = inject(AuthService);
   private readonly catalogService = inject(CredentialCatalogService);
   private readonly dialog = inject(DialogWrapperService);
+  private readonly tenantService = inject(TenantService);
   private readonly translate = inject(TranslateService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+
+  /**
+   * The rows actually offered to the admin. See `renderableRows` for what gets dropped.
+   *
+   * Tracks the tenant signal as well as `entries`, so a late tenant resolution re-filters
+   * the list instead of leaving a restricted type on screen.
+   */
+  public readonly visibleEntries = computed<CredentialCatalogRow[]>(() =>
+    this.renderableRows(this.entries())
+  );
 
   /**
    * Compared as sets of enabled ids rather than positionally: the backend sorts the
@@ -72,6 +96,10 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
    * EC-01: saving with every toggle off sends an empty set, which makes the backend drop
    * the tenant configuration and re-enable *all* types — the opposite of what switching
    * everything off looks like. Saving is blocked instead (see `canSave`), and this warns why.
+   *
+   * Measured on the full list, not on `visibleEntries`: what matters is whether the PUT
+   * would carry an empty set. A superseded version left enabled keeps the payload non-empty,
+   * so the backend never resets — warning then would block a save that is perfectly safe.
    */
   public readonly showEmptyWarning = computed(() =>
     this.entries().length > 0 && this.entries().every(e => !e.enabled)
@@ -124,6 +152,9 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
   public save(): void {
     if (!this.canSave()) return;
 
+    // Built from the full registry on purpose: a superseded version the admin cannot see
+    // keeps whatever state it already had. Under replace-all semantics, omitting it here
+    // would turn "this row is hidden" into "this row is now disabled".
     const enabledIds = this.entries()
       .filter(e => e.enabled)
       .map(e => e.credentialConfigurationId);
@@ -162,7 +193,11 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
   private applyCatalog(list: CredentialCatalogEntry[]): void {
     // An empty registry is not an empty selection: there is nothing for the admin to act on,
     // and no toggle can bring the screen back. Treated exactly like the 404.
-    if (list.length === 0) {
+    //
+    // Emptiness is judged AFTER version filtering: a registry whose ids all lack a version
+    // segment leaves nothing renderable, and an empty list with no explanation reads as a
+    // broken screen. Same dead end, same message.
+    if (this.renderableCountOf(list) === 0) {
       this.applyNotConfigured();
       return;
     }
@@ -170,6 +205,46 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
     this.notConfigured.set(false);
     this.entries.set(list.map(e => ({ ...e })));
     this.baseline.set(list.map(e => ({ ...e })));
+  }
+
+  /**
+   * The registry reduced to what this admin should see, in display order:
+   *
+   *   1. types restricted to another tenant are dropped (Doctor ID is CGCOM's, the Gaia-X
+   *      Label is DOME's; `sandbox` and `platform` see everything);
+   *   2. of what remains, only the newest version of each type+format survives;
+   *   3. each survivor is decorated with the format and version read off its id.
+   *
+   * Both filters are presentation only — `entries()` keeps the whole registry, so a hidden
+   * row's enabled state is carried through the PUT untouched rather than being cleared.
+   *
+   * Steps 1 and 2 are independent (one works per type, the other per type+format), so the
+   * order between them does not change the result; restricted rows are dropped first simply
+   * because there is no point picking a winner among rows nobody may see.
+   */
+  private renderableRows(list: readonly CredentialCatalogEntry[]): CredentialCatalogRow[] {
+    const idOf = (entry: CredentialCatalogEntry) => entry.credentialConfigurationId;
+    const allowed = filterCredentialConfigurationsForTenant(list, idOf, this.tenantService.tenant());
+    return keepLatestCredentialConfigurations(allowed, idOf).map(entry => this.toRow(entry));
+  }
+
+  private renderableCountOf(list: CredentialCatalogEntry[]): number {
+    return this.renderableRows(list).length;
+  }
+
+  /**
+   * Only entries that survived `keepLatestCredentialConfigurations` reach here, and surviving
+   * requires a parseable id — hence the non-null assertion rather than a fallback branch that
+   * no input can reach.
+   */
+  private toRow(entry: CredentialCatalogEntry): CredentialCatalogRow {
+    const parsed = parseCredentialConfigurationId(entry.credentialConfigurationId)!;
+    return {
+      ...entry,
+      formatFamily: parsed.formatFamily,
+      formatLabelKey: FORMAT_FAMILY_LABEL_KEYS[parsed.formatFamily] ?? null,
+      version: parsed.version
+    };
   }
 
   private applyLoadError(error: HttpErrorResponse): void {

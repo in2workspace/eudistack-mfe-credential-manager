@@ -39,7 +39,8 @@
     "retry": "Torna-ho a provar",
     "read-only": "Esteu consultant el catàleg en mode lectura. No podeu desar canvis.",
     "empty-set-warning": "Hi ha d'haver com a mínim un tipus de credencial habilitat. Habiliteu-ne un per poder desar.",
-    "toggle-aria": "Habilitar {{name}} per a aquest tenant",
+    "version": "v{{version}}",
+    "toggle-aria": "Habilitar {{name}}, format {{format}}, versió {{version}}, per a aquest tenant",
     "error": {
       "load": {
         "title": "No s'ha pogut carregar el catàleg",

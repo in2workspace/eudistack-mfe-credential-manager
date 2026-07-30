@@ -39,7 +39,8 @@
     "retry": "Retry",
     "read-only": "You are viewing the catalogue in read-only mode. You cannot save changes.",
     "empty-set-warning": "At least one credential type must stay enabled. Enable one to be able to save.",
-    "toggle-aria": "Enable {{name}} for this tenant",
+    "version": "v{{version}}",
+    "toggle-aria": "Enable {{name}}, format {{format}}, version {{version}}, for this tenant",
     "error": {
       "load": {
         "title": "The catalogue could not be loaded",
