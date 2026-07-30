@@ -35,6 +35,16 @@ describe('SettingsComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  // Neither section exists yet: the links reached a placeholder (schemes reused the issuance
+  // form) or navigated out of Settings altogether (TF pointed at /organization/credentials).
+  it('should not offer the unimplemented Schemes and Trust Framework sections', () => {
+    const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('a[mat-list-item]'));
+
+    expect(links.length).toBe(1);
+    expect(links.some(a => a.getAttribute('routerLink') === '/settings/schemes')).toBe(false);
+    expect(links.some(a => a.getAttribute('routerLink') === '/organization/credentials')).toBe(false);
+  });
+
   describe('credential catalog nav link (EUD-72)', () => {
     it('should be shown to a tenant admin', () => {
       expect(component.canSeeCatalog()).toBe(true);

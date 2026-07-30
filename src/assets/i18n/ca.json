@@ -34,11 +34,11 @@
   },
   "catalog": {
     "title": "Catàleg de credencials",
-    "description": "Seleccioneu quins tipus de credencial pot emetre la vostra organització.",
+    "description": "Seleccioneu quins tipus de credencial pot emetre la vostra organització. Cliqueu \"Desar canvis\" per aplicar-los; fins llavors no es desa res.",
     "save": "Desar canvis",
     "retry": "Torna-ho a provar",
     "read-only": "Esteu consultant el catàleg en mode lectura. No podeu desar canvis.",
-    "empty-set-warning": "Cap tipus està habilitat. Mentre no en deseu com a mínim un, el sistema continuarà permetent tots els tipus (comportament per defecte).",
+    "empty-set-warning": "Hi ha d'haver com a mínim un tipus de credencial habilitat. Habiliteu-ne un per poder desar.",
     "toggle-aria": "Habilitar {{name}} per a aquest tenant",
     "error": {
       "load": {
@@ -49,8 +49,15 @@
         "title": "No teniu permís per gestionar el catàleg",
         "description": "Només l'administrador de l'organització pot consultar o modificar els tipus de credencial emetibles."
       },
+      "not-configured": {
+        "title": "No s'ha trobat cap credencial",
+        "description": "No hi ha cap tipus de credencial configurat per a la vostra organització, així que no hi ha res per gestionar aquí. Poseu-vos en contacte amb l'equip de suport."
+      },
       "save": "No s'han pogut desar els canvis. Les vostres seleccions s'han conservat."
     }
+  },
+  "unsavedChanges": {
+    "leaveAlert": "Segur que voleu sortir? Perdreu els canvis no desats."
   },
   "mandator": {
     "organizationid": "Número VAT de l'empresa",

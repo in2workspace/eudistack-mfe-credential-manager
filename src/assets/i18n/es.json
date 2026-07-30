@@ -34,11 +34,11 @@
   },
   "catalog": {
     "title": "Catálogo de credenciales",
-    "description": "Seleccione qué tipos de credencial puede emitir su organización.",
+    "description": "Seleccione qué tipos de credencial puede emitir su organización. Pulse \"Guardar cambios\" para aplicarlos; hasta entonces no se guarda nada.",
     "save": "Guardar cambios",
     "retry": "Reintentar",
     "read-only": "Está consultando el catálogo en modo lectura. No puede guardar cambios.",
-    "empty-set-warning": "Ningún tipo está habilitado. Mientras no guarde al menos uno, el sistema seguirá permitiendo todos los tipos (comportamiento por defecto).",
+    "empty-set-warning": "Debe quedar habilitado al menos un tipo de credencial. Habilite uno para poder guardar.",
     "toggle-aria": "Habilitar {{name}} para este tenant",
     "error": {
       "load": {
@@ -49,8 +49,15 @@
         "title": "No tiene permiso para gestionar el catálogo",
         "description": "Solo el administrador de la organización puede consultar o modificar los tipos de credencial emitibles."
       },
+      "not-configured": {
+        "title": "No se ha encontrado ninguna credencial",
+        "description": "No hay ningún tipo de credencial configurado para su organización, por lo que no hay nada que gestionar aquí. Póngase en contacto con el equipo de soporte."
+      },
       "save": "No se pudieron guardar los cambios. Sus selecciones se han conservado."
     }
+  },
+  "unsavedChanges": {
+    "leaveAlert": "¿Seguro que desea salir? Se perderán los cambios sin guardar."
   },
   "mandator": {
     "organizationid": "Número VAT de empresa",

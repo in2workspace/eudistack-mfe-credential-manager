@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { of, Subject, throwError } from 'rxjs';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
+import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialCatalogComponent } from './credential-catalog.component';
 import { CredentialCatalogService } from './credential-catalog.service';
 import { CredentialCatalogEntry } from './catalog.models';
@@ -16,6 +17,7 @@ describe('CredentialCatalogComponent', () => {
 
   let catalogService: { getCatalog: jest.Mock; updateCatalog: jest.Mock };
   let authService: { roleType: ReturnType<typeof signal<RoleType>> };
+  let dialog: { openErrorInfoDialog: jest.Mock };
 
   const entries = (): CredentialCatalogEntry[] => [
     { credentialConfigurationId: 'A', displayName: 'Type A', enabled: true },
@@ -41,14 +43,22 @@ describe('CredentialCatalogComponent', () => {
       updateCatalog: jest.fn().mockReturnValue(of(undefined))
     };
     authService = { roleType: signal(RoleType.TENANT_ADMIN) };
+    dialog = { openErrorInfoDialog: jest.fn() };
 
     await TestBed.configureTestingModule({
       imports: [CredentialCatalogComponent, TranslateModule.forRoot(), NoopAnimationsModule],
       providers: [
         { provide: CredentialCatalogService, useValue: catalogService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: DialogWrapperService, useValue: dialog }
       ]
     }).compileComponents();
+  });
+
+  // `globalThis.confirm` is spied on by the unsaved-changes cases; jest is not configured
+  // with `restoreMocks`, so it would otherwise leak into the rest of the file.
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('load (AC-01)', () => {
@@ -193,10 +203,11 @@ describe('CredentialCatalogComponent', () => {
       ]));
       createComponent();
 
+      // Assertive rather than polite: the warning now explains why saving is refused.
       const warning = el('#catalog-empty-warning');
       expect(warning).toBeTruthy();
-      expect(warning?.getAttribute('role')).toBe('status');
-      expect(warning?.getAttribute('aria-live')).toBe('polite');
+      expect(warning?.getAttribute('role')).toBe('alert');
+      expect(warning?.getAttribute('aria-live')).toBe('assertive');
     });
 
     it('should appear as soon as the admin switches the last toggle off', () => {
@@ -220,25 +231,115 @@ describe('CredentialCatalogComponent', () => {
     });
 
     // Saving an empty set makes the backend drop the tenant configuration, which re-enables
-    // every type. Without the post-save reload the view kept showing the toggles off until
-    // the admin left the page and came back.
-    it('should show every type re-enabled right after saving an empty set', () => {
+    // every type — the opposite of what the admin just asked for. The PUT is refused instead.
+    it('should block the save button once the last toggle goes off', () => {
       createComponent();
 
-      catalogService.getCatalog.mockReturnValue(of([
-        { credentialConfigurationId: 'A', displayName: 'Type A', enabled: true },
-        { credentialConfigurationId: 'B', displayName: 'Type B', enabled: true }
-      ]));
+      component.toggleEntry(entries()[0], false);
+      fixture.detectChanges();
+
+      expect(component.hasChanges()).toBe(true);
+      expect(component.canSave()).toBe(false);
+      expect((el('#catalog-save-btn') as HTMLButtonElement).disabled).toBe(true);
+      expect(el('#catalog-empty-warning')).toBeTruthy();
+    });
+
+    it('should never PUT an empty set', () => {
+      createComponent();
 
       component.toggleEntry(entries()[0], false);
       component.save();
+
+      expect(catalogService.updateCatalog).not.toHaveBeenCalled();
+    });
+
+    it('should unblock the save button as soon as a type is re-enabled', () => {
+      createComponent();
+
+      component.toggleEntry(entries()[0], false);
+      component.toggleEntry(entries()[1], true);
       fixture.detectChanges();
 
-      expect(catalogService.updateCatalog).toHaveBeenCalledWith([]);
-      expect(component.entries().every(e => e.enabled)).toBe(true);
-      expect(switches().every(t => t.getAttribute('aria-checked') === 'true')).toBe(true);
-      expect(component.showEmptyWarning()).toBe(false);
+      expect(component.canSave()).toBe(true);
+      expect((el('#catalog-save-btn') as HTMLButtonElement).disabled).toBe(false);
       expect(el('#catalog-empty-warning')).toBeNull();
+    });
+  });
+
+  describe('unsaved changes', () => {
+    it('should let the admin leave while nothing has been touched', () => {
+      const confirmSpy = jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+      createComponent();
+
+      expect(component.canDeactivate()).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it('should ask for confirmation when leaving with pending toggles', () => {
+      const confirmSpy = jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+      createComponent();
+
+      component.toggleEntry(entries()[1], true);
+
+      expect(component.canDeactivate()).toBe(true);
+      expect(confirmSpy).toHaveBeenCalled();
+    });
+
+    it('should keep the admin on the page when they cancel the confirmation', () => {
+      jest.spyOn(globalThis, 'confirm').mockReturnValue(false);
+      createComponent();
+
+      component.toggleEntry(entries()[1], true);
+
+      expect(component.canDeactivate()).toBe(false);
+    });
+
+    it('should stop tracking changes after a successful save', () => {
+      const confirmSpy = jest.spyOn(globalThis, 'confirm').mockReturnValue(true);
+      createComponent();
+
+      component.toggleEntry(entries()[1], true);
+      component.save();
+
+      expect(component.canDeactivate()).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('no credential type configured', () => {
+    const expectNotConfigured = () => {
+      expect(component.notConfigured()).toBe(true);
+      expect(el('#catalog-not-configured')).toBeTruthy();
+      expect(el('#catalog-load-error')).toBeNull();
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledTimes(1);
+      expect(dialog.openErrorInfoDialog.mock.calls[0][1]).toBe('catalog.error.not-configured.description');
+      expect(dialog.openErrorInfoDialog.mock.calls[0][2]).toBe('catalog.error.not-configured.title');
+    };
+
+    it('should warn through a dialog when the backend returns an empty list', () => {
+      catalogService.getCatalog.mockReturnValue(of([]));
+      createComponent();
+
+      expectNotConfigured();
+    });
+
+    it('should warn through a dialog on 404 instead of the generic load error', () => {
+      catalogService.getCatalog.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      createComponent();
+
+      expectNotConfigured();
+    });
+
+    it('should recover when a retry finds the catalog', () => {
+      catalogService.getCatalog.mockReturnValueOnce(of([]));
+      createComponent();
+
+      catalogService.getCatalog.mockReturnValue(of(entries()));
+      (el('#catalog-retry-btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(component.notConfigured()).toBe(false);
+      expect(fixture.nativeElement.querySelectorAll('mat-slide-toggle').length).toBe(2);
     });
   });
 

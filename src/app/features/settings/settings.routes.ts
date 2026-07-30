@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { canDeactivateGuard } from 'src/app/core/guards/can-component-deactivate.guard';
 import { SettingsComponent } from './settings.component';
 import { CredentialIssuanceComponent } from '../credential-issuance/components/credential-issuance/credential-issuance.component';
 
@@ -19,7 +20,9 @@ export default [
           loadComponent: () =>
             import('./catalog/credential-catalog.component').then(
               m => m.CredentialCatalogComponent
-            )
+            ),
+          // Toggles live in memory until the PUT succeeds; leaving discards them silently.
+          canDeactivate: [canDeactivateGuard]
         },
       ]
    },

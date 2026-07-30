@@ -21,7 +21,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
 
+/** Issuance-specific wording for the shared "pending edits will be lost" prompt. */
+const UNSAVED_ISSUANCE_ALERT_KEY = 'credentialIssuance.unloadAlert';
 
 @Injectable() //provided in Issuance Component
 export class CredentialIssuanceService {
@@ -128,6 +131,7 @@ export class CredentialIssuanceService {
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
   private readonly themeService = inject(ThemeService);
+  private readonly unsavedChanges = inject(UnsavedChangesService);
 
   constructor() {
     this.credentialTypesArr = this.resolveCredentialTypesByTenant();
@@ -196,15 +200,11 @@ export class CredentialIssuanceService {
   }
 
   public canDeactivate(): CanDeactivateType {
-      const canLeave = this.canLeave();
-      if(canLeave) return canLeave;
-      return this.openLeaveConfirm();
+      return this.unsavedChanges.canDeactivate(!this.canLeave(), UNSAVED_ISSUANCE_ALERT_KEY);
   }
 
   public openLeaveConfirm(): boolean{
-    const alertMsg = this.translate.instant("credentialIssuance.unloadAlert");
-    const confirm = globalThis.confirm(alertMsg);
-    return confirm;
+    return this.unsavedChanges.confirmLeave(UNSAVED_ISSUANCE_ALERT_KEY);
   }
 
   // this is the default dialog to confirm the form submission
