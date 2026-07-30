@@ -395,7 +395,8 @@ export class CredentialIssuanceService {
    */
   private handleIssuanceFailure(error: unknown): Observable<any> {
     console.error('POST /api/v1/issuances failed', error);
-    return this.openFailedCreateDialog();
+    this.openFailedCreateDialog();
+    return EMPTY;
   }
 
   private openFailedCreateDialog(): Observable<any> {
