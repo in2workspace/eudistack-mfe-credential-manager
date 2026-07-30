@@ -341,7 +341,6 @@ export class CredentialIssuanceService {
         // segmentar por contexto: basta con no invocarlo desde aqui.
         switchMap(() => this.openSuccessfulCreateDialog()),
         switchMap(() => from(this.navigateToCredentials())),
-        tap(() => location.reload()),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }

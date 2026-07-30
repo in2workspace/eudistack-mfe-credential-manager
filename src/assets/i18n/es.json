@@ -133,7 +133,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
-      "message": "La credencial ha sido revocada."
+      "message": "La credencial ha quedado revocada y su estado ha sido publicado en la lista de revocación."
     },
     "withdrawCredentialConfirm": {
       "title": "Retirar Credencial",
@@ -347,6 +347,10 @@
       "unexpected": "Se produjo un error inesperado. Inténtalo de nuevo más tarde o contacta con el Representante Legal de tu empresa para obtener una nueva credencial.",
       "not-found": "Esta oferta de credencial no es válida. Puede que ya se haya descargado, haya caducado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico. Si ha caducado o no puedes encontrar una válida, contacta con el Representante Legal de tu empresa para solicitar una nueva.",
       "conflict": "La oferta de credencial no es válida. Puede que ya se haya descargado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico."
+    },
+    "revocation": {
+      "notRevocable": "Esta credencial ya está revocada o ha expirado y no puede revocarse de nuevo.",
+      "forbidden": "No tienes permiso para revocar esta credencial."
     },
     "server_mail_error": {
       "title": "Error del Servidor de Correo",

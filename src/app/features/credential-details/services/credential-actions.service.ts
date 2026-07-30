@@ -2,7 +2,7 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, switchMap, from, tap, EMPTY } from 'rxjs';
+import { Observable, switchMap, from, EMPTY } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
@@ -110,8 +110,7 @@ export class CredentialActionsService {
       }),
       switchMap(()  =>
         from(this.router.navigate(['/organization/credentials']))
-      ),
-      tap(() => location.reload())
+      )
     );
   }
 

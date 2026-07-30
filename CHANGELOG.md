@@ -19,8 +19,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
 
+## [3.5.28] - 24-07-2026
+
+### Added
+
+- **Calidalia tenant**: added `'calidalia'` to `KNOWN_TENANTS` (`tenants.constants.ts`) so the tenant guard resolves the hostname instead of redirecting to `/tenant-not-found`.
+
+## [3.5.27] - 22-07-2026
+
+### Added
+
+- **EUD-98 — Know the result of the revocation and leave a trace of the reason**
+  - i18n: `credentialDetails.revokeCredentialSuccess.message` (es/en/ca) now explicitly confirms the credential's status was published to the revocation list, not just "revoked" (AC-05). No code change — `executeCredentialBackendAction` already consumes this key via `translate.instant`.
+  - Tests: new `revokeCredential (callback behaviour)` spec in `credential-actions.service.spec.ts`, asserting the success dialog shows the `revokeCredentialSuccess` i18n keys and that a revoke error never shows a misleading success dialog (AC-05, AC-06 regression — `handleRevocationError` coverage already present from EUD-97).
+
+### Fixed [3.5.26] - 22-07-2026
+
+- **Public credential-offer pages bounced to home / dashboard by the silent-SSO redirect**
+  - Visiting `credential-offer` or `credential-offer-refresh/:token` without a session briefly rendered the page and then redirected away: `AuthService`'s constructor runs `checkAuth$()` at bootstrap on every route, and when not authenticated it fired `trySilentSsoOnce()` (a full-page `prompt=none` redirect to the Verifier). The Verifier replied `error=login_required` and sent the browser to the fixed `redirectUrl` (app root → `home`), discarding the original offer URL.
+  - `AuthService`: added `isOnPublicRoute()` and gated `trySilentSsoOnce()` behind it, so the silent-SSO redirect is skipped on the auth-guard-free public routes. The helper reads `location.pathname` (not `router.url`) because it runs from the constructor before the Angular router has resolved the initial navigation.
+  - `iam.constants.ts`: new `PUBLIC_ROUTE_PREFIXES`, matched with an anchored `startsWith` against `location.pathname`. Since `pathname` includes the app baseHref, both the app-relative (`/credential-offer`, `/credential-offer-refresh`) and `/issuer`-prefixed variants are listed. Kept in sync with the auth-guard-free routes in `app.routes.ts`.
+  - Tests: added `AuthService` specs covering `isOnPublicRoute()` (public vs protected paths) and that `checkAuth$()` skips the silent-SSO redirect on public routes while still firing it on protected ones.
+
+### Changed [3.5.25] - 21-07-2026
+
+- Only show the revocation button for credentials whose credential status is of type `BitstringStatusListEntry`. This hides the button for legacy credentials that have `PlainListEntity` credential status.
+
+## [3.5.24] - 21-07-2026
+
+### Fixed
+
+- Navbar logout button disappearing after closing the "Credential revoked" dialog (also reproducible after signing, withdrawing or archiving a credential): removed the same unnecessary `location.reload()` call — already fixed in `CredentialIssuanceService` in 3.5.21 — that remained in `CredentialActionsService.executeCredentialBackendAction()`, shared by `signCredential`, `revokeCredential`, `withdrawCredential` and `archiveCredential`. The full-page reload raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
+- Updated `credential-actions.service.spec.ts` to drop the now-obsolete `window.location.reload` assertion/mock.
+
+## [3.5.23] - 21-07-2026
+
+### Fixed
+
+- **Render legacy (pre-versioned) credentials in the details view**
+  - Migrated credentials store a legacy `credential_configuration_id` (e.g. `LEAR_CREDENTIAL_EMPLOYEE`) that no longer matches the issuer metadata, so `CredentialDetailsService.resolveSchema` threw `No schema available for credential ...` and neither the schema nor the display name resolved.
+  - Added a self-contained, removable legacy compatibility layer in `credential-details/legacy/legacy-credential-support.ts`:
+    - `matchLegacyConfig`: resolves a credential by matching its VC `type[]` against `credential_definition.type`, choosing the highest version that still declares the legacy type name (employee → `w3c.3`, machine → `w3c.2`, label → `w3c.1`).
+    - `normalizeLegacyCredential`: rewrites DOME v1 data shapes so existing renderers work unchanged — `tmf_domain`/`tmf_function`/`tmf_action` → `domain`/`function`/`action` (which previously crashed `DetailsPowerComponent`), and `mandator.emailAddress` → `email`.
+  - `CredentialDetailsService`: wired the fallback into `resolveSchema` and `credentialDisplayName$`, guarded so it runs only when the exact metadata lookup fails; the original `throw` is kept when nothing matches.
+  - `CredentialIssuerMetadataService`: added generic `getAllConfigurations()` accessor.
+  - Tests: new `legacy-credential-support.spec.ts`; added `resolveSchema` legacy-fallback specs and extended the metadata mock in `credential-details.service.spec.ts`.
+
+## [3.5.22] - 16-07-2026
+
+### Added
+
+- **EUD-97 — Protect revocation against non-revocable states and out-of-scope credentials**
+  - `CredentialProcedureService`: new `handleRevocationError`, chained after `handleError` in `revokeCredential`. Maps `409` → "credential not revocable" dialog, `403` → "not authorized" dialog, using the existing `openErrorInfoDialog` pattern. Unlike `handleCredentialOfferError`, it does **not** redirect — the operator stays on the credential detail view so the reason for the denial remains visible (AC-07, AC-08).
+  - `i18n`: added `error.revocation.notRevocable` / `error.revocation.forbidden` keys in `es.json`, `en.json`, `ca.json`.
+  - Tests: new specs for `handleRevocationError` (409/403) in `credential-procedure.service.spec.ts`, verifying the correct dialog opens and no navigation occurs.
+  - Confirmed existing `statusHasRevokeCredentialButton` (`actions-helpers.ts`) already returns `true` only for `VALID` — defense-in-depth for EC-02, already covered by `actions-helpers.spec.ts`.
+
 ## [3.5.21] - 10-07-2026
 
+### Fixed
+- Navbar logout button disappearing after closing the credential-offer QR dialog: removed the unnecessary `location.reload()` call in `CredentialIssuanceService.submitCredentialPayload()`, which forced a full-page reload and raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
 ### Added
 
 - `AuthService`: when `checkAuth$()` resolves as not authenticated, attempt a one-shot silent SSO check via a full-page redirect with `prompt=none` (`trySilentSsoOnce`), guarded by a `sessionStorage` flag so it only runs once per browser session. This lets a session already established on another tenant app (sharing the same root-domain cookie) be picked up without showing the QR login unnecessarily; the Verifier's `frame-ancestors` CSP prevents doing this via a silent iframe renew.

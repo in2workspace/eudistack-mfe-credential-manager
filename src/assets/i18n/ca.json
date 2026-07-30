@@ -133,7 +133,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
-      "message": "La credencial ha estat revocada."
+      "message": "La credencial ha quedat revocada i el seu estat s'ha publicat a la llista de revocació."
     },
     "withdrawCredentialConfirm": {
       "title": "Retirar Credencial",
@@ -347,6 +347,10 @@
       "unexpected": "S'ha produït un error inesperat. Torna-ho a intentar més tard o posa't en contacte amb el Representant Legal de la teva empresa per obtenir una nova credencial.",
       "not-found": "Aquesta oferta de credencial no és vàlida. Pot ser que ja s'hagi descarregat, hagi caducat o hagi estat reemplaçada per una de nova. Si has rebut una nova oferta, consulta el teu correu electrònic. Si ha caducat o no pots trobar-ne cap de vàlida, contacta amb el Representant Legal de la teva empresa per sol·licitar-ne una de nova.",
       "conflict": "L'oferta de credencial no és vàlida. Pot ser que ja s'hagi descarregat o hagi estat reemplaçada per una de nova. Si has rebut una nova oferta, consulta el teu correu electrònic."
+    },
+    "revocation": {
+      "notRevocable": "Aquesta credencial ja està revocada o ha caducat i no es pot tornar a revocar.",
+      "forbidden": "No tens permís per revocar aquesta credencial."
     },
     "serverMailError": {
       "title": "Error del servidor de correu",

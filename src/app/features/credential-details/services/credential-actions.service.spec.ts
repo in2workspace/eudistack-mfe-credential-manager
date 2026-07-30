@@ -38,12 +38,6 @@ describe('CredentialActionsService', () => {
 
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Override window.location.reload
-    Object.defineProperty(window, 'location', {
-      value: { reload: jest.fn() },
-      writable: true,
-    });
-
     TestBed.configureTestingModule({
       providers: [
         CredentialActionsService,
@@ -113,7 +107,6 @@ describe('CredentialActionsService', () => {
           expect(actionSpy).toHaveBeenCalledWith(procId);
           expect(mockDialog.openDialog).toHaveBeenCalledWith(DialogComponent, expect.objectContaining({ title: titleKey, message: messageKey }));
           expect(mockRouter.navigate).toHaveBeenCalledWith(['/organization/credentials']);
-          expect(window.location.reload).toHaveBeenCalled();
           expect(res).toBe(true);
           done();
         });
@@ -213,6 +206,46 @@ describe('CredentialActionsService', () => {
         next: () => fail('should have errored'),
         error: (err: Error) => {
           expect(err).toBe(serverError);
+          done();
+        },
+      });
+    });
+  });
+
+  describe('revokeCredential (callback behaviour)', () => {
+    it('callback success: should show revokeCredentialSuccess i18n keys after a successful revoke', done => {
+      const issuanceId = 'cred-revoke-001';
+      service.openRevokeCredentialDialog(issuanceId);
+
+      const [_, __, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      (callback() as any).subscribe(() => {
+        expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith(issuanceId);
+        expect(mockDialog.openDialog).toHaveBeenCalledWith(
+          DialogComponent,
+          expect.objectContaining({
+            title: 'credentialDetails.revokeCredentialSuccess.title',
+            message: 'credentialDetails.revokeCredentialSuccess.message',
+          })
+        );
+        expect(mockRouter.navigate).toHaveBeenCalledWith(['/organization/credentials']);
+        done();
+      });
+    });
+
+    it('callback error: should NOT show the success dialog and should propagate the error', done => {
+      const issuanceId = 'cred-revoke-002';
+      const revokeError = new Error('409 Conflict');
+      (mockCredentialProcedure.revokeCredential as jest.Mock).mockReturnValue(
+        new Observable((obs) => obs.error(revokeError))
+      );
+
+      service.openRevokeCredentialDialog(issuanceId);
+      const [_, __, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      (callback() as any).subscribe({
+        next: () => fail('should have errored'),
+        error: (err: Error) => {
+          expect(err).toBe(revokeError);
+          expect(mockDialog.openDialog).not.toHaveBeenCalled();
           done();
         },
       });

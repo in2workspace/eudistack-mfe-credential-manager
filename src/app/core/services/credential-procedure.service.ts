@@ -87,7 +87,8 @@ export class CredentialProcedureService {
   public revokeCredential(issuanceId: string): Observable<void>{
     const body: CredentialRevokeRequestDto = { issuanceId };
     return this.http.post<void>(this.revokeCredentialUrl, body).pipe(
-      catchError(this.handleError)
+      catchError(this.handleError),
+      catchError(this.handleRevocationError)
     );
   }
 
@@ -182,5 +183,19 @@ export class CredentialProcedureService {
     return throwError(() => error);
   };
 
+  // 409: credential not in a revocable status (already revoked/expired). 403: out of scope
+  // or missing capability. Per AC-07/AC-08 the operator stays on the current view — no
+  // redirect — so the reason for the denial remains visible.
+  private readonly handleRevocationError = (error: HttpErrorResponse): Observable<never> => {
+    const errorStatus = error?.status ?? error?.error?.status ?? 0;
+
+    if (errorStatus === 409) {
+      this.dialog.openErrorInfoDialog(DialogComponent, this.translate.instant('error.revocation.notRevocable'));
+    } else if (errorStatus === 403) {
+      this.dialog.openErrorInfoDialog(DialogComponent, this.translate.instant('error.revocation.forbidden'));
+    }
+
+    return throwError(() => error);
+  };
 
 }

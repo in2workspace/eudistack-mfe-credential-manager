@@ -428,6 +428,79 @@ describe('get credential offer by c-code', () => {
     });
   });
 
+  describe('handleRevocationError', () => {
+    it('should show notRevocable message on 409 without redirecting', () => {
+      const error = new HttpErrorResponse({ status: 409, error: {} });
+
+      service['handleRevocationError'](error).subscribe({
+        error: err => {
+          expect(translateSpy.instant).toHaveBeenCalledWith('error.revocation.notRevocable');
+          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.notRevocable');
+          expect(routerSpy.navigate).not.toHaveBeenCalled();
+          expect(err).toBe(error);
+        }
+      });
+    });
+
+    it('should show forbidden message on 403 without redirecting', () => {
+      const error = new HttpErrorResponse({ status: 403, error: {} });
+
+      service['handleRevocationError'](error).subscribe({
+        error: err => {
+          expect(translateSpy.instant).toHaveBeenCalledWith('error.revocation.forbidden');
+          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.forbidden');
+          expect(routerSpy.navigate).not.toHaveBeenCalled();
+          expect(err).toBe(error);
+        }
+      });
+    });
+
+    it('should not show a dialog for other statuses', () => {
+      const error = new HttpErrorResponse({ status: 500, error: {} });
+
+      service['handleRevocationError'](error).subscribe({
+        error: err => {
+          expect(dialogSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+          expect(err).toBe(error);
+        }
+      });
+    });
+  });
+
+  describe('revokeCredential', () => {
+    it('should show notRevocable dialog and propagate the error on 409', () => {
+      const issuanceId = 'issuance-1';
+      const error = new HttpErrorResponse({ status: 409, error: {} });
+
+      service.revokeCredential(issuanceId).subscribe({
+        next: () => fail('Expected error'),
+        error: err => {
+          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.notRevocable');
+          expect(err).toBe(error);
+        }
+      });
+
+      const req = httpMock.expectOne(revokeCredentialUrl);
+      req.flush({}, error);
+    });
+
+    it('should show forbidden dialog and propagate the error on 403', () => {
+      const issuanceId = 'issuance-1';
+      const error = new HttpErrorResponse({ status: 403, error: {} });
+
+      service.revokeCredential(issuanceId).subscribe({
+        next: () => fail('Expected error'),
+        error: err => {
+          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.forbidden');
+          expect(err).toBe(error);
+        }
+      });
+
+      const req = httpMock.expectOne(revokeCredentialUrl);
+      req.flush({}, error);
+    });
+  });
+
   describe('getCredentialOfferByTransactionCode', () => {
     it('should propagate error returned by handleCredentialOfferError', () => {
       const transactionCode = 'test-code';

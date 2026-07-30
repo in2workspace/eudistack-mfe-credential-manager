@@ -19,7 +19,7 @@ export interface CredentialStatus {
   "statusListIndex": CredentialStatusListIndex,
   "statusListCredential": string;
 } 
-export type CredentialStatusType = 'PlainListEntity';
+export type CredentialStatusType = 'PlainListEntity' | 'BitstringStatusListEntry';
 export type CredentialStatusPurpose = 'revocation';
 export type CredentialStatusListIndex = '<nonce>';
 
