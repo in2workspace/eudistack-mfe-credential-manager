@@ -6,30 +6,30 @@ import {
 import { ValidatorEntryUnion } from 'src/app/shared/validators/credential-issuance/all-validators';
 
 export interface ClaimsToFieldsOptions {
-  /** Locale activo (TranslateService.currentLang). Admite 'es' frente a un display 'es-ES'. */
+  /** Active locale (TranslateService.currentLang). Accepts 'es' against a display of 'es-ES'. */
   locale?: string;
-  /** Solo se mapean los claims cuyo path contiene este segmento (p.ej. 'mandatee'). */
+  /** Only claims whose path contains this segment are mapped (e.g. 'mandatee'). */
   pathSegment?: string;
   /**
-   * Claves obligatorias. AC-07 se resuelve aqui porque ClaimDefinitionDto NO expone
-   * flag de obligatoriedad (ni el DTO TS ni el record ClaimDefinition de Java);
-   * hasta EUD-58 la obligatoriedad la aporta la definicion provisional local.
+   * Required keys. AC-07 is resolved here because ClaimDefinitionDto does NOT expose
+   * a required flag (neither the TS DTO nor the Java ClaimDefinition record);
+   * until EUD-58, requiredness comes from the local provisional definition.
    */
   requiredKeys?: readonly string[];
   /**
-   * Puente AD-2 opcion C: para las claves que el frontend ya sabe validar
-   * (firstName, email...) se reutiliza su definicion completa y solo se
-   * sobrescribe la etiqueta con la del metadata.
+   * AD-2 option C bridge: for keys the frontend already knows how to validate
+   * (firstName, email...) its full definition is reused, only overwriting
+   * the label with the one from the metadata.
    */
   fieldOverrides?: Readonly<Record<string, CredentialIssuanceViewModelField>>;
 }
 
-/** Ultimo segmento del path: es el nombre del FormControl dentro de su FormGroup. */
+/** Last segment of the path: the FormControl's name within its FormGroup. */
 export function claimKey(claim: ClaimDefinitionDto): string {
   return claim.path[claim.path.length - 1];
 }
 
-/** AC-02: display[].name del locale actual; si no hay display utilizable, el path. */
+/** AC-02: display[].name for the current locale; falls back to the path if none is usable. */
 export function resolveClaimLabel(claim: ClaimDefinitionDto, locale?: string): string {
   const displays = claim.display ?? [];
   const language = locale?.split('-')[0];
@@ -42,11 +42,11 @@ export function resolveClaimLabel(claim: ClaimDefinitionDto, locale?: string): s
 }
 
 /**
- * AC-02 / EC-02: convierte la definicion de la credencial en campos de formulario.
- * Devuelve [] si no hay claims utilizables, para que quien llama decida el puente
- * (conjunto provisional de empleado, AD-2 opcion C).
+ * AC-02 / EC-02: turns the credential definition into form fields.
+ * Returns [] when there are no usable claims, so the caller decides the bridge
+ * (provisional employee field set, AD-2 option C).
  *
- * No se anaden validadores de formato/tipo: eso es EUD-73.
+ * No format/type validators are added: that's EUD-73.
  */
 export function mapClaimsToFields(
   claims: readonly ClaimDefinitionDto[] | undefined,
@@ -63,7 +63,7 @@ export function mapClaimsToFields(
     if (pathSegment && !claim.path.includes(pathSegment)) continue;
 
     const key = claimKey(claim);
-    // Claves duplicadas colisionarian en el FormGroup: gana la primera declarada.
+    // Duplicate keys would collide in the FormGroup: the first one declared wins.
     if (!key || seenKeys.has(key)) continue;
     seenKeys.add(key);
 

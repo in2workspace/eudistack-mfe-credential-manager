@@ -55,8 +55,8 @@ export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
 
 export interface BaseCredentialIssuanceViewModelField {
     key: string, //this is used for form models fields names (FormGroup, FormControl) and also as label for transations; i.e. "mandatee" key is used in "credentialIssuance.mandatee"
-    label?: string; // etiqueta ya resuelta (AC-02: viene de credential_metadata.claims[].display).
-                    // Si esta presente gana sobre la clave i18n derivada de "key".
+    label?: string; // already-resolved label (AC-02: comes from credential_metadata.claims[].display).
+                    // When present, it wins over the i18n key derived from "key".
     classes?: string; //admits a string of separated classes to customize form styles; i.e.: "classOne classTwo"
     staticValueGetter?: () => IssuanceStaticViewModel | null; // in case the value must be filled programatically (currently this happens when a field it is 'display: side' or 'pref_side' + onBehalf)
     custom?: { // the Issuance component has some default form templates (text/number input, selector); this field allows for using custom components (i.e. Powers)
@@ -87,8 +87,8 @@ export interface CredentialIssuanceViewModelGroupFieldWithId extends CredentialI
 export type CredentialIssuanceViewModelField = CredentialIssuanceViewModelGroupField | CredentialIssuanceViewModelControlField;
 
 export interface CredentialIssuanceSchemaProvider<T extends IssuanceCredentialType> {
-  // claims: definicion del config seleccionado (AD-2). Los providers que no derivan
-  // campos de la definicion pueden implementar getSchema(onBehalf) e ignorarlo.
+  // claims: definition of the selected config (AD-2). Providers that don't derive
+  // fields from the definition can implement getSchema(onBehalf) and ignore it.
   getSchema(onBehalf?: boolean, claims?: readonly ClaimDefinitionDto[]): CredentialIssuanceTypedViewModelSchema<T>;
 }
 

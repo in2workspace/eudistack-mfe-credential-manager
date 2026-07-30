@@ -109,7 +109,7 @@ describe('CredentialIssuanceComponent', () => {
 
       const message = emptyState();
       expect(message.textContent).toContain('credentialIssuance.emptySelector.catalogUnavailable');
-      // fail-closed: no se ofrece ninguna opcion de fallback
+      // fail-closed: no fallback option is offered
       expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
     });
   });
@@ -119,7 +119,7 @@ describe('CredentialIssuanceComponent', () => {
       fixture.nativeElement.querySelector('button[type="submit"]');
 
     beforeEach(() => {
-      // Schema minimo con un obligatorio, equivalente al grupo mandatee derivado en T8.
+      // Minimal schema with one required field, equivalent to the mandatee group derived in T8.
       const form = new FormGroup({
         mandatee: new FormGroup({
           firstName: new FormControl('', Validators.required)

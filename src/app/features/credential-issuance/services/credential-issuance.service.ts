@@ -24,20 +24,20 @@ import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-me
 @Injectable() //provided in Issuance Component
 export class CredentialIssuanceService {
 
-  // ES-05: sin este limite, un Issuer que no responde deja el dialogo async en estado de
-  // carga indefinidamente. Valor holgado frente al umbral de NFR-S-EUD71-01, que sigue
-  // pendiente de definicion por el equipo (partida propuesta: p95 < 2 s).
+  // ES-05: without this limit, an Issuer that doesn't respond leaves the async dialog in a
+  // loading state indefinitely. Generous value against the NFR-S-EUD71-01 threshold, which
+  // is still pending definition by the team (proposed starting point: p95 < 2 s).
   private static readonly ISSUANCE_REQUEST_TIMEOUT_MS = 30_000;
 
   // CREDENTIAL TYPE SELECTOR
-  // AD-1: derivado del metadata filtrado por tenant (CredentialIssuerMetadataService). Sin
-  // metadata => lista vacía (fail-closed, EC-01/EC-04). Se recalcula solo cuando loadMetadata()
-  // resuelve porque getIssuableCredentialTypes() lee un signal interno del metadata service.
+  // AD-1: derived from the tenant-filtered metadata (CredentialIssuerMetadataService). With no
+  // metadata => empty list (fail-closed, EC-01/EC-04). Only recomputed when loadMetadata()
+  // resolves, because getIssuableCredentialTypes() reads an internal signal of the metadata service.
   public readonly credentialTypesArr$ = computed<IssuanceCredentialType[]>(
     () => this.metadataService.getIssuableCredentialTypes()
   );
 
-  // EC-04 vs EC-01: misma lista vacía, mensaje distinto. Lo resuelve el template (T3).
+  // EC-04 vs EC-01: same empty list, different message. Resolved by the template (T3).
   public readonly isCatalogUnavailable$ = computed<boolean>(
     () => this.metadataService.hasMetadataLoadFailed()
   );
@@ -78,9 +78,9 @@ export class CredentialIssuanceService {
   public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
   public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
 
-  // AD-2: los claims salen del config que realmente se enviara al backend
-  // (effectiveFormatOption.configId), no del tipo: dos formatos del mismo tipo
-  // pueden declarar definiciones distintas.
+  // AD-2: claims come from the config that will actually be sent to the backend
+  // (effectiveFormatOption.configId), not from the type: two formats of the same
+  // type can declare different definitions.
   public selectedConfigClaims$ = computed<readonly ClaimDefinitionDto[] | undefined>(() => {
     const configId = this.effectiveFormatOption$()?.configId;
     if (!configId) return undefined;
@@ -334,11 +334,11 @@ export class CredentialIssuanceService {
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
         tap(() => { this.hasSubmitted$.set(true); }),
-        // AD-3: en el alcance de EUD-71 el resultado es unicamente exito/fallo. La respuesta
-        // puede traer credential_offer_uri, pero la entrega de la oferta (URI/QR) es EUD-3.
-        // CredentialOfferDialogComponent se conserva en shared/ para esa Epica; hoy ningun
-        // otro flujo lo abre (R-4 verificado sobre todo src/), por eso no hace falta
-        // segmentar por contexto: basta con no invocarlo desde aqui.
+        // AD-3: within EUD-71's scope the outcome is only success/failure. The response
+        // may carry a credential_offer_uri, but delivering the offer (URI/QR) is EUD-3.
+        // CredentialOfferDialogComponent is kept in shared/ for that Epic; today no other
+        // flow opens it (R-4 verified across all of src/), so there's no need to segment
+        // by context: it's enough not to invoke it from here.
         switchMap(() => this.openSuccessfulCreateDialog()),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
@@ -383,24 +383,25 @@ export class CredentialIssuanceService {
 
   /**
    * AC-06 / ES-01, ES-02, ES-04, ES-05.
-   * DialogWrapperService.openDialogWithCallback() solo hace console.error() ante un error del
-   * callback: libera el loader pero deja el dialogo de confirmacion abierto y al Operador sin
-   * ninguna senal de fallo. Aqui se cierra esa brecha sin tocar el wrapper generico (lo
-   * consumen otros flujos): devolvemos un observable que COMPLETA, de modo que el `complete`
-   * del wrapper cierra el dialogo de confirmacion y el de fallo queda visible.
+   * DialogWrapperService.openDialogWithCallback() only does console.error() on a callback
+   * error: it releases the loader but leaves the confirmation dialog open and the Operator
+   * with no failure signal at all. This closes that gap without touching the generic wrapper
+   * (other flows consume it): we return an observable that COMPLETES, so the wrapper's
+   * `complete` closes the confirmation dialog and the failure one stays visible.
    *
-   * No se resetea el formulario ni se navega: los datos introducidos deben sobrevivir para
-   * el reintento. `hasSubmitted$` tampoco se toca porque solo se marca dentro del `tap` del
-   * camino de exito, asi que la guarda canLeave() sigue protegiendo lo escrito.
+   * The form is not reset and there's no navigation: the entered data must survive for the
+   * retry. `hasSubmitted$` is not touched either, since it's only set inside the success
+   * path's `tap`, so the canLeave() guard keeps protecting what was written.
    */
   private handleIssuanceFailure(error: unknown): Observable<any> {
     console.error('POST /api/v1/issuances failed', error);
-    return this.openFailedCreateDialog();
+    this.openFailedCreateDialog();
+    return EMPTY;
   }
 
   private openFailedCreateDialog(): Observable<any> {
-    // ES-02: mensaje generico para cualquier causa (400/403/5xx/timeout). Distinguir por
-    // codigo filtraria al Operador que configuraciones estan habilitadas para su tenant.
+    // ES-02: generic message for any cause (400/403/5xx/timeout). Distinguishing by status
+    // code would leak to the Operator which configurations are enabled for their tenant.
     const dialogData: DialogData = {
       title: this.translate.instant("credentialIssuance.create-error-dialog.title"),
       message: this.translate.instant("credentialIssuance.create-error-dialog.message"),

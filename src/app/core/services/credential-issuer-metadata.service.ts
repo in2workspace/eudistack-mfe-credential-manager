@@ -13,24 +13,24 @@ export class CredentialIssuerMetadataService {
   private readonly configurations = signal<Record<string, CredentialConfigurationDto> | null>(null);
   private readonly loadFailed = signal<boolean>(false);
 
-  // AD-1: el catálogo emitible se deriva del metadata ya filtrado por tenant en el backend
-  // (read side de EUD-72). ISSUANCE_CREDENTIAL_TYPES_ARRAY interviene solo como guarda de
-  // renderizabilidad: un tipo sin CredentialIssuanceSchemaProvider haría explotar
-  // IssuanceSchemaBuilder.getBuilder(). Nunca añade tipos que el metadata no traiga.
+  // AD-1: the issuable catalogue is derived from the metadata, already tenant-filtered on
+  // the backend (EUD-72 read side). ISSUANCE_CREDENTIAL_TYPES_ARRAY only acts as a
+  // renderability guard: a type with no CredentialIssuanceSchemaProvider would blow up
+  // IssuanceSchemaBuilder.getBuilder(). It never adds types the metadata doesn't bring.
   private readonly issuableTypes = computed<IssuanceCredentialType[]>(() => {
     const configs = this.configurations();
     if (!configs) return [];
 
     const derived = new Set<IssuanceCredentialType>();
     for (const config of Object.values(configs)) {
-      // Mismo predicado que findConfigurationsForType(): si un tipo se derivase de otra
-      // fuente, aparecería en el selector sin opciones de formato asociadas.
+      // Same predicate as findConfigurationsForType(): if a type were derived from another
+      // source, it would show up in the selector with no associated format options.
       for (const declaredType of config.credential_definition?.type ?? []) {
         const renderableType = ISSUANCE_CREDENTIAL_TYPES_ARRAY.find(known => declaredType.startsWith(known));
         if (renderableType) derived.add(renderableType);
       }
     }
-    // Object.values conserva el orden de declaración del metadata => orden estable en el selector.
+    // Object.values preserves the metadata's declaration order => stable order in the selector.
     return [...derived];
   });
 
@@ -42,9 +42,9 @@ export class CredentialIssuerMetadataService {
         this.loadFailed.set(false);
       }),
       map(() => void 0),
-      // EC-04: fail-closed. El error no se propaga (el flujo de la pantalla no debe romperse),
-      // pero se marca para que la UI distinga "sin formularios habilitados" (EC-01) de
-      // "catálogo no disponible" (EC-04). Nunca se rellena con un fallback.
+      // EC-04: fail-closed. The error is not propagated (the screen's flow must not break),
+      // but it is flagged so the UI can distinguish "no forms enabled" (EC-01) from
+      // "catalogue unavailable" (EC-04). It is never filled in with a fallback.
       catchError(() => {
         this.configurations.set(null);
         this.loadFailed.set(true);

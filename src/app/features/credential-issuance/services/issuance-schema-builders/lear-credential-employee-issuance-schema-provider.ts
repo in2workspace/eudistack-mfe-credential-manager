@@ -14,13 +14,13 @@ import { baseNameLengthValidatorEntries } from "src/app/shared/validators/creden
 export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceSchemaProvider<'learcredential.employee'> {
 
   /**
-   * PUENTE AD-2 (opcion C) — DEPENDE DE EUD-58 (riesgo R-1).
-   * Conjunto provisional de campos de `mandatee`: se usa (a) cuando la definicion de la
-   * credencial no declara claims capturables (EC-02) y (b) como override de validadores
-   * para las claves que el frontend ya sabe validar, de modo que derivar del metadata no
-   * degrade la validacion vigente.
-   * Cuando EUD-58 publique el esquema definitivo, basta con borrar estas dos constantes:
-   * el resto del renderizado ya esta dirigido por la definicion.
+   * AD-2 BRIDGE (option C) — DEPENDS ON EUD-58 (risk R-1).
+   * Provisional `mandatee` field set: used (a) when the credential definition declares no
+   * capturable claims (EC-02) and (b) as a validator override for the keys the frontend
+   * already knows how to validate, so deriving from the metadata never degrades the
+   * current validation.
+   * Once EUD-58 publishes the definitive schema, just delete these two constants: the
+   * rest of the rendering is already driven by the definition.
    */
   private static readonly PROVISIONAL_MANDATEE_FIELDS: Readonly<Record<string, CredentialIssuanceViewModelField>> = {
     firstName: firstNameField,
@@ -30,10 +30,10 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
   };
 
   /**
-   * AC-07 — obligatorios. ClaimDefinitionDto NO expone flag de obligatoriedad (tampoco el
-   * record ClaimDefinition del backend), asi que la obligatoriedad de las claves derivadas
-   * sale de aqui hasta que EUD-58 la incorpore al metadata. `employeeId` NO es obligatorio
-   * hoy y se mantiene asi.
+   * AC-07 — required fields. ClaimDefinitionDto does NOT expose a required flag (nor does
+   * the backend's ClaimDefinition record), so the requiredness of the derived keys comes
+   * from here until EUD-58 folds it into the metadata. `employeeId` is NOT required today
+   * and stays that way.
    */
   private static readonly PROVISIONAL_REQUIRED_MANDATEE_KEYS = ['firstName', 'lastName', 'email'] as const;
 
@@ -73,7 +73,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
       type: 'learcredential.employee',
       schema: [
 
-        // MANDATEE — AD-2: derivado de credential_metadata.claims del config seleccionado.
+        // MANDATEE — AD-2: derived from credential_metadata.claims of the selected config.
         {
           key: 'mandatee',
           classes: 'mandatee',
@@ -81,7 +81,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
           display: 'main',
           groupFields: this.buildMandateeFields(claims),
         },
-        // MANDATOR — fuera del alcance de AD-2: side data estatico (staticValueGetter + AuthService).
+        // MANDATOR — out of scope for AD-2: static side data (staticValueGetter + AuthService).
         {
           key: 'mandator',
           type: 'group',
@@ -118,7 +118,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
             }
           ]
         },
-      //  POWER — fuera del alcance de AD-2: componente custom (powers/PDP).
+      //  POWER — out of scope for AD-2: custom component (powers/PDP).
       {
         key: 'power',
         type: 'group',
@@ -131,9 +131,9 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
   }
 
   /**
-   * AC-02: campos derivados de la definicion.
-   * EC-02: si la definicion no declara claims capturables de `mandatee`, se cae al
-   * conjunto provisional. Nunca se devuelve un grupo vacio (dejaria un formulario mudo).
+   * AC-02: fields derived from the definition.
+   * EC-02: if the definition declares no capturable `mandatee` claims, falls back to the
+   * provisional field set. An empty group is never returned (that would leave a blank form).
    */
   private buildMandateeFields(claims?: readonly ClaimDefinitionDto[]): CredentialIssuanceViewModelField[] {
     const derivedFields = mapClaimsToFields(claims, {

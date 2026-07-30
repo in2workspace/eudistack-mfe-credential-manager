@@ -136,7 +136,7 @@ describe('CredentialIssuerMetadataService', () => {
       service.loadMetadata().subscribe(() => {
         const types = service.getIssuableCredentialTypes();
 
-        // dos configs de empleado (jwt_vc_json + mso_mdoc) => un unico tipo
+        // two employee configs (jwt_vc_json + mso_mdoc) => a single type
         expect(types).toEqual(['learcredential.employee', 'learcredential.machine']);
         done();
       });

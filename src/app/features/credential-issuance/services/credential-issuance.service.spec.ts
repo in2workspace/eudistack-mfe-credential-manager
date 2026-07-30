@@ -14,10 +14,10 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { ThemeService } from 'src/app/core/services/theme.service';
 
 class MockDialogWrapperService {
-  // El DialogWrapperService real se suscribe internamente al observable que devuelve el
-  // callback (confirm$.pipe(..., switchMap(() => callback())).subscribe(...)) — sin
-  // reproducir esa suscripcion aqui, la cadena de submitCredentialPayload() nunca se
-  // ejecuta de verdad (los observables de RxJS son fríos hasta que alguien se suscribe).
+  // The real DialogWrapperService internally subscribes to the observable returned by the
+  // callback (confirm$.pipe(..., switchMap(() => callback())).subscribe(...)) — without
+  // reproducing that subscription here, submitCredentialPayload()'s chain never actually
+  // runs (RxJS observables are cold until someone subscribes).
   openDialogWithCallback = jest.fn((comp, data, cb) => cb().subscribe());
   openDialog = jest.fn(() => ({ afterClosed: () => of(true) }));
 }
@@ -46,8 +46,8 @@ describe('CredentialIssuanceService', () => {
     mockProcedureService = { createProcedure: jest.fn() }
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
     mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
-    // Respaldado por signals reales: si fuesen valores fijos, los computed del
-    // servicio memoizarian y no podriamos testear el recalculo tras loadMetadata().
+    // Backed by real signals: if these were fixed values, the service's computed
+    // signals would memoize and we couldn't test the recompute after loadMetadata().
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
     metadataLoadFailed = signal<boolean>(false);
     mockMetadataService = {
@@ -64,9 +64,9 @@ describe('CredentialIssuanceService', () => {
         { provide: AuthService, useValue: mockAuthService },
         CredentialIssuanceService,
         { provide: DialogWrapperService, useValue: dialogService },
-        // navigate() debe devolver una Promise (contrato real de Router): la cadena de
-        // submitCredentialPayload() envuelve la navegacion con from(...), que revienta
-        // sincronamente si recibe undefined en vez de un thenable.
+        // navigate() must return a Promise (Router's real contract): submitCredentialPayload()'s
+        // chain wraps the navigation with from(...), which blows up synchronously if it
+        // receives undefined instead of a thenable.
         { provide: Router, useValue: { navigate: jest.fn(() => Promise.resolve(true)) } },
         { provide: ActivatedRoute, useValue: { snapshot: { pathFromRoot: [] } } },
         { provide: IssuanceSchemaBuilder, useValue: mockSchemaBuilder },
@@ -74,9 +74,9 @@ describe('CredentialIssuanceService', () => {
         CountryService,
         { provide: CredentialProcedureService, useValue: mockProcedureService },
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
-        // No relacionado con AD-1 (esa dependencia ya se eliminó de CredentialIssuanceService):
-        // IssuanceRequestFactoryService, provisto real en este TestBed, inyecta ThemeService
-        // por su cuenta para resolver el mandatee/mandator del payload.
+        // Not related to AD-1 (that dependency was already removed from CredentialIssuanceService):
+        // IssuanceRequestFactoryService, provided for real in this TestBed, injects ThemeService
+        // on its own to resolve the payload's mandatee/mandator.
         { provide: ThemeService, useValue: { tenantDomain: 'TENANT' } }
       ]
     });
@@ -87,8 +87,8 @@ describe('CredentialIssuanceService', () => {
     expect(service).toBeTruthy();
   });
 
-  // Sustituye a 'should expose only employee credential type for KPMG tenant'.
-  // AD-1: ya no hay casos especiales por tenant en el frontend.
+  // Replaces 'should expose only employee credential type for KPMG tenant'.
+  // AD-1: there are no more per-tenant special cases in the frontend.
   describe('credentialTypesArr$ (AD-1)', () => {
     it('should expose the types derived from the issuer metadata', () => {
       expect(service.credentialTypesArr$()).toEqual(['learcredential.employee', 'learcredential.machine']);
@@ -132,11 +132,11 @@ describe('CredentialIssuanceService', () => {
     });
 
     const givenASubmittableForm = () => {
-      // IssuanceRequestFactoryService NO esta mockeado en este fichero (es el real, para
-      // probar la construccion del request de verdad) — necesita 'mandatee.email' y un
-      // 'power' (aunque vacio) en el formulario, y un 'mandator' completo en staticData
-      // (onBehalf=false lee el mandator de ahi, no del form), o revienta con
-      // "Object.entries(undefined)" / "Could not get valid mandator on behalf".
+      // IssuanceRequestFactoryService is NOT mocked in this file (it's the real one, to
+      // test the actual request construction) — it needs 'mandatee.email' and a
+      // 'power' (even if empty) in the form, and a full 'mandator' in staticData
+      // (onBehalf=false reads the mandator from there, not from the form), or it blows up
+      // with "Object.entries(undefined)" / "Could not get valid mandator on behalf".
       mockSchemaBuilder.formSchemasBuilder.mockReturnValue([
         [
           { id: 1, key: 'mandatee', type: 'group', display: 'main', groupFields: [
@@ -155,9 +155,9 @@ describe('CredentialIssuanceService', () => {
         }
       ]);
       service.selectedCredentialType$.set('learcredential.employee');
-      // form$/formValue$ se derivan via toObservable(), que empuja los cambios a traves de
-      // un effect() interno programado como microtarea: sin esto, formValue$() en el resto
-      // del test seguiria devolviendo el valor inicial (FormGroup vacio de la construccion).
+      // form$/formValue$ are derived via toObservable(), which pushes changes through an
+      // internal effect() scheduled as a microtask: without this, formValue$() would keep
+      // returning the initial value (the empty FormGroup from construction) for the rest of the test.
       TestBed.flushEffects();
     };
 
@@ -165,10 +165,10 @@ describe('CredentialIssuanceService', () => {
 
     beforeEach(() => {
       jest.spyOn(console, 'error').mockImplementation();
-      // location.reload() ya vive en la cadena de éxito (preexistente, fuera de esta Story).
-      // jsdom expone `reload` como no configurable en la instancia real de Location, así que
-      // en vez de redefinir esa propiedad se sustituye window.location entero por un objeto
-      // plano equivalente con un stub jest.fn() — se restaura en el afterEach.
+      // location.reload() used to live in the success chain (pre-existing, out of this Story's
+      // scope, since removed on merge from main). jsdom exposes `reload` as non-configurable on
+      // the real Location instance, so instead of redefining that property, window.location is
+      // entirely replaced with an equivalent plain object with a jest.fn() stub — restored in afterEach.
       Object.defineProperty(window, 'location', {
         configurable: true,
         value: { ...originalLocation, reload: jest.fn() }
@@ -186,7 +186,7 @@ describe('CredentialIssuanceService', () => {
 
       service.openSubmitDialog();
 
-      // AD-3: pese a que la respuesta trae la oferta, el unico dialogo abierto es el de exito.
+      // AD-3: even though the response carries the offer, the only dialog opened is the success one.
       expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
       expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
       expect(service.hasSubmitted$()).toBe(true);
@@ -219,7 +219,7 @@ describe('CredentialIssuanceService', () => {
 
       service.openSubmitDialog();
 
-      // sin reset y sin navegacion: los datos introducidos sobreviven
+      // no reset and no navigation: the entered data survives
       expect(service.hasSubmitted$()).toBe(false);
       expect(router.navigate).not.toHaveBeenCalled();
       expect(service.form$().pristine).toBe(true);
@@ -253,8 +253,8 @@ describe('CredentialIssuanceService', () => {
 
       service.openSubmitDialog();
 
-      // tras el exito la pantalla navega y canLeave() deja de bloquear: no puede quedarse
-      // el Operador con dos confirmaciones de exito contradictorias en pantalla.
+      // after success the screen navigates away and canLeave() stops blocking: the Operator
+      // must never end up with two contradictory success confirmations on screen.
       expect(service.hasSubmitted$()).toBe(true);
       expect(service.canLeave()).toBe(true);
       expect(dialogService.openDialog).toHaveBeenCalledTimes(1);

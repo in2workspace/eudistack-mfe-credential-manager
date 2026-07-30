@@ -122,7 +122,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public onSubmit(): void {
     const isFormValid = this.isFormValid$();
     if (!isFormValid) {
-      // No volcar formValue$(): son datos del titular (PII) — no deben acabar en consola.
+      // Do not dump formValue$(): it's the holder's data (PII) — must never end up in the console.
       console.error('Invalid form: ');
       return;
     }

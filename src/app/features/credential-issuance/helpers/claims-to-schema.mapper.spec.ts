@@ -2,8 +2,8 @@ import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-me
 import { claimKey, mapClaimsToFields, resolveClaimLabel } from './claims-to-schema.mapper';
 import { CredentialIssuanceViewModelControlField } from 'src/app/core/models/entity/lear-credential-issuance';
 
-// mapClaimsToFields siempre produce controles (nunca grupos); se castea aquí para
-// no ensanchar el tipo de retorno público de la función solo por conveniencia de test.
+// mapClaimsToFields always produces controls (never groups); cast here so the function's
+// public return type doesn't have to be widened just for test convenience.
 const asControls = (fields: ReturnType<typeof mapClaimsToFields>) =>
   fields as CredentialIssuanceViewModelControlField[];
 
