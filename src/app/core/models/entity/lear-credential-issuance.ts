@@ -3,6 +3,7 @@ import { TmfAction, TmfFunction } from "./lear-credential";
 import { ComponentType } from "@angular/cdk/portal";
 import { FormControl } from "@angular/forms";
 import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details/components/base-issuance-custom-form-child";
+import { ClaimDefinitionDto } from "../dto/credential-issuer-metadata.dto";
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['learcredential.employee', 'learcredential.machine'] as const;
 export type IssuanceCredentialType = typeof ISSUANCE_CREDENTIAL_TYPES_ARRAY[number];
 
@@ -54,6 +55,8 @@ export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
 
 export interface BaseCredentialIssuanceViewModelField {
     key: string, //this is used for form models fields names (FormGroup, FormControl) and also as label for transations; i.e. "mandatee" key is used in "credentialIssuance.mandatee"
+    label?: string; // etiqueta ya resuelta (AC-02: viene de credential_metadata.claims[].display).
+                    // Si esta presente gana sobre la clave i18n derivada de "key".
     classes?: string; //admits a string of separated classes to customize form styles; i.e.: "classOne classTwo"
     staticValueGetter?: () => IssuanceStaticViewModel | null; // in case the value must be filled programatically (currently this happens when a field it is 'display: side' or 'pref_side' + onBehalf)
     custom?: { // the Issuance component has some default form templates (text/number input, selector); this field allows for using custom components (i.e. Powers)
@@ -84,7 +87,9 @@ export interface CredentialIssuanceViewModelGroupFieldWithId extends CredentialI
 export type CredentialIssuanceViewModelField = CredentialIssuanceViewModelGroupField | CredentialIssuanceViewModelControlField;
 
 export interface CredentialIssuanceSchemaProvider<T extends IssuanceCredentialType> {
-  getSchema(onBehalf?: boolean): CredentialIssuanceTypedViewModelSchema<T>;
+  // claims: definicion del config seleccionado (AD-2). Los providers que no derivan
+  // campos de la definicion pueden implementar getSchema(onBehalf) e ignorarlo.
+  getSchema(onBehalf?: boolean, claims?: readonly ClaimDefinitionDto[]): CredentialIssuanceTypedViewModelSchema<T>;
 }
 
 export type CredentialIssuanceTypedViewModelSchema<T extends IssuanceCredentialType> = {

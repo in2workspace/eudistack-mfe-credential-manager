@@ -125,4 +125,63 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithNoTypeDef);
     });
   });
+
+  describe('getIssuableCredentialTypes()', () => {
+    it('should return an empty list when metadata has not been loaded yet (fail-closed)', () => {
+      expect(service.getIssuableCredentialTypes()).toEqual([]);
+      expect(service.hasMetadataLoadFailed()).toBe(false);
+    });
+
+    it('should derive the issuable types from credential_definition.type, deduplicated across formats', (done) => {
+      service.loadMetadata().subscribe(() => {
+        const types = service.getIssuableCredentialTypes();
+
+        // dos configs de empleado (jwt_vc_json + mso_mdoc) => un unico tipo
+        expect(types).toEqual(['learcredential.employee', 'learcredential.machine']);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
+    });
+
+    it('should ignore configurations without credential_definition', (done) => {
+      const metaWithoutTypeDef = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'SomeConfig': { format: 'jwt_vc_json' }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithoutTypeDef);
+    });
+
+    it('should not fall back to a hardcoded catalogue when the metadata request fails (EC-04)', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        expect(service.hasMetadataLoadFailed()).toBe(true);
+        done();
+      });
+      httpMock
+        .expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA)
+        .flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+    });
+
+    it('should clear the failure flag after a successful reload', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.hasMetadataLoadFailed()).toBe(true);
+
+        service.loadMetadata().subscribe(() => {
+          expect(service.hasMetadataLoadFailed()).toBe(false);
+          expect(service.getIssuableCredentialTypes()).toContain('learcredential.employee');
+          done();
+        });
+        httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
+      });
+      httpMock
+        .expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA)
+        .flush('Server error', { status: 503, statusText: 'Service Unavailable' });
+    });
+  });
 });

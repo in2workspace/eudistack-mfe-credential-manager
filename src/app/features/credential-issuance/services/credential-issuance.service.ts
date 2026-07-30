@@ -1,12 +1,12 @@
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { EMPTY, from, map, Observable, of, startWith, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -16,18 +16,31 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
-import { ThemeService } from 'src/app/core/services/theme.service';
+import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 
 
 @Injectable() //provided in Issuance Component
 export class CredentialIssuanceService {
 
+  // ES-05: sin este limite, un Issuer que no responde deja el dialogo async en estado de
+  // carga indefinidamente. Valor holgado frente al umbral de NFR-S-EUD71-01, que sigue
+  // pendiente de definicion por el equipo (partida propuesta: p95 < 2 s).
+  private static readonly ISSUANCE_REQUEST_TIMEOUT_MS = 30_000;
+
   // CREDENTIAL TYPE SELECTOR
-  public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]>;
+  // AD-1: derivado del metadata filtrado por tenant (CredentialIssuerMetadataService). Sin
+  // metadata => lista vacía (fail-closed, EC-01/EC-04). Se recalcula solo cuando loadMetadata()
+  // resuelve porque getIssuableCredentialTypes() lee un signal interno del metadata service.
+  public readonly credentialTypesArr$ = computed<IssuanceCredentialType[]>(
+    () => this.metadataService.getIssuableCredentialTypes()
+  );
+
+  // EC-04 vs EC-01: misma lista vacía, mensaje distinto. Lo resuelve el template (T3).
+  public readonly isCatalogUnavailable$ = computed<boolean>(
+    () => this.metadataService.hasMetadataLoadFailed()
+  );
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
   // FORMAT SELECTOR
@@ -65,10 +78,19 @@ export class CredentialIssuanceService {
   public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
   public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
 
+  // AD-2: los claims salen del config que realmente se enviara al backend
+  // (effectiveFormatOption.configId), no del tipo: dos formatos del mismo tipo
+  // pueden declarar definiciones distintas.
+  public selectedConfigClaims$ = computed<readonly ClaimDefinitionDto[] | undefined>(() => {
+    const configId = this.effectiveFormatOption$()?.configId;
+    if (!configId) return undefined;
+    return this.metadataService.getConfigurationById(configId)?.credential_metadata?.claims;
+  });
+
   // BUILD SCHEMAS FROM CREDENTIAL TYPE
   public credentialViewModels$ = computed<IssuanceViewModelsTuple | null>(() =>
     this.selectedCredentialType$()
-    ? this.issuanceViewModelsBuilder(this.selectedCredentialType$()!, this.onBehalf$())
+    ? this.issuanceViewModelsBuilder(this.selectedCredentialType$()!, this.onBehalf$(), this.selectedConfigClaims$())
     : null
   );
 
@@ -122,26 +144,17 @@ export class CredentialIssuanceService {
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
-  private readonly matDialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
-  private readonly themeService = inject(ThemeService);
 
   constructor() {
-    this.credentialTypesArr = this.resolveCredentialTypesByTenant();
-    // Load credential configurations once so format options are available
-    this.metadataService.loadMetadata().subscribe();
-  }
-
-  private resolveCredentialTypesByTenant(): Readonly<IssuanceCredentialType[]> {
-    // TODO: Review and remove hardcoding across the entire credential issuance flow (tenant filtering, type resolution, and schema selection).
-    if (this.themeService.tenantDomain === 'KPMG') {
-      return ['learcredential.employee'];
-    }
-
-    return ISSUANCE_CREDENTIAL_TYPES_ARRAY;
+    // Load credential configurations once so format options are available,
+    // and, since EUD-71, also the list of issuable types (AD-1).
+    this.metadataService.loadMetadata()
+      .pipe(takeUntilDestroyed())
+      .subscribe();
   }
 
   public updateSelectedType(selectedCredentialType: IssuanceCredentialType, select: MatSelect) {
@@ -242,8 +255,12 @@ export class CredentialIssuanceService {
     this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
   }
 
-  private issuanceViewModelsBuilder(credType: "learcredential.employee" | "learcredential.machine", onBehalf: boolean): IssuanceViewModelsTuple{
-    return this.schemaBuilder.formSchemasBuilder(credType, onBehalf);
+  private issuanceViewModelsBuilder(
+    credType: "learcredential.employee" | "learcredential.machine",
+    onBehalf: boolean,
+    claims?: readonly ClaimDefinitionDto[]
+  ): IssuanceViewModelsTuple{
+    return this.schemaBuilder.formSchemasBuilder(credType, onBehalf, claims);
   }
 
   private formBuilder(
@@ -315,15 +332,17 @@ export class CredentialIssuanceService {
       const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType);
 
       return this.sendCredentialRequest(request).pipe(
+        timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
         tap(() => { this.hasSubmitted$.set(true); }),
-        switchMap((response) => {
-          if (response?.credential_offer_uri) {
-            return this.openCredentialOfferDialog(response.credential_offer_uri);
-          }
-          return this.openSuccessfulCreateDialog();
-        }),
+        // AD-3: en el alcance de EUD-71 el resultado es unicamente exito/fallo. La respuesta
+        // puede traer credential_offer_uri, pero la entrega de la oferta (URI/QR) es EUD-3.
+        // CredentialOfferDialogComponent se conserva en shared/ para esa Epica; hoy ningun
+        // otro flujo lo abre (R-4 verificado sobre todo src/), por eso no hace falta
+        // segmentar por contexto: basta con no invocarlo desde aqui.
+        switchMap(() => this.openSuccessfulCreateDialog()),
         switchMap(() => from(this.navigateToCredentials())),
-        tap(() => location.reload())
+        tap(() => location.reload()),
+        catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
 
@@ -351,23 +370,43 @@ export class CredentialIssuanceService {
     return this.credentialProcedureService.createProcedure(credentialPayload);
   }
 
-  private openCredentialOfferDialog(credentialOfferUri: string): Observable<any> {
-    const dialogData: CredentialOfferDialogData = { credentialOfferUri };
-    const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
-      data: dialogData,
-      autoFocus: false,
-      width: '420px',
-      panelClass: 'dialog-custom'
-    });
-    return dialogRef.afterClosed();
-  }
-
   private openSuccessfulCreateDialog(): Observable<any>{
     const dialogData: DialogData = {
       title: this.translate.instant("credentialIssuance.create-success-dialog.title"),
       message: this.translate.instant("credentialIssuance.create-success-dialog.message"),
       confirmationType: 'none',
       status: 'default'
+    };
+
+    const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
+    return dialogRef.afterClosed();
+  }
+
+  /**
+   * AC-06 / ES-01, ES-02, ES-04, ES-05.
+   * DialogWrapperService.openDialogWithCallback() solo hace console.error() ante un error del
+   * callback: libera el loader pero deja el dialogo de confirmacion abierto y al Operador sin
+   * ninguna senal de fallo. Aqui se cierra esa brecha sin tocar el wrapper generico (lo
+   * consumen otros flujos): devolvemos un observable que COMPLETA, de modo que el `complete`
+   * del wrapper cierra el dialogo de confirmacion y el de fallo queda visible.
+   *
+   * No se resetea el formulario ni se navega: los datos introducidos deben sobrevivir para
+   * el reintento. `hasSubmitted$` tampoco se toca porque solo se marca dentro del `tap` del
+   * camino de exito, asi que la guarda canLeave() sigue protegiendo lo escrito.
+   */
+  private handleIssuanceFailure(error: unknown): Observable<any> {
+    console.error('POST /api/v1/issuances failed', error);
+    return this.openFailedCreateDialog();
+  }
+
+  private openFailedCreateDialog(): Observable<any> {
+    // ES-02: mensaje generico para cualquier causa (400/403/5xx/timeout). Distinguir por
+    // codigo filtraria al Operador que configuraciones estan habilitadas para su tenant.
+    const dialogData: DialogData = {
+      title: this.translate.instant("credentialIssuance.create-error-dialog.title"),
+      message: this.translate.instant("credentialIssuance.create-error-dialog.message"),
+      confirmationType: 'none',
+      status: 'error'
     };
 
     const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
