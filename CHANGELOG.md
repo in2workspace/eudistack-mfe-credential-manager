@@ -7,9 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.6.0] - 29-07-2026
-
-### Added
+### Added - 29-07-2026
 
 - **EUD-71 — Select form and issue credential (issuer's default form)**: the Credential Manager issuance screen already existed end-to-end; this Story closes three conformance gaps against the SRS without building any new endpoint.
   - **AD-1 — Catalog of forms without hardcoding (FR-01/FR-04)**: removed `CredentialIssuanceService.resolveCredentialTypesByTenant()` (special-cased `KPMG` + static `ISSUANCE_CREDENTIAL_TYPES_ARRAY` as source, with its `TODO` to remove the hardcoding). `CredentialIssuerMetadataService.getIssuableCredentialTypes()` now derives the issuable-type list from `credential_configurations_supported` (metadata already tenant-filtered on the backend). `CredentialIssuanceService.credentialTypesArr$`/`isCatalogUnavailable$` are reactive signals that distinguish "tenant with no forms enabled" from "catalog unavailable" (new `hasMetadataLoadFailed()`), always fail-closed — with no metadata, the selector stays empty and never falls back to a hardcoded list. `CredentialIssuanceComponent` adds an accessible empty state (`role="status"`, `aria-live="polite"`).
@@ -78,7 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.21] - 10-07-2026
 
 ### Fixed
+
 - Navbar logout button disappearing after closing the credential-offer QR dialog: removed the unnecessary `location.reload()` call in `CredentialIssuanceService.submitCredentialPayload()`, which forced a full-page reload and raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
+
 ### Added
 
 - `AuthService`: when `checkAuth$()` resolves as not authenticated, attempt a one-shot silent SSO check via a full-page redirect with `prompt=none` (`trySilentSsoOnce`), guarded by a `sessionStorage` flag so it only runs once per browser session. This lets a session already established on another tenant app (sharing the same root-domain cookie) be picked up without showing the QR login unnecessarily; the Verifier's `frame-ancestors` CSP prevents doing this via a silent iframe renew.
@@ -86,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.20] - 07-07-2026
 
 ### Fixed
+
 - In issuances table pages, do not throw blocking error when an issuance object doesn't include a required field. Treat it as empty instead.
 
 ## [3.5.19] - 07-07-2026
