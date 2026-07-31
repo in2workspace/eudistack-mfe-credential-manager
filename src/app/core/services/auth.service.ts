@@ -1,7 +1,7 @@
 import { inject, Injectable, WritableSignal, signal, DestroyRef } from '@angular/core';
 import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, filter, take, tap } from 'rxjs/operators';
+import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
@@ -21,6 +21,16 @@ import { TenantService } from './tenant.service';
 export class AuthService{
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  /**
+   * Emits true once the initial checkAuth$() has resolved (success, failure,
+   * or error) at least once. Guards/policies that need to distinguish
+   * "auth state not known yet" from "confirmed authenticated but lacking
+   * powers" must wait on this before evaluating hasPower()/isSysAdmin() —
+   * otherwise they race the SSO-reuse redirect and show a false Access
+   * Denied dialog while checkAuth$() is still in flight.
+   */
+  private readonly authCheckCompleteSubject = new BehaviorSubject<boolean>(false);
+  public authCheckComplete$ = this.authCheckCompleteSubject.asObservable();
   private readonly userDataSubject = new BehaviorSubject<UserDataAuthenticationResponse |null>(null);
   private readonly tokenSubject = new BehaviorSubject<string>('');
   private readonly mandatorSubject = new BehaviorSubject<EmployeeMandator | null>(null);
@@ -153,7 +163,8 @@ export class AuthService{
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
-    }));
+    }),
+    finalize(() => this.authCheckCompleteSubject.next(true)));
   }
 
   /**
