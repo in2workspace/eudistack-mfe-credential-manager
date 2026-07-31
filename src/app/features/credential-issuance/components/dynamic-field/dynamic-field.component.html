@@ -34,7 +34,7 @@
           </div>
         }
         <mat-form-field [formGroup]="parentFormGroup$()">
-          <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldSchema.label ?? ("credentialIssuance." + fieldName | translate) }}</mat-label>
+          <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ "credentialIssuance." + fieldName | translate }}</mat-label>
           @let controlType = controlSchema.controlType;
           @if (controlType === 'number' || controlType === 'text') {
             <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"/>

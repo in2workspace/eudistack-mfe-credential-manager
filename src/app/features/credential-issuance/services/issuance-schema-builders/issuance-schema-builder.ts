@@ -1,6 +1,5 @@
 import { inject, Injectable, InjectionToken } from "@angular/core";
 import { CredentialIssuanceTypedViewModelSchema, CredentialIssuanceSchemaProvider, IssuanceCredentialType, IssuanceStaticViewModel, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchema, IssuanceViewModelsTuple, CredentialIssuanceViewModelGroupField, CredentialIssuanceViewModelSchemaWithId, CredentialIssuanceViewModelGroupFieldWithId } from "src/app/core/models/entity/lear-credential-issuance";
-import { ClaimDefinitionDto } from "src/app/core/models/dto/credential-issuer-metadata.dto";
 
 export const CREDENTIAL_SCHEMA_PROVIDERS = new InjectionToken<CredentialIssuanceSchemaProvider<IssuanceCredentialType>[]>('CREDENTIAL_SCHEMA_PROVIDERS');
 
@@ -9,20 +8,15 @@ export class IssuanceSchemaBuilder {
     private readonly schemaProviders: CredentialIssuanceSchemaProvider<IssuanceCredentialType>[] = inject(CREDENTIAL_SCHEMA_PROVIDERS);
 
 
-  public getIssuanceFormSchema<T extends IssuanceCredentialType>(
-    type: T,
-    onBehalf: boolean = false,
-    claims?: readonly ClaimDefinitionDto[]
-  ): CredentialIssuanceTypedViewModelSchema<T>{
-    return this.getBuilder(type).getSchema(onBehalf, claims);
+  public getIssuanceFormSchema<T extends IssuanceCredentialType>(type: T, onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<T>{
+    return this.getBuilder(type).getSchema(onBehalf);
   }
 
   public formSchemasBuilder<T extends IssuanceCredentialType>(
     credType: T,
-    onBehalf: boolean,
-    claims?: readonly ClaimDefinitionDto[]
+    onBehalf: boolean
   ): IssuanceViewModelsTuple {
-    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType, onBehalf, claims).schema;
+    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType, onBehalf).schema;
     const formViewModel: CredentialIssuanceViewModelSchemaWithId = [];
     const staticSchema: IssuanceStaticViewModel = {};
 

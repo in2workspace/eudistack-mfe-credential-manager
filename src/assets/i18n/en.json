@@ -274,10 +274,6 @@
       "title": "Credential created",
       "message": "The credential was created successfully."
     },
-    "create-error-dialog": {
-      "title": "The credential could not be created",
-      "message": "The issuance did not complete. Your form data has been kept; review it and try again."
-    },
     "creating-credential": "Creating credential",
     "create-credential": "Create credential",
     "credentialType": "Credential Type",
@@ -285,10 +281,6 @@
     "mandatee": "mandatee",
     "mandator": "mandator",
     "select-type": "Select credential type",
-    "emptySelector": {
-      "noTypes": "There are no credential forms enabled for your organization. Contact your tenant administrator to request one.",
-      "catalogUnavailable": "The form catalogue is currently unavailable. Reload the page to try again."
-    },
     "firstName": "First name",
     "lastName": "Last name",
     "commonName": "Name",

@@ -47,24 +47,6 @@ describe('IssuanceSchemaBuilder', () => {
       expect(result.schema).toBe(fakeSchema);
     });
 
-    it('forwards the credential definition claims to the provider (AD-2)', () => {
-      const claims = [{ path: ['mandatee', 'firstName'], display: [] }];
-      builderMock.getSchema.mockReturnValue({ type: TYPE, schema: [] });
-
-      service.getIssuanceFormSchema(TYPE, true, claims);
-
-      expect(builderMock.getSchema).toHaveBeenCalledWith(true, claims);
-    });
-
-    it('forwards the claims through formSchemasBuilder as well', () => {
-      const claims = [{ path: ['mandatee', 'lastName'], display: [] }];
-      builderMock.getSchema.mockReturnValue({ type: TYPE, schema: [] });
-
-      service.formSchemasBuilder(TYPE, false, claims);
-
-      expect(builderMock.getSchema).toHaveBeenCalledWith(false, claims);
-    });
-
     it('throws if no builder for type', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({

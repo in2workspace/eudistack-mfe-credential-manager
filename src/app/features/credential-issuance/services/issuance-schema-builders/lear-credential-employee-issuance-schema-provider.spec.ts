@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CountryService } from 'src/app/shared/services/country.service';
 import * as fieldsHelpers from '../../helpers/fields-order-helpers';
@@ -45,7 +44,6 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
       );
 
     TestBed.configureTestingModule({
-      imports: [TranslateModule.forRoot()],
       providers: [
         LearCredentialEmployeeSchemaProvider,
         { provide: AuthService, useValue: authMock },
@@ -191,56 +189,6 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
           },
         ],
       });
-    });
-  });
-
-  describe('mandatee fields (AD-2)', () => {
-    const mandateeGroup = (schema: any[]) => schema.find(f => f.key === 'mandatee');
-
-    it('should derive the mandatee fields from the credential definition claims (AC-02)', () => {
-      const claims = [
-        { path: ['mandatee', 'firstName'], display: [{ name: 'Nombre del empleado', locale: 'en' }] },
-        { path: ['mandatee', 'nickname'], display: [{ name: 'Alias', locale: 'en' }] }
-      ];
-
-      const { schema } = service.getSchema(false, claims);
-
-      expect(mandateeGroup(schema).groupFields.map((f: any) => f.key)).toEqual(['firstName', 'nickname']);
-      expect(mandateeGroup(schema).groupFields[0].label).toBe('Nombre del empleado');
-    });
-
-    it('should keep the provisional validators for known keys (no regression)', () => {
-      const claims = [{ path: ['mandatee', 'email'], display: [{ name: 'Correo', locale: 'en' }] }];
-
-      const { schema } = service.getSchema(false, claims);
-      const emailControl = mandateeGroup(schema).groupFields[0];
-
-      expect(emailControl.validators).toEqual(expect.arrayContaining([{ name: 'required' }]));
-      expect(emailControl.label).toBe('Correo');
-    });
-
-    it('should fall back to the provisional employee field set when the definition has no claims (EC-02)', () => {
-      const { schema } = service.getSchema(false, []);
-
-      expect(mandateeGroup(schema).groupFields.map((f: any) => f.key))
-        .toEqual(['firstName', 'lastName', 'email', 'employeeId']);
-    });
-
-    it('should fall back to the provisional set when claims only describe mandator/power', () => {
-      const claims = [{ path: ['mandator', 'organization'], display: [] }];
-
-      const { schema } = service.getSchema(false, claims);
-
-      expect(mandateeGroup(schema).groupFields).toHaveLength(4);
-    });
-
-    it('should leave mandator and power untouched regardless of the claims', () => {
-      const claims = [{ path: ['mandatee', 'firstName'], display: [] }];
-
-      const { schema } = service.getSchema(false, claims);
-
-      expect(schema.find((f: any) => f.key === 'mandator')!.display).toBe('pref_side');
-      expect(schema.find((f: any) => f.key === 'power')!.custom).toBeDefined();
     });
   });
 });

@@ -4,7 +4,7 @@ import { CredentialIssuanceComponent } from './credential-issuance.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatSelect } from '@angular/material/select';
-import { FormControl, FormGroup, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormGroup, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -22,14 +22,13 @@ describe('CredentialIssuanceComponent', () => {
       // Signals
       onBehalf$: signal(false) as WritableSignal<boolean>,
       hasSubmitted$: signal(false) as WritableSignal<boolean>,
-      credentialTypesArr$: signal(['type1', 'learcredential.machine']) as WritableSignal<any>,
-      isCatalogUnavailable$: signal(false) as WritableSignal<boolean>,
+      credentialTypesArr: ['type1', 'learcredential.machine'] as any,
       selectedCredentialType$: signal(undefined) as WritableSignal<any>,
       credentialFormSchema$: signal(null) as Signal<any>,
       staticData$: signal(null) as Signal<any>,
       form$: signal(emptyFormGroup) as Signal<FormGroup>,
       formValue$: signal({ foo: 'bar' }) as Signal<Record<string, any>>,
-      isFormValid$: signal(false) as WritableSignal<boolean>,
+      isFormValid$: signal(false) as Signal<boolean>,
       bottomAlertMessages$: signal([]) as WritableSignal<string[]>,
       availableFormats$: signal([]) as Signal<any>,
       effectiveFormatOption$: signal(null) as Signal<any>,
@@ -79,86 +78,6 @@ describe('CredentialIssuanceComponent', () => {
 
   it('should initialize onBehalf$ based on route', () => {
     expect(mockService.onBehalf$!()).toBeFalsy();
-  });
-
-  describe('credential type selector empty state (EC-01 / EC-04)', () => {
-    const emptyState = () => fixture.nativeElement.querySelector('[role="status"]');
-
-    it('should render the selector when there are issuable types', () => {
-      expect(fixture.nativeElement.querySelector('mat-select')).toBeTruthy();
-      expect(emptyState()).toBeNull();
-    });
-
-    it('should hide the selector and announce the empty state when no type is enabled (EC-01)', () => {
-      (mockService.credentialTypesArr$ as WritableSignal<any>).set([]);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('mat-select')).toBeNull();
-      expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
-
-      const message = emptyState();
-      expect(message).toBeTruthy();
-      expect(message.getAttribute('aria-live')).toBe('polite');
-      expect(message.textContent).toContain('credentialIssuance.emptySelector.noTypes');
-    });
-
-    it('should announce that the catalogue is unavailable when the metadata could not be loaded (EC-04)', () => {
-      (mockService.credentialTypesArr$ as WritableSignal<any>).set([]);
-      (mockService.isCatalogUnavailable$ as WritableSignal<boolean>).set(true);
-      fixture.detectChanges();
-
-      const message = emptyState();
-      expect(message.textContent).toContain('credentialIssuance.emptySelector.catalogUnavailable');
-      // fail-closed: no fallback option is offered
-      expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
-    });
-  });
-
-  describe('required field validation (AC-07)', () => {
-    const submitButton = (): HTMLButtonElement =>
-      fixture.nativeElement.querySelector('button[type="submit"]');
-
-    beforeEach(() => {
-      // Minimal schema with one required field, equivalent to the mandatee group derived in T8.
-      const form = new FormGroup({
-        mandatee: new FormGroup({
-          firstName: new FormControl('', Validators.required)
-        })
-      });
-      (mockService.form$ as WritableSignal<any>).set(form);
-      (mockService.credentialFormSchema$ as WritableSignal<any>).set([
-        {
-          id: 1,
-          key: 'mandatee',
-          type: 'group',
-          display: 'main',
-          groupFields: [{ key: 'firstName', type: 'control', controlType: 'text', validators: [{ name: 'required' }] }]
-        }
-      ]);
-      (mockService.selectedCredentialType$ as WritableSignal<any>).set('learcredential.employee');
-      (mockService.isFormValid$ as WritableSignal<boolean>).set(form.valid);
-      fixture.detectChanges();
-    });
-
-    it('should keep the submit control disabled while a required field is empty', () => {
-      expect(submitButton().disabled).toBe(true);
-    });
-
-    it('should not trigger the issuance when the form is invalid', () => {
-      component.onSubmit();
-
-      expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
-      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
-    });
-
-    it('should enable the submit control once every required field is filled in', () => {
-      const form = mockService.form$!() as FormGroup;
-      form.get('mandatee.firstName')!.setValue('Alice');
-      (mockService.isFormValid$ as WritableSignal<boolean>).set(form.valid);
-      fixture.detectChanges();
-
-      expect(submitButton().disabled).toBe(false);
-    });
   });
 
   describe('onTypeSelectionChange', () => {

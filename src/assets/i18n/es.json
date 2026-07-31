@@ -274,10 +274,6 @@
       "title": "Credencial creada",
       "message": "La credencial se ha creado correctamente."
     },
-    "create-error-dialog": {
-      "title": "No se ha podido crear la credencial",
-      "message": "La emisión no se ha completado. Los datos del formulario se han conservado; revísalos y vuelve a intentarlo."
-    },
     "creating-credential": "Creando credencial",
     "create-credential": "Crear credencial",
     "credentialType": "Tipo de credencial",
@@ -285,10 +281,6 @@
     "mandatee": "persona mandatada",
     "mandator": "mandante",
     "select-type": "Selecciona el tipo de credencial",
-    "emptySelector": {
-      "noTypes": "No se han encontrado formularios de credencial habilitados para tu organización. Contacta con el administrador de tu tenant para solicitar el alta de un formulario.",
-      "catalogUnavailable": "El catálogo de formularios no está disponible en este momento. Vuelve a cargar la página para reintentarlo."
-    },
     "firstName": "Nombre",
     "lastName": "Apellido",
     "commonName": "Nombre común",
