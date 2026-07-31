@@ -16,6 +16,8 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
+import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
@@ -144,6 +146,7 @@ export class CredentialIssuanceService {
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
+  private readonly matDialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
@@ -334,12 +337,19 @@ export class CredentialIssuanceService {
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
         tap(() => { this.hasSubmitted$.set(true); }),
-        // AD-3: within EUD-71's scope the outcome is only success/failure. The response
-        // may carry a credential_offer_uri, but delivering the offer (URI/QR) is EUD-3.
-        // CredentialOfferDialogComponent is kept in shared/ for that Epic; today no other
-        // flow opens it (R-4 verified across all of src/), so there's no need to segment
-        // by context: it's enough not to invoke it from here.
-        switchMap(() => this.openSuccessfulCreateDialog()),
+        // AD-3 correction: `credential_offer_uri` is only populated by the backend for
+        // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
+        // So this branch is already scoped to the QR delivery mode -- removing it (as an
+        // earlier version of this Story did) broke the "Código QR" option's only purpose:
+        // showing the wallet-scannable QR (CredentialOfferDialogComponent, angularx-qrcode).
+        // AC-05's "no offer artifacts" is still honored for email/direct delivery, where the
+        // response never carries this URI.
+        switchMap((response) => {
+          if (response?.credential_offer_uri) {
+            return this.openCredentialOfferDialog(response.credential_offer_uri);
+          }
+          return this.openSuccessfulCreateDialog();
+        }),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
@@ -367,6 +377,17 @@ export class CredentialIssuanceService {
 
   private sendCredentialRequest(credentialPayload: IssuanceLEARCredentialRequestDto): Observable<IssuanceResponseDto> {
     return this.credentialProcedureService.createProcedure(credentialPayload);
+  }
+
+  private openCredentialOfferDialog(credentialOfferUri: string): Observable<any> {
+    const dialogData: CredentialOfferDialogData = { credentialOfferUri };
+    const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
+      data: dialogData,
+      autoFocus: false,
+      width: '420px',
+      panelClass: 'dialog-custom'
+    });
+    return dialogRef.afterClosed();
   }
 
   private openSuccessfulCreateDialog(): Observable<any>{

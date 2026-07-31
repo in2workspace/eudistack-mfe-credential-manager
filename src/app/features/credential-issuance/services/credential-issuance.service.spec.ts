@@ -12,6 +12,7 @@ import { NEVER, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { MatDialog } from '@angular/material/dialog';
 
 class MockDialogWrapperService {
   // The real DialogWrapperService internally subscribes to the observable returned by the
@@ -27,6 +28,7 @@ describe('CredentialIssuanceService', () => {
   let mockProcedureService: { createProcedure: jest.Mock };
   let mockSchemaBuilder: { formSchemasBuilder: jest.Mock, getIssuancePowerFormSchema: jest.Mock };
   let dialogService: MockDialogWrapperService;
+  let mockMatDialog: { open: jest.Mock };
   let mockAuthService: {
     getMandateeEmail: jest.Mock
   };
@@ -43,6 +45,12 @@ describe('CredentialIssuanceService', () => {
 
   beforeEach(() => {
     dialogService = new MockDialogWrapperService();
+    // openCredentialOfferDialog() uses the real MatDialog directly (not the DialogWrapperService
+    // mock above), because CredentialOfferDialogComponent needs a wider dialog width than the
+    // wrapper's default. Without this mock, .open() would try to instantiate the real component
+    // (which injects TenantService) and throw, which the pipe's catchError would silently turn
+    // into a failure-dialog false positive.
+    mockMatDialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
     mockProcedureService = { createProcedure: jest.fn() }
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
     mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
@@ -64,6 +72,7 @@ describe('CredentialIssuanceService', () => {
         { provide: AuthService, useValue: mockAuthService },
         CredentialIssuanceService,
         { provide: DialogWrapperService, useValue: dialogService },
+        { provide: MatDialog, useValue: mockMatDialog },
         // navigate() must return a Promise (Router's real contract): submitCredentialPayload()'s
         // chain wraps the navigation with from(...), which blows up synchronously if it
         // receives undefined instead of a thenable.
@@ -181,14 +190,27 @@ describe('CredentialIssuanceService', () => {
       jest.restoreAllMocks();
     });
 
-    it('should show the success dialog and never surface credential offer artefacts (AC-05)', () => {
+    it('should show the success dialog when the response carries no offer URI (AC-05, e.g. email delivery)', () => {
+      mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+      service.openSubmitDialog();
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
+      expect(mockMatDialog.open).not.toHaveBeenCalled();
+      expect(service.hasSubmitted$()).toBe(true);
+    });
+
+    it('should show the scannable QR dialog when the response carries an offer URI (AC-05, "Código QR" delivery)', () => {
       mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
 
       service.openSubmitDialog();
 
-      // AD-3: even though the response carries the offer, the only dialog opened is the success one.
-      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
+      // The backend only sets credential_offer_uri for DeliveryMode.UI (returnsUri=true) --
+      // never for EMAIL -- so this is already scoped to the "Código QR" delivery option.
+      expect(mockMatDialog.open).toHaveBeenCalledTimes(1);
+      expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(service.hasSubmitted$()).toBe(true);
     });
 
