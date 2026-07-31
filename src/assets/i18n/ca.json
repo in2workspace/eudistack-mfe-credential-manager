@@ -274,6 +274,10 @@
       "title": "Credencial creada",
       "message": "La credencial s'ha creat correctament."
     },
+    "create-error-dialog": {
+      "title": "No s'ha pogut crear la credencial",
+      "message": "L'emissió no s'ha completat. Les dades del formulari s'han conservat; revisa-les i torna-ho a intentar."
+    },
     "creating-credential": "Creant credencial",
     "create-credential": "Crear credencial",
     "credentialType": "Tipus de credencial",
@@ -281,6 +285,10 @@
     "mandatee": "persona delegada",
     "mandator": "mandant",
     "select-type": "Selecciona el tipus de credencial",
+    "emptySelector": {
+      "noTypes": "No hi ha cap formulari de credencial habilitat per a la teva organització. Contacta amb l'administrador del teu tenant per sol·licitar-ne l'alta.",
+      "catalogUnavailable": "El catàleg de formularis no està disponible en aquest moment. Torna a carregar la pàgina per reintentar-ho."
+    },
     "firstName": "Nom",
     "lastName": "Cognom",
     "commonName": "Nom comú",
