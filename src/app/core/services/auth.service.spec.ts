@@ -623,6 +623,44 @@ describe('AuthService', () => {
         done();
       });
     });
+
+    it('checkAuth$: NO emet authCheckComplete$=true si dispara el silent-SSO (redirecció pendent)', (done) => {
+      sessionStorage.clear();
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        // La redirecció (authorize) és asíncrona: mentre la pàgina no ha
+        // navegat encara, els guards no han de veure authCheckComplete$=true
+        // amb userPowers buit — això causava un fals "Access Denied" + logout
+        // competint amb la redirecció SSO pendent.
+        expect((service as any).authCheckCompleteSubject.getValue()).toBe(false);
+        done();
+      });
+    });
+
+    it('checkAuth$: SÍ emet authCheckComplete$=true quan el silent-SSO ja s\'havia intentat (no-op)', (done) => {
+      sessionStorage.clear();
+      sessionStorage.setItem((AuthService as any).SSO_SILENT_ATTEMPT_KEY, 'true');
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+        service.authCheckComplete$.subscribe((complete) => {
+          expect(complete).toBe(true);
+          done();
+        });
+      });
+    });
   });
 
   // --------------------------------------------------------------------------

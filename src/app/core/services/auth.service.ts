@@ -133,6 +133,13 @@ export class AuthService{
   }
 
   public checkAuth$(): Observable<LoginResponse> {
+    // trySilentSsoOnce() fires an authorize(prompt=none) redirect, but that redirect is
+    // asynchronous (PKCE code_challenge generation uses Web Crypto) — window.location doesn't
+    // navigate away synchronously. If this call actually launched that redirect, guards must
+    // keep waiting on authCheckComplete$ instead of evaluating powers against the still-empty
+    // userPowers of this soon-to-be-abandoned page load (that used to show a false "Access
+    // Denied" + logout() race against the pending SSO redirect).
+    let silentSsoRedirectPending = false;
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
       tap(({ isAuthenticated, userData }) => {
@@ -156,7 +163,7 @@ export class AuthService{
         this.isAuthenticatedSubject.next(false);
         console.error('Checking authentication: not authenticated.');
         if (!this.isOnPublicRoute()) {
-          this.trySilentSsoOnce();
+          silentSsoRedirectPending = this.trySilentSsoOnce();
         }
       }
     }),
@@ -164,7 +171,11 @@ export class AuthService{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
     }),
-    finalize(() => this.authCheckCompleteSubject.next(true)));
+    finalize(() => {
+      if (!silentSsoRedirectPending) {
+        this.authCheckCompleteSubject.next(true);
+      }
+    }));
   }
 
   /**
@@ -193,12 +204,17 @@ export class AuthService{
    * treats as a normal "not authenticated" state without surfacing an
    * error dialog, falling back to the regular QR login shown on /home.
    */
-  private trySilentSsoOnce(): void {
+  /**
+   * Returns true when this call actually launched the redirect (so the caller knows a
+   * navigation is pending), false when it was a no-op (already attempted this session).
+   */
+  private trySilentSsoOnce(): boolean {
     if (sessionStorage.getItem(AuthService.SSO_SILENT_ATTEMPT_KEY)) {
-      return;
+      return false;
     }
     sessionStorage.setItem(AuthService.SSO_SILENT_ATTEMPT_KEY, 'true');
     this.oidcSecurityService.authorize(undefined, { customParams: { prompt: 'none' } });
+    return true;
   }
 
   /**
