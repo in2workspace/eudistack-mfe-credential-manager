@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.29] - 03-08-2026
+
+### Fixed
+
+- **RP-Initiated Logout not actually terminating the SSO session (EUDISTACK-551)**: `AuthService.logout()` called `oidcSecurityService.logoffLocal()`, which only clears this tab's tokens and never reaches the Verifier's `end_session_endpoint` — the Single Logout back-channel notification to other apps never fired. Switched to `oidcSecurityService.logoff()` (RP-Initiated Logout). Local cleanup (`sessionStorage.clear()`) is now deferred to the error-fallback path only — it was previously wiping the `id_token` the library needs to build `id_token_hint` before `logoff()` could read it, silently turning "Log out" into a no-op.
+- **SSO reuse (US-03, EUDISTACK-548) intermittently failing on a direct deep link** (e.g. `/organization/credentials`) with `"could not find matching config for state X"` or a token-exchange `invalid_grant`: two independent auto-login mechanisms — the app's own `trySilentSsoOnce()` and the library's `AutoLoginPartialRoutesGuard` — both fired an `authorize()` call on the same page load, racing to write the same PKCE `sessionStorage` bucket. Removed `AutoLoginPartialRoutesGuard` from the routes; `trySilentSsoOnce()` already covers the same case.
+- **False "Access Denied" dialog + forced logout racing the SSO-reuse redirect**: `PoliciesService.executePolicy()` (backing `basicGuard`/`settingsGuard`) evaluated `hasPower()`/`isSysAdmin()` before the app's own auth check had resolved. Added `AuthService.authCheckComplete$`, which guards now wait on before evaluating powers — refined further so it also stays pending while a silent-SSO redirect has just been launched but not yet navigated away (that redirect is asynchronous; PKCE `code_challenge` generation uses Web Crypto).
+- **Navbar user menu disappearing after a hard refresh**: `NavbarComponent` lives in the root shell and mounts before `checkAuth$()` resolves; `getMandator()`/`getName()` used `take(1)`, capturing the still-empty value and never updating. Switched to `takeUntilDestroyed()`.
+
 ## [3.5.28] - 24-07-2026
 
 ### Added
