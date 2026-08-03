@@ -26,7 +26,7 @@ export class PoliciesService {
 
   /** Shows the "Access Denied" dialog, then redirects and resolves to false. */
   private denyAndRedirect(redirectUrl: string, authFlag: boolean): Observable<boolean> {
-    console.error("User with required powers was not found.");
+    console.error('Access denied by policy.');
     const errorTitle = this.translate.instant(`error.policy.title`);
     const errorMessage = this.translate.instant(`error.policy.message`);
 
