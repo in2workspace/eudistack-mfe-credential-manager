@@ -4,7 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 describe('PoliciesService', () => {
   let service: PoliciesService;
@@ -17,7 +17,8 @@ describe('PoliciesService', () => {
     authServiceMock = {
       hasPower: jest.fn(),
       isSysAdmin: jest.fn().mockReturnValue(false),
-      logout: jest.fn().mockReturnValue(of(null))
+      logout: jest.fn().mockReturnValue(of(null)),
+      authCheckComplete$: of(true)
     } as unknown as jest.Mocked<AuthService>;
 
     routerMock = {
@@ -81,6 +82,26 @@ describe('PoliciesService', () => {
         expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
         done();
       });
+    });
+  });
+
+  describe('waits for authCheckComplete$ before evaluating powers', () => {
+    it('does not evaluate hasPower/isSysAdmin until the auth check resolves', () => {
+      const authCheckComplete$ = new Subject<boolean>();
+      authServiceMock.authCheckComplete$ = authCheckComplete$.asObservable();
+      authServiceMock.hasPower.mockReturnValue(true);
+
+      let result: boolean | undefined;
+      service.checkOnboardingPolicy().subscribe((value) => (result = value));
+
+      expect(authServiceMock.hasPower).not.toHaveBeenCalled();
+      expect(authServiceMock.isSysAdmin).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+
+      authCheckComplete$.next(true);
+
+      expect(authServiceMock.hasPower).toHaveBeenCalled();
+      expect(result).toBe(true);
     });
   });
 

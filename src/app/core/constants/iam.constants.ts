@@ -19,8 +19,8 @@ export const IAM_REDIRECT_URI = `${globalThis.location.origin}${baseHref}`;
  * path prefix (e.g. `/issuer/...` in the Portal Console), both the app-relative
  * and the `/issuer`-prefixed variants are listed.
  *
- * Keep in sync with the routes that are not protected by `AutoLoginPartialRoutesGuard`
- * in `app.routes.ts` (currently `credential-offer` and `credential-offer-refresh/:token`).
+ * Keep in sync with the unauthenticated-accessible routes in `app.routes.ts`
+ * (currently `credential-offer` and `credential-offer-refresh/:token`).
  */
 export const PUBLIC_ROUTE_PREFIXES = [
   '/credential-offer',
