@@ -17,9 +17,9 @@ describe('CredentialIssuerMetadataService', () => {
         format: 'jwt_vc_json',
         credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
       },
-      'LEARCredentialEmployee_mdoc': {
+      'learcredential.employee.mdoc.1': {
         format: 'mso_mdoc',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.mdoc.1'] }
       },
       'learcredential.machine.w3c.1': {
         format: 'jwt_vc_json',
@@ -28,6 +28,33 @@ describe('CredentialIssuerMetadataService', () => {
       'OtherCredential': {
         format: 'jwt_vc_json'
         // no credential_definition
+      }
+    }
+  };
+
+  /** Several versions of the same lineage, declared oldest-first and newest-first. */
+  const mockVersionedMetadata = {
+    credential_issuer: 'https://example.com',
+    credential_configurations_supported: {
+      'learcredential.employee.w3c.1': {
+        format: 'jwt_vc_json',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
+      },
+      'learcredential.employee.w3c.3': {
+        format: 'jwt_vc_json',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.3'] }
+      },
+      'learcredential.employee.w3c.2': {
+        format: 'jwt_vc_json',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.2'] }
+      },
+      'learcredential.employee.sd.2': {
+        format: 'dc+sd-jwt',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.2'] }
+      },
+      'learcredential.employee.sd.1': {
+        format: 'dc+sd-jwt',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.1'] }
       }
     }
   };
@@ -94,10 +121,54 @@ describe('CredentialIssuerMetadataService', () => {
         const result = service.findConfigurationsForType('learcredential.employee');
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({ configId: 'learcredential.employee.w3c.1', format: 'jwt_vc_json' });
-        expect(result).toContainEqual({ configId: 'LEARCredentialEmployee_mdoc', format: 'mso_mdoc' });
+        expect(result).toContainEqual({ configId: 'learcredential.employee.mdoc.1', format: 'mso_mdoc' });
         done();
       });
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
+    });
+
+    it('should return only the newest version of each format, one entry per format', (done) => {
+      service.loadMetadata().subscribe(() => {
+        const result = service.findConfigurationsForType('learcredential.employee');
+
+        // 5 configurations, 2 lineages => 2 entries, so the format selector renders exactly
+        // one radio button per format instead of one per version.
+        expect(result).toEqual([
+          { configId: 'learcredential.employee.w3c.3', format: 'jwt_vc_json' },
+          { configId: 'learcredential.employee.sd.2', format: 'dc+sd-jwt' }
+        ]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockVersionedMetadata);
+    });
+
+    it('should not return configurations whose id carries no version', (done) => {
+      const metaWithUnversionedId = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'LEARCredentialEmployee': {
+            format: 'jwt_vc_json',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee'] }
+          }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([]);
+        done();
+      });
+      httpMock
+        .expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA)
+        .flush(metaWithUnversionedId);
+    });
+
+    it('should keep superseded versions resolvable by id (already-issued credentials)', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.getConfigurationById('learcredential.employee.w3c.1')).toBeDefined();
+        // Keys are dotted ids, so toHaveProperty() would read them as a nested path.
+        expect(Object.keys(service.getAllConfigurations() ?? {})).toContain('learcredential.employee.w3c.1');
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockVersionedMetadata);
     });
 
     it('should return matching configurations for machine type', (done) => {
@@ -141,6 +212,27 @@ describe('CredentialIssuerMetadataService', () => {
         done();
       });
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
+    });
+
+    it('should not offer a type known only through an unversioned configuration', (done) => {
+      // Otherwise the type reaches the selector while findConfigurationsForType() returns
+      // nothing for it, i.e. a selectable type with no format behind it.
+      const metaWithUnversionedId = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'LEARCredentialEmployee': {
+            format: 'jwt_vc_json',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee'] }
+          }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        done();
+      });
+      httpMock
+        .expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA)
+        .flush(metaWithUnversionedId);
     });
 
     it('should ignore configurations without credential_definition', (done) => {

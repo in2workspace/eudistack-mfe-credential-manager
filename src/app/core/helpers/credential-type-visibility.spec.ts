@@ -49,11 +49,28 @@ describe('isCredentialTypeVisibleForTenant', () => {
     });
   });
 
+  // Restricted to dome like the label, and unlike its employee sibling: the machine credential
+  // is not a variant of an unrestricted type as far as visibility goes.
+  describe('lear credential machine', () => {
+    it('should be visible to dome', () => {
+      expect(isCredentialTypeVisibleForTenant(MACHINE, 'dome')).toBe(true);
+    });
+
+    it('should be hidden from every other restricted tenant', () => {
+      for (const tenant of ['cgcom', 'kpmg', 'eudistack', 'calidalia', 'localhost']) {
+        expect(isCredentialTypeVisibleForTenant(MACHINE, tenant)).toBe(false);
+      }
+    });
+
+    it('should not restrict the employee type sharing its prefix', () => {
+      expect(isCredentialTypeVisibleForTenant(EMPLOYEE, 'kpmg')).toBe(true);
+    });
+  });
+
   describe('unrestricted types', () => {
     it('should be visible to every tenant', () => {
       for (const tenant of ['dome', 'cgcom', 'kpmg', 'eudistack', 'calidalia', 'localhost']) {
         expect(isCredentialTypeVisibleForTenant(EMPLOYEE, tenant)).toBe(true);
-        expect(isCredentialTypeVisibleForTenant(MACHINE, tenant)).toBe(true);
       }
     });
 
@@ -112,16 +129,16 @@ describe('filterCredentialConfigurationsForTenant', () => {
   });
 
   it('should keep doctor id only for cgcom', () => {
-    expect(idsFor('cgcom')).toEqual([EMPLOYEE, MACHINE, DOCTOR_ID]);
+    expect(idsFor('cgcom')).toEqual([EMPLOYEE, DOCTOR_ID]);
   });
 
-  it('should keep the label only for dome', () => {
+  it('should keep the label and the machine credential only for dome', () => {
     expect(idsFor('dome')).toEqual([EMPLOYEE, MACHINE, LABEL]);
   });
 
-  it('should drop both restricted types for any other tenant', () => {
-    expect(idsFor('kpmg')).toEqual([EMPLOYEE, MACHINE]);
-    expect(idsFor('calidalia')).toEqual([EMPLOYEE, MACHINE]);
+  it('should drop every restricted type for any other tenant', () => {
+    expect(idsFor('kpmg')).toEqual([EMPLOYEE]);
+    expect(idsFor('calidalia')).toEqual([EMPLOYEE]);
   });
 
   it('should preserve the input order', () => {
@@ -141,7 +158,7 @@ describe('filterCredentialConfigurationsForTenant', () => {
   });
 
   it('should return an empty list when every type is restricted away', () => {
-    const restrictedOnly = [DOCTOR_ID, LABEL].map(credentialConfigurationId => ({ credentialConfigurationId }));
+    const restrictedOnly = [DOCTOR_ID, LABEL, MACHINE].map(credentialConfigurationId => ({ credentialConfigurationId }));
     const result = filterCredentialConfigurationsForTenant(restrictedOnly, e => e.credentialConfigurationId, 'kpmg');
     expect(result).toEqual([]);
   });
