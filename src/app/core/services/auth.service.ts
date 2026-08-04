@@ -21,6 +21,16 @@ import { TenantService } from './tenant.service';
 export class AuthService{
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  /**
+   * Emits true once the initial checkAuth$() has resolved (success, failure,
+   * or error) at least once. Guards/policies that need to distinguish
+   * "auth state not known yet" from "confirmed authenticated but lacking
+   * powers" must wait on this before evaluating hasPower()/isSysAdmin() —
+   * otherwise they race the SSO-reuse redirect and show a false Access
+   * Denied dialog while checkAuth$() is still in flight.
+   */
+  private readonly authCheckCompleteSubject = new BehaviorSubject<boolean>(false);
+  public authCheckComplete$ = this.authCheckCompleteSubject.asObservable();
   private readonly userDataSubject = new BehaviorSubject<UserDataAuthenticationResponse |null>(null);
   private readonly tokenSubject = new BehaviorSubject<string>('');
   private readonly mandatorSubject = new BehaviorSubject<EmployeeMandator | null>(null);
@@ -153,6 +163,13 @@ export class AuthService{
   }
 
   public checkAuth$(): Observable<LoginResponse> {
+    // trySilentSsoOnce() fires an authorize(prompt=none) redirect, but that redirect is
+    // asynchronous (PKCE code_challenge generation uses Web Crypto) — window.location doesn't
+    // navigate away synchronously. If this call actually launched that redirect, guards must
+    // keep waiting on authCheckComplete$ instead of evaluating powers against the still-empty
+    // userPowers of this soon-to-be-abandoned page load (that used to show a false "Access
+    // Denied" + logout() race against the pending SSO redirect).
+    let silentSsoRedirectPending = false;
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
       tap(({ isAuthenticated, userData }) => {
@@ -176,13 +193,18 @@ export class AuthService{
         this.isAuthenticatedSubject.next(false);
         console.error('Checking authentication: not authenticated.');
         if (!this.isOnPublicRoute()) {
-          this.trySilentSsoOnce();
+          silentSsoRedirectPending = this.trySilentSsoOnce();
         }
       }
     }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
+    }),
+    finalize(() => {
+      if (!silentSsoRedirectPending) {
+        this.authCheckCompleteSubject.next(true);
+      }
     }));
   }
 
@@ -212,12 +234,17 @@ export class AuthService{
    * treats as a normal "not authenticated" state without surfacing an
    * error dialog, falling back to the regular QR login shown on /home.
    */
-  private trySilentSsoOnce(): void {
+  /**
+   * Returns true when this call actually launched the redirect (so the caller knows a
+   * navigation is pending), false when it was a no-op (already attempted this session).
+   */
+  private trySilentSsoOnce(): boolean {
     if (sessionStorage.getItem(AuthService.SSO_SILENT_ATTEMPT_KEY)) {
-      return;
+      return false;
     }
     sessionStorage.setItem(AuthService.SSO_SILENT_ATTEMPT_KEY, 'true');
     this.oidcSecurityService.authorize(undefined, { customParams: { prompt: 'none' } });
+    return true;
   }
 
   /**
@@ -320,18 +347,34 @@ export class AuthService{
   }
 
 
+  /**
+   * Triggers RP-Initiated Logout (OIDC) against the Verifier's end_session_endpoint
+   * so the SSO session is actually terminated server-side (EUDISTACK-551 Single Logout).
+   * logoffLocal() alone only clears this tab's tokens and never reaches the Verifier,
+   * leaving the SSO session ACTIVE for every other app/tab sharing it.
+   *
+   * Local state (subjects, sessionStorage) is only cleared in the error fallback:
+   * angular-auth-oidc-client stores its tokens in sessionStorage and reads the
+   * id_token from there to build the id_token_hint for the redirect, so clearing
+   * it beforehand would leave logoff() with nothing to send and no navigation
+   * would ever happen — the tab would look logged in until a manual reload.
+   */
   public logout(): void {
-    this.oidcSecurityService.logoffLocal();
-    this.isAuthenticatedSubject.next(false);
-    this.userDataSubject.next(null);
-    this.tokenSubject.next('');
-    this.mandatorSubject.next(null);
-    this.mandateeEmailSubject.next('');
-    this.nameSubject.next('');
-    this.userPowers = [];
-    this.resetSessionRoleState();
-    sessionStorage.clear();
-    this.router.navigate(['/home']);
+    this.oidcSecurityService.logoff().subscribe({
+      error: (err) => {
+        console.error('RP-Initiated Logout failed, falling back to local navigation', err);
+        this.isAuthenticatedSubject.next(false);
+        this.userDataSubject.next(null);
+        this.tokenSubject.next('');
+        this.mandatorSubject.next(null);
+        this.mandateeEmailSubject.next('');
+        this.nameSubject.next('');
+        this.userPowers = [];
+        this.resetSessionRoleState();
+        sessionStorage.clear();
+        this.router.navigate(['/home']);
+      }
+    });
   }
 
   /**

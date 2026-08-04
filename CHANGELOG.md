@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PoliciesService`: the denial path (dialog → optional logout → redirect → `false`) was extracted into `denyAndRedirect()`, shared by the onboarding and settings policies.
   - Tests: `auth.service.spec.ts` and `policies.service.spec.ts` cover `resolveRole$()` (dedup, failure-resolves-to-LEAR, reset on logout) and the role-based settings gate; `navbar.component.spec.ts` covers the Settings entry per role. Because `resolvedRole$` is `toObservable`-backed and therefore effect-driven, specs must await a tick rather than expect a synchronous value.
 
-### Added - 29-07-2026
+### Added - 04-08-2026
 
 - **EUD-71 — Select form and issue credential (issuer's default form)**: the Credential Manager issuance screen already existed end-to-end; this Story closes three conformance gaps against the SRS without building any new endpoint.
   - **AD-1 — Catalog of forms without hardcoding (FR-01/FR-04)**: removed `CredentialIssuanceService.resolveCredentialTypesByTenant()` (special-cased `KPMG` + static `ISSUANCE_CREDENTIAL_TYPES_ARRAY` as source, with its `TODO` to remove the hardcoding). `CredentialIssuerMetadataService.getIssuableCredentialTypes()` now derives the issuable-type list from `credential_configurations_supported` (metadata already tenant-filtered on the backend). `CredentialIssuanceService.credentialTypesArr$`/`isCatalogUnavailable$` are reactive signals that distinguish "tenant with no forms enabled" from "catalog unavailable" (new `hasMetadataLoadFailed()`), always fail-closed — with no metadata, the selector stays empty and never falls back to a hardcoded list. `CredentialIssuanceComponent` adds an accessible empty state (`role="status"`, `aria-live="polite"`).
@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Observable issuance failure (AC-06, real gap closed)**: `DialogWrapperService.openDialogWithCallback()` only logged the error to console, leaving the Operator with no failure confirmation at all. `CredentialIssuanceService.submitCredentialPayload()` adds `catchError` + a new failure dialog (`openFailedCreateDialog()`, i18n keys `create-error-dialog`) without resetting the form, plus a `timeout(30s)` so the Operator is never left indefinitely stuck if the Issuer doesn't respond (ES-05).
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
+
+## [3.5.29] - 03-08-2026
+
+### Fixed
+
+- **RP-Initiated Logout not actually terminating the SSO session (EUDISTACK-551)**: `AuthService.logout()` called `oidcSecurityService.logoffLocal()`, which only clears this tab's tokens and never reaches the Verifier's `end_session_endpoint` — the Single Logout back-channel notification to other apps never fired. Switched to `oidcSecurityService.logoff()` (RP-Initiated Logout). Local cleanup (`sessionStorage.clear()`) is now deferred to the error-fallback path only — it was previously wiping the `id_token` the library needs to build `id_token_hint` before `logoff()` could read it, silently turning "Log out" into a no-op.
+- **SSO reuse (US-03, EUDISTACK-548) intermittently failing on a direct deep link** (e.g. `/organization/credentials`) with `"could not find matching config for state X"` or a token-exchange `invalid_grant`: two independent auto-login mechanisms — the app's own `trySilentSsoOnce()` and the library's `AutoLoginPartialRoutesGuard` — both fired an `authorize()` call on the same page load, racing to write the same PKCE `sessionStorage` bucket. Removed `AutoLoginPartialRoutesGuard` from the routes; `trySilentSsoOnce()` already covers the same case.
+- **False "Access Denied" dialog + forced logout racing the SSO-reuse redirect**: `PoliciesService.executePolicy()` (backing `basicGuard`/`settingsGuard`) evaluated `hasPower()`/`isSysAdmin()` before the app's own auth check had resolved. Added `AuthService.authCheckComplete$`, which guards now wait on before evaluating powers — refined further so it also stays pending while a silent-SSO redirect has just been launched but not yet navigated away (that redirect is asynchronous; PKCE `code_challenge` generation uses Web Crypto).
+- **Navbar user menu disappearing after a hard refresh**: `NavbarComponent` lives in the root shell and mounts before `checkAuth$()` resolves; `getMandator()`/`getName()` used `take(1)`, capturing the still-empty value and never updating. Switched to `takeUntilDestroyed()`.
 
 ## [3.5.28] - 24-07-2026
 

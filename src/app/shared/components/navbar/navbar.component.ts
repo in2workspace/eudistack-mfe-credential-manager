@@ -1,10 +1,10 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatIcon } from '@angular/material/icon';
-import { take } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatButtonModule} from '@angular/material/button';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -26,19 +26,25 @@ export class NavbarComponent implements OnInit {
 
   private readonly translate = inject(TranslateService);
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public ngOnInit() {
     this.logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
 
+    // NavbarComponent lives in the root app.component and mounts before
+    // checkAuth$() resolves (esp. on a hard page reload), so a one-shot
+    // take(1) can capture the still-empty mandator/name and never update.
+    // Subscribe for the component's lifetime instead, so the button appears
+    // once AuthService actually populates these BehaviorSubjects.
     this.authService.getMandator()
-      .pipe(take(1))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(mandator => {
         if (mandator) {
           this.organization = mandator.organization
         }
       })
     this.authService.getName()
-      .pipe(take(1))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(name => {
         if (name) {
           this.userName = name;
