@@ -41,7 +41,10 @@ export function guardUnloadWhileUnsaved(hasUnsavedChanges: () => boolean): void 
   const destroyRef = inject(DestroyRef);
 
   const handler = (event: BeforeUnloadEvent): void => {
-    if (hasUnsavedChanges()) event.preventDefault();
+    if (hasUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = true;
+    }
   };
 
   globalThis.addEventListener('beforeunload', handler);
