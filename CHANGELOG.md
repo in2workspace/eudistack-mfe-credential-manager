@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 04-08-2026
+
+- **EUD-71 — Select form and issue credential (issuer's default form)**: the Credential Manager issuance screen already existed end-to-end; this Story closes three conformance gaps against the SRS without building any new endpoint.
+  - **AD-1 — Catalog of forms without hardcoding (FR-01/FR-04)**: removed `CredentialIssuanceService.resolveCredentialTypesByTenant()` (special-cased `KPMG` + static `ISSUANCE_CREDENTIAL_TYPES_ARRAY` as source, with its `TODO` to remove the hardcoding). `CredentialIssuerMetadataService.getIssuableCredentialTypes()` now derives the issuable-type list from `credential_configurations_supported` (metadata already tenant-filtered on the backend). `CredentialIssuanceService.credentialTypesArr$`/`isCatalogUnavailable$` are reactive signals that distinguish "tenant with no forms enabled" from "catalog unavailable" (new `hasMetadataLoadFailed()`), always fail-closed — with no metadata, the selector stays empty and never falls back to a hardcoded list. `CredentialIssuanceComponent` adds an accessible empty state (`role="status"`, `aria-live="polite"`).
+  - **AD-2 — Form fields derived from the credential definition (FR-10/FR-02)**: new `claims-to-schema.mapper.ts` (pure function) transforms the selected config's `credential_metadata.claims[]` into form fields, labeling from `display[].name` for the active locale with `path.join('.')` as fallback. Wired into `LearCredentialEmployeeSchemaProvider` for the `mandatee` group (the `mandator` and `power` groups stay out of scope — static side data and a custom component, respectively). If the definition carries no capturable claims, a provisional employee field set is used as a bridge until EUD-58 publishes the definitive schema — isolated to a single point to minimize future rework. Added `label?: string` to the field view-model and its fallback in `DynamicFieldComponent`, without which the metadata-derived label could not render.
+  - **AD-3 — Issuance result: success/failure only (FR-09)**: removed the branch that opened `CredentialOfferDialogComponent` (offer URI/QR) after a 2xx — offer delivery belongs to Epic EUD-3. After a 2xx the success dialog is always shown. The `CredentialOfferDialogComponent` component is kept (no other consumers in the repo) for that future Epic.
+  - **Observable issuance failure (AC-06, real gap closed)**: `DialogWrapperService.openDialogWithCallback()` only logged the error to console, leaving the Operator with no failure confirmation at all. `CredentialIssuanceService.submitCredentialPayload()` adds `catchError` + a new failure dialog (`openFailedCreateDialog()`, i18n keys `create-error-dialog`) without resetting the form, plus a `timeout(30s)` so the Operator is never left indefinitely stuck if the Issuer doesn't respond (ES-05).
+  - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
+  - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
+
 ## [3.5.29] - 03-08-2026
 
 ### Fixed
@@ -75,7 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.21] - 10-07-2026
 
 ### Fixed
+
 - Navbar logout button disappearing after closing the credential-offer QR dialog: removed the unnecessary `location.reload()` call in `CredentialIssuanceService.submitCredentialPayload()`, which forced a full-page reload and raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
+
 ### Added
 
 - `AuthService`: when `checkAuth$()` resolves as not authenticated, attempt a one-shot silent SSO check via a full-page redirect with `prompt=none` (`trySilentSsoOnce`), guarded by a `sessionStorage` flag so it only runs once per browser session. This lets a session already established on another tenant app (sharing the same root-domain cookie) be picked up without showing the QR login unnecessarily; the Verifier's `frame-ancestors` CSP prevents doing this via a silent iframe renew.
@@ -83,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.20] - 07-07-2026
 
 ### Fixed
+
 - In issuances table pages, do not throw blocking error when an issuance object doesn't include a required field. Treat it as empty instead.
 
 ## [3.5.19] - 07-07-2026
