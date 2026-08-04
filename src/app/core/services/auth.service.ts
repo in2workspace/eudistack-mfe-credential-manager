@@ -306,7 +306,7 @@ export class AuthService{
     this.userDataSubject.next(null);
     this.tokenSubject.next('');
     this.userPowers = [];
-    this.resetResolvedRole();
+    this.resetSessionRoleState();
 
     this.router.navigate(['/home']).finally(() => {
       const title = this.translate.instant('error.policy.title');
@@ -329,18 +329,22 @@ export class AuthService{
     this.mandateeEmailSubject.next('');
     this.nameSubject.next('');
     this.userPowers = [];
-    this.resetResolvedRole();
+    this.resetSessionRoleState();
     sessionStorage.clear();
     this.router.navigate(['/home']);
   }
 
   /**
    * Back to "unknown", not to LEAR: a second login in the same tab must re-ask
-   * the backend instead of inheriting the previous session's verdict.
+   * the backend instead of inheriting the previous session's verdict. The same
+   * applies to the rest of the `/me`-derived state — it is only meaningful
+   * together with the role, so it is torn down as one unit.
    */
-  private resetResolvedRole(): void {
+  private resetSessionRoleState(): void {
     this.resolvedRole.set(null);
     this.roleFetchInFlight = false;
+    this.isSysAdminRole.set(false);
+    this.organizationIdentifier.set('');
   }
 
   public authorize(){
