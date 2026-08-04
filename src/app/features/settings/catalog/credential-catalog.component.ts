@@ -182,6 +182,7 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
           if (persisted) {
             // Saved, but the state on screen can no longer be trusted: fall back to the
             // load-error state, which offers a retry, instead of showing a stale list.
+            this.baseline.set(this.entries().map(e => ({ ...e })));
             this.applyLoadError(error);
           } else {
             this.saveError.set(true);
