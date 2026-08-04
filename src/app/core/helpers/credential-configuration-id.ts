@@ -1,4 +1,6 @@
 /**
+ * TEMPORARY - This class is temporary while credentials are not distinguished per-tenant by the API.
+ * 
  * Reading and version selection over credential configuration ids.
  *
  * Issuer configuration ids follow `<type>.<format-family>.<version>`:
@@ -16,11 +18,6 @@
  * of each lineage. Keeping that rule here means both screens agree on "newest" by
  * construction instead of by two parallel implementations.
  *
- * NOTE — `features/credential-details/legacy/legacy-credential-support.ts` parses versions
- * too, and deliberately does NOT use this module: it is documented as temporary and
- * self-contained so it can be deleted in one step, and it applies a different policy
- * (unversioned ids fall back to version 0 and still compete). Coupling it here would make
- * that removal harder for no gain.
  */
 
 /** A configuration id decomposed into its meaningful parts. */

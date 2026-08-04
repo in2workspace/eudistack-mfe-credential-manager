@@ -1,7 +1,9 @@
 /**
+ * TEMPORARY — This class is temporary while credentials are not distinguished per-tenant by the API.
+ * 
  * Which credential types a tenant is allowed to SEE.
  *
- * Some credential types are specific to one organization and must not appear in the other
+ * Some credential types are specific to one tenant and must not appear in the other
  * tenants' screens even when the issuer registry declares them globally: Doctor ID belongs
  * to CGCOM, the Gaia-X Label credential to DOME.
  *

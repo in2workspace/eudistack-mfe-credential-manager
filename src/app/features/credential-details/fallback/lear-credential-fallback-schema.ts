@@ -2,6 +2,8 @@
  * HARDCODED FALLBACK SCHEMA — LEAR CREDENTIAL EMPLOYEE / MACHINE
  * =============================================================================
  *
+ *  TEMPORARY - This is temporary while the issuer metadata doesn't expose only-read VC types separately from issuable types.
+ * 
  * WHY THIS EXISTS
  * ---------------
  * The details screen builds its view model from the issuer metadata
