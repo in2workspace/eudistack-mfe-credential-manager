@@ -274,6 +274,8 @@ export class AuthService{
         console.error('Failed to resolve role from backend; defaulting to LEAR', err);
         this.tenantType.set('simple');
         this.resolvedRole.set(RoleType.LEAR);
+        this.isSysAdminRole.set(false);
+        this.organizationIdentifier.set('');
       }
     });
   }
