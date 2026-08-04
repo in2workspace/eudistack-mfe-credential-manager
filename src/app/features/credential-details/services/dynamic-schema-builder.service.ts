@@ -28,10 +28,11 @@ export class DynamicSchemaBuilder {
    * same code as a metadata-driven schema.
    */
   buildFallbackSchema(configId: string | undefined, credential: any): ViewModelSchema | null {
-    if (!resolveLearFallbackLineage(configId, credential)) return null;
+    const lineage = resolveLearFallbackLineage(configId, credential);
+    if (!lineage) return null;
 
     return {
-      main: buildLearCredentialFallbackMainFields(credential),
+      main: buildLearCredentialFallbackMainFields(credential, lineage),
       side: this.buildSideFields(credential),
     };
   }

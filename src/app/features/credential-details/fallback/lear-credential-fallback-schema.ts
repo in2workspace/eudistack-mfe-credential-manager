@@ -97,21 +97,43 @@ export function readSpecificCredentialType(credential: unknown): string | undefi
 }
 
 /**
+ * The mandatee fields of each family.
+ *
+ * The mandator is a person in both families, so it is described once. The mandatee is NOT:
+ * an employee mandatee is a person (name, email), a machine mandatee is a machine, identified
+ * by its `id` and `domain`, and carries no name or email at all. Describing both with the
+ * person fields rendered every machine mandatee as two empty rows ("-"), which reads as "the
+ * credential lost its data" when the truth is that its data was never those fields.
+ */
+const MANDATEE_FIELDS: Record<LearFallbackLineage, readonly DetailsKeyValueField[]> = {
+  employee: [
+    keyValueField('name', c => readPartyName(readMandate(c).mandatee)),
+    keyValueField('email', c => readPartyEmail(readMandate(c).mandatee)),
+  ],
+  machine: [
+    keyValueField('id', c => readText(readMandate(c).mandatee?.['id'])),
+    keyValueField('domain', c => readText(readMandate(c).mandatee?.['domain'])),
+  ],
+};
+
+/**
  * The main-card groups for a LEAR credential, read straight from the credential.
  *
- * Both families get the SAME minimal set — mandator (name, email, company, VAT) and
- * mandatee (name, email) — because that set is what the screen guarantees to show for a
- * credential nothing describes, not a per-family projection of it. `power` is appended
- * only when the credential actually carries powers: `DetailsPowerComponent` renders its
- * domain heading unconditionally, so an empty group would read as "no powers granted"
- * where the truth is "no power claim present".
+ * The mandator group is the same minimal set for both families (name, email, company, VAT);
+ * the mandatee group is per-family, see `MANDATEE_FIELDS`. `power` is appended only when the
+ * credential actually carries powers: `DetailsPowerComponent` renders its domain heading
+ * unconditionally, so an empty group would read as "no powers granted" where the truth is
+ * "no power claim present".
  *
  * Values stay lazy (`(c) => …`), exactly like `DynamicSchemaBuilder`, so a malformed
  * branch is isolated by `CredentialDetailsService.safeCompute` instead of failing the
  * whole schema.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildLearCredentialFallbackMainFields(credential: any): DetailsGroupField[] {
+export function buildLearCredentialFallbackMainFields(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  credential: any,
+  lineage: LearFallbackLineage,
+): DetailsGroupField[] {
   const groups: DetailsGroupField[] = [
     {
       key: 'mandator',
@@ -126,10 +148,7 @@ export function buildLearCredentialFallbackMainFields(credential: any): DetailsG
     {
       key: 'mandatee',
       type: 'group',
-      value: [
-        keyValueField('name', c => readPartyName(readMandate(c).mandatee)),
-        keyValueField('email', c => readPartyEmail(readMandate(c).mandatee)),
-      ],
+      value: [...MANDATEE_FIELDS[lineage]],
     },
   ];
 
@@ -175,7 +194,7 @@ interface MandateLike {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function readMandate(credential: any): MandateLike {
-  const candidates = [credential?.credentialSubject?.mandate, credential?.credentialSubject, credential];
+  const candidates = [credential?.credentialSubject?.mandate, credential?.credentialSubject, credential, credential?.mandate];
   for (const candidate of candidates) {
     if (candidate && typeof candidate === 'object'
       && ('mandator' in candidate || 'mandatee' in candidate || 'power' in candidate)) {

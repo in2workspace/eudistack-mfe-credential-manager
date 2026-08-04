@@ -120,7 +120,7 @@ describe('readSpecificCredentialType', () => {
 
 describe('buildLearCredentialFallbackMainFields', () => {
   it('should expose the agreed mandator fields for a machine credential', () => {
-    const fields = buildLearCredentialFallbackMainFields(machineCredential);
+    const fields = buildLearCredentialFallbackMainFields(machineCredential, 'machine');
 
     // The mandator carries no first/last name, so `commonName` names it.
     expect(evaluate(fields, 'mandator', machineCredential)).toEqual({
@@ -131,15 +131,17 @@ describe('buildLearCredentialFallbackMainFields', () => {
     });
   });
 
-  it('should expose the mandatee fields as null when the machine mandatee carries none', () => {
-    const fields = buildLearCredentialFallbackMainFields(machineCredential);
+  it('should identify a machine mandatee by id and domain, not by the person fields it never carries', () => {
+    const fields = buildLearCredentialFallbackMainFields(machineCredential, 'machine');
 
-    // null, not '' — the template renders '-' for both, but null is what safeCompute yields.
-    expect(evaluate(fields, 'mandatee', machineCredential)).toEqual({ name: null, email: null });
+    expect(evaluate(fields, 'mandatee', machineCredential)).toEqual({
+      id: 'did:key:zDnaey7ZcQ1gfXxaZSYffjvhrrFtd7PQdQtJpofzRJNCwydHL',
+      domain: 'issuer.dome-marketplace-sbx.org',
+    });
   });
 
   it('should compose the mandatee name from first and last name for an employee credential', () => {
-    const fields = buildLearCredentialFallbackMainFields(employeeCredential);
+    const fields = buildLearCredentialFallbackMainFields(employeeCredential, 'employee');
 
     expect(evaluate(fields, 'mandatee', employeeCredential)).toEqual({
       name: 'mandatee-inn mandator-altia',
@@ -154,7 +156,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
   });
 
   it('should render powers through the existing details power component', () => {
-    const fields = buildLearCredentialFallbackMainFields(employeeCredential);
+    const fields = buildLearCredentialFallbackMainFields(employeeCredential, 'employee');
     const powerGroup = group(fields, 'power');
 
     expect(powerGroup.custom?.component).toBe(DetailsPowerComponent);
@@ -168,7 +170,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
     const power = { action: 'Execute', domain: 'DOME', function: 'Onboarding', type: 'domain' };
     const credential = { type: ['LEARCredentialMachine'], credentialSubject: { mandate: { power } } };
 
-    const fields = buildLearCredentialFallbackMainFields(credential);
+    const fields = buildLearCredentialFallbackMainFields(credential, 'machine');
 
     expect(group(fields, 'power').custom?.value(credential)).toEqual([power]);
   });
@@ -176,7 +178,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
   it('should omit the power group when the credential carries no powers', () => {
     const credential = { type: ['LEARCredentialEmployee'], credentialSubject: { mandate: { mandator: {} } } };
 
-    const fields = buildLearCredentialFallbackMainFields(credential);
+    const fields = buildLearCredentialFallbackMainFields(credential, 'employee');
 
     expect(fields.map(field => field.key)).toEqual(['mandator', 'mandatee']);
   });
@@ -191,7 +193,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
       },
     };
 
-    const fields = buildLearCredentialFallbackMainFields(credential);
+    const fields = buildLearCredentialFallbackMainFields(credential, 'employee');
 
     expect(evaluate(fields, 'mandator', credential)).toEqual({
       name: 'Flat Mandator',
@@ -210,7 +212,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
       mandatee: { domain: 'issuer.example.org' },
     };
 
-    const fields = buildLearCredentialFallbackMainFields(credential);
+    const fields = buildLearCredentialFallbackMainFields(credential, 'machine');
 
     expect(evaluate(fields, 'mandator', credential)).toEqual({
       name: 'Root Mandator',
@@ -218,10 +220,11 @@ describe('buildLearCredentialFallbackMainFields', () => {
       organization: null,
       organizationIdentifier: null,
     });
+    expect(evaluate(fields, 'mandatee', credential)).toEqual({ id: null, domain: 'issuer.example.org' });
   });
 
   it('should always describe both parties, whatever the credential carries', () => {
-    const fields = buildLearCredentialFallbackMainFields({ type: ['LEARCredentialMachine'] });
+    const fields = buildLearCredentialFallbackMainFields({ type: ['LEARCredentialMachine'] }, 'machine');
 
     expect(fields.map(field => field.key)).toEqual(['mandator', 'mandatee']);
     expect(evaluate(fields, 'mandator', {})).toEqual({
@@ -232,7 +235,7 @@ describe('buildLearCredentialFallbackMainFields', () => {
   it('should treat blank strings as absent so they render like a missing field', () => {
     const credential = { credentialSubject: { mandate: { mandator: { commonName: '   ', email: '' } } } };
 
-    expect(evaluate(buildLearCredentialFallbackMainFields(credential), 'mandator', credential))
+    expect(evaluate(buildLearCredentialFallbackMainFields(credential, 'employee'), 'mandator', credential))
       .toEqual({ name: null, email: null, organization: null, organizationIdentifier: null });
   });
 });
