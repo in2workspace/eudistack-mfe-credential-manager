@@ -116,7 +116,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+
 - Navbar logout button disappearing after closing the credential-offer QR dialog: removed the unnecessary `location.reload()` call in `CredentialIssuanceService.submitCredentialPayload()`, which forced a full-page reload and raced the OIDC re-authentication against the navbar rendering `userName`. The list refresh is already handled by `CredentialManagementComponent.ngOnInit()` on route navigation.
+
 
 ### Added
 
@@ -125,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.20] - 07-07-2026
 
 ### Fixed
+
 
 - In issuances table pages, do not throw blocking error when an issuance object doesn't include a required field. Treat it as empty instead.
 
