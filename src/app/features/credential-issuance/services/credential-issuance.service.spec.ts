@@ -164,6 +164,27 @@ describe('CredentialIssuanceService', () => {
       expect(service.availableFormats$().map(f => f.configId)).toEqual(['learcredential.employee.w3c.2']);
     });
 
+    it('should only fabricate a default option for a type the selector cannot offer', () => {
+      // Guards the fallback in availableFormats$ against the hardcoded issuance floor
+      // (core/temporary/pinned-issuable-versions.ts): it fires when a type is selected while
+      // the metadata has no configuration for it, which would put back a form for a type whose
+      // every version was filtered out. Unreachable, because the selector and the format
+      // options read the same version-filtered set — a type with no surviving configuration is
+      // also absent from credentialTypesArr$, so it can never be selected.
+      issuableTypes.set([]);
+      mockMetadataService.findConfigurationsForType.mockReturnValue([]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      expect(service.credentialTypesArr$()).toEqual([]);
+      expect(service.availableFormats$()).toEqual([
+        {
+          configId: 'learcredential.employee',
+          format: 'jwt_vc_json',
+          labelKey: 'credentialIssuance.format.w3cVcDm'
+        }
+      ]);
+    });
+
     it('should read the form claims off the selected configuration (AD-2)', () => {
       mockMetadataService.findConfigurationsForType.mockReturnValue([
         { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }

@@ -15,6 +15,7 @@ import { StatusClass } from 'src/app/core/models/entity/lear-credential-manageme
 import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
+import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
 
 
 @Injectable() //provided in component
@@ -43,8 +44,12 @@ export class CredentialDetailsService {
   });
   public credentialDisplayName$ = computed<string>(() => {
     const configId = this.credentialType$();
-    if (!configId) return '';
-    let config = this.metadataService.getConfigurationById(configId);
+    // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
+    // The type shown in the header must never be blank, even for a credential carrying no
+    // configuration id: its own specific type name is the last thing left to name it by.
+    const unnamed = configId ?? readSpecificCredentialType(this.credential$()) ?? '';
+    // --- end FALLBACK ---
+    let config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
     // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
     if (!config) {
       config = matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
@@ -56,9 +61,9 @@ export class CredentialDetailsService {
       return displays.find(d => d.locale === lang)?.name
         ?? displays.find(d => d.locale === 'en')?.name
         ?? displays[0].name
-        ?? configId;
+        ?? unnamed;
     }
-    return configId;
+    return unnamed;
   });
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
@@ -179,6 +184,23 @@ export class CredentialDetailsService {
       };
     }
     // --- end LEGACY fallback ---
+
+    // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
+    // Nothing in the metadata describes this credential. If it is a LEAR credential, its
+    // mandate shape is known independently of the metadata, so show the minimum fields
+    // rather than an empty screen. Evaluated against the NORMALIZED credential (uniform
+    // credentialSubject.mandate paths for W3C and SD-JWT alike), with the legacy pass on
+    // top for tmf_* powers — it is idempotent on modern data.
+    const fallbackVc = normalizeLegacyCredential(vc);
+    const fallbackSchema = this.dynamicSchemaBuilder.buildFallbackSchema(configId, fallbackVc);
+    if (fallbackSchema) {
+      console.warn(
+        `No credential_metadata.claims for credential "${configId ?? 'unknown'}"; ` +
+        `falling back to the hardcoded LEAR credential schema (minimum fields only).`
+      );
+      return { schema: fallbackSchema, vcForEvaluation: fallbackVc };
+    }
+    // --- end FALLBACK ---
 
     throw new Error(
       `No schema available for credential "${configId ?? 'unknown'}". ` +

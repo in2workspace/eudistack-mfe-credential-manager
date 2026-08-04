@@ -5,6 +5,7 @@ import { API_PATH } from '../constants/api-paths.constants';
 import { keepLatestCredentialConfigurations } from '../helpers/credential-configuration-id';
 import { CredentialConfigurationDto, CredentialIssuerMetadataDto } from '../models/dto/credential-issuer-metadata.dto';
 import { ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType } from '../models/entity/lear-credential-issuance';
+import { keepPinnedIssuableVersions } from '../helpers/pinned-issuable-versions';
 import { TenantService } from './tenant.service';
 
 /** A configuration paired with the record key it was declared under. */
@@ -42,7 +43,17 @@ export class CredentialIssuerMetadataService {
     // Object.entries preserves the metadata's declaration order, and the helper preserves
     // relative order => stable order in both selectors.
     const keyed = Object.entries(configs).map(([configId, config]) => ({ configId, config }));
-    return keepLatestCredentialConfigurations(keyed, entry => entry.configId);
+
+    // PINNED-VERSIONS (temporary, see core/temporary/pinned-issuable-versions.ts). The
+    // relative rule below can only pick the newest version PRESENT; metadata declaring only
+    // a legacy version — which it must, for the details screen to resolve credentials issued
+    // under it — would make that legacy version the newest and put it back in the form. The
+    // pin removes those first, so a superseded lineage yields no format option, and a type
+    // whose every lineage is superseded stops being issuable altogether (issuableTypes()).
+    // Remove this wrap and the import to revert; nothing else changes.
+    const currentEnoughToIssue = keepPinnedIssuableVersions(keyed, entry => entry.configId);
+
+    return keepLatestCredentialConfigurations(currentEnoughToIssue, entry => entry.configId);
   });
 
   // AD-1: the issuable catalogue is derived from the metadata, already tenant-filtered on

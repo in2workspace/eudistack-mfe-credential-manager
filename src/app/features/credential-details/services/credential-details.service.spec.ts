@@ -391,6 +391,86 @@ describe('resolveSchema legacy fallback', () => {
   });
 });
 
+describe('resolveSchema hardcoded LEAR fallback', () => {
+  beforeEach(() => {
+    // Metadata that describes nothing: neither the exact lookup nor the legacy type match resolves.
+    mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+    mockMetadataService.getAllConfigurations.mockReturnValue({});
+    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  it('describes a machine credential no metadata covers', () => {
+    const vc = {
+      type: ['LEARCredentialMachine', 'VerifiableCredential'],
+      issuer: 'did:elsi:VATES-B60645900',
+      credentialSubject: {
+        mandate: {
+          mandator: {
+            commonName: 'Testa Mandatora',
+            email: 'roger.miret@in2.es',
+            organization: 'IN2 INGENIERIA DE LA INFORMACION SOCIEDAD LIMITADA',
+            organizationIdentifier: 'VATES-B60645900',
+          },
+          mandatee: { id: 'did:key:zDnaey7Z', domain: 'issuer.dome-marketplace-sbx.org' },
+          power: [{ action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'domain' }],
+        },
+      },
+    } as any;
+    const data = { credential_configuration_id: 'LEAR_CREDENTIAL_MACHINE', credential: { vc } } as any;
+
+    const result = (service as any).resolveSchema(data, vc);
+
+    expect(result.schema.main.map((group: any) => group.key)).toEqual(['mandator', 'mandatee', 'power']);
+    // The issuer side card comes from the credential itself, so it survives the missing metadata.
+    expect(result.schema.side.map((group: any) => group.key)).toEqual(['issuer']);
+  });
+
+  it('describes an employee credential no metadata covers', () => {
+    const vc = {
+      type: ['LEARCredentialEmployee', 'VerifiableCredential'],
+      credentialSubject: {
+        mandate: {
+          mandatee: { firstName: 'mandatee-inn', lastName: 'mandator-altia', email: 'roger.miret@in2.es' },
+          mandator: { commonName: 'test manda', email: 'roger.miret@altia.es' },
+          power: [{ action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'domain' }],
+        },
+      },
+    } as any;
+    const data = { credential: { vc } } as any;
+
+    const result = (service as any).resolveSchema(data, vc);
+
+    const mandatee = result.schema.main.find((group: any) => group.key === 'mandatee');
+    const resolved = mandatee.value.map((field: any) => field.value(result.vcForEvaluation));
+    expect(resolved).toEqual(['mandatee-inn mandator-altia', 'roger.miret@in2.es']);
+  });
+
+  it('prefers the metadata claims over the fallback whenever they exist', () => {
+    mockMetadataService.getConfigurationById.mockReturnValue({
+      format: 'jwt_vc_json',
+      credential_metadata: {
+        display: [],
+        claims: [{ path: ['credentialSubject', 'mandate', 'mandator', 'country'], display: [] }],
+      },
+    });
+    const vc = { type: ['LEARCredentialEmployee'], credentialSubject: { mandate: { mandator: { country: 'ES' } } } } as any;
+    const data = { credential_configuration_id: 'learcredential.employee.w3c.4', credential: { vc } } as any;
+
+    const result = (service as any).resolveSchema(data, vc);
+
+    // The single declared claim, not the fallback's mandator/mandatee pair.
+    expect(result.schema.main).toHaveLength(1);
+    expect((result.schema.main[0].value as any[]).map(field => field.key)).toEqual(['country']);
+  });
+
+  it('still throws for a credential that is neither employee nor machine', () => {
+    const vc = { type: ['VerifiableCredential', 'UnknownCredential'] } as any;
+    const data = { credential_configuration_id: 'UNKNOWN', credential: { vc } } as any;
+
+    expect(() => (service as any).resolveSchema(data, vc)).toThrow(/No schema available/);
+  });
+});
+
 describe('shouldIncludeSideField', () => {
   it('should include fields with a key other than "issuer"', () => {
     const field: any = { key: 'other', type: 'key-value', value: null };
