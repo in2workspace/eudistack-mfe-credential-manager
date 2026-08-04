@@ -5,7 +5,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { Observable, filter, map, of, switchMap, take } from 'rxjs';
 import { TmfAction, TmfFunction } from '../models/entity/lear-credential';
-import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 
 @Injectable({
@@ -88,17 +87,19 @@ export class PoliciesService {
   /**
    * Gates `/settings`.
    *
-   * Waits for the initial authentication check and then asks the backend for
-   * the resolved role instead of checking CredentialIssuer/Configure.
+   * Waits for the initial authentication check, then for the backend's own
+   * verdict on the role (`resolveRole$()` rather than a synchronous `roleType()`
+   * read, which would deny every administrator who navigates before
+   * `GET /api/v1/me` answers), and only then applies
+   * `AuthService.canAccessSettings()` — the very predicate the navbar entry and
+   * the Settings sidenav use, so the menu can never disagree with this guard.
+   * Change who may reach Settings there, not here.
    */
   public checkSettingsPolicy(): Observable<boolean> {
     return this.waitForAuthCheck().pipe(
       switchMap(() => this.authService.resolveRole$()),
-      switchMap((role) => {
-        if (
-          role !== RoleType.LEAR ||
-          this.authService.isSysAdmin()
-        ) {
+      switchMap(() => {
+        if (this.authService.canAccessSettings()) {
           return of(true);
         }
 

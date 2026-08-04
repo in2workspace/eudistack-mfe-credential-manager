@@ -27,8 +27,9 @@ import { CredentialCatalogService } from './credential-catalog.service';
  * Reads and writes `/admin/v1/credential-catalog` (replace-all semantics).
  *
  * Authorization is deliberately handled here and not left to `settingsGuard`: the guard
- * checks `hasPower('CredentialIssuer','Configure')`, a power the Issuer API never reads,
- * so passing it does not imply the API will accept the caller. `roleType` — resolved by
+ * (`AuthService.canAccessSettings()`) also admits a caller whose only evidence of
+ * privilege is the ID-token SysAdmin power, which the Issuer API does not read, so
+ * passing it does not imply the API will accept the caller. `roleType` — resolved by
  * the backend via `GET /api/v1/me` — is the source of truth (see `auth.service.ts`), and
  * the 403 state stays as defence in depth.
  */

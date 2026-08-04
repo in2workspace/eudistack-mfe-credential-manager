@@ -73,7 +73,15 @@ export class AuthService{
   /** Dedupes concurrent `resolveRole$()` callers into a single `GET /api/v1/me`. */
   private roleFetchInFlight = false;
 
-  private userPowers: Power[] = [];
+  /**
+   * Powers claimed by the ID token. A signal, not a plain array, so predicates built
+   * on it (`isSysAdmin()`, `canAccessSettings()`) can be wrapped in a `computed()` and
+   * still update. Without that, a menu entry gated on `isSysAdmin()` could cache
+   * `false` from the first change detection and never re-evaluate: the only other
+   * dependency, `roleType()`, collapses "unresolved" to LEAR, so the null → LEAR
+   * transition of a failed `GET /api/v1/me` is invisible to consumers.
+   */
+  private readonly userPowers: WritableSignal<Power[]> = signal([]);
 
   private readonly authEvents = inject(PublicEventsService);
   private readonly destroy$ = inject(DestroyRef);
@@ -174,7 +182,7 @@ export class AuthService{
       take(1),
       tap(({ isAuthenticated, userData }) => {
       if (isAuthenticated) {
-        this.userPowers = this.extractPowersFromClaims(userData);
+        this.userPowers.set(this.extractPowersFromClaims(userData));
         if (!this.isAuthorizedForCurrentTenant()) {
           console.error('Checking authentication: session scoped to a different tenant.');
           this.rejectCrossTenantSession();
@@ -334,7 +342,7 @@ export class AuthService{
     this.isAuthenticatedSubject.next(false);
     this.userDataSubject.next(null);
     this.tokenSubject.next('');
-    this.userPowers = [];
+    this.userPowers.set([]);
     this.resetSessionRoleState();
 
     this.router.navigate(['/home']).finally(() => {
@@ -371,7 +379,7 @@ export class AuthService{
         this.mandatorSubject.next(null);
         this.mandateeEmailSubject.next('');
         this.nameSubject.next('');
-        this.userPowers = [];
+        this.userPowers.set([]);
         this.resetSessionRoleState();
         sessionStorage.clear();
         this.router.navigate(['/home']);
@@ -460,11 +468,11 @@ export class AuthService{
     const name = (userData.mandatee!.firstName ?? '') + ' ' + (userData.mandatee!.lastName ?? '');
     this.mandateeEmailSubject.next(email);
     this.nameSubject.next(name.trim());
-    this.userPowers = this.extractPowersFromClaims(userData);
+    this.userPowers.set(this.extractPowersFromClaims(userData));
   }
 
   public hasPower(tmfFunction: string, tmfAction: string, tmfDomain?: string): boolean {
-    return this.userPowers.some((power: Power) => {
+    return this.userPowers().some((power: Power) => {
       if (power.function !== tmfFunction) return false;
       const action = power.action;
       const actionMatches = action === tmfAction || (Array.isArray(action) && action.includes(tmfAction));
@@ -475,11 +483,40 @@ export class AuthService{
   }
 
   public isSysAdmin(): boolean {
-    return this.userPowers.some((p: Power) =>
+    return this.userPowers().some((p: Power) =>
       p.type === 'organization' && p.domain === 'EUDISTACK'
       && p.function === 'System'
       && (p.action === 'Administration' || (Array.isArray(p.action) && p.action.includes('Administration')))
     );
+  }
+
+  /**
+   * The single predicate behind everything that gates `/settings`: `settingsGuard`
+   * (via `PoliciesService.checkSettingsPolicy`), the navbar entry
+   * (`NavbarComponent.canSeeSettings`) and the Settings sidenav
+   * (`SettingsComponent.canSeeCatalog`). Extracted so those three can no longer
+   * drift apart — a menu wider than the guard is what greeted tenant admins with
+   * an Access Denied dialog (EUD-72 §2.3/§7.2), and a menu narrower than it hid
+   * Settings from a SysAdmin whose `/me` call had failed.
+   *
+   * Two sources, deliberately: `roleType()` is the backend's verdict
+   * (`GET /api/v1/me`) and the one the Issuer API agrees with, while
+   * `isSysAdmin()` reads the ID-token powers. The second clause is redundant
+   * whenever `/me` answers — the backend maps SYSADMIN to TENANT_ADMIN or
+   * SYSADMIN_READONLY, neither of which is LEAR — so it only fires when `/me`
+   * failed or contradicts the token, where it is the platform SysAdmin's
+   * escape hatch. Passing it still does not imply the API will accept the
+   * caller; screens keep their own 403 state.
+   *
+   * Reports false while the role is unresolved (`roleType()` collapses null to
+   * LEAR) unless the token already proves SysAdmin, so the gate stays shut until
+   * the backend answers. Both reads are signal-backed, so wrapping this in a
+   * `computed()` is enough for a menu entry to appear on its own — and it has to
+   * be `userPowers` that carries the second one (see its declaration), because
+   * the null → LEAR transition of a failed `/me` never changes `roleType()`.
+   */
+  public canAccessSettings(): boolean {
+    return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
   }
 
   /**
@@ -514,7 +551,7 @@ export class AuthService{
       .pipe(take(1))
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
         if (isAuthenticated) {
-          this.userPowers = this.extractPowersFromClaims(userData);
+          this.userPowers.set(this.extractPowersFromClaims(userData));
           if (!this.isAuthorizedForCurrentTenant()) {
             this.rejectCrossTenantSession();
             return;

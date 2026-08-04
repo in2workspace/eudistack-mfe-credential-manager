@@ -28,8 +28,12 @@ describe('AppComponent', () => {
       return true;
     },
     hasPower: () => true,
+    isSysAdmin: () => false,
     // Read by the embedded navbar to gate its "Settings" entry.
     roleType: signal(RoleType.LEAR),
+    canAccessSettings() {
+      return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
+    },
   } as jest.Mocked<any>;
 
   let routerEventsSubject: Subject<any>;

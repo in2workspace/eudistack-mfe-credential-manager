@@ -1,7 +1,6 @@
 import { Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatIcon } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -57,18 +56,19 @@ export class NavbarComponent implements OnInit {
   }
 
   /**
-   * Gates the "Settings" entry of the user menu. Deliberately the same predicate as
+   * Gates the "Settings" entry of the user menu. Delegates to
+   * `AuthService.canAccessSettings()`, which is literally the predicate
    * `settingsGuard` (`PoliciesService.checkSettingsPolicy`) and
-   * `SettingsComponent.canSeeCatalog`, so the menu never offers a destination the
-   * guard would reject — the discrepancy this used to carry is what kept tenant
-   * admins out of Settings (EUD-72 §2.3/§7.2).
+   * `SettingsComponent.canSeeCatalog` evaluate, so the menu can neither offer a
+   * destination the guard rejects — the discrepancy that kept tenant admins out
+   * of Settings (EUD-72 §2.3/§7.2) — nor hide one it admits.
    *
-   * No separate "role resolved" flag is needed: `roleType()` reports LEAR until
-   * `GET /api/v1/me` answers, which already evaluates to false here. The entry
-   * therefore appears one round trip after login — invisible in practice, since it
-   * lives inside a click-triggered `mat-menu`.
+   * No separate "role resolved" flag is needed: the predicate is false until
+   * `GET /api/v1/me` answers. The entry therefore appears one round trip after
+   * login — invisible in practice, since it lives inside a click-triggered
+   * `mat-menu`.
    */
-  public readonly canSeeSettings = computed(() => this.authService.roleType() !== RoleType.LEAR);
+  public readonly canSeeSettings = computed(() => this.authService.canAccessSettings());
 
   //currently not used
   public changeLanguage(languageCode: string): void {

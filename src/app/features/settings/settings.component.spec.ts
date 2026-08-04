@@ -8,12 +8,30 @@ import { AuthService } from 'src/app/core/services/auth.service';
 describe('SettingsComponent', () => {
   let component: SettingsComponent;
   let fixture: ComponentFixture<SettingsComponent>;
-  let authService: { roleType: ReturnType<typeof signal<RoleType>> };
+  let authService: {
+    roleType: ReturnType<typeof signal<RoleType>>;
+    sysAdminByToken: ReturnType<typeof signal<boolean>>;
+    isSysAdmin: () => boolean;
+    canAccessSettings: () => boolean;
+  };
 
   const catalogLink = () => fixture.nativeElement.querySelector('[data-testid="nav-catalog"]');
 
   beforeEach(async () => {
-    authService = { roleType: signal(RoleType.TENANT_ADMIN) };
+    // canAccessSettings mirrors the real implementation rather than stubbing a boolean,
+    // so driving roleType still decides the outcome exactly as it does in production.
+    // Both inputs are signals for the same reason the real ones are: a computed over the
+    // predicate has to be able to see them change.
+    authService = {
+      roleType: signal(RoleType.TENANT_ADMIN),
+      sysAdminByToken: signal(false),
+      isSysAdmin() {
+        return this.sysAdminByToken();
+      },
+      canAccessSettings() {
+        return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
+      }
+    };
 
     await TestBed.configureTestingModule({
       imports: [SettingsComponent,  TranslateModule.forRoot()],
@@ -68,6 +86,17 @@ describe('SettingsComponent', () => {
 
       expect(component.canSeeCatalog()).toBe(false);
       expect(catalogLink()).toBeNull();
+    });
+
+    // settingsGuard let this caller in on the strength of the ID-token power alone, so
+    // the sidenav must not be the one place that pretends they are a LEAR.
+    it('should be shown to a SysAdmin known only from the token, /me having failed', () => {
+      authService.roleType.set(RoleType.LEAR);
+      authService.sysAdminByToken.set(true);
+      fixture.detectChanges();
+
+      expect(component.canSeeCatalog()).toBe(true);
+      expect(catalogLink()).toBeTruthy();
     });
   });
 });

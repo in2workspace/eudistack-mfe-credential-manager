@@ -1,3 +1,4 @@
+import { computed } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { firstValueFrom, of, Subject, throwError } from 'rxjs';
@@ -215,28 +216,28 @@ describe('AuthService', () => {
   // hasPower()
   // --------------------------------------------------------------------------
   it('true si te "Onboarding" i accio "Execute"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'Onboarding', action: ['Read', 'Execute', 'Write'] }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(true);
   });
 
   it('false si no te "Execute"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'Onboarding', action: ['Read', 'Write'] }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
   it('false si no te "Onboarding"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'OtherFunction', action: 'Execute' }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
   it('false si userPowers es buit', () => {
-    (service as any).userPowers = [];
+    (service as any).userPowers.set([]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
@@ -245,29 +246,83 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('isSysAdmin', () => {
     it('true amb power organization/EUDISTACK/System/Administration (action string)', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration' }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(true);
     });
 
     it('true amb Administration dins array d\'actions', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'EUDISTACK', function: 'System', action: ['Read', 'Administration'] }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(true);
     });
 
     it('false si el domain no es EUDISTACK', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'OTHER', function: 'System', action: 'Administration' }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(false);
     });
 
     it('false si userPowers es buit', () => {
-      (service as any).userPowers = [];
+      (service as any).userPowers.set([]);
       expect(service.isSysAdmin()).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // canAccessSettings()
+  // The one predicate shared by settingsGuard, the navbar entry and the Settings
+  // sidenav (EUD-72 §2.3/§7.2). Menu and guard must not be able to disagree.
+  // --------------------------------------------------------------------------
+  describe('canAccessSettings', () => {
+    const SYSADMIN_POWER = {
+      type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration'
+    };
+
+    beforeEach(() => {
+      (service as any).userPowers.set([]);
+    });
+
+    it('false mentre el rol no esta resolt: la porta queda tancada fins que respon /me', () => {
+      service.resolvedRole.set(null);
+      expect(service.canAccessSettings()).toBe(false);
+    });
+
+    it('false per LEAR', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      expect(service.canAccessSettings()).toBe(false);
+    });
+
+    it('true per TENANT_ADMIN', () => {
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    it('true per SYSADMIN_READONLY (el catalog es renderitza en read-only)', () => {
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    // L'escapatoria del SysAdmin de plataforma: si /me falla, refreshRoleFromBackend()
+    // resol a LEAR i el rol del backend ja no el pot identificar — nomes el token.
+    it('true per un SysAdmin nomes conegut pel token quan /me ha fallat', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      (service as any).userPowers.set([SYSADMIN_POWER]);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    it('reacciona al canvi de resolvedRole dins d\'un computed', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      const canSee = TestBed.runInInjectionContext(() =>
+        computed(() => service.canAccessSettings())
+      );
+      expect(canSee()).toBe(false);
+
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
+      expect(canSee()).toBe(true);
     });
   });
 

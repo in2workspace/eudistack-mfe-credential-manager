@@ -15,13 +15,27 @@ describe('PoliciesService', () => {
   let dialogMock: jest.Mocked<DialogWrapperService>;
   let translateMock: jest.Mocked<TranslateService>;
   let resolveRole$: jest.Mock;
+  let canAccessSettings: jest.Mock;
+
+  /**
+   * Drives both halves of the settings gate at once: `resolveRole$()` is what the policy
+   * awaits, `canAccessSettings()` is what it then evaluates. Keeping them in one helper
+   * stops the spec from reimplementing the predicate — that duplication is what let the
+   * menu and the guard disagree (EUD-72 §2.3).
+   */
+  const givenSettingsAccess = (role: RoleType, allowed: boolean) => {
+    resolveRole$.mockReturnValue(of(role));
+    canAccessSettings.mockReturnValue(allowed);
+  };
 
   beforeEach(() => {
     resolveRole$ = jest.fn().mockReturnValue(of(RoleType.LEAR));
+    canAccessSettings = jest.fn().mockReturnValue(false);
 
     authServiceMock = {
       hasPower: jest.fn(),
       isSysAdmin: jest.fn().mockReturnValue(false),
+      canAccessSettings,
       logout: jest.fn().mockReturnValue(of(null)),
       resolveRole$,
       authCheckComplete$: of(true)
@@ -150,7 +164,7 @@ describe('PoliciesService', () => {
 
       authServiceMock.authCheckComplete$ =
         authCheckComplete$.asObservable();
-      resolveRole$.mockReturnValue(of(RoleType.TENANT_ADMIN));
+      givenSettingsAccess(RoleType.TENANT_ADMIN, true);
 
       let result: boolean | undefined;
 
@@ -174,12 +188,15 @@ describe('PoliciesService', () => {
   });
 
   /**
-   * Settings is gated on the backend role returned by resolveRole$(), not on a
-   * TMF power. The Issuer API does not use CredentialIssuer/Configure.
+   * Settings is gated on `AuthService.canAccessSettings()` — the predicate the navbar
+   * entry and the Settings sidenav also evaluate — and never on a TMF power: the Issuer
+   * API does not use CredentialIssuer/Configure. What belongs here is the plumbing (wait
+   * for the auth check, then for the role, then ask, then deny properly); who is allowed
+   * in is auth.service.spec's business.
    */
   describe('checkSettingsPolicy', () => {
     it('should return true for TENANT_ADMIN', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.TENANT_ADMIN));
+      givenSettingsAccess(RoleType.TENANT_ADMIN, true);
 
       service.checkSettingsPolicy().subscribe({
         next: (result) => {
@@ -194,7 +211,7 @@ describe('PoliciesService', () => {
     });
 
     it('should return true for SYSADMIN_READONLY', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.SYSADMIN_READONLY));
+      givenSettingsAccess(RoleType.SYSADMIN_READONLY, true);
 
       service.checkSettingsPolicy().subscribe({
         next: (result) => {
@@ -206,8 +223,28 @@ describe('PoliciesService', () => {
       });
     });
 
+    // The predicate is consulted only after the backend has answered: a synchronous
+    // roleType() read would deny every admin who navigates before GET /api/v1/me lands.
+    it('should not evaluate the predicate before the role resolves', (done) => {
+      const role$ = new Subject<RoleType>();
+      resolveRole$.mockReturnValue(role$.asObservable());
+      canAccessSettings.mockReturnValue(true);
+
+      service.checkSettingsPolicy().subscribe({
+        next: (result) => {
+          expect(result).toBe(true);
+          done();
+        },
+        error: done
+      });
+
+      expect(canAccessSettings).not.toHaveBeenCalled();
+
+      role$.next(RoleType.TENANT_ADMIN);
+    });
+
     it('should show an error dialog, redirect and return false for LEAR', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.LEAR));
+      givenSettingsAccess(RoleType.LEAR, false);
 
       service.checkSettingsPolicy().subscribe({
         next: (result) => {
@@ -227,7 +264,7 @@ describe('PoliciesService', () => {
     });
 
     it('should not log the user out when denying Settings access', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.LEAR));
+      givenSettingsAccess(RoleType.LEAR, false);
 
       service.checkSettingsPolicy().subscribe({
         next: () => {
@@ -239,7 +276,7 @@ describe('PoliciesService', () => {
     });
 
     it('should deny a LEAR holding CredentialIssuer/Configure', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.LEAR));
+      givenSettingsAccess(RoleType.LEAR, false);
       authServiceMock.hasPower.mockReturnValue(true);
 
       service.checkSettingsPolicy().subscribe({
@@ -255,8 +292,10 @@ describe('PoliciesService', () => {
       });
     });
 
+    // The platform SysAdmin escape hatch lives inside canAccessSettings(); all this
+    // policy has to do is honour it once resolveRole$() has fallen back to LEAR.
     it('should return true for SysAdmin if resolveRole$ falls back to LEAR', (done) => {
-      resolveRole$.mockReturnValue(of(RoleType.LEAR));
+      givenSettingsAccess(RoleType.LEAR, true);
       authServiceMock.isSysAdmin.mockReturnValue(true);
 
       service.checkSettingsPolicy().subscribe({

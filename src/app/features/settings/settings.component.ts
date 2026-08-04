@@ -5,7 +5,6 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 
 @Component({
@@ -21,11 +20,13 @@ export class SettingsComponent {
 
   /**
    * Credential catalog is a tenant-admin screen (EUD-72): the Issuer rejects a LEAR with
-   * 403 on both verbs. `roleType` mirrors the backend's own verdict (`GET /api/v1/me`), so
-   * it is the only reliable signal here — `settingsGuard` checks a power the API ignores.
+   * 403 on both verbs. Shares `AuthService.canAccessSettings()` with `settingsGuard` and
+   * the navbar entry, so this sidenav offers exactly what the guard admits — everyone who
+   * got this far can reach the catalog, which is also where `/settings` redirects.
    *
    * The platform-tenant SysAdmin (`SYSADMIN_READONLY`) does see the link: reads are allowed,
-   * and the screen renders in read-only mode.
+   * and the screen renders in read-only mode. So does a SysAdmin known only from the ID
+   * token because `/me` failed; the catalog's own 403 state covers them.
    */
-  public readonly canSeeCatalog = computed(() => this.authService.roleType() !== RoleType.LEAR);
+  public readonly canSeeCatalog = computed(() => this.authService.canAccessSettings());
 }
