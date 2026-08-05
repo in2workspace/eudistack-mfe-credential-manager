@@ -28,7 +28,5 @@ export class SettingsComponent {
    * and the screen renders in read-only mode. So does a SysAdmin known only from the ID
    * token because `/me` failed; the catalog's own 403 state covers them.
    */
-  // ! TODO: Disable this temporary override once the backend `/admin` route is available
-  public readonly canSeeCatalog = computed(() => false);
-  // public readonly canSeeCatalog = computed(() => this.authService.canAccessSettings());
+  public readonly canSeeCatalog = computed(() => this.authService.canAccessSettings());
 }

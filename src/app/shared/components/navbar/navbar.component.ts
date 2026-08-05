@@ -68,10 +68,7 @@ export class NavbarComponent implements OnInit {
    * login — invisible in practice, since it lives inside a click-triggered
    * `mat-menu`.
    */
-  // TODO: Disable this temporary override once the backend `/admin` route is available
-  // or once Catalog is no longer the only functional Settings feature.
-  public readonly canSeeSettings = computed(() => false);
-  // public readonly canSeeSettings = computed(() => this.authService.canAccessSettings());
+  public readonly canSeeSettings = computed(() => this.authService.canAccessSettings());
 
   //currently not used
   public changeLanguage(languageCode: string): void {
