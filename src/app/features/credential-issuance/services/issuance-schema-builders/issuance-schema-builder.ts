@@ -50,8 +50,11 @@ export class IssuanceSchemaBuilder {
   }
 
   /**
-   * Punto único de integración del resolver genérico (AD-1). Consumible por `claims-to-schema.mapper.ts`
-   * (EUD-71) sin alterar los campos legacy de `common-issuance-schema-fields.ts` (R-2).
+   * Punto único de integración del resolver genérico (AD-1) para consumidores que necesiten la
+   * traducción completa a ValidatorEntry[] (required + basicType). `LearCredentialEmployeeSchemaProvider`
+   * ya consume el resolver directamente (solo necesita `.required`, no la traducción completa);
+   * este método queda listo para cuando un consumidor necesite también `basicType` (fecha/número).
+   * No altera los campos legacy de `common-issuance-schema-fields.ts` (R-2).
    */
   public buildValidatorEntriesForField(input: FieldValidationRuleInput): ValidatorEntryUnion[] {
     const rule = this.fieldValidationRuleResolver.resolve(input);

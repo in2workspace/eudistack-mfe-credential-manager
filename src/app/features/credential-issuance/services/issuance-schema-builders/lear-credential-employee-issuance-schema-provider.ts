@@ -5,10 +5,11 @@ import { CountryService } from "src/app/shared/services/country.service";
 import { ClaimDefinitionDto } from "src/app/core/models/dto/credential-issuer-metadata.dto";
 import { CredentialIssuanceTypedViewModelSchema, CredentialIssuanceSchemaProvider, CredentialIssuanceViewModelField } from "src/app/core/models/entity/lear-credential-issuance";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
-import { mapClaimsToFields } from "../../helpers/claims-to-schema.mapper";
+import { claimKey, mapClaimsToFields } from "../../helpers/claims-to-schema.mapper";
 import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
 import { IssuancePowerComponent } from "../../components/power/issuance-power.component";
 import { baseNameLengthValidatorEntries } from "src/app/shared/validators/credential-issuance/validators-entries";
+import { PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER } from "src/app/shared/validators/credential-issuance/field-validation-rule.resolver";
 
 @Injectable({ providedIn: 'root' })
 export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceSchemaProvider<'learcredential.employee'> {
@@ -28,14 +29,6 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
     email: emailField,
     employeeId: { key: 'employeeId', type: 'control', controlType: 'text', validators: [...baseNameLengthValidatorEntries] }
   };
-
-  /**
-   * AC-07 — required fields. ClaimDefinitionDto does NOT expose a required flag (nor does
-   * the backend's ClaimDefinition record), so the requiredness of the derived keys comes
-   * from here until EUD-58 folds it into the metadata. `employeeId` is NOT required today
-   * and stays that way.
-   */
-  private static readonly PROVISIONAL_REQUIRED_MANDATEE_KEYS = ['firstName', 'lastName', 'email'] as const;
 
   private static readonly MANDATEE_PATH_SEGMENT = 'mandatee';
 
@@ -131,6 +124,18 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
   }
 
   /**
+   * AC-07 — required fields. ClaimDefinitionDto does NOT expose a required flag (nor does
+   * the backend's ClaimDefinition record), so the requiredness of the derived keys comes
+   * from the EUD-73 generic resolver (AC-06) until EUD-58 folds it into the metadata.
+   * `employeeId` is NOT in the resolver's provisional set and stays optional.
+   */
+  private static resolveRequiredKeys(claims: readonly ClaimDefinitionDto[]): string[] {
+    return claims
+      .map(claim => claimKey(claim))
+      .filter(key => PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER.resolve({ key }).required);
+  }
+
+  /**
    * AC-02: fields derived from the definition.
    * EC-02: if the definition declares no capturable `mandatee` claims, falls back to the
    * provisional field set. An empty group is never returned (that would leave a blank form).
@@ -139,7 +144,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
     const derivedFields = mapClaimsToFields(claims, {
       locale: this.translate.currentLang,
       pathSegment: LearCredentialEmployeeSchemaProvider.MANDATEE_PATH_SEGMENT,
-      requiredKeys: LearCredentialEmployeeSchemaProvider.PROVISIONAL_REQUIRED_MANDATEE_KEYS,
+      requiredKeys: LearCredentialEmployeeSchemaProvider.resolveRequiredKeys(claims ?? []),
       fieldOverrides: LearCredentialEmployeeSchemaProvider.PROVISIONAL_MANDATEE_FIELDS
     });
 

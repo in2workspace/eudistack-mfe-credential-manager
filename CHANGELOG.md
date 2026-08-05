@@ -26,10 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FieldValidationRuleResolver` + `ProvisionalFieldValidationRuleResolver` (`shared/validators/credential-issuance/field-validation-rule.resolver.ts`): seam genérico de safe-deploy que deriva `{ key, required, basicType }` desacoplado de la definición final del catálogo de credenciales (AC-06, EC-01, EC-02).
   - `BasicTypeValidators.date()` / `.numeric()` (`shared/validators/credential-issuance/basic-type-validators.ts`), registrados en `CUSTOM_VALIDATORS_FACTORY_MAP`; alcance acotado a tipo básico (sin min/max/pattern) (AC-03, ES-01).
   - Claves i18n `error.form.date` / `error.form.number` en `es`/`en`/`ca`.
-  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: punto único de integración del resolver, listo para el mapper de EUD-71 sin alterar los campos legacy existentes (AC-06).
+  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: punto único de integración del resolver para futuros consumidores que necesiten la traducción completa a `ValidatorEntry[]` (AC-06).
   - `controlType: 'date'` en `DynamicFieldComponent` (`input[type="date"]`) y refuerzo de accesibilidad: `aria-describedby` vinculado al `mat-error`, `role="alert"`, `id` estable por campo (NFR-A-EUD73-01).
   - `WrappedBuiltInValidators.required()` ahora trata un valor de solo espacios como vacío (EC-03).
   - `CredentialIssuanceService.isSubmissionAllowed()`: hardening fail-closed del gate de envío ante schema/tipo ausente o `FormGroup` sin controles (ES-02); revalidación sobre el estado actual del formulario, no un flag cacheado (AC-04, ES-03).
+
+### Changed
+
+- **EUD-73 (post-merge con EUD-71)**: `LearCredentialEmployeeSchemaProvider` ya no mantiene su propia lista hardcodeada `PROVISIONAL_REQUIRED_MANDATEE_KEYS` (introducida por EUD-71) — ahora deriva las claves obligatorias del grupo `mandatee` desde `FieldValidationRuleResolver` (AC-06/AC-07), consolidando en una sola fuente de verdad sin cambiar el comportamiento observable (mismos campos obligatorios). `claims-to-schema.mapper.ts` no se ha modificado.
 
 > Nota: el volcado de PII en `CredentialIssuanceComponent.onSubmit()` ya fue eliminado por EUD-71 (ver arriba); EUD-73 no repite esa entrada.
 
