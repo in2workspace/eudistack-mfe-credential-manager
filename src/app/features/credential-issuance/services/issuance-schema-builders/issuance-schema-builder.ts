@@ -7,6 +7,7 @@ import {
   FieldValidationRuleResolver,
   PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER,
 } from "src/app/shared/validators/credential-issuance/field-validation-rule.resolver";
+import { ClaimDefinitionDto } from "src/app/core/models/dto/credential-issuer-metadata.dto";
 
 export const CREDENTIAL_SCHEMA_PROVIDERS = new InjectionToken<CredentialIssuanceSchemaProvider<IssuanceCredentialType>[]>('CREDENTIAL_SCHEMA_PROVIDERS');
 
@@ -20,8 +21,12 @@ export class IssuanceSchemaBuilder {
       PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER;
 
 
-  public getIssuanceFormSchema<T extends IssuanceCredentialType>(type: T, onBehalf: boolean = false): CredentialIssuanceTypedViewModelSchema<T>{
-    return this.getBuilder(type).getSchema(onBehalf);
+  public getIssuanceFormSchema<T extends IssuanceCredentialType>(
+    type: T,
+    onBehalf: boolean = false,
+    claims?: readonly ClaimDefinitionDto[]
+  ): CredentialIssuanceTypedViewModelSchema<T>{
+    return this.getBuilder(type).getSchema(onBehalf, claims);
   }
 
   /** AD-1: traduce una FieldValidationRule ya resuelta a ValidatorEntry[] (alcance acotado: required + tipo básico). */
@@ -45,8 +50,8 @@ export class IssuanceSchemaBuilder {
   }
 
   /**
-   * Punto único de integración del resolver genérico (AD-1). Consumible por el mapper de EUD-71
-   * (claims-to-schema.mapper.ts, aún no existe) sin alterar los campos legacy de common-issuance-schema-fields.ts (R-2).
+   * Punto único de integración del resolver genérico (AD-1). Consumible por `claims-to-schema.mapper.ts`
+   * (EUD-71) sin alterar los campos legacy de `common-issuance-schema-fields.ts` (R-2).
    */
   public buildValidatorEntriesForField(input: FieldValidationRuleInput): ValidatorEntryUnion[] {
     const rule = this.fieldValidationRuleResolver.resolve(input);
@@ -55,9 +60,10 @@ export class IssuanceSchemaBuilder {
 
   public formSchemasBuilder<T extends IssuanceCredentialType>(
     credType: T,
-    onBehalf: boolean
+    onBehalf: boolean,
+    claims?: readonly ClaimDefinitionDto[]
   ): IssuanceViewModelsTuple {
-    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType, onBehalf).schema;
+    const rawSchema: CredentialIssuanceViewModelSchema  = this.getIssuanceFormSchema(credType, onBehalf, claims).schema;
     const formViewModel: CredentialIssuanceViewModelSchemaWithId = [];
     const staticSchema: IssuanceStaticViewModel = {};
 

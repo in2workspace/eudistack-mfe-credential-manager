@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { AutoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 import { tenantGuard } from './core/guards/tenant.guard';
 import { TenantNotFoundComponent } from './features/tenant-not-found/tenant-not-found.component';
@@ -15,12 +14,12 @@ export const routes: Routes = [
   {
     path: 'settings',
     loadChildren: () => import('./features/settings/settings.routes').then(m => m.default),
-    canActivate: [tenantGuard, AutoLoginPartialRoutesGuard, settingsGuard],
+    canActivate: [tenantGuard, settingsGuard],
   },
   {
     path: 'organization/credentials',
     canActivate: [tenantGuard],
-    canActivateChild: [AutoLoginPartialRoutesGuard, basicGuard],
+    canActivateChild: [basicGuard],
     children: [
       {
         path: '',

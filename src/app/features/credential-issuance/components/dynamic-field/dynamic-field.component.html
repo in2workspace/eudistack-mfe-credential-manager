@@ -36,7 +36,7 @@
         }
         @let showError = !!(control?.invalid && control?.touched);
         <mat-form-field [formGroup]="parentFormGroup$()">
-          <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ "credentialIssuance." + fieldName | translate }}</mat-label>
+          <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldSchema.label ?? ("credentialIssuance." + fieldName | translate) }}</mat-label>
           @let controlType = controlSchema.controlType;
           @if (controlType === 'number' || controlType === 'text' || controlType === 'date') {
             <!-- aria-invalid lo gestiona internamente matInput vía su ErrorStateMatcher; aquí solo enlazamos el mat-error -->

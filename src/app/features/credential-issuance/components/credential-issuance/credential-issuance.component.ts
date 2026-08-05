@@ -29,7 +29,8 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
 export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDeactivate>{
 
   //CREDENTIAL TYPE SELECTOR
-  public readonly credentialTypesArr: Readonly<IssuanceCredentialType[]>;
+  public readonly credentialTypesArr$: Signal<IssuanceCredentialType[]>;
+  public readonly isCatalogUnavailable$: Signal<boolean>;
   public selectedCredentialType$: WritableSignal<IssuanceCredentialType | undefined>;
 
   // FORMAT SELECTOR
@@ -69,7 +70,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.issuanceService.onBehalf$.set(onBehalf);
     this.onBehalf$ = this.issuanceService.onBehalf$;
     this.hasSubmitted$ = this.issuanceService.hasSubmitted$;
-    this.credentialTypesArr = this.issuanceService.credentialTypesArr;
+    this.credentialTypesArr$ = this.issuanceService.credentialTypesArr$;
+    this.isCatalogUnavailable$ = this.issuanceService.isCatalogUnavailable$;
     this.selectedCredentialType$ = this.issuanceService.selectedCredentialType$;
     this.availableFormats$ = this.issuanceService.availableFormats$;
     this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;
@@ -120,6 +122,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public onSubmit(): void {
     const isFormValid = this.isFormValid$();
     if (!isFormValid) {
+      // Do not dump formValue$(): it's the holder's data (PII) — must never end up in the console.
       console.error('Invalid form: ');
       return;
     }

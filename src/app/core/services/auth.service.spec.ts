@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
@@ -89,6 +90,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockPublicEventsService: jest.Mocked<any>;
   let tenantServiceMock: { tenant: jest.Mock };
+  let routerMock: { navigate: jest.Mock, url: string };
 
   let oidcSecurityServiceMock: {
     checkAuth: jest.Mock,
@@ -131,6 +133,7 @@ describe('AuthService', () => {
       }))
     };
     tenantServiceMock = { tenant: jest.fn().mockReturnValue('localhost') };
+    routerMock = { navigate: jest.fn().mockResolvedValue(true), url: '/' };
 
     TestBed.configureTestingModule({
       providers: [
@@ -141,6 +144,7 @@ describe('AuthService', () => {
         { provide: DialogWrapperService, useValue: dialogWrapperServiceMock },
         { provide: MeService, useValue: meServiceMock },
         { provide: TenantService, useValue: tenantServiceMock },
+        { provide: Router, useValue: routerMock },
       ]
     });
 
@@ -166,9 +170,9 @@ describe('AuthService', () => {
     expect(oidcSecurityServiceMock.authorize).toHaveBeenCalled();
   });
 
-  it('logout(): truca logoffLocal', () => {
+  it('logout(): truca logoff (RP-Initiated Logout)', () => {
     service.logout();
-    expect(oidcSecurityServiceMock.logoffLocal).toHaveBeenCalled();
+    expect(oidcSecurityServiceMock.logoff).toHaveBeenCalled();
   });
 
   // --------------------------------------------------------------------------
@@ -467,9 +471,15 @@ describe('AuthService', () => {
   // logout()
   // --------------------------------------------------------------------------
   describe('logout', () => {
-    it('crida logoffLocal i neteja la sessio', () => {
+    it('crida logoff (RP-Initiated Logout) sense netejar sessionStorage abans', () => {
       service.logout();
-      expect(oidcSecurityServiceMock.logoffLocal).toHaveBeenCalled();
+      expect(oidcSecurityServiceMock.logoff).toHaveBeenCalled();
+    });
+
+    it('si logoff() falla, navega a /home com a fallback', () => {
+      oidcSecurityServiceMock.logoff.mockReturnValueOnce(throwError(() => new Error('network error')));
+      service.logout();
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
     });
   });
 
@@ -611,6 +621,44 @@ describe('AuthService', () => {
           { customParams: { prompt: 'none' } }
         );
         done();
+      });
+    });
+
+    it('checkAuth$: NO emet authCheckComplete$=true si dispara el silent-SSO (redirecció pendent)', (done) => {
+      sessionStorage.clear();
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        // La redirecció (authorize) és asíncrona: mentre la pàgina no ha
+        // navegat encara, els guards no han de veure authCheckComplete$=true
+        // amb userPowers buit — això causava un fals "Access Denied" + logout
+        // competint amb la redirecció SSO pendent.
+        expect((service as any).authCheckCompleteSubject.getValue()).toBe(false);
+        done();
+      });
+    });
+
+    it('checkAuth$: SÍ emet authCheckComplete$=true quan el silent-SSO ja s\'havia intentat (no-op)', (done) => {
+      sessionStorage.clear();
+      sessionStorage.setItem((AuthService as any).SSO_SILENT_ATTEMPT_KEY, 'true');
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: ''
+      }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+        service.authCheckComplete$.subscribe((complete) => {
+          expect(complete).toBe(true);
+          done();
+        });
       });
     });
   });

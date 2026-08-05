@@ -1,4 +1,3 @@
-import { AutoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 
@@ -27,7 +26,6 @@ describe('App Routes', () => {
     const settingsRoute = routes.find((route) => route.path === 'settings');
     expect(settingsRoute).toBeTruthy();
     expect(settingsRoute?.loadChildren).toBeDefined();
-    expect(settingsRoute?.canActivate).toContain(AutoLoginPartialRoutesGuard);
     expect(settingsRoute?.canActivate).toContain(settingsGuard);
   });
 
@@ -52,7 +50,6 @@ describe('App Routes', () => {
   it('should define organization/credentials parent route with guards', () => {
     const parentRoute = routes.find((route) => route.path === 'organization/credentials');
     expect(parentRoute).toBeTruthy();
-    expect(parentRoute?.canActivateChild).toContain(AutoLoginPartialRoutesGuard);
     expect(parentRoute?.canActivateChild).toContain(basicGuard);
     expect(Array.isArray(parentRoute?.children)).toBe(true);
   });
