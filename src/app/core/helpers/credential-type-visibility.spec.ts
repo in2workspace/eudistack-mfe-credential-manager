@@ -7,6 +7,7 @@ const EMPLOYEE = 'learcredential.employee.w3c.2';
 const MACHINE = 'learcredential.machine.w3c.1';
 const DOCTOR_ID = 'doctorid.sd.1';
 const LABEL = 'gx.labelcredential.w3c.2';
+const EUROPA = 'eu.europa.ec.eudi.pid.1';
 
 describe('isCredentialTypeVisibleForTenant', () => {
   describe('unrestricted tenants', () => {
@@ -15,8 +16,17 @@ describe('isCredentialTypeVisibleForTenant', () => {
         expect(isCredentialTypeVisibleForTenant(EMPLOYEE, tenant)).toBe(true);
         expect(isCredentialTypeVisibleForTenant(DOCTOR_ID, tenant)).toBe(true);
         expect(isCredentialTypeVisibleForTenant(LABEL, tenant)).toBe(true);
+        expect(isCredentialTypeVisibleForTenant(EUROPA, tenant)).toBe(true);
       });
     }
+  });
+
+  describe('eu europa', () => {
+    it('should be hidden from every other restricted tenant', () => {
+      for (const tenant of ['dome', 'kpmg', 'eudistack', 'calidalia', 'localhost', 'cgcom']) {
+        expect(isCredentialTypeVisibleForTenant(EUROPA, tenant)).toBe(false);
+      }
+    });
   });
 
   describe('doctor id', () => {

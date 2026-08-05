@@ -37,7 +37,8 @@ export const UNRESTRICTED_TENANTS: readonly string[] = ['sandbox', 'platform'];
 export const TENANT_RESTRICTED_CREDENTIAL_TYPES: Readonly<Record<string, readonly string[]>> = {
   doctorid: ['cgcom'],
   'gx.labelcredential': ['dome'],
-  'learcredential.machine': ['dome']
+  'learcredential.machine': ['dome'],
+  'eu.europa': [], //only for unrestricted tenants
 };
 
 /**
