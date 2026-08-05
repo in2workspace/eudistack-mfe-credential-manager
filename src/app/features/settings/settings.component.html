@@ -5,25 +5,24 @@
       <h2>{{ "sidenav.settings" | translate }}</h2>
     </div>
     <mat-divider ></mat-divider> 
+    <!--
+      Schemes and Trust Framework are intentionally absent: neither section is implemented,
+      and their links led to a placeholder (schemes reused the issuance form) or straight out
+      of Settings (TF pointed at /organization/credentials). Restore them with their sections.
+    -->
     <mat-nav-list>
-      <a mat-list-item 
-         routerLink="/settings/schemes"
-         routerLinkActive="settings__nav-link--active"
-         [routerLinkActiveOptions]="{ exact: true }" >
-         <div class="settings__nav-item">
-          <mat-icon>apps</mat-icon> 
-          <span>{{ "sidenav.schemes" | translate }}</span> 
-         </div>
-      </a>
-      <a mat-list-item
-         routerLink="/organization/credentials"
-         routerLinkActive="settings__nav-link--active"
-         [routerLinkActiveOptions]="{ exact: true }">
-         <div class="settings__nav-item">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <span>{{ "sidenav.trushFramework" | translate }}</span> 
-         </div>
-      </a>
+      @if (canSeeCatalog()) {
+        <a mat-list-item
+           routerLink="/settings/catalog"
+           routerLinkActive="settings__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }"
+           data-testid="nav-catalog">
+           <div class="settings__nav-item">
+            <mat-icon>category</mat-icon>
+            <span>{{ "sidenav.catalog" | translate }}</span>
+           </div>
+        </a>
+      }
     </mat-nav-list>
   </mat-sidenav>
 

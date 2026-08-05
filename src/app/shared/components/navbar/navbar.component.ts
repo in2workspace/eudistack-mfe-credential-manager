@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from 'src/app/core/services/auth.service';
@@ -55,10 +55,20 @@ export class NavbarComponent implements OnInit {
     this.authService.logout();
   }
 
-  public isCredentialIssuerAndConfigure():boolean {
-    if(this.authService.hasPower('CredentialIssuer', 'Configure')) return true;
-    return false;
-  }
+  /**
+   * Gates the "Settings" entry of the user menu. Delegates to
+   * `AuthService.canAccessSettings()`, which is literally the predicate
+   * `settingsGuard` (`PoliciesService.checkSettingsPolicy`) and
+   * `SettingsComponent.canSeeCatalog` evaluate, so the menu can neither offer a
+   * destination the guard rejects — the discrepancy that kept tenant admins out
+   * of Settings (EUD-72 §2.3/§7.2) — nor hide one it admits.
+   *
+   * No separate "role resolved" flag is needed: the predicate is false until
+   * `GET /api/v1/me` answers. The entry therefore appears one round trip after
+   * login — invisible in practice, since it lives inside a click-triggered
+   * `mat-menu`.
+   */
+  public readonly canSeeSettings = computed(() => this.authService.canAccessSettings());
 
   //currently not used
   public changeLanguage(languageCode: string): void {

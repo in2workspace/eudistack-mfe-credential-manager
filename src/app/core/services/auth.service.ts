@@ -1,4 +1,4 @@
-import { inject, Injectable, WritableSignal, signal, DestroyRef } from '@angular/core';
+import { computed, inject, Injectable, Signal, WritableSignal, signal, DestroyRef } from '@angular/core';
 import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
@@ -7,7 +7,7 @@ import { UserDataAuthenticationResponse } from "../models/dto/user-data-authenti
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE, PUBLIC_ROUTE_PREFIXES } from '../constants/iam.constants';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
@@ -36,14 +36,52 @@ export class AuthService{
   private readonly mandatorSubject = new BehaviorSubject<EmployeeMandator | null>(null);
   private readonly mandateeEmailSubject = new BehaviorSubject<string>('');
   private readonly nameSubject = new BehaviorSubject<string>('');
-  public readonly roleType: WritableSignal<RoleType> = signal(RoleType.LEAR);
+  /**
+   * Single source of truth for the caller's role. `null` means "the backend has
+   * not answered yet" — a state that must stay distinguishable from LEAR, since
+   * `GET /api/v1/me` only lands one round trip after bootstrap.
+   *
+   * Writable (and public) so specs can drive it, mirroring how `roleType` used
+   * to be exposed. Production code writes it only from `refreshRoleFromBackend()`.
+   */
+  public readonly resolvedRole: WritableSignal<RoleType | null> = signal(null);
+
+  /**
+   * The role as UI code consumes it. Collapses "not resolved yet" into LEAR,
+   * which is the safe default for deny-if-not-admin predicates
+   * (`roleType() !== LEAR`): the gate stays shut until the backend says otherwise.
+   *
+   * Beware the reverse shape: deny-if-read-only predicates
+   * (`roleType() !== SYSADMIN_READONLY`, e.g. `canWrite` in credential-management
+   * and the catalog) read as *permissive* while unresolved. Those screens sit
+   * behind guards today; anything new that needs the distinction must read
+   * `resolvedRole()` and handle `null` explicitly.
+   */
+  public readonly roleType: Signal<RoleType> = computed(() => this.resolvedRole() ?? RoleType.LEAR);
+
   public readonly tenantType: WritableSignal<string> = signal('');
   public readonly isSysAdminRole: WritableSignal<boolean> = signal(false);
   public readonly organizationIdentifier: WritableSignal<string> = signal('');
 
+  /**
+   * Created here rather than inside `resolveRole$()`: `toObservable` needs an
+   * injection context, and field initializers run inside one. Same pattern as
+   * `CredentialIssuanceService`.
+   */
+  private readonly resolvedRole$ = toObservable(this.resolvedRole);
 
+  /** Dedupes concurrent `resolveRole$()` callers into a single `GET /api/v1/me`. */
+  private roleFetchInFlight = false;
 
-  private userPowers: Power[] = [];
+  /**
+   * Powers claimed by the ID token. A signal, not a plain array, so predicates built
+   * on it (`isSysAdmin()`, `canAccessSettings()`) can be wrapped in a `computed()` and
+   * still update. Without that, a menu entry gated on `isSysAdmin()` could cache
+   * `false` from the first change detection and never re-evaluate: the only other
+   * dependency, `roleType()`, collapses "unresolved" to LEAR, so the null → LEAR
+   * transition of a failed `GET /api/v1/me` is invisible to consumers.
+   */
+  private readonly userPowers: WritableSignal<Power[]> = signal([]);
 
   private readonly authEvents = inject(PublicEventsService);
   private readonly destroy$ = inject(DestroyRef);
@@ -144,7 +182,7 @@ export class AuthService{
       take(1),
       tap(({ isAuthenticated, userData }) => {
       if (isAuthenticated) {
-        this.userPowers = this.extractPowersFromClaims(userData);
+        this.userPowers.set(this.extractPowersFromClaims(userData));
         if (!this.isAuthorizedForCurrentTenant()) {
           console.error('Checking authentication: session scoped to a different tenant.');
           this.rejectCrossTenantSession();
@@ -219,24 +257,57 @@ export class AuthService{
 
   /**
    * Fetches the authoritative role from the Issuer (`GET /api/v1/me`) and
-   * updates the `roleType` signal. The backend resolves TenantAdmin using
+   * resolves `resolvedRole`. The backend resolves TenantAdmin using
    * `tenant_config.admin_organization_id`, so this is the single source of
-   * truth. UI guards and components must read from `roleType()`.
+   * truth. UI components read `roleType()`; guards use `resolveRole$()`.
+   *
+   * A failed call still *resolves* (to LEAR): "we asked and could not tell" is a
+   * final answer, otherwise `resolveRole$()` would hang and block navigation.
    */
   private refreshRoleFromBackend(): void {
-    this.meService.fetchMe().pipe(take(1)).subscribe({
+    this.roleFetchInFlight = true;
+    this.meService.fetchMe().pipe(
+      take(1),
+      finalize(() => { this.roleFetchInFlight = false; })
+    ).subscribe({
       next: (me) => {
-        this.roleType.set(this.mapRoleToFrontend(me));
         this.tenantType.set(me.tenantType);
         this.isSysAdminRole.set(me.role === 'SYSADMIN');
         this.organizationIdentifier.set(me.organizationIdentifier);
+        // Set last: resolving the role is what wakes up resolveRole$() subscribers,
+        // and they must not observe a half-populated session.
+        this.resolvedRole.set(this.mapRoleToFrontend(me));
       },
       error: (err) => {
         console.error('Failed to resolve role from backend; defaulting to LEAR', err);
-        this.roleType.set(RoleType.LEAR);
         this.tenantType.set('simple');
+        this.resolvedRole.set(RoleType.LEAR);
+        this.isSysAdminRole.set(false);
+        this.organizationIdentifier.set('');
       }
     });
+  }
+
+  /**
+   * The backend's verdict on the current user's role, awaited once.
+   *
+   * Guards must use this instead of reading `roleType()`: that signal reports
+   * LEAR until `GET /api/v1/me` answers, so a synchronous read at navigation
+   * time would deny access to every administrator who happens to arrive first.
+   *
+   * Triggers the fetch if nothing has yet (a guard can run before bootstrap's
+   * `checkAuth$()` got there) and dedupes against an in-flight call. Emits
+   * asynchronously even when the role is already known: `toObservable` is
+   * effect-backed, so specs must await a tick rather than expect a sync value.
+   */
+  public resolveRole$(): Observable<RoleType> {
+    if (this.resolvedRole() === null && !this.roleFetchInFlight) {
+      this.refreshRoleFromBackend();
+    }
+    return this.resolvedRole$.pipe(
+      filter((role): role is RoleType => role !== null),
+      take(1)
+    );
   }
 
   private mapRoleToFrontend(me: MeResponse): RoleType {
@@ -271,7 +342,8 @@ export class AuthService{
     this.isAuthenticatedSubject.next(false);
     this.userDataSubject.next(null);
     this.tokenSubject.next('');
-    this.userPowers = [];
+    this.userPowers.set([]);
+    this.resetSessionRoleState();
 
     this.router.navigate(['/home']).finally(() => {
       const title = this.translate.instant('error.policy.title');
@@ -307,11 +379,25 @@ export class AuthService{
         this.mandatorSubject.next(null);
         this.mandateeEmailSubject.next('');
         this.nameSubject.next('');
-        this.userPowers = [];
+        this.userPowers.set([]);
+        this.resetSessionRoleState();
         sessionStorage.clear();
         this.router.navigate(['/home']);
       }
     });
+  }
+
+  /**
+   * Back to "unknown", not to LEAR: a second login in the same tab must re-ask
+   * the backend instead of inheriting the previous session's verdict. The same
+   * applies to the rest of the `/me`-derived state — it is only meaningful
+   * together with the role, so it is torn down as one unit.
+   */
+  private resetSessionRoleState(): void {
+    this.resolvedRole.set(null);
+    this.roleFetchInFlight = false;
+    this.isSysAdminRole.set(false);
+    this.organizationIdentifier.set('');
   }
 
   public authorize(){
@@ -382,11 +468,11 @@ export class AuthService{
     const name = (userData.mandatee!.firstName ?? '') + ' ' + (userData.mandatee!.lastName ?? '');
     this.mandateeEmailSubject.next(email);
     this.nameSubject.next(name.trim());
-    this.userPowers = this.extractPowersFromClaims(userData);
+    this.userPowers.set(this.extractPowersFromClaims(userData));
   }
 
   public hasPower(tmfFunction: string, tmfAction: string, tmfDomain?: string): boolean {
-    return this.userPowers.some((power: Power) => {
+    return this.userPowers().some((power: Power) => {
       if (power.function !== tmfFunction) return false;
       const action = power.action;
       const actionMatches = action === tmfAction || (Array.isArray(action) && action.includes(tmfAction));
@@ -397,11 +483,40 @@ export class AuthService{
   }
 
   public isSysAdmin(): boolean {
-    return this.userPowers.some((p: Power) =>
+    return this.userPowers().some((p: Power) =>
       p.type === 'organization' && p.domain === 'EUDISTACK'
       && p.function === 'System'
       && (p.action === 'Administration' || (Array.isArray(p.action) && p.action.includes('Administration')))
     );
+  }
+
+  /**
+   * The single predicate behind everything that gates `/settings`: `settingsGuard`
+   * (via `PoliciesService.checkSettingsPolicy`), the navbar entry
+   * (`NavbarComponent.canSeeSettings`) and the Settings sidenav
+   * (`SettingsComponent.canSeeCatalog`). Extracted so those three can no longer
+   * drift apart — a menu wider than the guard is what greeted tenant admins with
+   * an Access Denied dialog (EUD-72 §2.3/§7.2), and a menu narrower than it hid
+   * Settings from a SysAdmin whose `/me` call had failed.
+   *
+   * Two sources, deliberately: `roleType()` is the backend's verdict
+   * (`GET /api/v1/me`) and the one the Issuer API agrees with, while
+   * `isSysAdmin()` reads the ID-token powers. The second clause is redundant
+   * whenever `/me` answers — the backend maps SYSADMIN to TENANT_ADMIN or
+   * SYSADMIN_READONLY, neither of which is LEAR — so it only fires when `/me`
+   * failed or contradicts the token, where it is the platform SysAdmin's
+   * escape hatch. Passing it still does not imply the API will accept the
+   * caller; screens keep their own 403 state.
+   *
+   * Reports false while the role is unresolved (`roleType()` collapses null to
+   * LEAR) unless the token already proves SysAdmin, so the gate stays shut until
+   * the backend answers. Both reads are signal-backed, so wrapping this in a
+   * `computed()` is enough for a menu entry to appear on its own — and it has to
+   * be `userPowers` that carries the second one (see its declaration), because
+   * the null → LEAR transition of a failed `/me` never changes `roleType()`.
+   */
+  public canAccessSettings(): boolean {
+    return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
   }
 
   /**
@@ -436,7 +551,7 @@ export class AuthService{
       .pipe(take(1))
       .subscribe(({ isAuthenticated, userData, accessToken }) => {
         if (isAuthenticated) {
-          this.userPowers = this.extractPowersFromClaims(userData);
+          this.userPowers.set(this.extractPowersFromClaims(userData));
           if (!this.isAuthorizedForCurrentTenant()) {
             this.rejectCrossTenantSession();
             return;

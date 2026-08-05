@@ -2,9 +2,17 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_PATH } from '../constants/api-paths.constants';
+import { keepLatestCredentialConfigurations } from '../helpers/credential-configuration-id';
 import { CredentialConfigurationDto, CredentialIssuerMetadataDto } from '../models/dto/credential-issuer-metadata.dto';
 import { ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType } from '../models/entity/lear-credential-issuance';
+import { keepPinnedIssuableVersions } from '../helpers/pinned-issuable-versions';
 import { TenantService } from './tenant.service';
+
+/** A configuration paired with the record key it was declared under. */
+interface KeyedCredentialConfiguration {
+  readonly configId: string;
+  readonly config: CredentialConfigurationDto;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CredentialIssuerMetadataService {
@@ -13,16 +21,51 @@ export class CredentialIssuerMetadataService {
   private readonly configurations = signal<Record<string, CredentialConfigurationDto> | null>(null);
   private readonly loadFailed = signal<boolean>(false);
 
+  /**
+   * The registry reduced to the newest version of each type+format lineage, using the same
+   * `keepLatestCredentialConfigurations` rule the catalog screen applies to its rows — so a
+   * version the admin can no longer see in the catalog is not offered for issuance either.
+   *
+   * Keyed on the RECORD KEY, not on `credential_definition.type`: the key is the
+   * configuration id (`learcredential.employee.w3c.2`), which is what the version grammar
+   * describes and what the issuance request carries. Superseded versions are still reachable
+   * through `getConfigurationById()` / `getAllConfigurations()`, which must keep resolving
+   * already-issued credentials whatever version they were issued under.
+   *
+   * Unversioned keys are dropped by the helper. That is deliberate: an id that does not
+   * follow the grammar cannot be shown to be the newest of anything, and offering it would
+   * put a second control next to the version it may well be an older copy of.
+   */
+  private readonly latestConfigurations = computed<KeyedCredentialConfiguration[]>(() => {
+    const configs = this.configurations();
+    if (!configs) return [];
+
+    // Object.entries preserves the metadata's declaration order, and the helper preserves
+    // relative order => stable order in both selectors.
+    const keyed = Object.entries(configs).map(([configId, config]) => ({ configId, config }));
+
+    // PINNED-VERSIONS (temporary, see core/temporary/pinned-issuable-versions.ts). The
+    // relative rule below can only pick the newest version PRESENT; metadata declaring only
+    // a legacy version — which it must, for the details screen to resolve credentials issued
+    // under it — would make that legacy version the newest and put it back in the form. The
+    // pin removes those first, so a superseded lineage yields no format option, and a type
+    // whose every lineage is superseded stops being issuable altogether (issuableTypes()).
+    // Remove this wrap and the import to revert; nothing else changes.
+    const currentEnoughToIssue = keepPinnedIssuableVersions(keyed, entry => entry.configId);
+
+    return keepLatestCredentialConfigurations(currentEnoughToIssue, entry => entry.configId);
+  });
+
   // AD-1: the issuable catalogue is derived from the metadata, already tenant-filtered on
   // the backend (EUD-72 read side). ISSUANCE_CREDENTIAL_TYPES_ARRAY only acts as a
   // renderability guard: a type with no CredentialIssuanceSchemaProvider would blow up
   // IssuanceSchemaBuilder.getBuilder(). It never adds types the metadata doesn't bring.
   private readonly issuableTypes = computed<IssuanceCredentialType[]>(() => {
-    const configs = this.configurations();
-    if (!configs) return [];
-
     const derived = new Set<IssuanceCredentialType>();
-    for (const config of Object.values(configs)) {
+    // Derived from the version-filtered set, like findConfigurationsForType(): a type known
+    // only through a superseded or unversioned configuration would otherwise reach the
+    // selector with no format option behind it.
+    for (const { config } of this.latestConfigurations()) {
       // Same predicate as findConfigurationsForType(): if a type were derived from another
       // source, it would show up in the selector with no associated format options.
       for (const declaredType of config.credential_definition?.type ?? []) {
@@ -30,7 +73,6 @@ export class CredentialIssuerMetadataService {
         if (renderableType) derived.add(renderableType);
       }
     }
-    // Object.values preserves the metadata's declaration order => stable order in the selector.
     return [...derived];
   });
 
@@ -61,12 +103,18 @@ export class CredentialIssuerMetadataService {
     return this.loadFailed();
   }
 
+  /**
+   * The configurations of `type` the issuance form may offer: one per format, always the
+   * newest version of it (see `latestConfigurations`).
+   *
+   * One entry per type+format is what keeps the format selector to a single radio button per
+   * format — two versions of the same lineage carry the same `format`, so before filtering
+   * they rendered as two controls with the identical label and no way to tell them apart.
+   */
   findConfigurationsForType(type: IssuanceCredentialType): Array<{ configId: string; format: string }> {
-    const configs = this.configurations();
-    if (!configs) return [];
-    return Object.entries(configs)
-      .filter(([, cfg]) => cfg.credential_definition?.type?.some(t => t.startsWith(type)))
-      .map(([configId, cfg]) => ({ configId, format: cfg.format }));
+    return this.latestConfigurations()
+      .filter(({ config }) => config.credential_definition?.type?.some(t => t.startsWith(type)))
+      .map(({ configId, config }) => ({ configId, format: config.format }));
   }
 
   getConfigurationById(configId: string): CredentialConfigurationDto | undefined {

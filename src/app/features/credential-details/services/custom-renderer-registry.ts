@@ -14,7 +14,12 @@ export interface SchemaOverride {
   claimOverrides?: Record<string, CustomClaimRenderer>;
 }
 
-const powerOverride: CustomClaimRenderer = {
+/**
+ * Renderer for the `power` claim. Exported because the hardcoded fallback schema
+ * (`fallback/lear-credential-fallback-schema.ts`) must render powers exactly the way a
+ * metadata-driven schema does — same component, same token, same value transform.
+ */
+export const POWER_CLAIM_RENDERER: CustomClaimRenderer = {
   component: DetailsPowerComponent,
   token: detailsPowerToken,
   transformValue: (powers: Power[]) => powers ?? [],
@@ -22,16 +27,16 @@ const powerOverride: CustomClaimRenderer = {
 
 const OVERRIDES: Record<string, SchemaOverride> = {
   'learcredential.employee.w3c': {
-    claimOverrides: { power: powerOverride },
+    claimOverrides: { power: POWER_CLAIM_RENDERER },
   },
   'learcredential.employee.sd': {
-    claimOverrides: { power: powerOverride },
+    claimOverrides: { power: POWER_CLAIM_RENDERER },
   },
   'learcredential.machine.w3c': {
-    claimOverrides: { power: powerOverride },
+    claimOverrides: { power: POWER_CLAIM_RENDERER },
   },
   'learcredential.machine.sd': {
-    claimOverrides: { power: powerOverride },
+    claimOverrides: { power: POWER_CLAIM_RENDERER },
   },
   'gx.labelcredential.w3c': {
     claimOverrides: {

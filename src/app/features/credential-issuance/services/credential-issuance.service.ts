@@ -6,6 +6,7 @@ import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, 
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { catchError, EMPTY, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
+import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -21,7 +22,40 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
+import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
 
+/** Issuance-specific wording for the shared "pending edits will be lost" prompt. */
+const UNSAVED_ISSUANCE_ALERT_KEY = 'credentialIssuance.unloadAlert';
+
+/**
+ * Last line of defence for "one radio button per type+format".
+ *
+ * `findConfigurationsForType()` already keeps a single configuration per type+format lineage,
+ * and the format segment of an id maps one-to-one to the declared `format` (`w3c` ->
+ * `jwt_vc_json`, `sd` -> `dc+sd-jwt`, `mdoc` -> `mso_mdoc`), so under well-formed metadata
+ * this is a no-op. It only bites if two different lineages ever declare the SAME format:
+ * both would be labelled through FORMAT_LABEL_MAP with the same string, leaving the Operator
+ * two indistinguishable controls and no way to know which one they are submitting.
+ *
+ * The survivor is the highest version, so the guard agrees with the rule it backs up rather
+ * than depending on the order the metadata happens to declare things in; on a tie — or on ids
+ * with no version, which the metadata service does not return anyway — the first wins.
+ */
+function oneOptionPerFormat(
+  configs: readonly { configId: string; format: string }[]
+): { configId: string; format: string }[] {
+  const versionOf = (configId: string) => parseCredentialConfigurationId(configId)?.version ?? 0;
+  const winnerByFormat = new Map<string, { configId: string; format: string }>();
+
+  for (const config of configs) {
+    const incumbent = winnerByFormat.get(config.format);
+    if (!incumbent || versionOf(config.configId) > versionOf(incumbent.configId)) {
+      winnerByFormat.set(config.format, config);
+    }
+  }
+  // Map iteration follows insertion order => the metadata's declaration order is preserved.
+  return [...winnerByFormat.values()];
+}
 
 @Injectable() //provided in Issuance Component
 export class CredentialIssuanceService {
@@ -46,7 +80,12 @@ export class CredentialIssuanceService {
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
   // FORMAT SELECTOR
-  // Options derived from the metadata endpoint; falls back to jwt_vc_json if metadata not loaded yet
+  // Options derived from the metadata endpoint; falls back to jwt_vc_json if metadata not loaded yet.
+  //
+  // findConfigurationsForType() already returns a single configuration per type+format — the
+  // newest version of each — so the selector shows one radio button per format instead of one
+  // per version. Picking one here means the claims read off it (selectedConfigClaims$) and the
+  // configId sent on submit both belong to that newest version.
   public availableFormats$ = computed<CredentialFormatOption[]>(() => {
     const type = this.selectedCredentialType$();
     if (!type) return [];
@@ -54,7 +93,7 @@ export class CredentialIssuanceService {
     if (configs.length === 0) {
       return [{ configId: type, format: 'jwt_vc_json', labelKey: FORMAT_LABEL_MAP['jwt_vc_json']! }];
     }
-    return configs.map(({ configId, format }) => ({
+    return oneOptionPerFormat(configs).map(({ configId, format }) => ({
       configId,
       format: format as CredentialFormatOption['format'],
       labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
@@ -151,6 +190,7 @@ export class CredentialIssuanceService {
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly unsavedChanges = inject(UnsavedChangesService);
 
   constructor() {
     // Load credential configurations once so format options are available,
@@ -212,15 +252,11 @@ export class CredentialIssuanceService {
   }
 
   public canDeactivate(): CanDeactivateType {
-      const canLeave = this.canLeave();
-      if(canLeave) return canLeave;
-      return this.openLeaveConfirm();
+      return this.unsavedChanges.canDeactivate(!this.canLeave(), UNSAVED_ISSUANCE_ALERT_KEY);
   }
 
   public openLeaveConfirm(): boolean{
-    const alertMsg = this.translate.instant("credentialIssuance.unloadAlert");
-    const confirm = globalThis.confirm(alertMsg);
-    return confirm;
+    return this.unsavedChanges.confirmLeave(UNSAVED_ISSUANCE_ALERT_KEY);
   }
 
   // this is the default dialog to confirm the form submission

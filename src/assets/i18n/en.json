@@ -29,7 +29,36 @@
   "sidenav": {
     "settings": "Settings",
     "schemes": "Schemes",
+    "catalog": "Credential catalogue",
     "trushFramework": "TF"
+  },
+  "catalog": {
+    "title": "Credential catalogue",
+    "description": "Select which credential types your organisation may issue. Click \"Save changes\" to apply them; until you do, nothing is saved.",
+    "save": "Save changes",
+    "retry": "Retry",
+    "read-only": "You are viewing the catalogue in read-only mode. You cannot save changes.",
+    "empty-set-warning": "At least one credential type must stay enabled. Enable one to be able to save.",
+    "version": "v{{version}}",
+    "toggle-aria": "Enable {{name}}, format {{format}}, version {{version}}, for this tenant",
+    "error": {
+      "load": {
+        "title": "The catalogue could not be loaded",
+        "description": "Please try again. If the problem persists, contact your administrator."
+      },
+      "forbidden": {
+        "title": "You do not have permission to manage the catalogue",
+        "description": "Only the organisation administrator can view or change the issuable credential types."
+      },
+      "not-configured": {
+        "title": "No credential type found",
+        "description": "No credential type is configured for your organisation, so there is nothing to manage here. Please contact the support team."
+      },
+      "save": "Changes could not be saved. Your selections have been kept."
+    }
+  },
+  "unsavedChanges": {
+    "leaveAlert": "Are you sure you want to leave? Your unsaved changes will be lost."
   },
   "mandator": {
     "organizationid": "Company VAT number",

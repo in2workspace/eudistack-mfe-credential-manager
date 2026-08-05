@@ -130,6 +130,73 @@ describe('CredentialIssuanceService', () => {
     });
   });
 
+  // The version rule itself lives in CredentialIssuerMetadataService (one configuration per
+  // type+format, newest version) — covered by its own spec. What matters here is that the
+  // selector, the rendered form and the submitted payload all follow the configuration it picks.
+  describe('availableFormats$ (newest version per format)', () => {
+    it('should render one option per format, never one per version', () => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' },
+        { configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      const formats = service.availableFormats$();
+
+      expect(formats.map(f => f.configId)).toEqual([
+        'learcredential.employee.w3c.2',
+        'learcredential.employee.sd.1'
+      ]);
+      // one radio button per format => no two options may share a label
+      expect(new Set(formats.map(f => f.labelKey)).size).toBe(formats.length);
+    });
+
+    it('should collapse two lineages declaring the same format onto their newest version', () => {
+      // Defensive: well-formed ids map one format family to one format, so this only happens
+      // if the metadata ever declares otherwise — and two radio buttons carrying the identical
+      // label would leave the Operator unable to tell which one they are submitting.
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.jwt.1', format: 'jwt_vc_json' },
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      expect(service.availableFormats$().map(f => f.configId)).toEqual(['learcredential.employee.w3c.2']);
+    });
+
+    it('should only fabricate a default option for a type the selector cannot offer', () => {
+      // Guards the fallback in availableFormats$ against the hardcoded issuance floor
+      // (core/temporary/pinned-issuable-versions.ts): it fires when a type is selected while
+      // the metadata has no configuration for it, which would put back a form for a type whose
+      // every version was filtered out. Unreachable, because the selector and the format
+      // options read the same version-filtered set — a type with no surviving configuration is
+      // also absent from credentialTypesArr$, so it can never be selected.
+      issuableTypes.set([]);
+      mockMetadataService.findConfigurationsForType.mockReturnValue([]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      expect(service.credentialTypesArr$()).toEqual([]);
+      expect(service.availableFormats$()).toEqual([
+        {
+          configId: 'learcredential.employee',
+          format: 'jwt_vc_json',
+          labelKey: 'credentialIssuance.format.w3cVcDm'
+        }
+      ]);
+    });
+
+    it('should read the form claims off the selected configuration (AD-2)', () => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      service.selectedConfigClaims$();
+
+      expect(mockMetadataService.getConfigurationById).toHaveBeenCalledWith('learcredential.employee.w3c.2');
+    });
+  });
+
   describe('submitCredentialPayload (Slice C)', () => {
     const successDialogData = expect.objectContaining({
       title: 'credentialIssuance.create-success-dialog.title',
@@ -141,6 +208,12 @@ describe('CredentialIssuanceService', () => {
     });
 
     const givenASubmittableForm = () => {
+      // Set before the type is selected: availableFormats$ is a lazy computed keyed on the
+      // selected type, so a later change to this mock would not be picked up.
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' },
+        { configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt' }
+      ]);
       // IssuanceRequestFactoryService is NOT mocked in this file (it's the real one, to
       // test the actual request construction) — it needs 'mandatee.email' and a
       // 'power' (even if empty) in the form, and a full 'mandator' in staticData
@@ -212,6 +285,15 @@ describe('CredentialIssuanceService', () => {
       expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(service.hasSubmitted$()).toBe(true);
+    });
+
+    it('should submit the newest version of the selected format, not the bare type', () => {
+      mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+      service.openSubmitDialog();
+
+      const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+      expect(request.credential_configuration_id).toBe('learcredential.employee.w3c.2');
     });
 
     it('should navigate to the credential list after a successful issuance (AC-03)', () => {

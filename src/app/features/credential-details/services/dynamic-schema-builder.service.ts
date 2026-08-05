@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { ClaimDefinitionDto, CredentialConfigurationDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { DetailsGroupField, DetailsKeyValueField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { getOverrideForConfigId, SchemaOverride } from './custom-renderer-registry';
+import { buildLearCredentialFallbackMainFields, resolveLearFallbackLineage } from '../fallback/lear-credential-fallback-schema';
 
 @Injectable({ providedIn: 'root' })
 export class DynamicSchemaBuilder {
@@ -15,6 +16,27 @@ export class DynamicSchemaBuilder {
 
     return { main, side };
   }
+
+  /**
+   * --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
+   *
+   * The minimum schema for a LEAR credential no metadata describes, or `null` when the
+   * credential is not one — the caller must not render a guessed shape.
+   *
+   * Only the main fields are hardcoded: the side card reads the credential's own `issuer`
+   * and `credentialStatus`, which never depended on the metadata, so it is built by the
+   * same code as a metadata-driven schema.
+   */
+  buildFallbackSchema(configId: string | undefined, credential: any): ViewModelSchema | null {
+    const lineage = resolveLearFallbackLineage(configId, credential);
+    if (!lineage) return null;
+
+    return {
+      main: buildLearCredentialFallbackMainFields(credential, lineage),
+      side: this.buildSideFields(credential),
+    };
+  }
+  // --- end FALLBACK ---
 
   private buildMainFields(
     claims: ClaimDefinitionDto[],

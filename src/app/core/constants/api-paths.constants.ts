@@ -7,5 +7,6 @@ export const API_PATH = Object.freeze({
     SAVE_CREDENTIAL: '/api/v1/issuances',
     SIGN_CREDENTIAL: '/issuance/v1/retry-sign-credential',
     CREDENTIAL_ISSUER_METADATA: '/.well-known/openid-credential-issuer',
+    CREDENTIAL_CATALOG: '/admin/v1/credential-catalog',
     ME: '/api/v1/me'
 });
