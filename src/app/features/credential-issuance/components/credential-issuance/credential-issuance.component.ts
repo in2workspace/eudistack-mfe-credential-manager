@@ -1,7 +1,7 @@
 
 import { MatButton } from '@angular/material/button';
 import { MatLabel } from '@angular/material/form-field';
-import { Component, inject, WritableSignal, HostListener, Signal } from '@angular/core';
+import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
@@ -11,6 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
+import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, DeliveryOption, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
@@ -85,14 +86,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.formValue$ = this.issuanceService.formValue$;
     this.isFormValid$ = this.issuanceService.isFormValid$;
     this.bottomAlertMessages$ = this.issuanceService.bottomAlertMessages$;
-  }
 
-  @HostListener('window:beforeunload', ['$event'])
-  private unloadAlert($event: BeforeUnloadEvent): void{
-    if(!this.canLeave()){
-      const confirm = this.issuanceService.openLeaveConfirm();
-      if(!confirm) $event.preventDefault();
-    }
+    guardUnloadWhileUnsaved(() => !this.canLeave());
   }
 
   public onTypeSelectionChange(selectedCredentialType: IssuanceCredentialType, select: MatSelect): void {

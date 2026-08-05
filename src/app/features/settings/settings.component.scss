@@ -1,5 +1,18 @@
+// The host is inline by default, which would leave the sidenav container in an anonymous
+// block box and add a stray line-height gap below it.
+:host {
+  display: block;
+}
+
+// A *definite* height, not min-height: Material styles mat-drawer-content as
+// `height: 100%; overflow: auto`, and a percentage against an auto-height parent resolves
+// back to auto. With only `min-height` here the whole chain collapsed to content height, so
+// a settings screen taller than the viewport grew the page instead of scrolling inside its
+// own pane — which is how the catalog's save button ended up below the fold.
+// Screens shorter than this still fill the pane; taller ones scroll inside mat-drawer-content.
 .settings__container {
-  min-height: 90vh;
+  height: 90vh;
+  height: 90dvh; // dvh accounts for mobile browser chrome; vh above is the fallback
 }
   
 .settings__sidenav-header {

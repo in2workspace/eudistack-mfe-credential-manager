@@ -1,5 +1,7 @@
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { NavbarComponent } from './navbar.component';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +13,25 @@ import { OverlayContainer } from '@angular/cdk/overlay';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
 class MockAuthService {
+  resolvedRole = signal<RoleType | null>(null);
+  roleType = computed(() => this.resolvedRole() ?? RoleType.LEAR);
+  /**
+   * Set independently of the role: it comes from the ID token, not from /me. Signal-backed
+   * like the real `userPowers`, or a `computed()` over the predicate would never see it
+   * change — the trap that made this menu entry unreachable in the first place.
+   */
+  sysAdminByToken = signal(false);
+
+  isSysAdmin() {
+    return this.sysAdminByToken();
+  }
+
+  // Mirrors the real implementation rather than stubbing a boolean, so these specs
+  // exercise the predicate the guard uses instead of a parallel one.
+  canAccessSettings() {
+    return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
+  }
+
   getMandator() {
     return of({ organization: 'Test Organization' });
   }
@@ -19,9 +40,6 @@ class MockAuthService {
   }
   logout() {
     return of(void 0);
-  }
-  hasPower() {
-    return true; 
   }
 }
 
@@ -128,6 +146,56 @@ describe('NavbarComponent', () => {
 
     logoutLink.click();
     expect(component.logout).toHaveBeenCalled();
+  });
+
+  /**
+   * The entry must mirror `settingsGuard` exactly — both now evaluate
+   * `AuthService.canAccessSettings()`. A wider menu offers a destination the guard
+   * rejects (EUD-72 §2.3); a narrower one hides Settings from someone allowed in.
+   */
+  describe('settings menu entry', () => {
+    const openMenu = async () => {
+      (fixture.nativeElement.querySelector('button[mat-icon-button]') as HTMLElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    const settingsEntry = () =>
+      Array.from(overlayContainerElement.querySelectorAll('button[mat-menu-item]'))
+        .find(b => b.textContent?.includes('navbar.menu.settings'));
+
+    it('is hidden while the backend role is unresolved', async () => {
+      expect(authService.resolvedRole()).toBeNull();
+      await openMenu();
+      expect(settingsEntry()).toBeUndefined();
+    });
+
+    it('is hidden for LEAR', async () => {
+      authService.resolvedRole.set(RoleType.LEAR);
+      await openMenu();
+      expect(settingsEntry()).toBeUndefined();
+    });
+
+    it('is visible for TENANT_ADMIN', async () => {
+      authService.resolvedRole.set(RoleType.TENANT_ADMIN);
+      await openMenu();
+      expect(settingsEntry()).toBeTruthy();
+    });
+
+    it('is visible for SYSADMIN_READONLY', async () => {
+      authService.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+      await openMenu();
+      expect(settingsEntry()).toBeTruthy();
+    });
+
+    // The guard admits this caller (canAccessSettings() falls back to the ID-token
+    // power), so the menu must offer the entry instead of leaving them to guess the URL.
+    it('is visible for a SysAdmin known only from the token, /me having failed', async () => {
+      authService.resolvedRole.set(RoleType.LEAR);
+      (authService as unknown as MockAuthService).sysAdminByToken.set(true);
+      await openMenu();
+      expect(settingsEntry()).toBeTruthy();
+    });
   });
 
   it('should display the correct username and mandator', () => {

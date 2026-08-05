@@ -1,6 +1,7 @@
+import { computed } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
 import { TenantService } from './tenant.service';
@@ -91,6 +92,7 @@ describe('AuthService', () => {
   let mockPublicEventsService: jest.Mocked<any>;
   let tenantServiceMock: { tenant: jest.Mock };
   let routerMock: { navigate: jest.Mock, url: string };
+  let meServiceMock: { fetchMe: jest.Mock };
 
   let oidcSecurityServiceMock: {
     checkAuth: jest.Mock,
@@ -124,7 +126,7 @@ describe('AuthService', () => {
     const dialogWrapperServiceMock = {
       openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
     };
-    const meServiceMock = {
+    meServiceMock = {
       fetchMe: jest.fn().mockReturnValue(of({
         organizationIdentifier: 'ORG-TEST',
         role: 'LEAR',
@@ -214,28 +216,28 @@ describe('AuthService', () => {
   // hasPower()
   // --------------------------------------------------------------------------
   it('true si te "Onboarding" i accio "Execute"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'Onboarding', action: ['Read', 'Execute', 'Write'] }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(true);
   });
 
   it('false si no te "Execute"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'Onboarding', action: ['Read', 'Write'] }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
   it('false si no te "Onboarding"', () => {
-    (service as any).userPowers = [
+    (service as any).userPowers.set([
       { function: 'OtherFunction', action: 'Execute' }
-    ];
+    ]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
   it('false si userPowers es buit', () => {
-    (service as any).userPowers = [];
+    (service as any).userPowers.set([]);
     expect(service.hasPower('Onboarding', 'Execute')).toBe(false);
   });
 
@@ -244,29 +246,83 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('isSysAdmin', () => {
     it('true amb power organization/EUDISTACK/System/Administration (action string)', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration' }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(true);
     });
 
     it('true amb Administration dins array d\'actions', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'EUDISTACK', function: 'System', action: ['Read', 'Administration'] }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(true);
     });
 
     it('false si el domain no es EUDISTACK', () => {
-      (service as any).userPowers = [
+      (service as any).userPowers.set([
         { type: 'organization', domain: 'OTHER', function: 'System', action: 'Administration' }
-      ];
+      ]);
       expect(service.isSysAdmin()).toBe(false);
     });
 
     it('false si userPowers es buit', () => {
-      (service as any).userPowers = [];
+      (service as any).userPowers.set([]);
       expect(service.isSysAdmin()).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // canAccessSettings()
+  // The one predicate shared by settingsGuard, the navbar entry and the Settings
+  // sidenav (EUD-72 §2.3/§7.2). Menu and guard must not be able to disagree.
+  // --------------------------------------------------------------------------
+  describe('canAccessSettings', () => {
+    const SYSADMIN_POWER = {
+      type: 'organization', domain: 'EUDISTACK', function: 'System', action: 'Administration'
+    };
+
+    beforeEach(() => {
+      (service as any).userPowers.set([]);
+    });
+
+    it('false mentre el rol no esta resolt: la porta queda tancada fins que respon /me', () => {
+      service.resolvedRole.set(null);
+      expect(service.canAccessSettings()).toBe(false);
+    });
+
+    it('false per LEAR', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      expect(service.canAccessSettings()).toBe(false);
+    });
+
+    it('true per TENANT_ADMIN', () => {
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    it('true per SYSADMIN_READONLY (el catalog es renderitza en read-only)', () => {
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    // L'escapatoria del SysAdmin de plataforma: si /me falla, refreshRoleFromBackend()
+    // resol a LEAR i el rol del backend ja no el pot identificar — nomes el token.
+    it('true per un SysAdmin nomes conegut pel token quan /me ha fallat', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      (service as any).userPowers.set([SYSADMIN_POWER]);
+      expect(service.canAccessSettings()).toBe(true);
+    });
+
+    it('reacciona al canvi de resolvedRole dins d\'un computed', () => {
+      service.resolvedRole.set(RoleType.LEAR);
+      const canSee = TestBed.runInInjectionContext(() =>
+        computed(() => service.canAccessSettings())
+      );
+      expect(canSee()).toBe(false);
+
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
+      expect(canSee()).toBe(true);
     });
   });
 
@@ -276,19 +332,83 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('hasAdminOrganizationIdentifier', () => {
     it('true cuando el role es TENANT_ADMIN', () => {
-      service.roleType.set(RoleType.TENANT_ADMIN);
+      service.resolvedRole.set(RoleType.TENANT_ADMIN);
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
 
     it('true cuando el role es SYSADMIN_READONLY', () => {
-      service.roleType.set(RoleType.SYSADMIN_READONLY);
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
       expect(service.hasAdminOrganizationIdentifier()).toBe(true);
     });
 
     it('false cuando el role es LEAR', () => {
-      service.roleType.set(RoleType.LEAR);
+      service.resolvedRole.set(RoleType.LEAR);
       expect(service.hasAdminOrganizationIdentifier()).toBe(false);
     });
+  });
+
+  // --------------------------------------------------------------------------
+  // resolvedRole / roleType / resolveRole$()
+  // --------------------------------------------------------------------------
+  describe('resolveRole$', () => {
+    it('roleType() reporta LEAR mentre el rol no esta resolt', () => {
+      expect(service.resolvedRole()).toBeNull();
+      expect(service.roleType()).toBe(RoleType.LEAR);
+    });
+
+    it('dispara fetchMe i emet el rol resolt pel backend', async () => {
+      meServiceMock.fetchMe.mockReturnValue(of({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'TENANT_ADMIN',
+        readOnly: false,
+        tenantType: 'simple'
+      }));
+
+      const role = await firstValueFrom(service.resolveRole$());
+
+      expect(meServiceMock.fetchMe).toHaveBeenCalledTimes(1);
+      expect(role).toBe(RoleType.TENANT_ADMIN);
+      expect(service.roleType()).toBe(RoleType.TENANT_ADMIN);
+    });
+
+    it('no torna a cridar fetchMe si el rol ja esta resolt', async () => {
+      service.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+
+      const role = await firstValueFrom(service.resolveRole$());
+
+      expect(role).toBe(RoleType.SYSADMIN_READONLY);
+      expect(meServiceMock.fetchMe).not.toHaveBeenCalled();
+    });
+
+    it('dedupeix crides concurrents en un sol GET /me', async () => {
+      const me$ = new Subject<any>();
+      meServiceMock.fetchMe.mockReturnValue(me$);
+
+      const first = firstValueFrom(service.resolveRole$());
+      const second = firstValueFrom(service.resolveRole$());
+
+      expect(meServiceMock.fetchMe).toHaveBeenCalledTimes(1);
+
+      me$.next({
+        organizationIdentifier: 'ORG-TEST',
+        role: 'TENANT_ADMIN',
+        readOnly: false,
+        tenantType: 'simple'
+      });
+      me$.complete();
+
+      expect(await first).toBe(RoleType.TENANT_ADMIN);
+      expect(await second).toBe(RoleType.TENANT_ADMIN);
+    });
+
+    it('resol a LEAR si fetchMe falla, en lloc de quedar penjat', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      meServiceMock.fetchMe.mockReturnValue(throwError(() => new Error('boom')));
+
+      expect(await firstValueFrom(service.resolveRole$())).toBe(RoleType.LEAR);
+      expect(service.resolvedRole()).toBe(RoleType.LEAR);
+    });
+
   });
 
   // --------------------------------------------------------------------------
