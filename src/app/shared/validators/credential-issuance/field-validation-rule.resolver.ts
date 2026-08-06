@@ -6,12 +6,12 @@ export interface FieldValidationRule {
   readonly basicType: FieldBasicType;
 }
 
-/** Metadatos mínimos consumibles hoy (provisional) y mañana (EUD-71 mapper / EUD-50 catalog). */
+/** Minimal metadata consumable today (provisional) and tomorrow (EUD-71 mapper / EUD-50 catalog). */
 export interface FieldValidationRuleInput {
   readonly key: string;
-  /** Señal explícita de obligatoriedad cuando el catálogo la declare (futuro). */
+  /** Explicit required signal, once the catalog declares it (future). */
   readonly required?: boolean;
-  /** Tipo básico declarado; ausente → EC-01 default 'text'. */
+  /** Declared basic type; absent -> EC-01 default 'text'. */
   readonly basicType?: FieldBasicType;
 }
 
@@ -20,8 +20,8 @@ export interface FieldValidationRuleResolver {
 }
 
 /**
- * Claves obligatorias mientras EUD-50/58/59 no declaren el catálogo real.
- * Alineado con los campos legacy que hoy llevan `required` en validators-entries.ts
+ * Required keys until EUD-50/58/59 declare the real catalog.
+ * Aligned with the legacy fields that already carry `required` in validators-entries.ts
  * (nameValidatorEntries, emailValidatorEntries, orgIdValidatorEntries, serialNumberValidatorEntries).
  */
 const PROVISIONAL_REQUIRED_KEYS = new Set<string>([
@@ -58,6 +58,6 @@ export class ProvisionalFieldValidationRuleResolver implements FieldValidationRu
   }
 }
 
-/** Instancia compartida para consumo directo (sin DI) hasta que exista un consumidor real (T7). */
+/** Shared instance for direct consumption (no DI) until a real consumer exists (T7). */
 export const PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER =
   new ProvisionalFieldValidationRuleResolver();

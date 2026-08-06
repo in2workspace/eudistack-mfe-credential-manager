@@ -6,39 +6,39 @@ describe('BasicTypeValidators', () => {
   describe('date', () => {
     const validator = BasicTypeValidators.date();
 
-    it('acepta fecha ISO válida', () => {
+    it('accepts a valid ISO date', () => {
       expect(validator(new FormControl('2026-07-27'))).toBeNull();
     });
 
-    it('acepta año bisiesto real (29 de febrero)', () => {
+    it('accepts a real leap year (February 29)', () => {
       expect(validator(new FormControl('2024-02-29'))).toBeNull();
     });
 
-    it('rechaza 29 de febrero en año no bisiesto (ES-01)', () => {
+    it('rejects February 29 on a non-leap year (ES-01)', () => {
       expect(validator(new FormControl('2026-02-29'))).toEqual({
         date: { value: 'error.form.date' },
       });
     });
 
-    it('rechaza mes imposible (ES-01)', () => {
+    it('rejects an impossible month (ES-01)', () => {
       expect(validator(new FormControl('2026-13-31'))).toEqual({
         date: { value: 'error.form.date' },
       });
     });
 
-    it('rechaza formato no ISO (dd-MM-yyyy)', () => {
+    it('rejects non-ISO format (dd-MM-yyyy)', () => {
       expect(validator(new FormControl('31-13-2026'))).toEqual({
         date: { value: 'error.form.date' },
       });
     });
 
-    it('rechaza texto que no es una fecha', () => {
-      expect(validator(new FormControl('no es una fecha'))).toEqual({
+    it('rejects text that is not a date', () => {
+      expect(validator(new FormControl('not a date'))).toEqual({
         date: { value: 'error.form.date' },
       });
     });
 
-    it('vacío no produce error de formato (required aparte)', () => {
+    it('empty does not produce a format error (required is separate)', () => {
       expect(validator(new FormControl(''))).toBeNull();
       expect(validator(new FormControl(null))).toBeNull();
     });
@@ -47,23 +47,23 @@ describe('BasicTypeValidators', () => {
   describe('numeric', () => {
     const validator = BasicTypeValidators.numeric();
 
-    it('acepta enteros y decimales', () => {
+    it('accepts integers and decimals', () => {
       expect(validator(new FormControl('42'))).toBeNull();
       expect(validator(new FormControl('-3.14'))).toBeNull();
       expect(validator(new FormControl('0'))).toBeNull();
     });
 
-    it('acepta un valor numérico nativo (control type number)', () => {
+    it('accepts a native number value (controlType number)', () => {
       expect(validator(new FormControl(42))).toBeNull();
     });
 
-    it('rechaza no numérico (ES-01)', () => {
+    it('rejects non-numeric input (ES-01)', () => {
       expect(validator(new FormControl('abc'))).toEqual({
         numeric: { value: 'error.form.number' },
       });
     });
 
-    it('rechaza coma decimal y espacios internos (alcance acotado AD-2)', () => {
+    it('rejects comma decimals and internal spaces (scope intentionally limited, AD-2)', () => {
       expect(validator(new FormControl('1,5'))).toEqual({
         numeric: { value: 'error.form.number' },
       });
@@ -72,7 +72,7 @@ describe('BasicTypeValidators', () => {
       });
     });
 
-    it('rechaza notación científica y valores no finitos (alcance acotado AD-2)', () => {
+    it('rejects scientific notation and non-finite values (scope intentionally limited, AD-2)', () => {
       expect(validator(new FormControl('1e3'))).toEqual({
         numeric: { value: 'error.form.number' },
       });
@@ -84,7 +84,7 @@ describe('BasicTypeValidators', () => {
       });
     });
 
-    it('vacío o solo espacios no produce error de formato (required aparte)', () => {
+    it('empty or whitespace-only does not produce a format error (required is separate)', () => {
       expect(validator(new FormControl(''))).toBeNull();
       expect(validator(new FormControl('   '))).toBeNull();
       expect(validator(new FormControl(null))).toBeNull();
@@ -92,7 +92,7 @@ describe('BasicTypeValidators', () => {
   });
 
   describe('CUSTOM_VALIDATORS_FACTORY_MAP registration', () => {
-    it('date y numeric están registrados y producen ExtendedValidatorFn', () => {
+    it('date and numeric are registered and produce an ExtendedValidatorFn', () => {
       const dateFn = CUSTOM_VALIDATORS_FACTORY_MAP.date();
       const numericFn = CUSTOM_VALIDATORS_FACTORY_MAP.numeric();
       expect(dateFn(new FormControl('2026-02-30'))).toHaveProperty('date');

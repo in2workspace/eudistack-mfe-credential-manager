@@ -152,7 +152,7 @@ describe('DynamicFieldComponent', () => {
   }
 
   describe('EUD-73 — validation feedback', () => {
-    it('AC-02: muestra mat-error de required en obligatorio vacío + touched', () => {
+    it('AC-02: shows the required mat-error on an empty + touched mandatory field', () => {
       const ctrl = new FormControl('', { validators: [BUILTIN_VALIDATORS_FACTORY_MAP.required()] });
       const group = new FormGroup({ firstName: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -167,7 +167,7 @@ describe('DynamicFieldComponent', () => {
       expect(err.nativeElement.textContent).toContain('error.form.required');
     });
 
-    it('AC-01: formulario válido no pinta ningún mat-error', () => {
+    it('AC-01: a valid form does not render any mat-error', () => {
       const ctrl = new FormControl('Alice', { validators: [BUILTIN_VALIDATORS_FACTORY_MAP.required()] });
       const group = new FormGroup({ firstName: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -180,7 +180,7 @@ describe('DynamicFieldComponent', () => {
       expect(fixture.debugElement.query(By.css('mat-error'))).toBeFalsy();
     });
 
-    it('AC-03 / ES-01: renderiza controlType date como input[type=date] y muestra mat-error de formato', () => {
+    it('AC-03 / ES-01: renders controlType date as input[type=date] and shows a format mat-error', () => {
       const ctrl = new FormControl('2026-13-31', { validators: [CUSTOM_VALIDATORS_FACTORY_MAP.date()] });
       const group = new FormGroup({ birthDate: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -197,7 +197,7 @@ describe('DynamicFieldComponent', () => {
       expect(err.nativeElement.textContent).toContain('error.form.date');
     });
 
-    it('NFR-A-EUD73-01: aria-invalid y aria-describedby en input inválido, vinculados al mat-error', () => {
+    it('NFR-A-EUD73-01: aria-invalid and aria-describedby on an invalid input, linked to the mat-error', () => {
       const ctrl = new FormControl('', { validators: [BUILTIN_VALIDATORS_FACTORY_MAP.required()] });
       const group = new FormGroup({ firstName: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -216,7 +216,7 @@ describe('DynamicFieldComponent', () => {
       expect(errorEl.getAttribute('role')).toBe('alert');
     });
 
-    it('NFR-A-EUD73-01: aria-invalid y aria-describedby también en mat-select inválido', () => {
+    it('NFR-A-EUD73-01: aria-invalid and aria-describedby also on an invalid mat-select', () => {
       const ctrl = new FormControl('', { validators: [BUILTIN_VALIDATORS_FACTORY_MAP.required()] });
       const group = new FormGroup({ format: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -235,7 +235,7 @@ describe('DynamicFieldComponent', () => {
       expect(select.getAttribute('aria-describedby')).toBe('format-error');
     });
 
-    it('EC-04: el mensaje y los atributos ARIA desaparecen al corregir el valor', () => {
+    it('EC-04: the message and ARIA attributes disappear when the value is corrected', () => {
       const ctrl = new FormControl('', { validators: [BUILTIN_VALIDATORS_FACTORY_MAP.required()] });
       const group = new FormGroup({ firstName: ctrl });
       componentRef.setInput('parentFormGroup$', group);
@@ -251,7 +251,7 @@ describe('DynamicFieldComponent', () => {
 
       expect(fixture.debugElement.query(By.css('mat-error'))).toBeFalsy();
       const input = fixture.debugElement.query(By.css('input')).nativeElement;
-      // aria-invalid lo gestiona matInput internamente (ErrorStateMatcher); ya no debe valer "true"
+      // aria-invalid is managed internally by matInput (ErrorStateMatcher); it must no longer be "true"
       expect(input.getAttribute('aria-invalid')).not.toBe('true');
       expect(input.getAttribute('aria-describedby')).toBeNull();
     });

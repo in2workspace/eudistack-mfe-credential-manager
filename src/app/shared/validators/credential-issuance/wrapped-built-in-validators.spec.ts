@@ -24,13 +24,13 @@ describe('WrappedBuiltInValidators', () => {
   describe('required — EC-03 whitespace-only', () => {
     const validator = WrappedBuiltInValidators.required();
 
-    it('trata solo espacios como vacío (input boundary)', () => {
+    it('treats whitespace-only as empty (input boundary)', () => {
       expect(validator(new FormControl('   '))).toEqual({
         required: { value: 'error.form.required' },
       });
     });
 
-    it('trata tabulaciones y saltos de línea como vacío', () => {
+    it('treats tabs and newlines as empty', () => {
       expect(validator(new FormControl('\t'))).toEqual({
         required: { value: 'error.form.required' },
       });
@@ -39,16 +39,16 @@ describe('WrappedBuiltInValidators', () => {
       });
     });
 
-    it('acepta contenido real rodeado de espacios', () => {
+    it('accepts real content surrounded by spaces', () => {
       expect(validator(new FormControl(' a '))).toBeNull();
     });
 
-    it('no regresiona sobre valores no-string (0 y false no son "vacíos")', () => {
+    it('does not regress on non-string values (0 and false are not "empty")', () => {
       expect(validator(new FormControl(0 as any))).toBeNull();
       expect(validator(new FormControl(false as any))).toBeNull();
     });
 
-    it('no muta el valor del control (validador puro)', () => {
+    it('does not mutate the control value (pure validator)', () => {
       const ctrl = new FormControl('   ');
       validator(ctrl);
       expect(ctrl.value).toBe('   ');

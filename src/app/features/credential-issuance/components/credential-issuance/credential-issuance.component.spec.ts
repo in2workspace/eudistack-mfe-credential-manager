@@ -213,7 +213,7 @@ describe('CredentialIssuanceComponent', () => {
       expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
 
-    it('EUD-73 §12 Amenaza 3: no vuelca los valores del formulario (PII) en consola al bloquear', () => {
+    it('EUD-73 §12 Threat 3: does not dump the form values (PII) to the console when blocking', () => {
       (console.error as jest.Mock).mockClear();
       (component as any).isFormValid$ = () => false;
       (component as any).formValue$ = () => ({ foo: 'bar' });
@@ -247,9 +247,9 @@ describe('CredentialIssuanceComponent', () => {
     });
   });
 
-  describe('EUD-73 — ES-02 fail-closed (sin schema no se renderiza el formulario)', () => {
-    it('no renderiza <form> ni el botón de envío cuando credentialFormSchema$ es null', () => {
-      // mockService.credentialFormSchema$ ya es signal(null) por defecto en el beforeEach
+  describe('EUD-73 — ES-02 fail-closed (no schema means the form does not render)', () => {
+    it('does not render <form> nor the submit button when credentialFormSchema$ is null', () => {
+      // mockService.credentialFormSchema$ is already signal(null) by default in the beforeEach
       expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
       expect(fixture.debugElement.query(By.css('button[type="submit"]'))).toBeFalsy();
     });

@@ -39,11 +39,9 @@
           <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldSchema.label ?? ("credentialIssuance." + fieldName | translate) }}</mat-label>
           @let controlType = controlSchema.controlType;
           @if (controlType === 'number' || controlType === 'text' || controlType === 'date') {
-            <!-- aria-invalid lo gestiona internamente matInput vía su ErrorStateMatcher; aquí solo enlazamos el mat-error -->
             <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
                    [attr.aria-describedby]="showError ? errorId : null"/>
           }@else if(controlType === 'selector'){
-              <!-- aria-invalid lo gestiona internamente mat-select vía su ErrorStateMatcher; aquí solo enlazamos el mat-error -->
               <mat-select [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
                           [attr.aria-describedby]="showError ? errorId : null">
                 <mat-option [value]="" disabled>{{ "credentialIssuance.selectA" | translate }}{{ "credentialDetails." + fieldName | translate }}</mat-option>

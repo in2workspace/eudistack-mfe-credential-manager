@@ -417,7 +417,7 @@ describe('CredentialIssuanceService', () => {
       service.updateSelectedType('learcredential.employee', {} as any);
     }
 
-    it('ES-02: sin tipo seleccionado, isFormValid$ es false (fail-closed) y no se envía la petición', fakeAsync(() => {
+    it('ES-02: with no type selected, isFormValid$ is false (fail-closed) and the request is not sent', fakeAsync(() => {
       tick();
       TestBed.flushEffects();
       expect(service.isFormValid$()).toBe(false);
@@ -427,7 +427,7 @@ describe('CredentialIssuanceService', () => {
       expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
     }));
 
-    it('ES-02: un schema con 0 campos también es fail-closed (FormGroup resultante sería VALID en Angular)', fakeAsync(() => {
+    it('ES-02: a schema with 0 fields is also fail-closed (the resulting FormGroup would be VALID in Angular)', fakeAsync(() => {
       selectTypeWithSchema([]);
       tick();
       TestBed.flushEffects();
@@ -435,7 +435,7 @@ describe('CredentialIssuanceService', () => {
       expect(service.isFormValid$()).toBe(false);
     }));
 
-    it('AC-02: campo obligatorio vacío bloquea isFormValid$ y no se envía la petición', fakeAsync(() => {
+    it('AC-02: an empty required field blocks isFormValid$ and the request is not sent', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       TestBed.flushEffects();
@@ -447,7 +447,7 @@ describe('CredentialIssuanceService', () => {
       expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
     }));
 
-    it('AC-04 / ES-03: corregir el campo revalida el estado actual del FormGroup (no un flag cacheado)', fakeAsync(() => {
+    it('AC-04 / ES-03: correcting the field re-validates the current FormGroup state (not a cached flag)', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       expect(service.isFormValid$()).toBe(false);
@@ -458,7 +458,7 @@ describe('CredentialIssuanceService', () => {
 
       expect(service.isFormValid$()).toBe(true);
 
-      // Anti-caché (§20 D-5): vaciar de nuevo debe volver a bloquear, no quedarse "pegado" en true
+      // Anti-cache clearing it again must block again, not stay "stuck" on true
       service.form$().get('firstName')!.setValue('');
       tick();
       TestBed.flushEffects();

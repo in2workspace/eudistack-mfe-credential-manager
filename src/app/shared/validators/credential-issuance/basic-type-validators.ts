@@ -2,7 +2,12 @@ import { AbstractControl } from '@angular/forms';
 import { ExtendedValidatorFn, ExtendedValidatorErrors } from 'src/app/core/models/entity/validator-types';
 
 export class BasicTypeValidators {
-  /** Fecha de calendario válida (ISO yyyy-MM-dd, valor nativo de input type="date"). Vacío → null (required aparte). */
+  /**
+   * Valid calendar date (ISO yyyy-MM-dd, the native value of input type="date"). Empty -> null
+   * (required is a separate validator).
+   * Only ever handles strings: input[type="date"] uses Angular's DefaultValueAccessor, which
+   * never converts the value to a number (unlike input[type="number"] — see numeric() below).
+   */
   public static date(): ExtendedValidatorFn<'date'> {
     return (control: AbstractControl): ExtendedValidatorErrors<'date'> | null => {
       const value = control.value;
@@ -28,7 +33,13 @@ export class BasicTypeValidators {
     };
   }
 
-  /** Valor numérico entero o decimal (punto decimal; sin coma ni notación científica — alcance acotado AD-2). Vacío → null. */
+  /**
+   * Integer or decimal number (dot as decimal separator; no comma, no scientific notation —
+   * scope intentionally limited to basic type checking, AD-2). Empty -> null.
+   * Accepts both number and string: input[type="number"] uses Angular's NumberValueAccessor,
+   * which parses the DOM value with parseFloat() before it ever reaches the FormControl — so
+   * control.value here is normally a number, not a string (unlike date() above).
+   */
   public static numeric(): ExtendedValidatorFn<'numeric'> {
     return (control: AbstractControl): ExtendedValidatorErrors<'numeric'> | null => {
       const value = control.value;

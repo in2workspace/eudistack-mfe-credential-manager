@@ -346,9 +346,9 @@ export class CredentialIssuanceService {
   };
 
   /**
-   * Fail-closed (ES-02): sin tipo/schema seleccionados, o con un FormGroup vacío (que Angular
-   * considera VALID por defecto), el desencadenado no está permitido. Se re-evalúa el estado
-   * actual del FormGroup (ES-03) en vez de fiarse de un flag cacheado.
+   * Fail-closed (ES-02): without a selected type/schema, or with an empty FormGroup (which
+   * Angular treats as VALID by default), the trigger is not allowed. Re-evaluates the current
+   * FormGroup state (ES-03) instead of relying on a cached flag.
    */
   private isSubmissionAllowed(): boolean {
     const schema = this.credentialFormSchema$();

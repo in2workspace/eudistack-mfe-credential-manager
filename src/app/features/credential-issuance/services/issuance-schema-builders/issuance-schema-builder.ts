@@ -15,8 +15,8 @@ export const CREDENTIAL_SCHEMA_PROVIDERS = new InjectionToken<CredentialIssuance
 export class IssuanceSchemaBuilder {
     private readonly schemaProviders: CredentialIssuanceSchemaProvider<IssuanceCredentialType>[] = inject(CREDENTIAL_SCHEMA_PROVIDERS);
 
-    // AD-1 safe-deploy: implementación provisional hasta que EUD-50/58/59 declaren el catálogo real.
-    // El swap a una implementación metadata-driven es un cambio de esta asignación, no del resto de la clase.
+    // AD-1 safe-deploy: provisional implementation until EUD-50/58/59 declare the real catalog.
+    // Swapping to a metadata-driven implementation is a change to this assignment, not to the rest of the class.
     private readonly fieldValidationRuleResolver: FieldValidationRuleResolver =
       PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER;
 
@@ -29,7 +29,7 @@ export class IssuanceSchemaBuilder {
     return this.getBuilder(type).getSchema(onBehalf, claims);
   }
 
-  /** AD-1: traduce una FieldValidationRule ya resuelta a ValidatorEntry[] (alcance acotado: required + tipo básico). */
+  /** AD-1: translates an already-resolved FieldValidationRule into ValidatorEntry[] (scope: required + basic type only). */
   public buildValidatorEntriesFromRule(rule: FieldValidationRule): ValidatorEntryUnion[] {
     const entries: ValidatorEntryUnion[] = [];
     if (rule.required) {
@@ -50,11 +50,11 @@ export class IssuanceSchemaBuilder {
   }
 
   /**
-   * Punto único de integración del resolver genérico (AD-1) para consumidores que necesiten la
-   * traducción completa a ValidatorEntry[] (required + basicType). `LearCredentialEmployeeSchemaProvider`
-   * ya consume el resolver directamente (solo necesita `.required`, no la traducción completa);
-   * este método queda listo para cuando un consumidor necesite también `basicType` (fecha/número).
-   * No altera los campos legacy de `common-issuance-schema-fields.ts` (R-2).
+   * Single integration point for the generic resolver (AD-1), for consumers that need the full
+   * translation to ValidatorEntry[] (required + basicType). `LearCredentialEmployeeSchemaProvider`
+   * already consumes the resolver directly (it only needs `.required`, not the full translation);
+   * this method is ready for when a consumer also needs `basicType` (date/number).
+   * Does not alter the legacy fields in `common-issuance-schema-fields.ts` (R-2).
    */
   public buildValidatorEntriesForField(input: FieldValidationRuleInput): ValidatorEntryUnion[] {
     const rule = this.fieldValidationRuleResolver.resolve(input);

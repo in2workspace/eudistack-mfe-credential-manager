@@ -245,7 +245,7 @@ it('getBuilder with no match throws', () => {
       expect(entries).toEqual([{ name: 'required' }, { name: 'numeric' }]);
     });
 
-    it('optional text → sin entries', () => {
+    it('optional text → no entries', () => {
       expect(
         service.buildValidatorEntriesFromRule({
           key: 'note',
@@ -255,7 +255,7 @@ it('getBuilder with no match throws', () => {
       ).toEqual([]);
     });
 
-    it('nunca produce minLength, maxLength, pattern ni unicode (alcance acotado AD-2)', () => {
+    it('never produces minLength, maxLength, pattern or unicode (scope intentionally limited, AD-2)', () => {
       const entries = service.buildValidatorEntriesFromRule({
         key: 'x',
         required: true,
@@ -270,17 +270,17 @@ it('getBuilder with no match throws', () => {
   });
 
   describe('buildValidatorEntriesForField (AC-06)', () => {
-    it('delega en el resolver provisional para un campo del conjunto obligatorio', () => {
+    it('delegates to the provisional resolver for a field in the required set', () => {
       const entries = service.buildValidatorEntriesForField({ key: 'firstName' });
       expect(entries).toEqual([{ name: 'required' }]);
     });
 
-    it('delega en el resolver provisional para un campo opcional (EC-02)', () => {
+    it('delegates to the provisional resolver for an optional field (EC-02)', () => {
       const entries = service.buildValidatorEntriesForField({ key: 'optionalNote' });
       expect(entries).toEqual([]);
     });
 
-    it('propaga basicType date cuando se declara explícitamente', () => {
+    it('propagates basicType date when explicitly declared', () => {
       const entries = service.buildValidatorEntriesForField({
         key: 'anyField',
         required: true,
@@ -291,7 +291,7 @@ it('getBuilder with no match throws', () => {
   });
 
   describe('regression — legacy schema builder unchanged (R-2)', () => {
-    it('formSchemasBuilder sigue devolviendo campos main intactos', () => {
+    it('formSchemasBuilder still returns main fields intact', () => {
       const raw = [
         {
           key: 'main',

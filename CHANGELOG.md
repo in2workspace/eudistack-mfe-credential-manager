@@ -51,21 +51,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **EUD-73 — Validar el formulario antes de emitir** (FR-07, FR-08)
-  - Validación client-side previa al desencadenado de la emisión: bloqueo con feedback contextual por campo cuando un obligatorio está vacío o el formato no corresponde al tipo básico declarado (AC-01…AC-05).
-  - `FieldValidationRuleResolver` + `ProvisionalFieldValidationRuleResolver` (`shared/validators/credential-issuance/field-validation-rule.resolver.ts`): seam genérico de safe-deploy que deriva `{ key, required, basicType }` desacoplado de la definición final del catálogo de credenciales (AC-06, EC-01, EC-02).
-  - `BasicTypeValidators.date()` / `.numeric()` (`shared/validators/credential-issuance/basic-type-validators.ts`), registrados en `CUSTOM_VALIDATORS_FACTORY_MAP`; alcance acotado a tipo básico (sin min/max/pattern) (AC-03, ES-01).
-  - Claves i18n `error.form.date` / `error.form.number` en `es`/`en`/`ca`.
-  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: punto único de integración del resolver para futuros consumidores que necesiten la traducción completa a `ValidatorEntry[]` (AC-06).
-  - `controlType: 'date'` en `DynamicFieldComponent` (`input[type="date"]`) y refuerzo de accesibilidad: `aria-describedby` vinculado al `mat-error`, `role="alert"`, `id` estable por campo (NFR-A-EUD73-01).
-  - `WrappedBuiltInValidators.required()` ahora trata un valor de solo espacios como vacío (EC-03).
-  - `CredentialIssuanceService.isSubmissionAllowed()`: hardening fail-closed del gate de envío ante schema/tipo ausente o `FormGroup` sin controles (ES-02); revalidación sobre el estado actual del formulario, no un flag cacheado (AC-04, ES-03).
+- **EUD-73 — Validate the form before issuing** (FR-07, FR-08)
+  - Client-side validation before the issuance trigger: blocks with contextual per-field feedback when a required field is empty or the value's format does not match its declared basic type (AC-01…AC-05).
+  - `FieldValidationRuleResolver` + `ProvisionalFieldValidationRuleResolver` (`shared/validators/credential-issuance/field-validation-rule.resolver.ts`): generic safe-deploy seam that derives `{ key, required, basicType }`, decoupled from the final credential catalog definition (AC-06, EC-01, EC-02).
+  - `BasicTypeValidators.date()` / `.numeric()` (`shared/validators/credential-issuance/basic-type-validators.ts`), registered in `CUSTOM_VALIDATORS_FACTORY_MAP`; scope intentionally limited to basic type checking (no min/max/pattern) (AC-03, ES-01).
+  - i18n keys `error.form.date` / `error.form.number` in `es`/`en`/`ca`.
+  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: single integration point for the resolver, for future consumers that need the full translation to `ValidatorEntry[]` (AC-06).
+  - `controlType: 'date'` in `DynamicFieldComponent` (`input[type="date"]`) and accessibility hardening: `aria-describedby` linked to the `mat-error`, `role="alert"`, stable per-field `id` (NFR-A-EUD73-01).
+  - `WrappedBuiltInValidators.required()` now treats a whitespace-only value as empty (EC-03).
+  - `CredentialIssuanceService.isSubmissionAllowed()`: fail-closed hardening of the submit gate for a missing schema/type or a `FormGroup` with no controls (ES-02); re-validates the current form state instead of a cached flag (AC-04, ES-03).
 
 ### Changed
 
-- **EUD-73 (post-merge con EUD-71)**: `LearCredentialEmployeeSchemaProvider` ya no mantiene su propia lista hardcodeada `PROVISIONAL_REQUIRED_MANDATEE_KEYS` (introducida por EUD-71) — ahora deriva las claves obligatorias del grupo `mandatee` desde `FieldValidationRuleResolver` (AC-06/AC-07), consolidando en una sola fuente de verdad sin cambiar el comportamiento observable (mismos campos obligatorios). `claims-to-schema.mapper.ts` no se ha modificado.
-
-> Nota: el volcado de PII en `CredentialIssuanceComponent.onSubmit()` ya fue eliminado por EUD-71 (ver arriba); EUD-73 no repite esa entrada.
+- **EUD-73 (post-merge with EUD-71)**: `LearCredentialEmployeeSchemaProvider` no longer keeps its own hardcoded `PROVISIONAL_REQUIRED_MANDATEE_KEYS` list (introduced by EUD-71) — it now derives the `mandatee` group's required keys from `FieldValidationRuleResolver` (AC-06/AC-07), consolidating into a single source of truth without changing observable behavior (same required fields). `claims-to-schema.mapper.ts` was not modified.
 
 ## [3.5.29] - 03-08-2026
 

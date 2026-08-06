@@ -10,8 +10,8 @@ describe('ProvisionalFieldValidationRuleResolver', () => {
     resolver = new ProvisionalFieldValidationRuleResolver();
   });
 
-  describe('AC-06 — conjunto provisional', () => {
-    it('marca firstName como required + text', () => {
+  describe('AC-06 — provisional set', () => {
+    it('marks firstName as required + text', () => {
       expect(resolver.resolve({ key: 'firstName' })).toEqual({
         key: 'firstName',
         required: true,
@@ -19,7 +19,7 @@ describe('ProvisionalFieldValidationRuleResolver', () => {
       });
     });
 
-    it('propaga basicType date y number cuando se declara', () => {
+    it('propagates basicType date and number when declared', () => {
       expect(resolver.resolve({ key: 'birthDate', basicType: 'date', required: true })).toEqual({
         key: 'birthDate',
         required: true,
@@ -32,36 +32,36 @@ describe('ProvisionalFieldValidationRuleResolver', () => {
       });
     });
 
-    it('no marca required un campo fuera del conjunto provisional sin señal explícita', () => {
+    it('does not mark a field outside the provisional set as required without an explicit signal', () => {
       expect(resolver.resolve({ key: 'middleName' }).required).toBe(false);
     });
   });
 
-  describe('EC-01 — sin basicType declarado', () => {
-    it('defaultea a text', () => {
+  describe('EC-01 — no basicType declared', () => {
+    it('defaults to text', () => {
       expect(resolver.resolve({ key: 'nickname' })).toMatchObject({
         basicType: 'text',
       });
     });
 
-    it('undefined, null y cadena vacía en basicType degradan a text', () => {
+    it('undefined, null and empty string in basicType degrade to text', () => {
       expect(resolver.resolve({ key: 'a', basicType: undefined }).basicType).toBe('text');
       expect(resolver.resolve({ key: 'b', basicType: null as any }).basicType).toBe('text');
       expect(resolver.resolve({ key: 'c', basicType: '' as any }).basicType).toBe('text');
     });
 
-    it('un basicType desconocido degrada a text (no lanza error)', () => {
+    it('an unknown basicType degrades to text (does not throw)', () => {
       expect(resolver.resolve({ key: 'd', basicType: 'boolean' as any }).basicType).toBe('text');
     });
 
-    it('el fallback de tipo no arrastra required', () => {
+    it('the type fallback does not affect required', () => {
       expect(resolver.resolve({ key: 'foo', required: true }).required).toBe(true);
       expect(resolver.resolve({ key: 'foo', required: true }).basicType).toBe('text');
     });
   });
 
-  describe('EC-02 — campo opcional', () => {
-    it('required: false explícito no bloquea (sin validador required downstream)', () => {
+  describe('EC-02 — optional field', () => {
+    it('explicit required: false does not block (no downstream required validator)', () => {
       expect(resolver.resolve({ key: 'middleName', required: false })).toEqual({
         key: 'middleName',
         required: false,
@@ -69,13 +69,13 @@ describe('ProvisionalFieldValidationRuleResolver', () => {
       });
     });
 
-    it('clave fuera del conjunto provisional → required: false', () => {
+    it('a key outside the provisional set -> required: false', () => {
       expect(resolver.resolve({ key: 'optionalNote' })).toMatchObject({
         required: false,
       });
     });
 
-    it('required: false gana explícitamente aunque la clave esté en el conjunto provisional', () => {
+    it('required: false wins explicitly even when the key is in the provisional set', () => {
       expect(resolver.resolve({ key: 'firstName', required: false }).required).toBe(false);
     });
   });
