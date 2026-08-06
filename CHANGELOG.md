@@ -47,23 +47,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
 
-## [3.5.30] - 04-08-2026
+## [3.5.31] - 06-08-2026
 
 ### Added
 
-- **EUD-73 — Validate the form before issuing** (FR-07, FR-08)
-  - Client-side validation before the issuance trigger: blocks with contextual per-field feedback when a required field is empty or the value's format does not match its declared basic type (AC-01…AC-05).
-  - `FieldValidationRuleResolver` + `ProvisionalFieldValidationRuleResolver` (`shared/validators/credential-issuance/field-validation-rule.resolver.ts`): generic safe-deploy seam that derives `{ key, required, basicType }`, decoupled from the final credential catalog definition (AC-06, EC-01, EC-02).
-  - `BasicTypeValidators.date()` / `.numeric()` (`shared/validators/credential-issuance/basic-type-validators.ts`), registered in `CUSTOM_VALIDATORS_FACTORY_MAP`; scope intentionally limited to basic type checking (no min/max/pattern) (AC-03, ES-01).
-  - i18n keys `error.form.date` / `error.form.number` in `es`/`en`/`ca`.
-  - `IssuanceSchemaBuilder.buildValidatorEntriesFromRule()` / `.buildValidatorEntriesForField()`: single integration point for the resolver, for future consumers that need the full translation to `ValidatorEntry[]` (AC-06).
-  - `controlType: 'date'` in `DynamicFieldComponent` (`input[type="date"]`) and accessibility hardening: `aria-describedby` linked to the `mat-error`, `role="alert"`, stable per-field `id` (NFR-A-EUD73-01).
-  - `WrappedBuiltInValidators.required()` now treats a whitespace-only value as empty (EC-03).
-  - `CredentialIssuanceService.isSubmissionAllowed()`: fail-closed hardening of the submit gate for a missing schema/type or a `FormGroup` with no controls (ES-02); re-validates the current form state instead of a cached flag (AC-04, ES-03).
+- **EUD-73 — Validate the form before issuing** (FR-07, FR-08): client-side validation blocks the issuance trigger with contextual per-field feedback when a required field is empty or its value doesn't match the declared basic type (date/number). Adds `FieldValidationRuleResolver` (generic safe-deploy rule seam, AC-06/EC-01/EC-02), `BasicTypeValidators.date()`/`.numeric()` (AC-03/ES-01), `controlType: 'date'` support with `aria-describedby`/`role="alert"` accessibility (NFR-A-EUD73-01), a whitespace-only fix to the `required` validator (EC-03), and fail-closed hardening of the submit gate for a missing schema/type (ES-02/AC-04/ES-03).
 
 ### Changed
 
-- **EUD-73 (post-merge with EUD-71)**: `LearCredentialEmployeeSchemaProvider` no longer keeps its own hardcoded `PROVISIONAL_REQUIRED_MANDATEE_KEYS` list (introduced by EUD-71) — it now derives the `mandatee` group's required keys from `FieldValidationRuleResolver` (AC-06/AC-07), consolidating into a single source of truth without changing observable behavior (same required fields). `claims-to-schema.mapper.ts` was not modified.
+- **EUD-73 (post-merge with EUD-71)**: `LearCredentialEmployeeSchemaProvider` now derives its required `mandatee` keys from `FieldValidationRuleResolver` instead of its own hardcoded list, consolidating into a single source of truth without changing observable behavior.
+
+## [3.5.30] - 06-08-2026
+
+### Fixed
+
+- **SSO reuse intermittently failing on custom-domain tenants (e.g. `dome-marketplace-lcl.org`) with `"could not find matching config for state X"` (EUDISTACK-548)**: `TenantService.resolve()` is called independently from `main.ts`'s `APP_INITIALIZER` and from `TenantAwareStsConfigLoader.loadConfigs()` on every page load, each firing its own `/assets/tenants/custom-domain.json` fetch with no memoization. The resolved `tenant` feeds directly into the OIDC `clientId`, which keys the PKCE state `angular-auth-oidc-client` stores in `sessionStorage` — a transient failure of that one fetch (STG network blip, cold CDN cache) on either the page that launches the silent-SSO redirect or the page that receives its callback silently left `tenant` empty (the failure path had zero logging), producing a different `clientId` between the two independent page bootstraps and breaking the state lookup. Confirmed via a live STG repro with an automated browser. Fixed by memoizing `resolve()` (one fetch per page load, shared by both call sites), retrying the fetch (2 retries, linear backoff) to reduce the odds of a transient failure winning the race, and logging the failure instead of swallowing it silently. Added `tenant.service.spec.ts` (previously untested).
 
 ## [3.5.29] - 03-08-2026
 
