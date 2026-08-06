@@ -361,7 +361,6 @@ export class CredentialIssuanceService {
     if (Object.keys(form.controls).length === 0) {
       return false;
     }
-    form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
     return form.valid;
   }
 

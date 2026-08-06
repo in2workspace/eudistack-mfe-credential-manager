@@ -34,7 +34,7 @@
             {{ "credentialIssuance.hint." + controlSchema?.hint | translate }}
           </div>
         }
-        @let showError = !!(control?.invalid && control?.touched);
+        @let showError = control?.invalid && control?.touched;
         <mat-form-field [formGroup]="parentFormGroup$()">
           <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldSchema.label ?? ("credentialIssuance." + fieldName | translate) }}</mat-label>
           @let controlType = controlSchema.controlType;
