@@ -24,26 +24,53 @@ export class TenantService {
   readonly serverUrl = environment.server_url || (window.location.origin + "/issuer");
 
   /**
-   * Memoizes the in-flight/completed resolution. resolve() is called independently
-   * from main.ts's APP_INITIALIZER *and* from TenantAwareStsConfigLoader.loadConfigs()
-   * (invoked whenever the OIDC library needs its config) — without this cache, each
-   * call fired its own /assets/tenants/custom-domain.json fetch. For a non-canonical
-   * (custom-domain) tenant, resolvedTenant()/clientId() feed directly into the OIDC
-   * configId used to key the PKCE state in sessionStorage — if one of those redundant
-   * fetches transiently failed while the other succeeded, the resulting clientId
-   * differed *within the same page load*, and a subsequent page load (the SSO
-   * redirect's callback) doing its own independent fetch could resolve differently
-   * again, producing a configId mismatch between the page that wrote the PKCE state
-   * and the page that reads it back — surfacing as angular-auth-oidc-client's
-   * "could not find matching config for state X" (EUDISTACK-548 investigation).
+   * Memoizes the in-flight/completed resolution *within a single page load*.
+   * resolve() is called independently from main.ts's APP_INITIALIZER *and* from
+   * TenantAwareStsConfigLoader.loadConfigs() (invoked whenever the OIDC library
+   * needs its config) — without this, each call fired its own
+   * /assets/tenants/custom-domain.json fetch.
    */
   private resolvePromise: Promise<void> | null = null;
+
+  /**
+   * sessionStorage key for the cross-page-load cache — see doResolve() below for why
+   * this exists. Versioned so a future shape change doesn't need to special-case
+   * reading an old cached payload; a mismatched/unparsable entry is just ignored.
+   */
+  private static readonly CACHE_KEY = 'eudistack_tenant_resolution_v1';
 
   async resolve(): Promise<void> {
     return this.resolvePromise ??= this.doResolve();
   }
 
+  /**
+   * For a non-canonical (custom-domain) tenant, `tenant`/`canonical` only resolve
+   * once /assets/tenants/custom-domain.json is fetched — unlike a canonical tenant,
+   * where they're derived synchronously from the hostname (see below). That resolved
+   * `tenant` feeds directly into the OIDC clientId, which keys the PKCE state
+   * angular-auth-oidc-client stores in sessionStorage.
+   *
+   * The silent-SSO round trip is TWO independent full-page bootstraps (the page that
+   * launches authorize(), and the page that receives its callback) — each makes its
+   * OWN fetch of that same static JSON. In-memory memoization (resolvePromise above)
+   * only guarantees agreement *within* one of those loads; it does nothing for
+   * agreement *across* them. If that fetch transiently failed on just one of the two
+   * (STG network blip, cold CDN cache) even after retries, the resulting clientId
+   * differed between them, and angular-auth-oidc-client could no longer find the
+   * stored PKCE state matching the URL's — "could not find matching config for
+   * state X" (EUDISTACK-548 investigation; confirmed live against STG).
+   *
+   * Caching the resolved result in sessionStorage (scoped to this origin, so
+   * intrinsically scoped to this hostname/tenant) closes that gap: once the FIRST
+   * page load resolves successfully, every later page load in the same tab —
+   * including the SSO callback — reads the cached value synchronously, with no
+   * network call and thus no chance of a differing outcome.
+   */
   private async doResolve(): Promise<void> {
+    if (this.readCache()) {
+      return;
+    }
+
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
     const isCanonical = this.isValidTenant(tenantFromHostname);
 
@@ -111,12 +138,63 @@ export class TenantService {
       if (tenantConfig?.defaultEnv) {
         this._defaultWalletUrl.set(tenantConfig.env[tenantConfig.defaultEnv]?.wallet ?? null);
       }
+
+      // Only cache a resolution that actually landed on a tenant — an empty tenant
+      // (e.g. an unmapped canonical hostname) must keep hitting the network so a
+      // later successful attempt (this tab, this hostname) can still self-heal.
+      if (this._tenant()) {
+        this.writeCache();
+      }
     } catch (err) {
       // JSON not found or network error, even after retries — wallet URL stays as origin
       // fallback for canonical; for non-canonical, tenant stays '' → guard redirects to
       // /tenant-not-found. Logged (was silent) since a non-canonical tenant silently
       // resolving empty here also corrupts the OIDC clientId used for SSO (see resolvePromise doc).
       console.error('[TenantResolver] Failed to load /assets/tenants/custom-domain.json after retries', err);
+    }
+  }
+
+  /**
+   * Reads a previous successful resolution back from sessionStorage, if this
+   * tab/origin already has one. Returns true (and populates the signals) on a hit,
+   * false on a miss (no entry, or an unparsable/malformed one — treated the same as
+   * no entry rather than thrown, since this cache is purely an optimization and
+   * must never be the reason resolution fails).
+   */
+  private readCache(): boolean {
+    try {
+      const raw = sessionStorage.getItem(TenantService.CACHE_KEY);
+      if (!raw) return false;
+
+      const cached = JSON.parse(raw);
+      if (cached?.hostname !== window.location.hostname || !cached?.tenant) {
+        return false;
+      }
+
+      this._tenant.set(cached.tenant);
+      this._canonical.set(!!cached.canonical);
+      this._iamUrl.set(cached.iamUrl ?? '');
+      this._walletUrl.set(cached.walletUrl ?? WALLET_ORIGIN_BASE_URL);
+      this._defaultWalletUrl.set(cached.defaultWalletUrl ?? null);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private writeCache(): void {
+    try {
+      sessionStorage.setItem(TenantService.CACHE_KEY, JSON.stringify({
+        hostname: window.location.hostname,
+        tenant: this._tenant(),
+        canonical: this._canonical(),
+        iamUrl: this._iamUrl(),
+        walletUrl: this._walletUrl(),
+        defaultWalletUrl: this._defaultWalletUrl(),
+      }));
+    } catch {
+      // sessionStorage unavailable (private browsing quota, etc.) — resolution
+      // already succeeded for this page load, just skip the cross-page-load cache.
     }
   }
 
