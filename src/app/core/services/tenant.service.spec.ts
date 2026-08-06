@@ -17,6 +17,9 @@ describe('TenantService', () => {
   };
 
   beforeEach(() => {
+    // doResolve() now checks the cross-page-load sessionStorage cache before
+    // hitting the network — clear it so tests stay isolated from each other.
+    sessionStorage.clear();
     originalLocation = window.location;
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
@@ -172,6 +175,85 @@ describe('TenantService', () => {
       // environment.iam_url (a fixed test-env default) takes precedence over the
       // per-tenant verifier URL — see resolve()'s `environment.iam_url || ...` fallback.
       expect(service.iamUrl()).toBe(environment.iam_url);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Cross-page-load cache — the actual fix for the SSO reuse race: the page that
+  // launches authorize() and the page that receives its callback are two
+  // independent bootstraps, each running its own resolve(). In-memory memoization
+  // (resolvePromise) only covers agreement *within* one of those loads; this cache
+  // is what makes the *second* load see exactly what the *first* one resolved,
+  // without a network call — eliminating the chance of it disagreeing.
+  // --------------------------------------------------------------------------
+  describe('cross-page-load cache (sessionStorage)', () => {
+    it('a second TenantService instance for the same hostname reads the cache with no network call', async () => {
+      setHostname('issuer.dome-marketplace-lcl.org');
+
+      // First "page load": resolves over the network and caches the result.
+      const firstLoad = service.resolve();
+      httpMock.expectOne('/assets/tenants/custom-domain.json').flush({
+        domains: { 'issuer.dome-marketplace-lcl.org': { tenantId: 'dome', envId: 'lcl' } },
+        tenants: { dome: { env: { lcl: { issuer: '', verifier: 'https://verifier.dome-marketplace-lcl.org/verifier', wallet: 'https://wallet.dome-marketplace-lcl.org' } } } },
+      });
+      await firstLoad;
+
+      // Second "page load": TestBed reset gives a genuinely fresh TenantService
+      // instance (a real full-page bootstrap would too) — same hostname, same
+      // sessionStorage (a real browser API, untouched by the Angular DI reset).
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ imports: [HttpClientTestingModule], providers: [TenantService] });
+      const second = TestBed.inject(TenantService);
+      const secondHttpMock = TestBed.inject(HttpTestingController);
+      await second.resolve();
+
+      secondHttpMock.expectNone('/assets/tenants/custom-domain.json');
+      expect(second.tenant()).toBe('dome');
+      expect(second.canonical()).toBe(false);
+      expect(second.iamUrl()).toBe(environment.iam_url);
+    });
+
+    it('ignores a cache entry written for a different hostname', async () => {
+      setHostname('issuer.dome-marketplace-lcl.org');
+      sessionStorage.setItem('eudistack_tenant_resolution_v1', JSON.stringify({
+        hostname: 'issuer.other-tenant.org',
+        tenant: 'other',
+        canonical: false,
+      }));
+
+      const resolved = service.resolve();
+      httpMock.expectOne('/assets/tenants/custom-domain.json').flush({
+        domains: { 'issuer.dome-marketplace-lcl.org': { tenantId: 'dome', envId: 'lcl' } },
+        tenants: { dome: { env: { lcl: { issuer: '', verifier: '', wallet: '' } } } },
+      });
+      await resolved;
+
+      expect(service.tenant()).toBe('dome');
+    });
+
+    it('falls back to the network on a malformed cache entry instead of throwing', async () => {
+      setHostname('issuer.dome-marketplace-lcl.org');
+      sessionStorage.setItem('eudistack_tenant_resolution_v1', 'not valid json{{{');
+
+      const resolved = service.resolve();
+      httpMock.expectOne('/assets/tenants/custom-domain.json').flush({
+        domains: { 'issuer.dome-marketplace-lcl.org': { tenantId: 'dome', envId: 'lcl' } },
+        tenants: { dome: { env: { lcl: { issuer: '', verifier: '', wallet: '' } } } },
+      });
+      await resolved;
+
+      expect(service.tenant()).toBe('dome');
+    });
+
+    it('does not cache an unresolved (empty) tenant', async () => {
+      setHostname('issuer.unknown-domain.org');
+
+      const resolved = service.resolve();
+      httpMock.expectOne('/assets/tenants/custom-domain.json').flush({ domains: {}, tenants: {} });
+      await resolved;
+
+      expect(service.tenant()).toBe('');
+      expect(sessionStorage.getItem('eudistack_tenant_resolution_v1')).toBeNull();
     });
   });
 });

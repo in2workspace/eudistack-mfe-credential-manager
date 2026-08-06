@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
 
-## [3.5.31] - 06-08-2026
+## [3.5.32] - 06-08-2026
 
 ### Added
 
@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **EUD-73 (post-merge with EUD-71)**: `LearCredentialEmployeeSchemaProvider` now derives its required `mandatee` keys from `FieldValidationRuleResolver` instead of its own hardcoded list, consolidating into a single source of truth without changing observable behavior.
+
+## [3.5.31] - 06-08-2026
+
+### Fixed
+
+- **SSO reuse still intermittently failing for custom-domain tenants after 3.5.30 (EUDISTACK-548)**: memoizing `TenantService.resolve()` only guaranteed its two independent callers (`main.ts`'s `APP_INITIALIZER` and `TenantAwareStsConfigLoader.loadConfigs()`) agreed *within* one page load — it didn't help across the two *separate* page loads the silent-SSO round trip actually involves (the page that launches `authorize()`, and the page that receives its callback), each making its own fresh `/assets/tenants/custom-domain.json` fetch. A persistent failure of that fetch on just one of the two still let the resolved `tenant`/OIDC `clientId` differ between them, reproducing `"could not find matching config for state X"` — confirmed live against STG (`dome-marketplace-lcl.org`) even with 3.5.30 already deployed. Canonical tenants (`<tenant>.stg.eudistack.net` / `*.127.0.0.1.nip.io`) never hit this, since their resolution is synchronous from the hostname — which is also why it was never reproducible locally. Fixed by caching the resolved result in `sessionStorage`: once the first page load in a tab resolves successfully, every later page load in the same tab (including the SSO callback) reads the cached value synchronously with no network call, closing the race entirely.
 
 ## [3.5.30] - 06-08-2026
 
