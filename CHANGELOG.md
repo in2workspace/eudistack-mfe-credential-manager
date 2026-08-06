@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
 
+## [3.5.30] - 06-08-2026
+
+### Fixed
+
+- **SSO reuse intermittently failing on custom-domain tenants (e.g. `dome-marketplace-lcl.org`) with `"could not find matching config for state X"` (EUDISTACK-548)**: `TenantService.resolve()` is called independently from `main.ts`'s `APP_INITIALIZER` and from `TenantAwareStsConfigLoader.loadConfigs()` on every page load, each firing its own `/assets/tenants/custom-domain.json` fetch with no memoization. The resolved `tenant` feeds directly into the OIDC `clientId`, which keys the PKCE state `angular-auth-oidc-client` stores in `sessionStorage` — a transient failure of that one fetch (STG network blip, cold CDN cache) on either the page that launches the silent-SSO redirect or the page that receives its callback silently left `tenant` empty (the failure path had zero logging), producing a different `clientId` between the two independent page bootstraps and breaking the state lookup. Confirmed via a live STG repro with an automated browser. Fixed by memoizing `resolve()` (one fetch per page load, shared by both call sites), retrying the fetch (2 retries, linear backoff) to reduce the odds of a transient failure winning the race, and logging the failure instead of swallowing it silently. Added `tenant.service.spec.ts` (previously untested).
+
 ## [3.5.29] - 03-08-2026
 
 ### Fixed

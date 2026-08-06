@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, retry, timer } from 'rxjs';
 import { ENV_SUFFIXES, FALLBACK_TENANT, KNOWN_TENANTS, MFE_HOME_PATH } from '../constants/tenants.constants';
 import { WALLET_ORIGIN_BASE_URL } from '../constants/wallet.constants';
 import { environment } from 'src/environments/environment';
@@ -23,7 +23,27 @@ export class TenantService {
   readonly defaultWalletUrl = this._defaultWalletUrl.asReadonly();
   readonly serverUrl = environment.server_url || (window.location.origin + "/issuer");
 
+  /**
+   * Memoizes the in-flight/completed resolution. resolve() is called independently
+   * from main.ts's APP_INITIALIZER *and* from TenantAwareStsConfigLoader.loadConfigs()
+   * (invoked whenever the OIDC library needs its config) — without this cache, each
+   * call fired its own /assets/tenants/custom-domain.json fetch. For a non-canonical
+   * (custom-domain) tenant, resolvedTenant()/clientId() feed directly into the OIDC
+   * configId used to key the PKCE state in sessionStorage — if one of those redundant
+   * fetches transiently failed while the other succeeded, the resulting clientId
+   * differed *within the same page load*, and a subsequent page load (the SSO
+   * redirect's callback) doing its own independent fetch could resolve differently
+   * again, producing a configId mismatch between the page that wrote the PKCE state
+   * and the page that reads it back — surfacing as angular-auth-oidc-client's
+   * "could not find matching config for state X" (EUDISTACK-548 investigation).
+   */
+  private resolvePromise: Promise<void> | null = null;
+
   async resolve(): Promise<void> {
+    return this.resolvePromise ??= this.doResolve();
+  }
+
+  private async doResolve(): Promise<void> {
     const tenantFromHostname = this.extractFromHostname(window.location.hostname);
     const isCanonical = this.isValidTenant(tenantFromHostname);
 
@@ -36,7 +56,12 @@ export class TenantService {
 
     try {
       const config = await firstValueFrom(
-        this.http.get<CustomDomainConfig>('/assets/tenants/custom-domain.json')
+        this.http.get<CustomDomainConfig>('/assets/tenants/custom-domain.json').pipe(
+          // Transient failures here (STG network blips, cold CDN cache) used to leave
+          // `tenant` at its default '' — see resolvePromise doc above for why that's
+          // more than cosmetic for non-canonical tenants.
+          retry({ count: 2, delay: (_, attempt) => timer(attempt * 300) })
+        )
       );
 
       const tenantId = isCanonical
@@ -86,9 +111,12 @@ export class TenantService {
       if (tenantConfig?.defaultEnv) {
         this._defaultWalletUrl.set(tenantConfig.env[tenantConfig.defaultEnv]?.wallet ?? null);
       }
-    } catch {
-      // JSON not found or network error — wallet URL stays as origin fallback for canonical;
-      // for non-canonical, tenant stays '' → guard redirects to /tenant-not-found
+    } catch (err) {
+      // JSON not found or network error, even after retries — wallet URL stays as origin
+      // fallback for canonical; for non-canonical, tenant stays '' → guard redirects to
+      // /tenant-not-found. Logged (was silent) since a non-canonical tenant silently
+      // resolving empty here also corrupts the OIDC clientId used for SSO (see resolvePromise doc).
+      console.error('[TenantResolver] Failed to load /assets/tenants/custom-domain.json after retries', err);
     }
   }
 
