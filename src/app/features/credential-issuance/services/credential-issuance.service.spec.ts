@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -34,6 +35,7 @@ describe('CredentialIssuanceService', () => {
   };
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
+  let policyLoadFailed: ReturnType<typeof signal<boolean>>;
   let mockMetadataService: {
     loadMetadata: jest.Mock;
     findConfigurationsForType: jest.Mock;
@@ -58,6 +60,7 @@ describe('CredentialIssuanceService', () => {
     // signals would memoize and we couldn't test the recompute after loadMetadata().
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
     metadataLoadFailed = signal<boolean>(false);
+    policyLoadFailed = signal<boolean>(false);
     mockMetadataService = {
       loadMetadata: jest.fn(() => of(undefined)),
       findConfigurationsForType: jest.fn(() => []),
@@ -83,6 +86,9 @@ describe('CredentialIssuanceService', () => {
         CountryService,
         { provide: CredentialProcedureService, useValue: mockProcedureService },
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
+        // The published per-tenant policy is fail-closed: an unusable document is a second
+        // reason the selector can be empty for a cause the Operator cannot act on.
+        { provide: IssuanceUiPolicyService, useValue: { loadFailed: () => policyLoadFailed() } },
         // Not related to AD-1 (that dependency was already removed from CredentialIssuanceService):
         // IssuanceRequestFactoryService, provided for real in this TestBed, injects ThemeService
         // on its own to resolve the payload's mandatee/mandator.
@@ -120,6 +126,16 @@ describe('CredentialIssuanceService', () => {
     it('should expose an empty selector and flag the catalogue as unavailable when metadata fails (EC-04)', () => {
       issuableTypes.set([]);
       metadataLoadFailed.set(true);
+
+      expect(service.credentialTypesArr$()).toEqual([]);
+      expect(service.isCatalogUnavailable$()).toBe(true);
+    });
+
+    // The per-tenant policy is fail-closed, so an unusable document means "no forms", not "no
+    // restrictions" — and the Operator must be told, rather than shown a bare empty selector.
+    it('should flag the catalogue as unavailable when the issuance UI policy fails (EC-04)', () => {
+      issuableTypes.set([]);
+      policyLoadFailed.set(true);
 
       expect(service.credentialTypesArr$()).toEqual([]);
       expect(service.isCatalogUnavailable$()).toBe(true);

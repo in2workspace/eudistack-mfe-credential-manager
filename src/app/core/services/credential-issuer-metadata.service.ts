@@ -5,7 +5,7 @@ import { API_PATH } from '../constants/api-paths.constants';
 import { keepLatestCredentialConfigurations } from '../helpers/credential-configuration-id';
 import { CredentialConfigurationDto, CredentialIssuerMetadataDto } from '../models/dto/credential-issuer-metadata.dto';
 import { ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType } from '../models/entity/lear-credential-issuance';
-import { keepPinnedIssuableVersions } from '../helpers/pinned-issuable-versions';
+import { IssuanceUiPolicyService } from './issuance-ui-policy.service';
 import { TenantService } from './tenant.service';
 
 /** A configuration paired with the record key it was declared under. */
@@ -18,13 +18,21 @@ interface KeyedCredentialConfiguration {
 export class CredentialIssuerMetadataService {
   private readonly http = inject(HttpClient);
   private readonly tenantService = inject(TenantService);
+  private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly configurations = signal<Record<string, CredentialConfigurationDto> | null>(null);
   private readonly loadFailed = signal<boolean>(false);
 
   /**
-   * The registry reduced to the newest version of each type+format lineage, using the same
-   * `keepLatestCredentialConfigurations` rule the catalog screen applies to its rows — so a
-   * version the admin can no longer see in the catalog is not offered for issuance either.
+   * The registry reduced to what this UI may offer: the lineages the tenant's published
+   * policy allows, each at the newest version the metadata declares.
+   *
+   * Two independent rules, in this order. The POLICY (per tenant, published as configuration —
+   * see `issuance-ui-policy.service.ts`) decides WHICH type+format lineages get a form at all:
+   * the metadata is already tenant-scoped by the issuer and everything in it is issuable
+   * THROUGH THE API, but this UI deliberately offers a narrower set. Then
+   * `keepLatestCredentialConfigurations` — the same rule the catalog screen applies to its
+   * rows — decides WHICH VERSION of a surviving lineage, so a version the admin can no longer
+   * see in the catalog is not offered for issuance either.
    *
    * Keyed on the RECORD KEY, not on `credential_definition.type`: the key is the
    * configuration id (`learcredential.employee.w3c.2`), which is what the version grammar
@@ -44,16 +52,12 @@ export class CredentialIssuerMetadataService {
     // relative order => stable order in both selectors.
     const keyed = Object.entries(configs).map(([configId, config]) => ({ configId, config }));
 
-    // PINNED-VERSIONS (temporary, see core/temporary/pinned-issuable-versions.ts). The
-    // relative rule below can only pick the newest version PRESENT; metadata declaring only
-    // a legacy version — which it must, for the details screen to resolve credentials issued
-    // under it — would make that legacy version the newest and put it back in the form. The
-    // pin removes those first, so a superseded lineage yields no format option, and a type
-    // whose every lineage is superseded stops being issuable altogether (issuableTypes()).
-    // Remove this wrap and the import to revert; nothing else changes.
-    const currentEnoughToIssue = keepPinnedIssuableVersions(keyed, entry => entry.configId);
+    // The policy only ever narrows: an id absent from the metadata cannot be added back by
+    // the document, and an unusable document leaves an empty policy (fail-closed), flagged
+    // through IssuanceUiPolicyService.loadFailed() so the screen can explain itself.
+    const offerableByUi = keyed.filter(entry => this.issuanceUiPolicy.allows(entry.configId));
 
-    return keepLatestCredentialConfigurations(currentEnoughToIssue, entry => entry.configId);
+    return keepLatestCredentialConfigurations(offerableByUi, entry => entry.configId);
   });
 
   // AD-1: the issuable catalogue is derived from the metadata, already tenant-filtered on

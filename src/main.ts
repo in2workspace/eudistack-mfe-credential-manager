@@ -18,12 +18,21 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 import { MatPaginatorIntlService } from './app/shared/services/mat-paginator-intl.service';
 import { ThemeService } from './app/core/services/theme.service';
 import { TenantService } from './app/core/services/tenant.service';
+import { IssuanceUiPolicyService } from './app/core/services/issuance-ui-policy.service';
 import { oidcConfigFactory } from './app/core/auth/oid-config.factory';
 
-function initializeApp(tenantService: TenantService, themeService: ThemeService): () => Promise<void> {
+function initializeApp(
+  tenantService: TenantService,
+  themeService: ThemeService,
+  issuanceUiPolicyService: IssuanceUiPolicyService,
+): () => Promise<void> {
   return async () => {
+    // The tenant is the prerequisite of everything tenant-scoped: the policy needs tenant()
+    // to pick its entry, and the theme will need it too once branding moves per tenant.
     await tenantService.resolve();
-    await themeService.load();
+    // Siblings: the policy document is sub-KB and same-origin, so it rides along with the
+    // theme fetch instead of adding a round trip to the bootstrap.
+    await Promise.all([themeService.load(), issuanceUiPolicyService.load()]);
   };
 }
 
@@ -35,7 +44,7 @@ bootstrapApplication(AppComponent, {
         {
             provide: APP_INITIALIZER,
             useFactory: initializeApp,
-            deps: [TenantService, ThemeService],
+            deps: [TenantService, ThemeService, IssuanceUiPolicyService],
             multi: true
         },
         {

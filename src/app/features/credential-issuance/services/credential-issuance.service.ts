@@ -21,6 +21,7 @@ import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/a
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
 
@@ -74,8 +75,13 @@ export class CredentialIssuanceService {
   );
 
   // EC-04 vs EC-01: same empty list, different message. Resolved by the template (T3).
+  //
+  // Two sources can leave the selector empty for a reason the Operator cannot act on: the
+  // issuer metadata, and the tenant's published issuance UI policy — which is fail-closed, so
+  // an unusable document means "no forms", not "no restrictions". Neither is the same as a
+  // policy that legitimately allows nothing, which stays on the EC-01 message.
   public readonly isCatalogUnavailable$ = computed<boolean>(
-    () => this.metadataService.hasMetadataLoadFailed()
+    () => this.metadataService.hasMetadataLoadFailed() || this.issuanceUiPolicy.loadFailed()
   );
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
@@ -190,6 +196,7 @@ export class CredentialIssuanceService {
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
 
   constructor() {
