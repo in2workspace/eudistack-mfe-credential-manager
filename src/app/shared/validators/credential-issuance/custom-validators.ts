@@ -1,6 +1,7 @@
 import { AbstractControl } from "@angular/forms";
 import * as ipaddr from 'ipaddr.js';
 import { ExtendedValidatorFn, ExtendedValidatorErrors } from "src/app/core/models/entity/validator-types";
+import { BASIC_TYPE_VALIDATORS_FACTORY_MAP } from "./basic-type-validators";
 
 
 export type CustomValidatorEntry = { name: CustomValidatorName; args?: any[] };
@@ -147,7 +148,8 @@ export const CUSTOM_VALIDATORS_FACTORY_MAP = {
   customEmail: CustomValidators.customEmail,
   unicode: CustomValidators.unicode,
   orgIdentifier: CustomValidators.orgIdentifier,
-  orgName: CustomValidators.orgName
+  orgName: CustomValidators.orgName,
+  ...BASIC_TYPE_VALIDATORS_FACTORY_MAP
 } as const;
 
 export type CustomValidatorName = keyof typeof CUSTOM_VALIDATORS_FACTORY_MAP;

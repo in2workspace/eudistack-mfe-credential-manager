@@ -25,6 +25,14 @@ export type BuiltInValidatorEntry = ValidatorEntry<BuiltinValidatorName>;
 export class WrappedBuiltInValidators {
   public static required(): ExtendedValidatorFn<"required"> {
     return (control: AbstractControl): ExtendedValidatorErrors<"required"> | null => {
+      const raw = control.value;
+      // EC-03: Angular's Validators.required does not treat a whitespace-only string as empty
+      // (length > 0). Defense in depth: DefaultValueAccessor (see core/overrides) already trims
+      // real keystrokes from a live DOM input, but this guards any control fed a value directly
+      // (setValue/patchValue), not only the DOM-typed path.
+      if (typeof raw === 'string' && raw.trim() === '') {
+        return { required: { value: "error.form.required" } };
+      }
       return Validators.required(control)
         ? { required: { value: "error.form.required" } }
         : null;

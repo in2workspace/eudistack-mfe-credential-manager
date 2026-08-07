@@ -387,6 +387,8 @@
     },
     "form":{
       "required": "This field is required.",
+      "date": "Invalid date format.",
+      "number": "Enter a numeric value.",
       "min": "Minimum is {{0}}",
       "max": "Maximum is {{0}}",
       "minLength": "Minimum characters: {{0}}",

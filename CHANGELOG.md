@@ -47,6 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Security**: removed a PII console dump (`console.error(formValue)`) in `CredentialIssuanceComponent.onSubmit()` on invalid-form submit.
   - **Test coverage**: 191 tests across the credential-issuance area (new/updated: `credential-issuer-metadata.service.spec.ts`, `credential-issuance.service.spec.ts`, `credential-issuance.component.spec.ts`, `claims-to-schema.mapper.spec.ts`, `issuance-schema-builder.spec.ts`, `lear-credential-employee-issuance-schema-provider.spec.ts`).
 
+## [3.5.32] - 06-08-2026
+
+### Added
+
+- **EUD-73 — Validate the form before issuing** (FR-07, FR-08): client-side validation blocks the issuance trigger with contextual per-field feedback when a required field is empty or its value doesn't match the declared basic type (date/number). Adds `FieldValidationRuleResolver` (generic safe-deploy rule seam, AC-06/EC-01/EC-02), `BasicTypeValidators.date()`/`.numeric()` (AC-03/ES-01), `controlType: 'date'` support with `aria-describedby`/`role="alert"` accessibility (NFR-A-EUD73-01), a whitespace-only fix to the `required` validator (EC-03), and fail-closed hardening of the submit gate for a missing schema/type (ES-02/AC-04/ES-03).
+
+### Changed
+
+- **EUD-73 (post-merge with EUD-71)**: `LearCredentialEmployeeSchemaProvider` now derives its required `mandatee` keys from `FieldValidationRuleResolver` instead of its own hardcoded list, consolidating into a single source of truth without changing observable behavior.
+
 ## [3.5.31] - 06-08-2026
 
 ### Fixed

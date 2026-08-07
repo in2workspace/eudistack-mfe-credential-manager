@@ -67,7 +67,7 @@ export interface BaseCredentialIssuanceViewModelField {
 
 export interface CredentialIssuanceViewModelControlField extends BaseCredentialIssuanceViewModelField {
     type: 'control'; // for FormControl or custom components with one FormControl
-    controlType: 'text' | 'number' | 'selector',
+    controlType: 'text' | 'number' | 'selector' | 'date',
     multiOptions?: SelectorOption[], //only for 'selector' controlType (and similars if added in the future: 'radio' and 'checkbox')
     validators: ValidatorEntryUnion[];
     hint?: string; //hint that is shown above the control

@@ -169,9 +169,9 @@ export class CredentialIssuanceService {
   public isFormValid$ = toSignal(
     toObservable(this.form$).pipe(
       switchMap(f => f.statusChanges.pipe(startWith(f.status))),
-      map((status) => status === 'VALID')
+      map(() => this.isSubmissionAllowed())
     ),
-    { initialValue: this.form$().valid }
+    { initialValue: this.isSubmissionAllowed() }
   );
 
   // OTHER STATES
@@ -345,17 +345,36 @@ export class CredentialIssuanceService {
       return this.submitCredentialPayload();
   };
 
+  /**
+   * Fail-closed (ES-02): without a selected type/schema, or with an empty FormGroup (which
+   * Angular treats as VALID by default), the trigger is not allowed. Re-evaluates the current
+   * FormGroup state (ES-03) instead of relying on a cached flag.
+   */
+  private isSubmissionAllowed(): boolean {
+    const schema = this.credentialFormSchema$();
+    const type = this.selectedCredentialType$();
+    const form = this.form$();
+
+    if (!type || !schema || schema.length === 0) {
+      return false;
+    }
+    if (Object.keys(form.controls).length === 0) {
+      return false;
+    }
+    return form.valid;
+  }
+
   private submitCredentialPayload(): Observable<any>{
-      const formValue = this.formValue$();
-      const credentialType = this.selectedCredentialType$();
-      const credentialSchema = this.credentialFormSchema$();
-      const formatOption = this.effectiveFormatOption$();
-      if(!this.isFormValid$()){
-        console.error('Invalid form values! Cannot submit.');
+      if(!this.isSubmissionAllowed()){
+        console.error('Invalid form values or missing schema! Cannot submit.');
         return of(EMPTY);
       }
-      if(!credentialType || !credentialSchema){
-        console.error('SubmitCredential: type or schema missing!');
+
+      const formValue = this.formValue$();
+      const credentialType = this.selectedCredentialType$();
+      const formatOption = this.effectiveFormatOption$();
+      if(!credentialType){
+        console.error('SubmitCredential: type missing!');
         return of(EMPTY);
       }
 

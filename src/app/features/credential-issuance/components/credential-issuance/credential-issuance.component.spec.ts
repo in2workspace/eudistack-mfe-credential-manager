@@ -1,5 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { signal, Signal, WritableSignal, computed } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { CredentialIssuanceComponent } from './credential-issuance.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ActivatedRoute } from '@angular/router';
@@ -212,6 +213,17 @@ describe('CredentialIssuanceComponent', () => {
       expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
 
+    it('EUD-73 §12 Threat 3: does not dump the form values (PII) to the console when blocking', () => {
+      (console.error as jest.Mock).mockClear();
+      (component as any).isFormValid$ = () => false;
+      (component as any).formValue$ = () => ({ foo: 'bar' });
+
+      component.onSubmit();
+
+      expect(console.error).not.toHaveBeenCalledWith({ foo: 'bar' });
+      expect(console.error).toHaveBeenCalledTimes(1);
+    });
+
     it('should open LEARCredentialMachine dialog when selected type is LEARCredentialMachine', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
@@ -232,6 +244,14 @@ describe('CredentialIssuanceComponent', () => {
 
       expect(mockService.openSubmitDialog).toHaveBeenCalled();
       expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('EUD-73 — ES-02 fail-closed (no schema means the form does not render)', () => {
+    it('does not render <form> nor the submit button when credentialFormSchema$ is null', () => {
+      // mockService.credentialFormSchema$ is already signal(null) by default in the beforeEach
+      expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
+      expect(fixture.debugElement.query(By.css('button[type="submit"]'))).toBeFalsy();
     });
   });
 });

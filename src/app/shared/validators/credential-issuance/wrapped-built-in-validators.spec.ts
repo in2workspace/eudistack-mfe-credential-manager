@@ -21,6 +21,40 @@ describe('WrappedBuiltInValidators', () => {
     });
   });
 
+  describe('required — EC-03 whitespace-only', () => {
+    const validator = WrappedBuiltInValidators.required();
+
+    it('treats whitespace-only as empty (input boundary)', () => {
+      expect(validator(new FormControl('   '))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+    });
+
+    it('treats tabs and newlines as empty', () => {
+      expect(validator(new FormControl('\t'))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+      expect(validator(new FormControl('\n'))).toEqual({
+        required: { value: 'error.form.required' },
+      });
+    });
+
+    it('accepts real content surrounded by spaces', () => {
+      expect(validator(new FormControl(' a '))).toBeNull();
+    });
+
+    it('does not regress on non-string values (0 and false are not "empty")', () => {
+      expect(validator(new FormControl(0 as any))).toBeNull();
+      expect(validator(new FormControl(false as any))).toBeNull();
+    });
+
+    it('does not mutate the control value (pure validator)', () => {
+      const ctrl = new FormControl('   ');
+      validator(ctrl);
+      expect(ctrl.value).toBe('   ');
+    });
+  });
+
   describe('email', () => {
     const validator = WrappedBuiltInValidators.email();
 

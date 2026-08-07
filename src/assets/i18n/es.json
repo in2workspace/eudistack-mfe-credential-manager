@@ -387,6 +387,8 @@
     },
     "form":{
       "required": "Campo obligatorio.",
+      "date": "Formato de fecha no válido.",
+      "number": "Introduzca un valor numérico.",
       "min": "El mínimo es {{0}}",
       "max": "El màximo es {{0}}",
       "minLength": "Mínimo de caracteres: {{0}}",

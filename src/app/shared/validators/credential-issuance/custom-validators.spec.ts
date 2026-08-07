@@ -3,6 +3,7 @@ import {
   CustomValidators,
   CUSTOM_VALIDATORS_FACTORY_MAP,
 } from './custom-validators';
+import { BasicTypeValidators } from './basic-type-validators';
 
 describe('CustomValidators', () => {
   describe('isDomain', () => {
@@ -247,13 +248,23 @@ describe('CustomValidators', () => {
   });
 
   describe('CUSTOM_VALIDATORS_FACTORY_MAP', () => {
-    it('should map all keys to the corresponding static method', () => {
-      for (const key of Object.keys(CUSTOM_VALIDATORS_FACTORY_MAP) as Array<keyof typeof CUSTOM_VALIDATORS_FACTORY_MAP>) {
+    const BASIC_TYPE_KEYS = ['date', 'numeric'] as const;
+
+    it('should map CustomValidators keys to the corresponding static method', () => {
+      const customValidatorKeys = (Object.keys(CUSTOM_VALIDATORS_FACTORY_MAP) as Array<keyof typeof CUSTOM_VALIDATORS_FACTORY_MAP>)
+        .filter((key) => !BASIC_TYPE_KEYS.includes(key as any));
+
+      for (const key of customValidatorKeys) {
         expect(CUSTOM_VALIDATORS_FACTORY_MAP[key]).toBe(
           // @ts-ignore
           (CustomValidators as any)[key]
         );
       }
+    });
+
+    it('should map date and numeric keys to BasicTypeValidators (EUD-73, AD-2)', () => {
+      expect(CUSTOM_VALIDATORS_FACTORY_MAP.date).toBe(BasicTypeValidators.date);
+      expect(CUSTOM_VALIDATORS_FACTORY_MAP.numeric).toBe(BasicTypeValidators.numeric);
     });
   });
 });

@@ -54,6 +54,8 @@ export class DynamicFieldComponent {
     return path || this.fieldName$();
   });
 
+  public errorId$ = computed<string>(() => `${this.controlId$()}-error`);
+
   
   public childControl$ = computed<FormControl | null>(() => {
     if (!this.controlSchema$()) return null;
