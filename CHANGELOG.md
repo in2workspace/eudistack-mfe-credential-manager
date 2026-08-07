@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Tests.** `issuance-ui-policy.spec.ts` (tenant entry over default, explicit empty list as a real policy, declared-but-all-invalid as a broken document, lineage equality against prefixes and unversioned ids), `issuance-ui-policy.loader.spec.ts` (URL, retry recovery and exhaustion, per-attempt budget), `issuance-ui-policy.service.spec.ts` (memoisation, no re-fetch, every failure path landing on the same fail-closed outcome, never rejecting), plus new blocks in `credential-issuer-metadata.service.spec.ts` (narrowing per lineage, per format family, empty policy, intersection never a union, ids still resolvable) and `credential-issuance.service.spec.ts` (policy failure surfaces as EC-04).
   - **Not changed:** the catalogue screen and its hardcoded `credential-type-visibility.ts` — a separate concern tracked on its own.
 
+### Fixed
+
+- **`ServeErrorInterceptor` no longer opens an error dialog for a failed static asset.** Requests whose path matches `(^|/)assets/` are logged and rethrown, like the IAM endpoint already was. Every asset the app fetches — `theme.json`, the i18n bundles, `custom-domain.json`, and now `issuance-ui.json` — is read by code that owns a fallback for its absence, so the failure is already handled where it means something. Surfacing it globally put a bare "not found" in front of the user on **every page load**, including home and the post-login landing, while the screen behind it worked; an unpublished `issuance-ui.json` made that visible. API paths are unaffected: the match is on segment boundaries, so `/admin/v1/credential-assets` still raises the dialog.
+
 ### Removed
 
 - **`core/helpers/pinned-issuable-versions.ts` (hardcoded issuance version floor)**
