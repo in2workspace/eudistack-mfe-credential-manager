@@ -11,14 +11,17 @@ import { TenantService } from './tenant.service';
  * Holds the issuance UI policy of the resolved tenant: which credentials this UI offers a form
  * for, out of everything the issuer says the tenant may issue.
  *
- * `load()` runs once at bootstrap (`main.ts`, after `TenantService.resolve()`, which it needs
- * for the tenant), in parallel with the theme. That ordering is what guarantees the policy is
- * in place before any screen renders: the `APP_INITIALIZER` blocks the first paint, and the
- * issuer metadata it filters is fetched later still, from the issuance screen.
+ * `load()` is memoized and called from two places: `main.ts` starts it at bootstrap as a
+ * WARM-UP, without awaiting it (after `TenantService.resolve()`, which it needs for the
+ * tenant), and `CredentialIssuanceService` — the only screen that consumes it — awaits the
+ * same promise. So the normal case costs nothing, and a slow or unreachable document delays
+ * that one screen rather than the first paint: a tenant whose policy cannot be loaded still
+ * reaches its issued credentials immediately, since listing and reading them go through the
+ * metadata untouched by this.
  *
- * FAIL-CLOSED. An unusable document leaves the policy empty and raises `loadFailed()`: nothing
- * is offered, and the screen says why instead of showing a bare empty selector. The retries
- * live in the loader precisely because this outcome is expensive for the tenant.
+ * FAIL-CLOSED. An unusable document leaves the policy empty and raises `loadFailed()`: the
+ * issuance form offers nothing and says why, instead of showing a bare empty selector. The
+ * retries live in the loader precisely because that outcome is expensive for the tenant.
  *
  * The resolution of a page load is FINAL. There is no background retry that re-applies a late
  * answer once the bootstrap has settled: a type selector that changes under the user's pointer

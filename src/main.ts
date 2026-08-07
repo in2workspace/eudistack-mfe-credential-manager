@@ -30,9 +30,16 @@ function initializeApp(
     // The tenant is the prerequisite of everything tenant-scoped: the policy needs tenant()
     // to pick its entry, and the theme will need it too once branding moves per tenant.
     await tenantService.resolve();
-    // Siblings: the policy document is sub-KB and same-origin, so it rides along with the
-    // theme fetch instead of adding a round trip to the bootstrap.
-    await Promise.all([themeService.load(), issuanceUiPolicyService.load()]);
+
+    // Started here but NOT awaited: the request rides along with the theme fetch, so in the
+    // normal case the issuance screen finds it already resolved. Awaiting it would put a
+    // retrying, fail-closed fetch of a document only ONE screen needs in front of the first
+    // paint — a tenant whose policy is unreachable must still reach its issued credentials
+    // without delay. Whoever needs it awaits the same memoized promise (see
+    // CredentialIssuanceService), so nothing renders against a half-loaded policy.
+    void issuanceUiPolicyService.load();
+
+    await themeService.load();
   };
 }
 

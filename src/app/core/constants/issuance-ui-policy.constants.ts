@@ -36,14 +36,21 @@ export const ISSUANCE_UI_POLICY_RETRY_BACKOFF_MS = 300;
  * The policy applied when the document cannot be used: unreachable after retries, timed out,
  * malformed, or with nothing to say about this tenant.
  *
- * EMPTY, i.e. fail-closed — nothing is offered. It is paired with
- * `IssuanceUiPolicyService.loadFailed()`, so the screen can tell "this tenant issues nothing
- * from the UI" (an empty policy the document actually declares) from "the catalogue could not
- * be loaded" (this), and shows an error instead of a bare empty selector.
+ * EMPTY, i.e. fail-closed — the issuance form offers no credential type. The alternative,
+ * falling back to everything this build can render, would show a tenant a form for a
+ * credential its policy withholds, precisely when the platform is least able to notice.
  *
- * The alternative — falling back to everything this build can render — would let a tenant see
- * a form for a credential its policy withholds, precisely when the platform is least able to
- * notice. A blank screen with an explanation is the better failure.
+ * WHAT THIS DOES NOT DO. It never breaks the bootstrap and never blanks the application:
+ * `IssuanceUiPolicyService.load()` resolves whatever happens, and only the issuance form's
+ * type selector consults the policy. Listing and reading already-issued credentials go
+ * through `getConfigurationById()` / `getAllConfigurations()`, which read the metadata
+ * untouched by any of this — so a tenant whose policy failed to load still sees, opens and
+ * manages every credential it has issued. The only thing it cannot do is start a new one.
+ *
+ * Paired with `IssuanceUiPolicyService.loadFailed()`, so the selector can tell "this tenant
+ * issues nothing from the UI" (an empty policy the document actually declares) from "the
+ * catalogue could not be loaded" (this), and explains itself instead of rendering an
+ * unexplained empty control.
  */
 export const DEFAULT_ISSUANCE_UI_POLICY: IssuanceUiPolicy = Object.freeze({
   allowedCredentials: Object.freeze([]),

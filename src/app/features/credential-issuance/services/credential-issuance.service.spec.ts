@@ -88,7 +88,7 @@ describe('CredentialIssuanceService', () => {
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
         // The published per-tenant policy is fail-closed: an unusable document is a second
         // reason the selector can be empty for a cause the Operator cannot act on.
-        { provide: IssuanceUiPolicyService, useValue: { loadFailed: () => policyLoadFailed() } },
+        { provide: IssuanceUiPolicyService, useValue: { load: jest.fn(() => Promise.resolve()), loadFailed: () => policyLoadFailed() } },
         // Not related to AD-1 (that dependency was already removed from CredentialIssuanceService):
         // IssuanceRequestFactoryService, provided for real in this TestBed, injects ThemeService
         // on its own to resolve the payload's mandatee/mandator.

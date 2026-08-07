@@ -4,7 +4,7 @@ import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, EMPTY, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
@@ -202,7 +202,17 @@ export class CredentialIssuanceService {
   constructor() {
     // Load credential configurations once so format options are available,
     // and, since EUD-71, also the list of issuable types (AD-1).
-    this.metadataService.loadMetadata()
+    //
+    // Alongside them, the tenant's issuance UI policy — this is the screen that needs it, and
+    // the only one. `load()` is memoized, so this is normally already resolved by the
+    // warm-up main.ts starts at bootstrap; when it is not (a slow document, or a future host
+    // that does not run this app's bootstrap), the wait lands here instead of in front of
+    // every other screen. Both are started at once rather than chained: neither needs the
+    // other's result, and the selector reads them through signals that recompute on their own.
+    forkJoin([
+      defer(() => this.issuanceUiPolicy.load()),
+      this.metadataService.loadMetadata(),
+    ])
       .pipe(takeUntilDestroyed())
       .subscribe();
   }
