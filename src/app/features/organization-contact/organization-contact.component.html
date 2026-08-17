@@ -1,0 +1,40 @@
+<div class="organization-contact">
+  <h2>{{ 'organization-contact.title' | translate }}</h2>
+
+  <div *ngIf="loading()" class="loading-spinner">
+    {{ 'organization-contact.loading' | translate }}
+  </div>
+
+  <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" *ngIf="!loading()">
+    <div class="form-group">
+      <label for="email">{{ 'organization-contact.label.email' | translate }}</label>
+      <input
+        id="email"
+        type="email"
+        formControlName="email"
+        [class.invalid]="emailControl.invalid && emailControl.touched"
+        placeholder="{{ 'organization-contact.placeholder.email' | translate }}"
+      />
+      <div class="error-message" *ngIf="emailControl.invalid && emailControl.touched">
+        <span *ngIf="emailControl.hasError('required')">
+          {{ 'organization-contact.validation.email-required' | translate }}
+        </span>
+        <span *ngIf="emailControl.hasError('email')">
+          {{ 'organization-contact.validation.email-invalid' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="contactForm.invalid || loading()">
+      {{ 'organization-contact.button.save' | translate }}
+    </button>
+  </form>
+
+  <div class="success-message" *ngIf="successMessage()">
+    {{ successMessage() | translate }}
+  </div>
+
+  <div class="error-message" *ngIf="errorMessage()">
+    {{ errorMessage() | translate }}
+  </div>
+</div>
