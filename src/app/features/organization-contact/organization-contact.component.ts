@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { OrganizationContactService } from '../../core/services/organization-contact.service';
 
 /**
@@ -11,7 +12,7 @@ import { OrganizationContactService } from '../../core/services/organization-con
 @Component({
   selector: 'app-organization-contact',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule],
   templateUrl: './organization-contact.component.html',
   styleUrls: ['./organization-contact.component.scss']
 })

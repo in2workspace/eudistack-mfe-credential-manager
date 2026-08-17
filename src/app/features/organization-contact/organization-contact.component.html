@@ -31,10 +31,10 @@
   </form>
 
   <div class="success-message" *ngIf="successMessage()">
-    {{ successMessage() | translate }}
+    {{ successMessage()! | translate }}
   </div>
 
   <div class="error-message" *ngIf="errorMessage()">
-    {{ errorMessage() | translate }}
+    {{ errorMessage()! | translate }}
   </div>
 </div>
