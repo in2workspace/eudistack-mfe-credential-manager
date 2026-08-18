@@ -66,10 +66,7 @@ export class IssuanceUiPolicyService {
   private loadPromise: Promise<void> | null = null;
 
   load(): Promise<void> {
-    if (this.loadPromise === null) {
-      this.loadPromise = this.doLoad();
-    }
-
+    this.loadPromise ??= this.doLoad();
     return this.loadPromise;
   }
 
