@@ -14,4 +14,12 @@ export interface MeResponse {
   readOnly: boolean;
   tenant: string;
   tenantType: string;
+  /**
+   * Tenant-level feature flags (EUD-226). Optional because the field was
+   * added after the initial /me contract — must degrade gracefully for any
+   * backend build that predates it.
+   */
+  tenantFeatures?: {
+    organizationContactEnabled: boolean;
+  };
 }

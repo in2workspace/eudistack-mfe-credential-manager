@@ -34,6 +34,13 @@ describe('AppComponent', () => {
     canAccessSettings() {
       return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
     },
+    // Read by the embedded navbar to gate its "Organization Contact" entry (EUD-226).
+    canAccessOrganizationContact() {
+      return false;
+    },
+    canWriteOrganizationContact() {
+      return this.roleType() !== RoleType.SYSADMIN_READONLY;
+    },
   } as jest.Mocked<any>;
 
   let routerEventsSubject: Subject<any>;

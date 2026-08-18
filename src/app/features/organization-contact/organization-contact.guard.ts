@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { AuthService } from 'src/app/core/services/auth.service';
 
 /**
  * Guard that denies access to organization contact management if:
@@ -10,14 +11,10 @@ import { CanActivateFn, Router } from '@angular/router';
  */
 export const organizationContactGuard: CanActivateFn = () => {
   const router = inject(Router);
+  const authService = inject(AuthService);
 
-  // TODO: Inject TenantFeatureFlags service when available
-  // For now, assume feature is enabled
-  const featureEnabled = true;
-
-  // TODO: Inject AuthorizationService / UserCapabilities when available
-  // For now, assume user has write capability
-  const canWrite = true;
+  const featureEnabled = authService.canAccessOrganizationContact();
+  const canWrite = authService.canWriteOrganizationContact();
 
   // AC-04: Feature flag disabled → deny access
   if (!featureEnabled) {

@@ -72,15 +72,13 @@ export class NavbarComponent implements OnInit {
 
   /**
    * Gates the "Organization Contact" entry of the user menu (EUD-226).
-   * Visible if feature flag enabled + user has write capability.
-   *
-   * TODO: Integrate with TenantFeatureFlags + AuthorizationService when available.
+   * Visible if feature flag enabled + user has write capability (not Caso A).
+   * Mirrors `canSeeSettings` above: delegates to `AuthService` so the menu
+   * cannot offer a destination `organizationContactGuard` rejects.
    */
-  public readonly canSeeOrganizationContact = computed(() => {
-    // TODO: Replace with actual feature flag check + canWrite capability
-    // For now, return true for development
-    return true;
-  });
+  public readonly canSeeOrganizationContact = computed(() =>
+    this.authService.canAccessOrganizationContact() && this.authService.canWriteOrganizationContact()
+  );
 
   //currently not used
   public changeLanguage(languageCode: string): void {
