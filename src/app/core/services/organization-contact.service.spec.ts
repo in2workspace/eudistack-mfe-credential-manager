@@ -1,24 +1,32 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { environment } from 'src/environments/environment';
+import { API_PATH } from '../constants/api-paths.constants';
+import { TenantService } from './tenant.service';
 import { OrganizationContactService } from './organization-contact.service';
 import { OrganizationContact } from '../models/entity/organization-contact';
 
 /**
  * Unit tests for {@link OrganizationContactService}.
  *
- * @since EUD-226 (Task 25)
+ * @since EUD-226 (Task 25, rewritten to build the URL from
+ * `TenantService.serverUrl` — see the service's doc for why a relative URL
+ * would carry no Bearer token once the tenant feature flag is enabled)
  */
 describe('OrganizationContactService', () => {
   let service: OrganizationContactService;
   let httpMock: HttpTestingController;
 
   const ORG_ID = 'org-123';
-  const BASE_URL = '/api/v1/organizations';
+  const BASE_URL = `${environment.server_url}${API_PATH.ORGANIZATIONS}`;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [OrganizationContactService]
+      providers: [
+        OrganizationContactService,
+        { provide: TenantService, useValue: { serverUrl: environment.server_url } }
+      ]
     });
 
     service = TestBed.inject(OrganizationContactService);
