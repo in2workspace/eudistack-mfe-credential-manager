@@ -22,6 +22,13 @@ class MockAuthService {
    */
   sysAdminByToken = signal(false);
 
+  /**
+   * Backs the organization contact feature flag (EUD-226, `tenantFeatures.organizationContactEnabled`
+   * from `/me`). Signal-backed like `resolvedRole`, so tests can flip it after the component
+   * is created and observe the menu entry react.
+   */
+  organizationContactEnabled = signal(false);
+
   isSysAdmin() {
     return this.sysAdminByToken();
   }
@@ -30,6 +37,17 @@ class MockAuthService {
   // exercise the predicate the guard uses instead of a parallel one.
   canAccessSettings() {
     return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
+  }
+
+  // Mirrors AuthService.canAccessOrganizationContact() (EUD-226).
+  canAccessOrganizationContact() {
+    return this.organizationContactEnabled();
+  }
+
+  // Mirrors AuthService.canWriteOrganizationContact() (EUD-226): denied only for
+  // Caso A, the multi-org tenant admin (SYSADMIN_READONLY).
+  canWriteOrganizationContact() {
+    return this.roleType() !== RoleType.SYSADMIN_READONLY;
   }
 
   getMandator() {
@@ -214,29 +232,40 @@ describe('NavbarComponent', () => {
     expect(organizationElement.textContent).toContain(mockUserData.organization);
   });
 
-  describe('Organization Contact Menu Entry (EUD-226, Task 28)', () => {
+  describe('Organization Contact Menu Entry (EUD-226, Task 28, rewired Task 33)', () => {
     it('should show organization contact entry when feature enabled and user has write capability (AC-03, AC-04)', () => {
-      // Given: canSeeOrganizationContact returns true (current stub implementation)
+      // Given
+      (authService as unknown as MockAuthService).organizationContactEnabled.set(true);
+      authService.resolvedRole.set(RoleType.TENANT_ADMIN);
+
+      // When
       const canSee = component.canSeeOrganizationContact();
 
       // Then
       expect(canSee).toBe(true);
     });
 
-    // TODO: Following tests require integration with TenantFeatureFlags and AuthorizationService
-    // These will be enabled once those services are available
+    it('should hide organization contact entry when feature disabled (AC-04)', () => {
+      // Given
+      (authService as unknown as MockAuthService).organizationContactEnabled.set(false);
+      authService.resolvedRole.set(RoleType.TENANT_ADMIN);
 
-    xit('should hide organization contact entry when feature disabled (AC-04)', () => {
-      // TODO: Mock TenantFeatureFlags.isOrganizationContactEnabled() to return false
+      // When
       const canSee = component.canSeeOrganizationContact();
 
+      // Then
       expect(canSee).toBe(false);
     });
 
-    xit('should hide organization contact entry when user lacks write capability (Caso A, AC-03)', () => {
-      // TODO: Mock canWrite() to return false
+    it('should hide organization contact entry when user lacks write capability (Caso A, AC-03)', () => {
+      // Given: Caso A — multi-org tenant admin (SYSADMIN_READONLY, srs.md §3.1)
+      (authService as unknown as MockAuthService).organizationContactEnabled.set(true);
+      authService.resolvedRole.set(RoleType.SYSADMIN_READONLY);
+
+      // When
       const canSee = component.canSeeOrganizationContact();
 
+      // Then
       expect(canSee).toBe(false);
     });
   });

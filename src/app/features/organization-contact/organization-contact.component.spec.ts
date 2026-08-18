@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
 import { OrganizationContactComponent } from './organization-contact.component';
 import { OrganizationContactService } from '../../core/services/organization-contact.service';
@@ -8,21 +9,22 @@ import { OrganizationContact } from '../../core/models/entity/organization-conta
 /**
  * Component tests for {@link OrganizationContactComponent}.
  *
- * @since EUD-226 (Task 26)
+ * @since EUD-226 (Task 26, rewritten Task 33 with Jest idiom — was Jasmine
+ * syntax under the Jest runner, TS2694, both suites failed to compile)
  */
 describe('OrganizationContactComponent', () => {
   let component: OrganizationContactComponent;
   let fixture: ComponentFixture<OrganizationContactComponent>;
-  let mockContactService: jasmine.SpyObj<OrganizationContactService>;
+  let mockContactService: jest.Mocked<Pick<OrganizationContactService, 'fetchContact' | 'updateContact'>>;
 
   beforeEach(async () => {
-    mockContactService = jasmine.createSpyObj('OrganizationContactService', [
-      'fetchContact',
-      'updateContact'
-    ]);
+    mockContactService = {
+      fetchContact: jest.fn(),
+      updateContact: jest.fn()
+    };
 
     await TestBed.configureTestingModule({
-      imports: [OrganizationContactComponent, ReactiveFormsModule],
+      imports: [OrganizationContactComponent, ReactiveFormsModule, TranslateModule.forRoot()],
       providers: [
         { provide: OrganizationContactService, useValue: mockContactService }
       ]
@@ -36,7 +38,7 @@ describe('OrganizationContactComponent', () => {
     it('should render email when contact exists (AC-01)', () => {
       // Given
       const contact: OrganizationContact = { email: 'existing@example.com' };
-      mockContactService.fetchContact.and.returnValue(of(contact));
+      mockContactService.fetchContact.mockReturnValue(of(contact));
 
       // When
       fixture.detectChanges(); // triggers ngOnInit
@@ -49,7 +51,7 @@ describe('OrganizationContactComponent', () => {
     it('should render empty field when no contact exists (EC-01)', () => {
       // Given
       const contact: OrganizationContact = { email: null };
-      mockContactService.fetchContact.and.returnValue(of(contact));
+      mockContactService.fetchContact.mockReturnValue(of(contact));
 
       // When
       fixture.detectChanges();
@@ -61,7 +63,7 @@ describe('OrganizationContactComponent', () => {
 
     it('should show error message when load fails (ES-04)', () => {
       // Given
-      mockContactService.fetchContact.and.returnValue(
+      mockContactService.fetchContact.mockReturnValue(
         throwError(() => new Error('Server error'))
       );
 
@@ -76,7 +78,7 @@ describe('OrganizationContactComponent', () => {
 
   describe('onSubmit', () => {
     beforeEach(() => {
-      mockContactService.fetchContact.and.returnValue(of({ email: null }));
+      mockContactService.fetchContact.mockReturnValue(of({ email: null }));
       fixture.detectChanges();
     });
 
@@ -109,7 +111,7 @@ describe('OrganizationContactComponent', () => {
       // Given
       const validEmail = 'valid@example.com';
       component.contactForm.patchValue({ email: validEmail });
-      mockContactService.updateContact.and.returnValue(of(undefined));
+      mockContactService.updateContact.mockReturnValue(of(undefined));
 
       // When
       component.onSubmit();
@@ -126,7 +128,7 @@ describe('OrganizationContactComponent', () => {
     it('should show error message when update fails (ES-05)', () => {
       // Given
       component.contactForm.patchValue({ email: 'test@example.com' });
-      mockContactService.updateContact.and.returnValue(
+      mockContactService.updateContact.mockReturnValue(
         throwError(() => new Error('Server error'))
       );
 
