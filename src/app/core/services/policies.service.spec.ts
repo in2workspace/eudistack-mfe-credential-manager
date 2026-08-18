@@ -16,6 +16,8 @@ describe('PoliciesService', () => {
   let translateMock: jest.Mocked<TranslateService>;
   let resolveRole$: jest.Mock;
   let canAccessSettings: jest.Mock;
+  let canAccessOrganizationContact: jest.Mock;
+  let canWriteOrganizationContact: jest.Mock;
 
   /**
    * Drives both halves of the settings gate at once: `resolveRole$()` is what the policy
@@ -28,14 +30,33 @@ describe('PoliciesService', () => {
     canAccessSettings.mockReturnValue(allowed);
   };
 
+  /**
+   * Same idea for `/organization-contact` (EUD-226): drives the role resolution
+   * `checkOrganizationContactPolicy` awaits together with the two predicates it
+   * then evaluates (feature flag + write capability).
+   */
+  const givenOrganizationContactAccess = (
+    role: RoleType,
+    featureEnabled: boolean,
+    canWrite: boolean
+  ) => {
+    resolveRole$.mockReturnValue(of(role));
+    canAccessOrganizationContact.mockReturnValue(featureEnabled);
+    canWriteOrganizationContact.mockReturnValue(canWrite);
+  };
+
   beforeEach(() => {
     resolveRole$ = jest.fn().mockReturnValue(of(RoleType.LEAR));
     canAccessSettings = jest.fn().mockReturnValue(false);
+    canAccessOrganizationContact = jest.fn().mockReturnValue(false);
+    canWriteOrganizationContact = jest.fn().mockReturnValue(false);
 
     authServiceMock = {
       hasPower: jest.fn(),
       isSysAdmin: jest.fn().mockReturnValue(false),
       canAccessSettings,
+      canAccessOrganizationContact,
+      canWriteOrganizationContact,
       logout: jest.fn().mockReturnValue(of(null)),
       resolveRole$,
       authCheckComplete$: of(true)
@@ -303,6 +324,100 @@ describe('PoliciesService', () => {
           expect(result).toBe(true);
           expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
           expect(routerMock.navigate).not.toHaveBeenCalled();
+          done();
+        },
+        error: done
+      });
+    });
+  });
+
+  /**
+   * Organization contact (EUD-226) is gated on two predicates: the tenant
+   * feature flag (AC-04) and write capability / Caso A (AC-03, EC-04). Both
+   * must only be consulted after `resolveRole$()` resolves — see
+   * `organization-contact.guard.ts` for the race this replaced.
+   */
+  describe('checkOrganizationContactPolicy', () => {
+    it('should return true when feature enabled and user has write capability (Caso B/C)', (done) => {
+      givenOrganizationContactAccess(RoleType.TENANT_ADMIN, true, true);
+
+      service.checkOrganizationContactPolicy().subscribe({
+        next: (result) => {
+          expect(result).toBe(true);
+          expect(resolveRole$).toHaveBeenCalledTimes(1);
+          expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
+          expect(routerMock.navigate).not.toHaveBeenCalled();
+          done();
+        },
+        error: done
+      });
+    });
+
+    // A synchronous read of canAccessOrganizationContact()/canWriteOrganizationContact()
+    // before the backend answers would deny every caller who navigates first.
+    it('should not evaluate the predicates before the role resolves', (done) => {
+      const role$ = new Subject<RoleType>();
+      resolveRole$.mockReturnValue(role$.asObservable());
+      canAccessOrganizationContact.mockReturnValue(true);
+      canWriteOrganizationContact.mockReturnValue(true);
+
+      service.checkOrganizationContactPolicy().subscribe({
+        next: (result) => {
+          expect(result).toBe(true);
+          done();
+        },
+        error: done
+      });
+
+      expect(canAccessOrganizationContact).not.toHaveBeenCalled();
+      expect(canWriteOrganizationContact).not.toHaveBeenCalled();
+
+      role$.next(RoleType.TENANT_ADMIN);
+    });
+
+    it('should show an error dialog, redirect to /home and return false when the feature is disabled (AC-04)', (done) => {
+      givenOrganizationContactAccess(RoleType.LEAR, false, true);
+
+      service.checkOrganizationContactPolicy().subscribe({
+        next: (result) => {
+          expect(dialogMock.openErrorInfoDialog).toHaveBeenCalledWith(
+            expect.anything(),
+            'error.policy.message',
+            'error.policy.title'
+          );
+          expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
+          expect(canWriteOrganizationContact).not.toHaveBeenCalled();
+          expect(result).toBe(false);
+          done();
+        },
+        error: done
+      });
+    });
+
+    it('should show an error dialog, redirect to /home and return false when the user lacks write capability (Caso A, AC-03/EC-04)', (done) => {
+      givenOrganizationContactAccess(RoleType.SYSADMIN_READONLY, true, false);
+
+      service.checkOrganizationContactPolicy().subscribe({
+        next: (result) => {
+          expect(dialogMock.openErrorInfoDialog).toHaveBeenCalledWith(
+            expect.anything(),
+            'error.policy.message',
+            'error.policy.title'
+          );
+          expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
+          expect(result).toBe(false);
+          done();
+        },
+        error: done
+      });
+    });
+
+    it('should not log the user out when denying organization-contact access', (done) => {
+      givenOrganizationContactAccess(RoleType.LEAR, false, true);
+
+      service.checkOrganizationContactPolicy().subscribe({
+        next: () => {
+          expect(authServiceMock.logout).not.toHaveBeenCalled();
           done();
         },
         error: done
