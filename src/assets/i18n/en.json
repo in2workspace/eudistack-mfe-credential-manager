@@ -367,6 +367,7 @@
     "credential_submission": "Error occurred while submitting credential.",
     "one_power_min": "There must be at least one power selected, and each power must have at least one action selected.",
     "unknown_error": "An unknown error occurred. Please try again.",
+    "issuance_catalog_unavailable": "Your organization's issuable credential configuration could not be loaded, so issuing new credentials is unavailable. Credentials already issued are not affected: you can still view and manage them. Reload the page to try again; if the problem persists, contact support.",
     "policy": {
       "title": "Access Denied",
       "message": "You do not have the required power to access."

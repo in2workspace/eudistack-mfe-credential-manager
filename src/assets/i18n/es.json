@@ -367,6 +367,7 @@
     "credential_submission": "Ha ocurrido un error al crear la credencial.",
     "one_power_min":"Se requiere por lo menos un poder, y cada power requiere por los menos una acción.",
     "unknown_error": "Se produjo un error desconocido. Por favor, inténtalo de nuevo.",
+    "issuance_catalog_unavailable": "No se ha podido cargar la configuración de credenciales emitibles de tu organización, así que la emisión de nuevas credenciales no está disponible. Las credenciales ya emitidas no se ven afectadas: puedes seguir consultándolas y gestionándolas. Vuelve a cargar la página para reintentarlo; si el problema persiste, contacta con el equipo de soporte.",
     "policy": {
         "title": "Acceso Denegado",
         "message": "No tienes los poderes necesarios para acceder."

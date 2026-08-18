@@ -6,13 +6,17 @@ import {
   ISSUANCE_UI_POLICY_RETRY_COUNT,
   ISSUANCE_UI_POLICY_URL,
 } from '../constants/issuance-ui-policy.constants';
+import { TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { IssuanceUiPolicyService } from './issuance-ui-policy.service';
 import { TenantService } from './tenant.service';
+import { ToastService } from './toast.service';
 
 describe('IssuanceUiPolicyService', () => {
   let service: IssuanceUiPolicyService;
   let httpMock: HttpTestingController;
   let tenant: string;
+  let toast: { warning: jest.Mock };
 
   const publishedDocument = {
     default: { allowedCredentials: ['learcredential.employee.w3c', 'learcredential.machine.w3c'] },
@@ -43,20 +47,29 @@ describe('IssuanceUiPolicyService', () => {
     }
   };
 
-  beforeEach(() => {
-    tenant = 'kpmg';
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
-
+  /** The notice is scoped to the session, so it must not leak between tests. */
+  const configure = () => {
     TestBed.configureTestingModule({
       providers: [
         IssuanceUiPolicyService,
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TenantService, useValue: { tenant: () => tenant } },
+        { provide: ToastService, useValue: toast },
+        { provide: TranslateService, useValue: { get: (key: string) => of(`translated:${key}`) } },
       ],
     });
     service = TestBed.inject(IssuanceUiPolicyService);
     httpMock = TestBed.inject(HttpTestingController);
+  };
+
+  beforeEach(() => {
+    tenant = 'kpmg';
+    sessionStorage.clear();
+    toast = { warning: jest.fn() };
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    configure();
   });
 
   afterEach(() => {
@@ -120,7 +133,7 @@ describe('IssuanceUiPolicyService', () => {
 
     await service.load();
 
-    httpMock.verify(); // a second request would fail here
+    expect(httpMock.match(ISSUANCE_UI_POLICY_URL)).toHaveLength(0);
   });
 
   it('recovers from a transient failure without flagging one', async () => {
@@ -158,6 +171,42 @@ describe('IssuanceUiPolicyService', () => {
 
       expect(service.policy()).toEqual(DEFAULT_ISSUANCE_UI_POLICY);
       expect(service.loadFailed()).toBe(true);
+    });
+
+    // The operator did not cause this and cannot fix it, so it earns one clear explanation —
+    // not a generic error, and not one per page load.
+    it('explains the consequence once', async () => {
+      const loaded = service.load();
+      await failEveryAttempt();
+      await loaded;
+
+      expect(toast.warning).toHaveBeenCalledTimes(1);
+      expect(toast.warning).toHaveBeenCalledWith('translated:error.issuance_catalog_unavailable');
+    });
+
+    // Logging in is a full page reload, which is exactly where the repetition was visible.
+    it('does not repeat the notice on a later page load of the same session', async () => {
+      const loaded = service.load();
+      await failEveryAttempt();
+      await loaded;
+      toast.warning.mockClear();
+
+      TestBed.resetTestingModule();
+      configure();
+      const reloaded = service.load();
+      await failEveryAttempt();
+      await reloaded;
+
+      expect(service.loadFailed()).toBe(true);
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+
+    it('does not announce anything when the policy loads', async () => {
+      const loaded = service.load();
+      (await nextAttempt()).flush(publishedDocument);
+      await loaded;
+
+      expect(toast.warning).not.toHaveBeenCalled();
     });
 
     it('never rejects, so the bootstrap cannot break on it', async () => {
