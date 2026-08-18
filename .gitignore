@@ -43,3 +43,6 @@ testem.log
 Thumbs.db
 .qodo
 node_modules
+
+# Claude Code agent memory (local, not project source)
+.claude/agent-memory/

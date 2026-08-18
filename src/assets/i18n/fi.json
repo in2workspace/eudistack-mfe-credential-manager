@@ -1,0 +1,38 @@
+{
+  "next": "Seuraava",
+  "back": "Takaisin",
+  "copy": "Kopioi",
+  "verifiable-credential": "Varmennettu Tunniste",
+  "digital-wallet": "Digitaalinen Lompakko",
+  "navbar": {
+    "menu": {
+      "logout": "Kirjaudu Ulos",
+      "settings": "Asetukset",
+      "organization-contact": "Hallinnoi Yhteystietoja"
+    }
+  },
+  "organization-contact": {
+    "title": "Hallinnoi Organisaation Yhteystietoja",
+    "label": {
+      "email": "Yhteyshenkilön Sähköposti"
+    },
+    "placeholder": {
+      "email": "esimerkki@yritys.fi"
+    },
+    "button": {
+      "save": "Tallenna"
+    },
+    "loading": "Ladataan...",
+    "success": {
+      "update": "Yhteyshenkilön sähköposti päivitetty onnistuneesti"
+    },
+    "error": {
+      "load-failed": "Yhteyshenkilön sähköpostin lataaminen epäonnistui. Yritä uudelleen.",
+      "update-failed": "Yhteyshenkilön sähköpostin päivittäminen epäonnistui. Yritä uudelleen."
+    },
+    "validation": {
+      "email-required": "Sähköposti vaaditaan",
+      "email-invalid": "Virheellinen sähköpostimuoto"
+    }
+  }
+}

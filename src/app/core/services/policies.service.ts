@@ -110,4 +110,35 @@ export class PoliciesService {
       })
     );
   }
+
+  /**
+   * Gates `/organization-contact` (EUD-226, AC-03/AC-04).
+   *
+   * Same shape as {@link checkSettingsPolicy}: waits for the initial
+   * authentication check, then for the backend's own verdict on the role and
+   * tenant feature flags (`resolveRole$()`, not a synchronous read — see that
+   * method's doc for why a guard reading `roleType()`/`organizationContactEnabled()`
+   * before `GET /api/v1/me` answers would deny every caller who navigates
+   * first), and only then applies `canAccessOrganizationContact()` /
+   * `canWriteOrganizationContact()` — the same predicates the navbar entry
+   * uses, so the menu can never disagree with this guard.
+   */
+  public checkOrganizationContactPolicy(): Observable<boolean> {
+    return this.waitForAuthCheck().pipe(
+      switchMap(() => this.authService.resolveRole$()),
+      switchMap(() => {
+        if (!this.authService.canAccessOrganizationContact()) {
+          console.warn('Organization contact feature is disabled for this tenant.');
+          return this.denyAndRedirect('/home', false);
+        }
+
+        if (!this.authService.canWriteOrganizationContact()) {
+          console.warn('User lacks write capability for organization contact.');
+          return this.denyAndRedirect('/home', false);
+        }
+
+        return of(true);
+      })
+    );
+  }
 }

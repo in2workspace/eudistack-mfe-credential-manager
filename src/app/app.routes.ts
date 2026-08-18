@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 import { tenantGuard } from './core/guards/tenant.guard';
+import { organizationContactGuard } from './features/organization-contact/organization-contact.guard';
 import { TenantNotFoundComponent } from './features/tenant-not-found/tenant-not-found.component';
 
 export const routes: Routes = [
@@ -53,6 +54,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/credential-offer/credential-offer-refresh/credential-offer-refresh.component').then(
         (m) => m.CredentialOfferRefreshComponent
+      )
+  },
+  {
+    path: 'organization-contact',
+    canActivate: [tenantGuard, organizationContactGuard],
+    loadComponent: () =>
+      import('./features/organization-contact/organization-contact.component').then(
+        (m) => m.OrganizationContactComponent
       )
   },
   { path: '**', redirectTo: 'home' }

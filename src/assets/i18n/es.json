@@ -23,8 +23,33 @@
   "navbar": {
       "menu": {
         "logout": "Cerrar sesión",
-        "settings": "Configuración"
+        "settings": "Configuración",
+        "organization-contact": "Gestionar contacto"
       }
+  },
+  "organization-contact": {
+    "title": "Gestionar contacto de la organización",
+    "label": {
+      "email": "Email de contacto"
+    },
+    "placeholder": {
+      "email": "ejemplo@empresa.com"
+    },
+    "button": {
+      "save": "Guardar"
+    },
+    "loading": "Cargando...",
+    "success": {
+      "update": "Email de contacto actualizado correctamente"
+    },
+    "error": {
+      "load-failed": "No se pudo cargar el email de contacto. Inténtelo de nuevo.",
+      "update-failed": "No se pudo actualizar el email de contacto. Inténtelo de nuevo."
+    },
+    "validation": {
+      "email-required": "El email es obligatorio",
+      "email-invalid": "Formato de email inválido"
+    }
   },
   "sidenav": {
     "settings": "Configuración",

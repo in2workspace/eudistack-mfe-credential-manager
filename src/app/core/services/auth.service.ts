@@ -64,6 +64,14 @@ export class AuthService{
   public readonly organizationIdentifier: WritableSignal<string> = signal('');
 
   /**
+   * Tenant feature flags from `GET /api/v1/me` (`tenantFeatures`, EUD-226).
+   * `false` until `/me` answers — same fail-closed default as the rest of
+   * the `/me`-derived state, so a guard evaluated before the round trip
+   * denies rather than leaks a not-yet-enabled feature.
+   */
+  public readonly organizationContactEnabled: WritableSignal<boolean> = signal(false);
+
+  /**
    * Created here rather than inside `resolveRole$()`: `toObservable` needs an
    * injection context, and field initializers run inside one. Same pattern as
    * `CredentialIssuanceService`.
@@ -274,6 +282,7 @@ export class AuthService{
         this.tenantType.set(me.tenantType);
         this.isSysAdminRole.set(me.role === 'SYSADMIN');
         this.organizationIdentifier.set(me.organizationIdentifier);
+        this.organizationContactEnabled.set(me.tenantFeatures?.organizationContactEnabled ?? false);
         // Set last: resolving the role is what wakes up resolveRole$() subscribers,
         // and they must not observe a half-populated session.
         this.resolvedRole.set(this.mapRoleToFrontend(me));
@@ -284,6 +293,7 @@ export class AuthService{
         this.resolvedRole.set(RoleType.LEAR);
         this.isSysAdminRole.set(false);
         this.organizationIdentifier.set('');
+        this.organizationContactEnabled.set(false);
       }
     });
   }
@@ -398,6 +408,7 @@ export class AuthService{
     this.roleFetchInFlight = false;
     this.isSysAdminRole.set(false);
     this.organizationIdentifier.set('');
+    this.organizationContactEnabled.set(false);
   }
 
   public authorize(){
@@ -531,6 +542,28 @@ export class AuthService{
   public hasAdminOrganizationIdentifier(): boolean {
     const role = this.roleType();
     return role === RoleType.TENANT_ADMIN || role === RoleType.SYSADMIN_READONLY;
+  }
+
+  /**
+   * Gates the organization contact feature for the current tenant (EUD-226,
+   * AC-04). Sourced from `GET /api/v1/me` `tenantFeatures.organizationContactEnabled`.
+   * `false` until `/me` answers, matching the fail-closed default of
+   * `organizationContactEnabled`.
+   */
+  public canAccessOrganizationContact(): boolean {
+    return this.organizationContactEnabled();
+  }
+
+  /**
+   * Write capability for organization contact management (EUD-226, AC-03,
+   * EC-04): denied only for Caso A, the multi-org tenant admin
+   * (`SYSADMIN_READONLY`, read-only per srs.md §3.1). Same predicate already
+   * used for `canWrite` in `CredentialCatalogComponent` and
+   * `CredentialManagementComponent` — kept consistent rather than
+   * reintroducing a parallel Caso A check.
+   */
+  public canWriteOrganizationContact(): boolean {
+    return this.roleType() !== RoleType.SYSADMIN_READONLY;
   }
 
   public getMandator(): Observable<EmployeeMandator | null> {
