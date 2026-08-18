@@ -22,6 +22,12 @@
                   <span>{{ "navbar.menu.settings" | translate }}</span>
                 </button>
               }
+              @if(canSeeOrganizationContact()){
+                <button mat-menu-item [routerLink]="'/organization-contact'">
+                  <mat-icon>contact_mail</mat-icon>
+                  <span>{{ "navbar.menu.organization-contact" | translate }}</span>
+                </button>
+              }
               <button id="logout-link" (click)="logout()" mat-menu-item >
                 <mat-icon>exit_to_app</mat-icon>
                 <span>{{ "navbar.menu.logout" | translate }}</span>

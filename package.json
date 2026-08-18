@@ -1,6 +1,6 @@
 {
   "name": "eudistack-mfe-credential-manager",
-  "version": "3.5.32",
+  "version": "3.6.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -25,7 +25,7 @@
     "@angular/platform-browser-dynamic": "^19.2.19",
     "@angular/router": "^19.2.19",
     "@ngx-translate/core": "^16.0.3",
-    "@ngx-translate/http-loader": "^8.0.0",
+    "@ngx-translate/http-loader": "^16.0.1",
     "angular-auth-oidc-client": "^17.0.0",
     "angularx-qrcode": "^19.0.0",
     "rxjs": "^7.8.1",

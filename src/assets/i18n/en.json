@@ -23,7 +23,32 @@
   "navbar": {
     "menu": {
       "logout": "Logout",
-      "settings": "Settings"
+      "settings": "Settings",
+      "organization-contact": "Manage Contact"
+    }
+  },
+  "organization-contact": {
+    "title": "Manage Organization Contact",
+    "label": {
+      "email": "Contact Email"
+    },
+    "placeholder": {
+      "email": "example@company.com"
+    },
+    "button": {
+      "save": "Save"
+    },
+    "loading": "Loading...",
+    "success": {
+      "update": "Contact email updated successfully"
+    },
+    "error": {
+      "load-failed": "Failed to load contact email. Please try again.",
+      "update-failed": "Failed to update contact email. Please try again."
+    },
+    "validation": {
+      "email-required": "Email is required",
+      "email-invalid": "Invalid email format"
     }
   },
   "sidenav": {
