@@ -5,6 +5,9 @@ import { of, throwError } from 'rxjs';
 import { OrganizationContactComponent } from './organization-contact.component';
 import { OrganizationContactService } from '../../core/services/organization-contact.service';
 import { OrganizationContact } from '../../core/models/entity/organization-contact';
+import { AuthService } from '../../core/services/auth.service';
+
+const ORG_ID = 'org-123';
 
 /**
  * Component tests for {@link OrganizationContactComponent}.
@@ -16,17 +19,22 @@ describe('OrganizationContactComponent', () => {
   let component: OrganizationContactComponent;
   let fixture: ComponentFixture<OrganizationContactComponent>;
   let mockContactService: jest.Mocked<Pick<OrganizationContactService, 'fetchContact' | 'updateContact'>>;
+  let mockAuthService: { organizationIdentifier: jest.Mock };
 
   beforeEach(async () => {
     mockContactService = {
       fetchContact: jest.fn(),
       updateContact: jest.fn()
     };
+    mockAuthService = {
+      organizationIdentifier: jest.fn().mockReturnValue(ORG_ID)
+    };
 
     await TestBed.configureTestingModule({
       imports: [OrganizationContactComponent, ReactiveFormsModule, TranslateModule.forRoot()],
       providers: [
-        { provide: OrganizationContactService, useValue: mockContactService }
+        { provide: OrganizationContactService, useValue: mockContactService },
+        { provide: AuthService, useValue: mockAuthService }
       ]
     }).compileComponents();
 
@@ -44,6 +52,7 @@ describe('OrganizationContactComponent', () => {
       fixture.detectChanges(); // triggers ngOnInit
 
       // Then
+      expect(mockContactService.fetchContact).toHaveBeenCalledWith(ORG_ID);
       expect(component.contactForm.value.email).toBe('existing@example.com');
       expect(component.loading()).toBe(false);
     });
@@ -118,7 +127,7 @@ describe('OrganizationContactComponent', () => {
 
       // Then
       expect(mockContactService.updateContact).toHaveBeenCalledWith(
-        component['orgId'],
+        ORG_ID,
         validEmail
       );
       expect(component.successMessage()).toBe('organization-contact.success.update');

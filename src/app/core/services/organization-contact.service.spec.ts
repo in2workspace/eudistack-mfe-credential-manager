@@ -45,13 +45,20 @@ describe('OrganizationContactService', () => {
       req.flush(mockContact);
     });
 
-    it('should handle 5xx server error (ES-04)', () => {
+    it('should handle 5xx server error (ES-04)', (done) => {
       // When
       service.fetchContact(ORG_ID).subscribe({
-        next: () => fail('should have failed'),
+        next: () => done(new Error('should have failed')),
         error: (error) => {
-          // Then
-          expect(error.status).toBe(500);
+          // Then: an assertion thrown from inside an RxJS error handler never
+          // reaches Jest on its own (it is swallowed by the subscriber, not
+          // rethrown to the test body) — done(e) is what makes it fail loudly.
+          try {
+            expect(error.status).toBe(500);
+            done();
+          } catch (e) {
+            done(e as Error);
+          }
         }
       });
 
@@ -59,13 +66,21 @@ describe('OrganizationContactService', () => {
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
 
-    it('should handle timeout (ES-05)', () => {
+    it('should handle timeout / network failure (ES-05)', (done) => {
       // When
       service.fetchContact(ORG_ID).subscribe({
-        next: () => fail('should have failed'),
+        next: () => done(new Error('should have failed')),
         error: (error) => {
-          // Then
-          expect(error.name).toBe('TimeoutError');
+          // Then: Angular's HttpClient has no built-in timeout — a connection-level
+          // failure (timeout, DNS, offline) always surfaces as an HttpErrorResponse
+          // with status 0, never as a native TimeoutError.
+          try {
+            expect(error.name).toBe('HttpErrorResponse');
+            expect(error.status).toBe(0);
+            done();
+          } catch (e) {
+            done(e as Error);
+          }
         }
       });
 
@@ -91,13 +106,18 @@ describe('OrganizationContactService', () => {
       req.flush(null);
     });
 
-    it('should handle 5xx server error (ES-04)', () => {
+    it('should handle 5xx server error (ES-04)', (done) => {
       // When
       service.updateContact(ORG_ID, VALID_EMAIL).subscribe({
-        next: () => fail('should have failed'),
+        next: () => done(new Error('should have failed')),
         error: (error) => {
           // Then
-          expect(error.status).toBe(503);
+          try {
+            expect(error.status).toBe(503);
+            done();
+          } catch (e) {
+            done(e as Error);
+          }
         }
       });
 
@@ -105,13 +125,20 @@ describe('OrganizationContactService', () => {
       req.flush('Service unavailable', { status: 503, statusText: 'Service Unavailable' });
     });
 
-    it('should handle timeout (ES-05)', () => {
+    it('should handle timeout / network failure (ES-05)', (done) => {
       // When
       service.updateContact(ORG_ID, VALID_EMAIL).subscribe({
-        next: () => fail('should have failed'),
+        next: () => done(new Error('should have failed')),
         error: (error) => {
-          // Then
-          expect(error.name).toBe('TimeoutError');
+          // Then: same as fetchContact — no client-side timeout() operator, so
+          // this surfaces as a status-0 HttpErrorResponse, not a TimeoutError.
+          try {
+            expect(error.name).toBe('HttpErrorResponse');
+            expect(error.status).toBe(0);
+            done();
+          } catch (e) {
+            done(e as Error);
+          }
         }
       });
 
