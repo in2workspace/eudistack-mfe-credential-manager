@@ -84,11 +84,13 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   describe('credential type selector empty state (EC-01 / EC-04)', () => {
-    const emptyState = () => fixture.nativeElement.querySelector('[role="status"]');
+    // The loading branch uses <output>, whose implicit role is already "status", so the live
+    // region is matched by the element itself rather than by an explicit role attribute.
+    const liveRegion = () => fixture.nativeElement.querySelector('[role="status"], output');
 
     it('should render the selector when there are issuable types', () => {
       expect(fixture.nativeElement.querySelector('mat-select')).toBeTruthy();
-      expect(emptyState()).toBeNull();
+      expect(liveRegion()).toBeNull();
     });
 
     it('should hide the selector and announce the empty state when no type is enabled (EC-01)', () => {
@@ -98,7 +100,7 @@ describe('CredentialIssuanceComponent', () => {
       expect(fixture.nativeElement.querySelector('mat-select')).toBeNull();
       expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
 
-      const message = emptyState();
+      const message = liveRegion();
       expect(message).toBeTruthy();
       expect(message.getAttribute('aria-live')).toBe('polite');
       expect(message.textContent).toContain('credentialIssuance.emptySelector.noTypes');
@@ -109,7 +111,7 @@ describe('CredentialIssuanceComponent', () => {
       (mockService.isCatalogUnavailable$ as WritableSignal<boolean>).set(true);
       fixture.detectChanges();
 
-      const message = emptyState();
+      const message = liveRegion();
       expect(message.textContent).toContain('credentialIssuance.emptySelector.catalogUnavailable');
       // fail-closed: no fallback option is offered
       expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
@@ -126,7 +128,7 @@ describe('CredentialIssuanceComponent', () => {
       expect(fixture.nativeElement.querySelector('mat-spinner')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('mat-select')).toBeNull();
 
-      const message = emptyState();
+      const message = liveRegion();
       expect(message.getAttribute('aria-live')).toBe('polite');
       expect(message.textContent).toContain('credentialIssuance.loadingCatalog');
       expect(message.textContent).not.toContain('credentialIssuance.emptySelector');
