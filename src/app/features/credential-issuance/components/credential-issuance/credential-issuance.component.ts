@@ -3,6 +3,7 @@ import { MatButton } from '@angular/material/button';
 import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -23,7 +24,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
 @Component({
     selector: 'app-credential-issuance',
     providers: [CredentialIssuanceService],
-    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
@@ -32,6 +33,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   //CREDENTIAL TYPE SELECTOR
   public readonly credentialTypesArr$: Signal<IssuanceCredentialType[]>;
   public readonly isCatalogUnavailable$: Signal<boolean>;
+  public readonly isLoadingCatalog$: Signal<boolean>;
   public selectedCredentialType$: WritableSignal<IssuanceCredentialType | undefined>;
 
   // FORMAT SELECTOR
@@ -73,6 +75,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.hasSubmitted$ = this.issuanceService.hasSubmitted$;
     this.credentialTypesArr$ = this.issuanceService.credentialTypesArr$;
     this.isCatalogUnavailable$ = this.issuanceService.isCatalogUnavailable$;
+    this.isLoadingCatalog$ = this.issuanceService.isLoadingCatalog$;
     this.selectedCredentialType$ = this.issuanceService.selectedCredentialType$;
     this.availableFormats$ = this.issuanceService.availableFormats$;
     this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;

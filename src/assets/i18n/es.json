@@ -339,6 +339,7 @@
     "mandatee": "persona mandatada",
     "mandator": "mandante",
     "select-type": "Selecciona el tipo de credencial",
+    "loadingCatalog": "Cargando los formularios de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No se han encontrado formularios de credencial habilitados para tu organización. Contacta con el administrador de tu tenant para solicitar el alta de un formulario.",
       "catalogUnavailable": "El catálogo de formularios no está disponible en este momento. Vuelve a cargar la página para reintentarlo."

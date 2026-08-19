@@ -339,6 +339,7 @@
     "mandatee": "mandatee",
     "mandator": "mandator",
     "select-type": "Select credential type",
+    "loadingCatalog": "Loading the available credential forms...",
     "emptySelector": {
       "noTypes": "There are no credential forms enabled for your organization. Contact your tenant administrator to request one.",
       "catalogUnavailable": "The form catalogue is currently unavailable. Reload the page to try again."

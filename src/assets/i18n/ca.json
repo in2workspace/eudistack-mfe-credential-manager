@@ -314,6 +314,7 @@
     "mandatee": "persona delegada",
     "mandator": "mandant",
     "select-type": "Selecciona el tipus de credencial",
+    "loadingCatalog": "S'estan carregant els formularis de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No hi ha cap formulari de credencial habilitat per a la teva organització. Contacta amb l'administrador del teu tenant per sol·licitar-ne l'alta.",
       "catalogUnavailable": "El catàleg de formularis no està disponible en aquest moment. Torna a carregar la pàgina per reintentar-ho."

@@ -36,6 +36,11 @@ describe('CredentialIssuanceService', () => {
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
   let policyLoadFailed: ReturnType<typeof signal<boolean>>;
+  // The policy load is held open by default: with an already-resolved promise the forkJoin
+  // settles between beforeEach and the test body, leaving no "still loading" window to assert
+  // on. Tests that need the loads finished call resolvePolicyLoad() themselves.
+  let resolvePolicyLoad!: () => void;
+  let policyLoadPromise: Promise<void>;
   let mockMetadataService: {
     loadMetadata: jest.Mock;
     findConfigurationsForType: jest.Mock;
@@ -61,6 +66,7 @@ describe('CredentialIssuanceService', () => {
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
     metadataLoadFailed = signal<boolean>(false);
     policyLoadFailed = signal<boolean>(false);
+    policyLoadPromise = new Promise<void>(resolve => { resolvePolicyLoad = resolve; });
     mockMetadataService = {
       loadMetadata: jest.fn(() => of(undefined)),
       findConfigurationsForType: jest.fn(() => []),
@@ -88,7 +94,7 @@ describe('CredentialIssuanceService', () => {
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
         // The published per-tenant policy is fail-closed: an unusable document is a second
         // reason the selector can be empty for a cause the Operator cannot act on.
-        { provide: IssuanceUiPolicyService, useValue: { load: jest.fn(() => Promise.resolve()), loadFailed: () => policyLoadFailed() } },
+        { provide: IssuanceUiPolicyService, useValue: { load: jest.fn(() => policyLoadPromise), loadFailed: () => policyLoadFailed() } },
         // Not related to AD-1 (that dependency was already removed from CredentialIssuanceService):
         // IssuanceRequestFactoryService, provided for real in this TestBed, injects ThemeService
         // on its own to resolve the payload's mandatee/mandator.
@@ -143,6 +149,37 @@ describe('CredentialIssuanceService', () => {
 
     it('should load the issuer metadata once on construction', () => {
       expect(mockMetadataService.loadMetadata).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // The window between construction and both loads settling. An empty type list with neither
+  // loadFailed() raised is not "this tenant has no forms", so the screen needs to be able to
+  // tell the two apart instead of defaulting to the EC-01 message.
+  describe('isLoadingCatalog$', () => {
+    it('should be true while the policy and the metadata are still in flight', () => {
+      expect(service.isLoadingCatalog$()).toBe(true);
+    });
+
+    // The policy load is a promise, so the forkJoin completes on the microtask queue: this
+    // needs a real await, not fakeAsync/tick().
+    it('should fall once both loads have settled', async () => {
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(service.isLoadingCatalog$()).toBe(false);
+    });
+
+    // The flag says "the answer is not in yet", not "the answer was good": a catalogue that
+    // could not be loaded must reach its own EC-04 message rather than spin forever.
+    it('should fall even when both loads resolve to a failure', async () => {
+      metadataLoadFailed.set(true);
+      policyLoadFailed.set(true);
+
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(service.isLoadingCatalog$()).toBe(false);
+      expect(service.isCatalogUnavailable$()).toBe(true);
     });
   });
 

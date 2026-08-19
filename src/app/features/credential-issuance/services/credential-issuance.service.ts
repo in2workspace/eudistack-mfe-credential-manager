@@ -4,7 +4,7 @@ import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, defer, EMPTY, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
@@ -67,6 +67,9 @@ export class CredentialIssuanceService {
   private static readonly ISSUANCE_REQUEST_TIMEOUT_MS = 30_000;
 
   // CREDENTIAL TYPE SELECTOR
+  private readonly _isLoadingCatalog$ = signal<boolean>(true);
+  public readonly isLoadingCatalog$ = this._isLoadingCatalog$.asReadonly();
+
   // AD-1: derived from the tenant-filtered metadata (CredentialIssuerMetadataService). With no
   // metadata => empty list (fail-closed, EC-01/EC-04). Only recomputed when loadMetadata()
   // resolves, because getIssuableCredentialTypes() reads an internal signal of the metadata service.
@@ -209,11 +212,21 @@ export class CredentialIssuanceService {
     // that does not run this app's bootstrap), the wait lands here instead of in front of
     // every other screen. Both are started at once rather than chained: neither needs the
     // other's result, and the selector reads them through signals that recompute on their own.
+    //
+    // Until both settle the screen has nothing truthful to say about the catalogue, so it says
+    // exactly that (isLoadingCatalog$) instead of letting the still-empty type list speak for it.
     forkJoin([
       defer(() => this.issuanceUiPolicy.load()),
       this.metadataService.loadMetadata(),
     ])
-      .pipe(takeUntilDestroyed())
+      .pipe(
+        takeUntilDestroyed(),
+        // `finalize` rather than the subscriber's `complete`: today neither source can fail the
+        // stream (loadMetadata() swallows its own error, load() never rejects), so the flag
+        // would fall either way — but if that ever changes, a spinner that never stops is a
+        // worse outcome than the empty state it replaces.
+        finalize(() => this._isLoadingCatalog$.set(false))
+      )
       .subscribe();
   }
 

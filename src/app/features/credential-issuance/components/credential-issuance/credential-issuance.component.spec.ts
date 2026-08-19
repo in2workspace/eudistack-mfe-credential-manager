@@ -25,6 +25,7 @@ describe('CredentialIssuanceComponent', () => {
       hasSubmitted$: signal(false) as WritableSignal<boolean>,
       credentialTypesArr$: signal(['type1', 'learcredential.machine']) as WritableSignal<any>,
       isCatalogUnavailable$: signal(false) as WritableSignal<boolean>,
+      isLoadingCatalog$: signal(false) as WritableSignal<boolean>,
       selectedCredentialType$: signal(undefined) as WritableSignal<any>,
       credentialFormSchema$: signal(null) as Signal<any>,
       staticData$: signal(null) as Signal<any>,
@@ -112,6 +113,33 @@ describe('CredentialIssuanceComponent', () => {
       expect(message.textContent).toContain('credentialIssuance.emptySelector.catalogUnavailable');
       // fail-closed: no fallback option is offered
       expect(fixture.nativeElement.querySelector('mat-option')).toBeNull();
+    });
+
+    // While the loads are in flight the type list is empty and no failure flag is raised, so
+    // without this branch the screen showed — and announced — EC-01: "contact your tenant
+    // administrator" about a catalogue that simply had not arrived yet.
+    it('should show the loading state instead of the empty state while the catalogue loads', () => {
+      (mockService.credentialTypesArr$ as WritableSignal<any>).set([]);
+      (mockService.isLoadingCatalog$ as WritableSignal<boolean>).set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('mat-spinner')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('mat-select')).toBeNull();
+
+      const message = emptyState();
+      expect(message.getAttribute('aria-live')).toBe('polite');
+      expect(message.textContent).toContain('credentialIssuance.loadingCatalog');
+      expect(message.textContent).not.toContain('credentialIssuance.emptySelector');
+    });
+
+    // The metadata service keeps its configurations for the whole session: a second visit
+    // re-runs the load with a catalogue already in hand, and must not blink back to a spinner.
+    it('should keep the selector while reloading when the catalogue is already known', () => {
+      (mockService.isLoadingCatalog$ as WritableSignal<boolean>).set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('mat-select')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('mat-spinner')).toBeNull();
     });
   });
 
