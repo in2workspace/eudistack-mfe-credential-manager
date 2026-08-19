@@ -101,16 +101,25 @@ describe('OrganizationContactService', () => {
   describe('updateContact', () => {
     const VALID_EMAIL = 'new@example.com';
 
-    it('should update contact successfully (AC-02)', () => {
-      // When
-      service.updateContact(ORG_ID, VALID_EMAIL).subscribe(() => {
-        // Then: success, no response body expected
-        expect(true).toBe(true);
+    it('should update contact successfully (AC-02)', (done) => {
+  // When
+      service.updateContact(ORG_ID, VALID_EMAIL).subscribe({
+        next: (response) => {
+          // Then
+          try {
+            expect(response).toBeNull();
+            done();
+          } catch (e) {
+            done(e as Error);
+          }
+        },
+        error: (error) => done(error)
       });
 
       const req = httpMock.expectOne(`${BASE_URL}/${ORG_ID}/contact`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual({ email: VALID_EMAIL });
+
       req.flush(null);
     });
 

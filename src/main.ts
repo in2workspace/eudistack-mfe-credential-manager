@@ -18,11 +18,27 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 import { MatPaginatorIntlService } from './app/shared/services/mat-paginator-intl.service';
 import { ThemeService } from './app/core/services/theme.service';
 import { TenantService } from './app/core/services/tenant.service';
+import { IssuanceUiPolicyService } from './app/core/services/issuance-ui-policy.service';
 import { oidcConfigFactory } from './app/core/auth/oid-config.factory';
 
-function initializeApp(tenantService: TenantService, themeService: ThemeService): () => Promise<void> {
+function initializeApp(
+  tenantService: TenantService,
+  themeService: ThemeService,
+  issuanceUiPolicyService: IssuanceUiPolicyService,
+): () => Promise<void> {
   return async () => {
+    // The tenant is the prerequisite of everything tenant-scoped: the policy needs tenant()
+    // to pick its entry, and the theme will need it too once branding moves per tenant.
     await tenantService.resolve();
+
+    // Started here but NOT awaited: the request rides along with the theme fetch, so in the
+    // normal case the issuance screen finds it already resolved. Awaiting it would put a
+    // retrying, fail-closed fetch of a document only ONE screen needs in front of the first
+    // paint — a tenant whose policy is unreachable must still reach its issued credentials
+    // without delay. Whoever needs it awaits the same memoized promise (see
+    // CredentialIssuanceService), so nothing renders against a half-loaded policy.
+    void issuanceUiPolicyService.load();
+
     await themeService.load();
   };
 }
@@ -35,7 +51,7 @@ bootstrapApplication(AppComponent, {
         {
             provide: APP_INITIALIZER,
             useFactory: initializeApp,
-            deps: [TenantService, ThemeService],
+            deps: [TenantService, ThemeService, IssuanceUiPolicyService],
             multi: true
         },
         {

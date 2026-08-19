@@ -206,4 +206,50 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
     expect(logSpy).toHaveBeenCalledTimes(2);
 
   });
+
+  // Every static asset is fetched by code that owns a fallback for its absence (theme,
+  // translations, custom-domain map, issuance UI policy). A dialog on top of that would
+  // interrupt a user who did nothing and can do nothing, on every page load.
+  describe('static assets', () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it.each([
+      ['the shared tenant prefix', '/assets/tenants/issuance-ui.json'],
+      ['the custom-domain map', '/assets/tenants/custom-domain.json'],
+      ['a path relative to the base href', 'assets/theme.json'],
+      ['a translation bundle', '/issuer/assets/i18n/es.json'],
+      ['a fully qualified asset URL', 'https://kpmg.eudistack.net/assets/tenants/issuance-ui.json'],
+    ])('should rethrow without a dialog for %s', (_label, url) => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 404, statusText: 'Not Found', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ ...httpRequest, url } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen?.status).toBe(404);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    // The segment boundaries matter: an API path that merely contains the word is not an asset.
+    it.each([
+      ['/api/v1/issuances', 'an API path'],
+      ['/admin/v1/credential-assets', 'a path ending in the word'],
+    ])('should still show the dialog for %s (%s)', url => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 404, statusText: 'Not Found', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+      translateServiceSpy.instant.mockReturnValue('error.not_found');
+
+      interceptor.intercept({ ...httpRequest, url } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: () => undefined,
+      });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.not_found');
+    });
+  });
 });

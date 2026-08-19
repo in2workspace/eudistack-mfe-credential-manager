@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -34,6 +35,12 @@ describe('CredentialIssuanceService', () => {
   };
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
+  let policyLoadFailed: ReturnType<typeof signal<boolean>>;
+  // The policy load is held open by default: with an already-resolved promise the forkJoin
+  // settles between beforeEach and the test body, leaving no "still loading" window to assert
+  // on. Tests that need the loads finished call resolvePolicyLoad() themselves.
+  let resolvePolicyLoad!: () => void;
+  let policyLoadPromise: Promise<void>;
   let mockMetadataService: {
     loadMetadata: jest.Mock;
     findConfigurationsForType: jest.Mock;
@@ -58,6 +65,8 @@ describe('CredentialIssuanceService', () => {
     // signals would memoize and we couldn't test the recompute after loadMetadata().
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
     metadataLoadFailed = signal<boolean>(false);
+    policyLoadFailed = signal<boolean>(false);
+    policyLoadPromise = new Promise<void>(resolve => { resolvePolicyLoad = resolve; });
     mockMetadataService = {
       loadMetadata: jest.fn(() => of(undefined)),
       findConfigurationsForType: jest.fn(() => []),
@@ -83,6 +92,9 @@ describe('CredentialIssuanceService', () => {
         CountryService,
         { provide: CredentialProcedureService, useValue: mockProcedureService },
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
+        // The published per-tenant policy is fail-closed: an unusable document is a second
+        // reason the selector can be empty for a cause the Operator cannot act on.
+        { provide: IssuanceUiPolicyService, useValue: { load: jest.fn(() => policyLoadPromise), loadFailed: () => policyLoadFailed() } },
         // Not related to AD-1 (that dependency was already removed from CredentialIssuanceService):
         // IssuanceRequestFactoryService, provided for real in this TestBed, injects ThemeService
         // on its own to resolve the payload's mandatee/mandator.
@@ -125,8 +137,49 @@ describe('CredentialIssuanceService', () => {
       expect(service.isCatalogUnavailable$()).toBe(true);
     });
 
+    // The per-tenant policy is fail-closed, so an unusable document means "no forms", not "no
+    // restrictions" — and the Operator must be told, rather than shown a bare empty selector.
+    it('should flag the catalogue as unavailable when the issuance UI policy fails (EC-04)', () => {
+      issuableTypes.set([]);
+      policyLoadFailed.set(true);
+
+      expect(service.credentialTypesArr$()).toEqual([]);
+      expect(service.isCatalogUnavailable$()).toBe(true);
+    });
+
     it('should load the issuer metadata once on construction', () => {
       expect(mockMetadataService.loadMetadata).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // The window between construction and both loads settling. An empty type list with neither
+  // loadFailed() raised is not "this tenant has no forms", so the screen needs to be able to
+  // tell the two apart instead of defaulting to the EC-01 message.
+  describe('isLoadingCatalog$', () => {
+    it('should be true while the policy and the metadata are still in flight', () => {
+      expect(service.isLoadingCatalog$()).toBe(true);
+    });
+
+    // The policy load is a promise, so the forkJoin completes on the microtask queue: this
+    // needs a real await, not fakeAsync/tick().
+    it('should fall once both loads have settled', async () => {
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(service.isLoadingCatalog$()).toBe(false);
+    });
+
+    // The flag says "the answer is not in yet", not "the answer was good": a catalogue that
+    // could not be loaded must reach its own EC-04 message rather than spin forever.
+    it('should fall even when both loads resolve to a failure', async () => {
+      metadataLoadFailed.set(true);
+      policyLoadFailed.set(true);
+
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(service.isLoadingCatalog$()).toBe(false);
+      expect(service.isCatalogUnavailable$()).toBe(true);
     });
   });
 

@@ -5,6 +5,8 @@ import { CredentialIssuerMetadataService } from './credential-issuer-metadata.se
 import { environment } from 'src/environments/environment';
 import { API_PATH } from '../constants/api-paths.constants';
 import { TenantService } from './tenant.service';
+import { IssuanceUiPolicyService } from './issuance-ui-policy.service';
+import { policyAllowsConfiguration } from '../helpers/issuance-ui-policy';
 
 describe('CredentialIssuerMetadataService', () => {
   let service: CredentialIssuerMetadataService;
@@ -67,7 +69,11 @@ describe('CredentialIssuerMetadataService', () => {
         CredentialIssuerMetadataService,
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TenantService, useValue: { serverUrl: environment.server_url, getServerUrl: () => environment.server_url} }
+        { provide: TenantService, useValue: { serverUrl: environment.server_url, getServerUrl: () => environment.server_url} },
+        // Policy out of the way: these tests are about the other rules. The real service is
+        // fail-closed (empty until the published document loads), so leaving it in would make
+        // every fixture below yield nothing. The policy has its own describe at the bottom.
+        { provide: IssuanceUiPolicyService, useValue: { allows: () => true, loadFailed: () => false } }
       ]
     });
     service = TestBed.inject(CredentialIssuerMetadataService);
@@ -279,8 +285,14 @@ describe('CredentialIssuerMetadataService', () => {
     });
   });
 
-  // TEMPORARY — delete alongside core/temporary/pinned-issuable-versions.ts.
-  describe('PINNED-VERSIONS: hardcoded issuance floor', () => {
+  // Version selection, now the only version rule: the issuance UI policy decides WHICH
+  // type+format lineages get a form, and this decides WHICH VERSION of each.
+  //
+  // It replaced a hardcoded global floor (`pinned-issuable-versions.ts`), which existed
+  // because "the newest declared" is only the right answer while the metadata always carries
+  // the current version of anything a tenant can still issue. That guarantee now comes from
+  // the issuer — see the TEMPORARY note in core/models/issuance-ui-policy.model.ts.
+  describe('version selection', () => {
     const metadataWith = (configIds: string[], format = 'jwt_vc_json') => ({
       credential_issuer: 'https://example.com',
       credential_configurations_supported: Object.fromEntries(
@@ -294,35 +306,35 @@ describe('CredentialIssuerMetadataService', () => {
     const flush = (metadata: object) =>
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metadata);
 
-    it('should not offer a superseded employee version even when it is the only one declared', (done) => {
-      // The case that motivates the pin: w3c.1 must stay declared for the details screen, and
-      // the relative filter alone would call it "the newest" and render a radio button for it.
+    it('should offer only the newest version of a lineage, whatever the declaration order', (done) => {
       service.loadMetadata().subscribe(() => {
-        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([]);
-        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.employee.w3c.4', format: 'jwt_vc_json' }
+        ]);
         done();
       });
-      flush(metadataWith(['learcredential.employee.w3c.1']));
+      flush(metadataWith([
+        'learcredential.employee.w3c.2',
+        'learcredential.employee.w3c.4',
+        'learcredential.employee.w3c.1'
+      ]));
     });
 
-    it('should keep a superseded version resolvable for the details screen', (done) => {
-      // Same metadata as above: hidden from issuance, still resolvable by id. This is the
-      // whole point of pinning instead of removing configurations from the metadata.
+    it('should keep every superseded version resolvable for the details screen', (done) => {
       service.loadMetadata().subscribe(() => {
         expect(service.getConfigurationById('learcredential.employee.w3c.1')).toBeDefined();
         expect(Object.keys(service.getAllConfigurations() ?? {})).toContain('learcredential.employee.w3c.1');
         done();
       });
-      flush(metadataWith(['learcredential.employee.w3c.1']));
+      flush(metadataWith(['learcredential.employee.w3c.1', 'learcredential.employee.w3c.4']));
     });
 
-    it('should drop only the superseded lineage, leaving the type issuable through the others', (done) => {
+    it('should version each format family independently', (done) => {
       service.loadMetadata().subscribe(() => {
-        // sd is not pinned, so the type survives with a single (sd-jwt) format option.
         expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
-          { configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt' }
+          { configId: 'learcredential.employee.w3c.4', format: 'jwt_vc_json' },
+          { configId: 'learcredential.employee.sd.2', format: 'dc+sd-jwt' }
         ]);
-        expect(service.getIssuableCredentialTypes()).toEqual(['learcredential.employee']);
         done();
       });
       flush({
@@ -332,44 +344,19 @@ describe('CredentialIssuerMetadataService', () => {
             format: 'jwt_vc_json',
             credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.1'] }
           },
-          'learcredential.employee.sd.1': {
+          'learcredential.employee.w3c.4': {
+            format: 'jwt_vc_json',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.4'] }
+          },
+          'learcredential.employee.sd.2': {
             format: 'dc+sd-jwt',
-            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.1'] }
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.2'] }
           }
         }
       });
     });
 
-    it('should not let a superseded version win over the pinned one declared after it', (done) => {
-      service.loadMetadata().subscribe(() => {
-        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
-          { configId: 'learcredential.employee.w3c.4', format: 'jwt_vc_json' }
-        ]);
-        done();
-      });
-      flush(metadataWith([
-        'learcredential.employee.w3c.1',
-        'learcredential.employee.w3c.2',
-        'learcredential.employee.w3c.4'
-      ]));
-    });
-
-    it('should hide the machine type below version 3 and offer it from 3 onwards', (done) => {
-      service.loadMetadata().subscribe(() => {
-        expect(service.getIssuableCredentialTypes()).toEqual([]);
-
-        service.loadMetadata().subscribe(() => {
-          expect(service.findConfigurationsForType('learcredential.machine')).toEqual([
-            { configId: 'learcredential.machine.w3c.3', format: 'jwt_vc_json' }
-          ]);
-          done();
-        });
-        flush(metadataWith(['learcredential.machine.w3c.3']));
-      });
-      flush(metadataWith(['learcredential.machine.w3c.2']));
-    });
-
-    it('should offer a version newer than the pinned one without a code change', (done) => {
+    it('should pick up a newer version without a code change', (done) => {
       service.loadMetadata().subscribe(() => {
         expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
           { configId: 'learcredential.employee.w3c.5', format: 'jwt_vc_json' }
@@ -377,6 +364,145 @@ describe('CredentialIssuerMetadataService', () => {
         done();
       });
       flush(metadataWith(['learcredential.employee.w3c.4', 'learcredential.employee.w3c.5']));
+    });
+
+    // Deliberate consequence of dropping the hardcoded floor: with no absolute rule left, the
+    // newest DECLARED version is the one offered. It is correct while the issuer only ever
+    // publishes a lineage's legacy version alongside its current one — and if that ever stops
+    // holding, the fix is a version floor in the policy document, not a new hardcoded map.
+    it('should offer the only declared version even when it is a superseded one', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.employee.w3c.1', format: 'jwt_vc_json' }
+        ]);
+        done();
+      });
+      flush(metadataWith(['learcredential.employee.w3c.1']));
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Issuance UI policy (per tenant, published as configuration). The metadata is already
+  // tenant-scoped by the issuer and everything in it is issuable THROUGH THE API; this layer
+  // decides what this UI offers a form for.
+  // --------------------------------------------------------------------------
+  describe('issuance UI policy', () => {
+    /** Lineages the published document allows, mutable per test. */
+    let allowedCredentials: string[];
+
+    const flush = (metadata: Object) =>
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metadata);
+
+    beforeEach(() => {
+      allowedCredentials = [
+        'learcredential.employee.w3c',
+        'learcredential.employee.mdoc',
+        'learcredential.machine.w3c'
+      ];
+
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          CredentialIssuerMetadataService,
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: TenantService, useValue: { serverUrl: environment.server_url, getServerUrl: () => environment.server_url } },
+          {
+            // Stubs the SOURCE, not the rule: the matching helper is the real one, so this
+            // spec cannot drift from the semantics the loader applies in production.
+            provide: IssuanceUiPolicyService,
+            useValue: {
+              allows: (configId: string) => policyAllowsConfiguration({ allowedCredentials }, configId),
+              loadFailed: () => false,
+            },
+          },
+        ]
+      });
+      service = TestBed.inject(CredentialIssuerMetadataService);
+      httpMock = TestBed.inject(HttpTestingController);
+    });
+
+    it('should drop a type the UI must not offer, whatever the metadata declares', (done) => {
+      allowedCredentials = ['learcredential.employee.w3c', 'learcredential.employee.mdoc'];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual(['learcredential.employee']);
+        expect(service.findConfigurationsForType('learcredential.machine')).toEqual([]);
+        done();
+      });
+      flush(mockMetadata);
+    });
+
+    // The format is part of what is allowed, so a type can be offered in one format and
+    // withheld in another.
+    it('should narrow a type to the format family the policy allows', (done) => {
+      allowedCredentials = ['learcredential.employee.w3c'];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.employee.w3c.4', format: 'jwt_vc_json' }
+        ]);
+        done();
+      });
+      flush(mockMetadata);
+    });
+
+    it('should offer nothing under an empty policy', (done) => {
+      allowedCredentials = [];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([]);
+        done();
+      });
+      flush(mockMetadata);
+    });
+
+    // The policy is an intersection, never a union: it cannot put back a configuration the
+    // issuer did not advertise for this tenant.
+    it('should not add a lineage the metadata does not carry', (done) => {
+      allowedCredentials = [
+        'learcredential.employee.w3c',
+        'learcredential.employee.mdoc',
+        'learcredential.machine.w3c',
+        'doctorid.sd'
+      ];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toHaveLength(2);
+        expect(service.getIssuableCredentialTypes()).toEqual([
+          'learcredential.employee',
+          'learcredential.machine'
+        ]);
+        done();
+      });
+      flush(mockMetadata);
+    });
+
+    // Superseded versions must stay resolvable by id for the details screen, exactly as they
+    // do under the version rule.
+    it('should keep a filtered-out configuration resolvable by id', (done) => {
+      allowedCredentials = ['learcredential.employee.w3c'];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.getConfigurationById('learcredential.machine.w3c.3')).toBeDefined();
+        done();
+      });
+      flush(mockMetadata);
+    });
+
+    // The policy chooses the lineage, keepLatestCredentialConfigurations the version — and
+    // neither can be worked around by the other.
+    it('should apply the policy and the version rule together', (done) => {
+      allowedCredentials = ['learcredential.employee.w3c'];
+
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.employee.w3c.6', format: 'jwt_vc_json' }
+        ]);
+        done();
+      });
+      flush(mockVersionedMetadata);
     });
   });
 });
