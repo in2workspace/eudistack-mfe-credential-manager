@@ -5,6 +5,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
+import { TenantService } from 'src/app/core/services/tenant.service';
 
 @Component({
     selector: 'app-home',
@@ -15,10 +16,13 @@ import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
 export class HomeComponent{
   @ViewChild('loginSection') loginSection!: ElementRef<HTMLElement>;
   @ViewChild('header') header!: ElementRef;
-  public walletUrl = `${WALLET_BASE_URL}/`;
 
   private readonly themeService = inject(ThemeService);
+  private readonly tenantService = inject(TenantService);
+
   public readonly logoSrc = this.themeService.snapshot?.branding?.logoUrl ?? null;
+  public walletUrl = this.tenantService.walletUrl();
+
   public get knowledgeBaseUrl(): string | null {
     return this.themeService.snapshot?.content?.knowledgeBaseUrl ?? null;
   }
