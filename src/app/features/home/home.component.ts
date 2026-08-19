@@ -4,7 +4,6 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { WALLET_BASE_URL } from 'src/app/core/constants/wallet.constants';
 import { TenantService } from 'src/app/core/services/tenant.service';
 
 @Component({
