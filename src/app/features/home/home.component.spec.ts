@@ -4,12 +4,14 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { TenantService } from 'src/app/core/services/tenant.service';
 
 describe('HomeComponent', () => {
   let component: HomeComponent;
   let fixture: ComponentFixture<HomeComponent>;
   let router: jest.Mocked<Router>;
   let authService: jest.Mocked<AuthService>;
+  let tenantService: jest.Mocked<TenantService>;
 
   beforeEach(() => {
     const routerMock = {
@@ -24,10 +26,14 @@ describe('HomeComponent', () => {
     const themeServiceMock = {
       snapshot: {
         branding: { logoUrl: 'https://example.com/logo.png' },
-        content: { knowledgeBaseUrl: 'https://knowledgebase.example.com/' }
+        content: { knowledgeBaseUrl: 'https://knowledgebase.example.com/' },
       },
       knowledgeBaseUrl: 'https://knowledgebase.example.com/',
     };
+
+    const tenantServiceMock = {
+      walletUrl: jest.fn().mockReturnValue('https://wallet.example.com/'),
+    } as unknown as jest.Mocked<TenantService>;
 
     TestBed.configureTestingModule({
       imports: [
@@ -39,6 +45,7 @@ describe('HomeComponent', () => {
         { provide: Router, useValue: routerMock },
         { provide: AuthService, useValue: authServiceMock },
         { provide: ThemeService, useValue: themeServiceMock },
+        { provide: TenantService, useValue: tenantServiceMock },
       ],
     });
 
@@ -46,6 +53,7 @@ describe('HomeComponent', () => {
     component = fixture.componentInstance;
     router = TestBed.inject(Router) as jest.Mocked<Router>;
     authService = TestBed.inject(AuthService) as jest.Mocked<AuthService>;
+    tenantService = TestBed.inject(TenantService) as jest.Mocked<TenantService>;
   });
 
   it('should create the component', () => {
@@ -56,18 +64,21 @@ describe('HomeComponent', () => {
     expect(component.logoSrc).toBe('https://example.com/logo.png');
   });
 
-  it('should derive walletUrl from current origin and read knowledgeBaseUrl from theme', () => {
-    expect(component.walletUrl).toBe(`${window.location.origin}/wallet/`);
+  it('should get walletUrl from tenant service and knowledgeBaseUrl from theme', () => {
+    expect(tenantService.walletUrl).toHaveBeenCalled();
+    expect(component.walletUrl).toBe('https://wallet.example.com/');
     expect(component.knowledgeBaseUrl).toBe('https://knowledgebase.example.com/');
   });
 
   it('should call authService.login when login() is called', () => {
     component.login();
+
     expect(authService.login).toHaveBeenCalled();
   });
 
   it('should call authService.logout and navigate to /login when logout() is called', () => {
     component.logout();
+
     expect(authService.logout).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
@@ -78,24 +89,26 @@ describe('HomeComponent', () => {
 
     component.loginSection = {
       nativeElement: {
-        getBoundingClientRect: () => ({ top: 300 })
-      }
+        getBoundingClientRect: () => ({ top: 300 }),
+      },
     } as any;
 
     component.header = {
       nativeElement: {
-        offsetHeight: 80
-      }
+        offsetHeight: 80,
+      },
     } as any;
 
-    Object.defineProperty(window, 'scrollY', { value: 200, writable: true });
+    Object.defineProperty(window, 'scrollY', {
+      value: 200,
+      writable: true,
+    });
 
     component.scrollToLoginSection();
 
     expect(scrollToMock).toHaveBeenCalledWith({
       top: 420,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   });
-
 });

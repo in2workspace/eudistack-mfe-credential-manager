@@ -119,7 +119,7 @@
         <p>{{ "home.obtain-wallet-intro" | translate }}</p>
         <p>{{ "home.obtain-wallet-detail" | translate }}</p>
         <qrcode [qrdata]="walletUrl" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
-        <p>
+        <p class="wallet-instructions">
           {{ "home.wallet-instructions" | translate }}
           <a [href]="walletUrl" target="_blank" rel="noopener noreferrer" tabindex="0">{{ walletUrl }}</a>
         </p>

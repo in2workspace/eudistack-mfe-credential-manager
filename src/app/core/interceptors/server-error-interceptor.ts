@@ -24,6 +24,17 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }
+
+        // Static assets never justify a dialog. Every one of them is fetched by code that
+        // owns a fallback for its absence — the theme, the translations, the tenant
+        // custom-domain map, the issuance UI policy — so a missing or not-yet-published file
+        // degrades where it is read, on its own terms. Surfacing it here would put a bare
+        // "not found" in front of a user who did nothing and can do nothing about it, on
+        // every page load, while the screen behind it works.
+        if (this.isStaticAsset(request.url)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
         let errorMessage: string;
         if (error.error instanceof ErrorEvent) {
           errorMessage = `Error: ${error.error.message}`;
@@ -36,6 +47,19 @@ export class ServeErrorInterceptor implements HttpInterceptor {
         return throwError(() => error);
       })
     );
+  }
+
+  /**
+   * Whether the request targets a static asset rather than an API.
+   *
+   * Covers the three shapes in use: absolute paths under the shared tenant prefix
+   * (`/assets/tenants/issuance-ui.json`), paths relative to this app's base href
+   * (`assets/theme.json`, resolved as `/issuer/assets/...`), and fully qualified URLs. The
+   * segment boundaries keep it from matching an API path that merely contains the word.
+   */
+  private isStaticAsset(url: string): boolean {
+    const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
+    return /(^|\/)assets\//.test(path);
   }
 
   private getServerErrorMessage(error: HttpErrorResponse): string {

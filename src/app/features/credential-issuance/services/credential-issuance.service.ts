@@ -4,7 +4,7 @@ import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, EMPTY, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
@@ -21,6 +21,7 @@ import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/a
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
 
@@ -66,6 +67,9 @@ export class CredentialIssuanceService {
   private static readonly ISSUANCE_REQUEST_TIMEOUT_MS = 30_000;
 
   // CREDENTIAL TYPE SELECTOR
+  private readonly _isLoadingCatalog$ = signal<boolean>(true);
+  public readonly isLoadingCatalog$ = this._isLoadingCatalog$.asReadonly();
+
   // AD-1: derived from the tenant-filtered metadata (CredentialIssuerMetadataService). With no
   // metadata => empty list (fail-closed, EC-01/EC-04). Only recomputed when loadMetadata()
   // resolves, because getIssuableCredentialTypes() reads an internal signal of the metadata service.
@@ -74,8 +78,13 @@ export class CredentialIssuanceService {
   );
 
   // EC-04 vs EC-01: same empty list, different message. Resolved by the template (T3).
+  //
+  // Two sources can leave the selector empty for a reason the Operator cannot act on: the
+  // issuer metadata, and the tenant's published issuance UI policy — which is fail-closed, so
+  // an unusable document means "no forms", not "no restrictions". Neither is the same as a
+  // policy that legitimately allows nothing, which stays on the EC-01 message.
   public readonly isCatalogUnavailable$ = computed<boolean>(
-    () => this.metadataService.hasMetadataLoadFailed()
+    () => this.metadataService.hasMetadataLoadFailed() || this.issuanceUiPolicy.loadFailed()
   );
   public selectedCredentialType$ = signal<IssuanceCredentialType|undefined>(undefined);
 
@@ -190,13 +199,34 @@ export class CredentialIssuanceService {
   private readonly schemaBuilder = inject(IssuanceSchemaBuilder);
   private readonly translate = inject(TranslateService);
   private readonly metadataService = inject(CredentialIssuerMetadataService);
+  private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
 
   constructor() {
     // Load credential configurations once so format options are available,
     // and, since EUD-71, also the list of issuable types (AD-1).
-    this.metadataService.loadMetadata()
-      .pipe(takeUntilDestroyed())
+    //
+    // Alongside them, the tenant's issuance UI policy — this is the screen that needs it, and
+    // the only one. `load()` is memoized, so this is normally already resolved by the
+    // warm-up main.ts starts at bootstrap; when it is not (a slow document, or a future host
+    // that does not run this app's bootstrap), the wait lands here instead of in front of
+    // every other screen. Both are started at once rather than chained: neither needs the
+    // other's result, and the selector reads them through signals that recompute on their own.
+    //
+    // Until both settle the screen has nothing truthful to say about the catalogue, so it says
+    // exactly that (isLoadingCatalog$) instead of letting the still-empty type list speak for it.
+    forkJoin([
+      defer(() => this.issuanceUiPolicy.load()),
+      this.metadataService.loadMetadata(),
+    ])
+      .pipe(
+        takeUntilDestroyed(),
+        // `finalize` rather than the subscriber's `complete`: today neither source can fail the
+        // stream (loadMetadata() swallows its own error, load() never rejects), so the flag
+        // would fall either way — but if that ever changes, a spinner that never stops is a
+        // worse outcome than the empty state it replaces.
+        finalize(() => this._isLoadingCatalog$.set(false))
+      )
       .subscribe();
   }
 
