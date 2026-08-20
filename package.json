@@ -10,7 +10,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci",
     "lint": "ng lint",
-    "sbom": "cyclonedx-npm --spec-version 1.6 --output-format JSON --output-file build/sbom/sbom.json --package-lock-only --output-reproducible --ignore-npm-errors",
+    "sbom": "cyclonedx-npm --spec-version 1.6 --output-format JSON --output-file build/sbom/sbom.json --package-lock-only --output-reproducible",
     "mock-server": "json-server --watch db.json"
   },
   "private": true,
