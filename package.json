@@ -22,7 +22,7 @@
     "@angular/forms": "^19.2.19",
     "@angular/material": "^19.2.19",
     "@angular/platform-browser": "^19.2.19",
-    "@angular/platform-browser-dynamic": "^19.2.19",
+    "@angular/platform-browser-dynamic": "^20.0.7",
     "@angular/router": "^19.2.19",
     "@ngx-translate/core": "^16.0.3",
     "@ngx-translate/http-loader": "^16.0.1",
