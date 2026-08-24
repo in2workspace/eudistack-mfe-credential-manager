@@ -32,8 +32,15 @@ export const orgIdValidatorEntries: ValidatorEntryUnion[] = [
   { name:'orgIdentifier'}
 ];
 
+/**
+ * OPTIONAL field: the mandator's certificate serial number is not always available
+ * (`AuthService.extractRawMandator()` falls back to `''` when the token carries no
+ * `serial_number`), and it is not needed to identify the mandator — the DID is built
+ * from country + organizationIdentifier. Requiring it blocked the whole issuance form.
+ * The shape rules stay: Angular's minLength/maxLength/pattern all pass on an empty
+ * value, so they only apply once something is typed.
+ */
 export const serialNumberValidatorEntries: ValidatorEntryUnion[] = [
-  { name: 'required' },
   { name: 'minLength', args: [7] },
   { name: 'maxLength', args: [15] },
   { name: 'pattern', args: ["^[a-zA-Z0-9-]+$"] }
