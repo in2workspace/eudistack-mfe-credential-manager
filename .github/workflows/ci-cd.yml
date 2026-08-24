@@ -92,22 +92,6 @@ jobs:
           fi
           echo "Release ${TAG} does not exist — proceeding."
 
-      - name: Generate CycloneDX SBOM
-        run: |
-          npx --yes @cyclonedx/cyclonedx-npm@6.0.1 \
-            --package-lock-only \
-            --omit dev \
-            --output-format JSON \
-            --output-file sbom.cdx.json \
-            --validate
-
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-${{ github.sha }}
-          path: sbom.cdx.json
-          retention-days: 90
-
       - name: Install dependencies
         run: npm ci
 
@@ -309,10 +293,23 @@ jobs:
             echo "  - ${DIST_ID}" >> $GITHUB_STEP_SUMMARY
           done
 
-      - name: Download SBOM
+      - name: Download SBOM Artifact
         uses: actions/download-artifact@v4
         with:
-          name: sbom-${{ github.sha }}
+          name: sbom-v${{ needs.ci.outputs.version }}
+          path: build/sbom/
+
+      - name: Validate SBOM Version
+        uses: in2workspace/eudistack-platform-dev/.github/actions/license-gate@license-gate-v1.0.0
+        with:
+          sbom-path: build/sbom/sbom.json
+          expect-version: ${{ needs.ci.outputs.version }}
+
+      - name: Prepare SBOM Release Asset
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.ci.outputs.version }}"
+          cp build/sbom/sbom.json "./sbom-${TAG}.cdx.json"
 
       - name: Publish GitHub Release
         env:
@@ -324,6 +321,5 @@ jobs:
             "./sbom-${TAG}.cdx.json#CycloneDX SBOM (${TAG})" \
             --repo "${{ github.repository }}" \
             --title "${TAG}" \
-            --generate-notes \
-            sbom.cdx.json
+            --generate-notes
           echo "### 🏷️ GitHub Release published: ${TAG}" >> $GITHUB_STEP_SUMMARY
