@@ -383,6 +383,10 @@
     },
     "issuance-result-dialog": {
       "title": "Credential created successfully",
+      "titleFailed": "The issuance could not be completed",
+      "failedBanner": "The issuance failed. Check the detail of each channel before trying again.",
+      "partialBanner": "The issuance completed, but one of the delivery channels failed.",
+      "modeFailed": "This delivery channel failed.",
       "credential": "Credential",
       "credentialKey": "Credential key",
       "copied": "Credential copied",
@@ -390,10 +394,13 @@
       "bothWalletChannels": "The credential can be obtained either from the QR code or from the email, but only the first one used will work.",
       "tokenUnavailable": "The credential was created, but it was not returned in the response.",
       "offerUnavailable": "The credential offer could not be generated.",
+      "holderKeyNote": "This key exists only here and cannot be recovered: copy it and give it to the credential holder before closing this window.",
       "section": {
-        "direct": "Credential and key",
+        "direct": "Credential",
+        "directWithKey": "Credential and key",
         "ui": "QR code",
-        "email": "Email"
+        "email": "Email",
+        "holderKey": "Credential key"
       }
     },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",

@@ -25,6 +25,16 @@ export interface CredentialConfigurationDto {
    * the same thing and both must be treated as eligible.
    */
   cryptographic_binding_methods_supported?: string[];
+  /**
+   * Whether the credential carries a `cnf` claim at all. The other half of the holder-binding
+   * rule: together with `cryptographic_binding_methods_supported` it says whether the issuance
+   * request has to supply the holder key itself — see
+   * `CredentialIssuerMetadataService.isHolderKeyRequired`.
+   *
+   * Optional because an issuer older than this field publishes nothing, and a missing flag is
+   * read as `false` (fail-closed: never generate a key we cannot prove the credential binds to).
+   */
+  cnf_required?: boolean;
   credential_definition?: { type: string[] };
   credential_metadata?: CredentialMetadataDto;
 }

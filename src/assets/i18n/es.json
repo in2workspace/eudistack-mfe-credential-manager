@@ -383,6 +383,10 @@
     },
     "issuance-result-dialog": {
       "title": "Credencial creada correctamente",
+      "titleFailed": "No se ha podido completar la emisión",
+      "failedBanner": "La emisión ha fallado. Revisa el detalle de cada canal antes de volver a intentarlo.",
+      "partialBanner": "La emisión se ha completado, pero alguno de los canales de entrega ha fallado.",
+      "modeFailed": "Este canal de entrega ha fallado.",
       "credential": "Credencial",
       "credentialKey": "Clave de la credencial",
       "copied": "Credencial copiada",
@@ -390,10 +394,13 @@
       "bothWalletChannels": "La credencial se puede obtener desde el código QR o desde el correo electrónico, pero solo funcionará el primero que se utilice.",
       "tokenUnavailable": "La credencial se ha creado, pero no se ha devuelto en la respuesta.",
       "offerUnavailable": "No se ha podido generar la oferta de credencial.",
+      "holderKeyNote": "Esta clave solo existe aquí y no se puede recuperar: cópiala y entrégala al titular de la credencial antes de cerrar esta ventana.",
       "section": {
-        "direct": "Credencial y clave",
+        "direct": "Credencial",
+        "directWithKey": "Credencial y clave",
         "ui": "Código QR",
-        "email": "Correo electrónico"
+        "email": "Correo electrónico",
+        "holderKey": "Clave de la credencial"
       }
     },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",

@@ -118,6 +118,84 @@ describe('CredentialIssuerMetadataService', () => {
     });
   });
 
+  // The two halves of the holder-binding rule, mirrored from CredentialProfile: the binding
+  // methods say WHO supplies the holder key, cnf_required says whether there is one at all.
+  // Three states, and each predicate reads a different pair of them.
+  describe('holder binding rules', () => {
+    const bindingMetadata = {
+      credential_issuer: 'https://example.com',
+      credential_configurations_supported: {
+        // Wallet-bound: the key arrives in an OID4VCI proof.
+        'learcredential.employee.w3c.4': {
+          format: 'jwt_vc_json',
+          cryptographic_binding_methods_supported: ['did:key'],
+          cnf_required: true
+        },
+        // Holder-bound with no wallet in the loop: the request has to carry the key.
+        'learcredential.machine.w3c.3': {
+          format: 'jwt_vc_json',
+          cnf_required: true
+        },
+        // Bearer: no key anywhere, and the credential is signed without a cnf.
+        'gx.labelcredential.w3c.2': {
+          format: 'jwt_vc_json',
+          cnf_required: false
+        },
+        // An issuer older than the cnf_required extension publishes neither half.
+        'legacy.w3c.1': {
+          format: 'jwt_vc_json'
+        }
+      }
+    };
+
+    const withBindingMetadata = (assertions: () => void, done: jest.DoneCallback) => {
+      service.loadMetadata().subscribe(() => { assertions(); done(); });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(bindingMetadata);
+    };
+
+    it('should refuse direct delivery only for a wallet-bound configuration', (done) => {
+      withBindingMetadata(() => {
+        expect(service.isDirectDeliveryEligible('learcredential.employee.w3c.4')).toBe(false);
+        expect(service.isDirectDeliveryEligible('learcredential.machine.w3c.3')).toBe(true);
+        expect(service.isDirectDeliveryEligible('gx.labelcredential.w3c.2')).toBe(true);
+      }, done);
+    });
+
+    it('should ask for a holder key only when cnf_required meets no binding method', (done) => {
+      withBindingMetadata(() => {
+        expect(service.isHolderKeyRequired('learcredential.machine.w3c.3')).toBe(true);
+        // Direct-eligible too, but bearer: generating a key here would hand the Operator a
+        // private key the credential is not bound to.
+        expect(service.isHolderKeyRequired('gx.labelcredential.w3c.2')).toBe(false);
+        // The wallet proves possession of its own key at the credential endpoint.
+        expect(service.isHolderKeyRequired('learcredential.employee.w3c.4')).toBe(false);
+      }, done);
+    });
+
+    it('should not ask for a holder key when the issuer publishes no cnf_required', (done) => {
+      withBindingMetadata(() => {
+        expect(service.isHolderKeyRequired('legacy.w3c.1')).toBe(false);
+      }, done);
+    });
+
+    it('should answer both questions with a no when the metadata could not be loaded', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.isDirectDeliveryEligible('learcredential.machine.w3c.3')).toBe(false);
+        expect(service.isHolderKeyRequired('learcredential.machine.w3c.3')).toBe(false);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA)
+        .flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+    });
+
+    it('should answer both questions with a no for an unknown configuration', (done) => {
+      withBindingMetadata(() => {
+        expect(service.isDirectDeliveryEligible('not.published.1')).toBe(false);
+        expect(service.isHolderKeyRequired('not.published.1')).toBe(false);
+      }, done);
+    });
+  });
+
   describe('findConfigurationsForType()', () => {
     it('should return empty array when metadata not loaded', () => {
       const result = service.findConfigurationsForType('learcredential.employee');

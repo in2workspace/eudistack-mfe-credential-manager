@@ -1,43 +1,79 @@
-<h2 mat-dialog-title>{{ "credentialIssuance.issuance-result-dialog.title" | translate }}</h2>
+<h2 mat-dialog-title>
+  {{ (failed
+        ? "credentialIssuance.issuance-result-dialog.titleFailed"
+        : "credentialIssuance.issuance-result-dialog.title") | translate }}
+</h2>
 
 <div mat-dialog-content class="result-content">
+  @if (failed || hasAnyFailure) {
+    <p class="failure-banner" role="alert">
+      {{ (failed
+            ? "credentialIssuance.issuance-result-dialog.failedBanner"
+            : "credentialIssuance.issuance-result-dialog.partialBanner") | translate }}
+    </p>
+  }
+  @if (keyInOwnBox && data.privateKey) {
+    <section class="result-box" data-mode="holderKey">
+      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section.holderKey" | translate }}</h3>
+      <p class="holder-key-note" role="status">
+        {{ "credentialIssuance.issuance-result-dialog.holderKeyNote" | translate }}
+      </p>
+      <app-copyable-field
+        labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
+        [value]="data.privateKey">
+      </app-copyable-field>
+    </section>
+  }
+
   @for (mode of orderedModes; track mode) {
     <section class="result-box" [attr.data-mode]="mode">
-      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section." + mode | translate }}</h3>
+      <h3 class="box-title">{{ sectionTitleKey(mode) | translate }}</h3>
 
-      @switch (mode) {
-        @case ('direct') {
-          @if (data.credentialToken) {
-            <app-copyable-field
-              labelKey="credentialIssuance.issuance-result-dialog.credential"
-              [value]="data.credentialToken">
-            </app-copyable-field>
-          } @else {
-            <p class="token-missing" role="status">
-              {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
-            </p>
+      @if (hasFailed(mode)) {
+        <p class="mode-failed" role="status">
+          {{ "credentialIssuance.issuance-result-dialog.modeFailed" | translate }}
+          @if (errorOf(mode)) {
+            <span class="mode-failed-detail">{{ errorOf(mode) }}</span>
+          }
+        </p>
+      } @else {
+        @switch (mode) {
+          @case ('direct') {
+            @if (data.credentialToken) {
+              <app-copyable-field
+                labelKey="credentialIssuance.issuance-result-dialog.credential"
+                [value]="data.credentialToken">
+              </app-copyable-field>
+            } @else {
+              <p class="token-missing" role="status">
+                {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
+              </p>
+            }
+
+            @if (keyInsideDirectBox && data.privateKey) {
+              <p class="holder-key-note" role="status">
+                {{ "credentialIssuance.issuance-result-dialog.holderKeyNote" | translate }}
+              </p>
+              <app-copyable-field
+                labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
+                [value]="data.privateKey">
+              </app-copyable-field>
+            }
           }
 
-          @if (data.privateKey) {
-            <app-copyable-field
-              labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
-              [value]="data.privateKey">
-            </app-copyable-field>
+          @case ('ui') {
+            @if (data.credentialOfferUri) {
+              <app-credential-offer-qr [credentialOfferUri]="data.credentialOfferUri"></app-credential-offer-qr>
+            } @else {
+              <p class="offer-missing" role="status">
+                {{ "credentialIssuance.issuance-result-dialog.offerUnavailable" | translate }}
+              </p>
+            }
           }
-        }
 
-        @case ('ui') {
-          @if (data.credentialOfferUri) {
-            <app-credential-offer-qr [credentialOfferUri]="data.credentialOfferUri"></app-credential-offer-qr>
-          } @else {
-            <p class="offer-missing" role="status">
-              {{ "credentialIssuance.issuance-result-dialog.offerUnavailable" | translate }}
-            </p>
+          @case ('email') {
+            <p class="email-sent">{{ "credentialIssuance.issuance-result-dialog.emailSent" | translate }}</p>
           }
-        }
-
-        @case ('email') {
-          <p class="email-sent">{{ "credentialIssuance.issuance-result-dialog.emailSent" | translate }}</p>
         }
       }
     </section>

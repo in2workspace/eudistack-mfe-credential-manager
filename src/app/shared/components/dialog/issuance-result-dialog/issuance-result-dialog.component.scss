@@ -22,15 +22,38 @@
     }
   }
 
+  .holder-key-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
   .email-sent {
     font-size: 0.9rem;
     color: var(--text-secondary, #6B7280);
   }
 
   .token-missing,
-  .offer-missing {
+  .offer-missing,
+  .mode-failed,
+  .failure-banner {
     font-size: 0.9rem;
     color: var(--status-error, #DC2626);
+  }
+
+  .failure-banner {
+    font-weight: 600;
+  }
+
+  .mode-failed-detail {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6B7280);
+    overflow-wrap: anywhere;
+  }
+
+  .result-box:has(.mode-failed) {
+    border-color: var(--status-error, #DC2626);
   }
 
   .both-channels-note {

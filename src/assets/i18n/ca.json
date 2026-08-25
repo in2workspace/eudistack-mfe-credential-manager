@@ -358,6 +358,10 @@
     },
     "issuance-result-dialog": {
       "title": "Credencial creada correctament",
+      "titleFailed": "No s'ha pogut completar l'emissió",
+      "failedBanner": "L'emissió ha fallat. Revisa el detall de cada canal abans de tornar-ho a provar.",
+      "partialBanner": "L'emissió s'ha completat, però algun canal d'entrega ha fallat.",
+      "modeFailed": "Aquest canal d'entrega ha fallat.",
       "credential": "Credencial",
       "credentialKey": "Clau de la credencial",
       "copied": "Credencial copiada",
@@ -365,10 +369,13 @@
       "bothWalletChannels": "La credencial es pot obtenir des del codi QR o des del correu electrònic, però només funcionarà el primer que s'utilitzi.",
       "tokenUnavailable": "La credencial s'ha creat, però no s'ha retornat en la resposta.",
       "offerUnavailable": "No s'ha pogut generar l'oferta de credencial.",
+      "holderKeyNote": "Aquesta clau només existeix aquí i no es pot recuperar: copia-la i lliura-la al titular de la credencial abans de tancar aquesta finestra.",
       "section": {
-        "direct": "Credencial i clau",
+        "direct": "Credencial",
+        "directWithKey": "Credencial i clau",
         "ui": "Codi QR",
-        "email": "Correu electrònic"
+        "email": "Correu electrònic",
+        "holderKey": "Clau de la credencial"
       }
     },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",

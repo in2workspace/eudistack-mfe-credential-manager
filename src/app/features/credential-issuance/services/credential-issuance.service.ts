@@ -2,12 +2,12 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceDelivery, IssuanceDeliveryResultDto, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryMode, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, toDeliveryCsv, TYPES_REQUIRING_HOLDER_KEY } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryMode, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -462,48 +462,62 @@ export class CredentialIssuanceService {
 
       // The holder key is generated here and lives in this closure only: the public half reaches
       // the request, the private half reaches the result dialog, and nothing else ever sees it.
-      return this.holderKeyIfNeeded$(credentialType, modes).pipe(
+      return this.holderKeyIfNeeded$(configId).pipe(
         switchMap(holderKey => {
           const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType, holderKey);
 
+          // catchError lives INSIDE this switchMap so `holderKey` is still in scope on the error
+          // path. It used to sit outside, which meant a failed issuance closed with a generic dialog
+          // and the generated private key -- which exists nowhere but this closure -- was destroyed,
+          // even when the wallet leg had already dispatched a credential bound to it.
           return this.sendCredentialRequest(request).pipe(
             timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
             tap(() => { this.hasSubmitted$.set(true); }),
-            switchMap(response => this.openResultDialog(modes, response, holderKey))
+            switchMap(response => this.openResultDialog(modes, response, holderKey)),
+            switchMap(() => from(this.navigateToCredentials())),
+            catchError((error: unknown) => this.handleIssuanceFailure(error, modes, holderKey))
           );
         }),
-        switchMap(() => from(this.navigateToCredentials())),
-        catchError((error: unknown) => this.handleIssuanceFailure(error))
+        // Outer guard: a failure before the request was even built (key generation, payload assembly)
+        // has no holder key to hand over and no per-mode result to report.
+        catchError((error: unknown) => this.handleIssuanceFailure(error, modes, undefined))
       );
     }
 
   /**
-   * A holder key, but only when the credential type binds to one AND `direct` was selected.
+   * A holder key, whenever the selected configuration says the request has to supply one.
    *
-   * With a wallet in the loop the wallet proves possession of its own key through the OID4VCI
-   * proof, and the backend derives both the cnf and `mandatee.id` from it. Generating one here
-   * for wallet-only delivery would hand the Operator a private key the credential is not bound to.
+   * Keyed on the configuration, not on the delivery modes: the issuer requires the key for every
+   * mode alike (`CredentialProfile.holderKeyRequired`). A configuration with no cryptographic
+   * binding method gets no wallet proof either, so even an email or QR issuance binds to the key
+   * generated here — the Operator has to keep it whichever channel delivered the credential.
+   *
+   * Where a wallet IS in the loop the wallet proves possession of its own key through the OID4VCI
+   * proof, and the issuer derives both the cnf and `mandatee.id` from it. Generating one here for
+   * such a type would hand the Operator a private key the credential is not bound to.
    */
-  private holderKeyIfNeeded$(
-    credentialType: IssuanceCredentialType,
-    modes: readonly DeliveryMode[]
-  ): Observable<HolderKeyMaterial | undefined> {
-    const needsKey = modes.includes('direct') && TYPES_REQUIRING_HOLDER_KEY.has(credentialType);
+  private holderKeyIfNeeded$(configId: string): Observable<HolderKeyMaterial | undefined> {
+    const needsKey = this.metadataService.isHolderKeyRequired(configId);
     // `of(undefined)` rather than a resolved promise: without a key to generate the chain stays
-    // synchronous, exactly as it was before this step existed. Only `direct` pays for the await.
+    // synchronous, exactly as it was before this step existed. Only holder-bound types pay for the await.
     return needsKey ? from(this.keyGenerator.generateHolderKeyPair()) : of(undefined);
   }
 
   /**
    * Which success dialog to show.
    *
-   * The two single wallet modes keep the dialogs they always had. Everything else -- any
-   * combination of modes, and anything including `direct` -- goes to the multi-box result dialog.
+   * The two single wallet modes keep the dialogs they always had, but ONLY when there is no holder
+   * key to hand over and no mode came back failed. The result dialog is the only one with a slot
+   * for the key, and the only one that can say a mode failed, so either overrides the routing
+   * whatever the modes are. Everything else -- any combination of modes, and anything including
+   * `direct` -- goes to the multi-box result dialog.
    *
-   * Decided on the SELECTED modes rather than on what the response happens to carry: with
-   * `direct` the dialog holds the only copy of the private key, so it must open even when the
-   * response came back without the credential token, or when the wallet leg failed. Falling
-   * through to a generic dialog there would destroy the key.
+   * The failed-mode check matters most for single-mode `email`: a 200 whose only mode failed used
+   * to land on the plain success dialog, telling the Operator the offer had been emailed when the
+   * backend had just reported it had not.
+   *
+   * Which BOXES appear is still decided on the SELECTED modes, not on what the response carries:
+   * the dialog must open even when the response came back without the credential token.
    */
   private openResultDialog(
     modes: readonly DeliveryMode[],
@@ -511,27 +525,34 @@ export class CredentialIssuanceService {
     holderKey: HolderKeyMaterial | undefined
   ): Observable<any> {
     const isSingle = (mode: DeliveryMode) => modes.length === 1 && modes[0] === mode;
+    const anyFailed = (response?.delivery_results ?? []).some(result => result.status === 'failed');
 
-    if (isSingle('email')) {
-      return this.openSuccessfulCreateDialog();
-    }
-    if (isSingle('ui') && response?.credential_offer_uri) {
-      return this.openCredentialOfferDialog(response.credential_offer_uri);
+    if (!holderKey && !anyFailed) {
+      if (isSingle('email')) {
+        return this.openSuccessfulCreateDialog();
+      }
+      if (isSingle('ui') && response?.credential_offer_uri) {
+        return this.openCredentialOfferDialog(response.credential_offer_uri);
+      }
     }
 
-    return this.openIssuanceResultDialog(modes, response, holderKey);
+    return this.openIssuanceResultDialog(modes, response, holderKey, response?.delivery_results);
   }
 
   private openIssuanceResultDialog(
     modes: readonly DeliveryMode[],
     response: IssuanceResponseDto | undefined,
-    holderKey: HolderKeyMaterial | undefined
+    holderKey: HolderKeyMaterial | undefined,
+    deliveryResults?: readonly IssuanceDeliveryResultDto[],
+    failed = false
   ): Observable<any> {
     const dialogData: IssuanceResultDialogData = {
       deliveryModes: modes,
       credentialToken: response?.signed_credential,
       privateKey: holderKey?.privateKeyHex,
-      credentialOfferUri: response?.credential_offer_uri
+      credentialOfferUri: response?.credential_offer_uri,
+      deliveryResults,
+      failed
     };
 
     const dialogRef = this.matDialog.open(IssuanceResultDialogComponent, {
@@ -603,10 +624,47 @@ export class CredentialIssuanceService {
    * retry. `hasSubmitted$` is not touched either, since it's only set inside the success
    * path's `tap`, so the canLeave() guard keeps protecting what was written.
    */
-  private handleIssuanceFailure(error: unknown): Observable<any> {
+  private handleIssuanceFailure(
+    error: unknown,
+    modes: readonly DeliveryMode[],
+    holderKey: HolderKeyMaterial | undefined
+  ): Observable<any> {
     console.error('POST /api/v1/issuances failed', error);
+    const deliveryResults = this.extractDeliveryResults(error);
+
+    // Two reasons to show the result dialog instead of the generic one, and either is enough:
+    // a generated private key exists nowhere else and dies with this closure, and the error body
+    // may report that some modes DID dispatch (a hybrid whose direct leg failed still answers 5xx,
+    // but its email may have gone out). The generic dialog stays for failures with neither -- a
+    // validation error, a 403, a timeout -- where ES-02 wants a cause-agnostic message.
+    if (holderKey || deliveryResults) {
+      this.openIssuanceResultDialog(modes, undefined, holderKey, deliveryResults, true);
+      return EMPTY;
+    }
+
     this.openFailedCreateDialog();
     return EMPTY;
+  }
+
+  /**
+   * Reads `delivery_results` out of an error body, defensively: the shape is only trusted when it
+   * really is an array of entries carrying a mode and a status. Anything else (a plain-text 502 from
+   * a proxy, an HTML error page, a timeout with no body at all) yields undefined and falls back to
+   * the generic failure dialog.
+   */
+  private extractDeliveryResults(error: unknown): readonly IssuanceDeliveryResultDto[] | undefined {
+    const body = (error as { error?: unknown } | null)?.error;
+    if (!body || typeof body !== 'object') return undefined;
+
+    const raw = (body as { delivery_results?: unknown }).delivery_results;
+    if (!Array.isArray(raw)) return undefined;
+
+    const results = raw.filter((entry): entry is IssuanceDeliveryResultDto =>
+      !!entry && typeof entry === 'object'
+      && typeof (entry as IssuanceDeliveryResultDto).mode === 'string'
+      && typeof (entry as IssuanceDeliveryResultDto).status === 'string');
+
+    return results.length > 0 ? results : undefined;
   }
 
   private openFailedCreateDialog(): Observable<any> {

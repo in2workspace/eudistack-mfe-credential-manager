@@ -20,9 +20,10 @@ export class IssuanceRequestFactoryService {
 
   /**
    * @param delivery  CSV of delivery modes (see `toDeliveryCsv`).
-   * @param holderKey generated during submission, and only when `direct` is among those modes.
-   *                  It supplies both `mandatee.id` (did:key) and `holder_key.jwk`. Absent for
-   *                  wallet-only delivery, where the backend derives both from the proof.
+   * @param holderKey generated during submission when the selected configuration requires one
+   *                  (`cnf_required` and no cryptographic binding method), for every delivery
+   *                  mode alike. It supplies both `mandatee.id` (did:key) and `holder_key.jwk`.
+   *                  Absent for wallet-bound types, where the backend derives both from the proof.
    */
   public createCredentialRequest(
       credentialData: IssuanceRawCredentialPayload,

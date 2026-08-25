@@ -130,13 +130,22 @@ export class CredentialIssuerMetadataService {
   }
 
   /**
+   * Whether the holder key of this configuration arrives through an OID4VCI wallet proof.
+   *
+   * Mirrors `CredentialProfile.walletBoundHolderKey()`. Absent AND empty both count as "no",
+   * because the issuer normalizes an empty set to an omitted field and either shape can reach us.
+   */
+  private isWalletBound(config: CredentialConfigurationDto): boolean {
+    const methods = config.cryptographic_binding_methods_supported;
+    return !!methods && methods.length > 0;
+  }
+
+  /**
    * Whether this configuration can be issued synchronously (`direct` delivery).
    *
    * Mirrors the backend rule (`CredentialProfile.directDeliveryEligible()`): a configuration
    * that declares `cryptographic_binding_methods_supported` states that the holder key arrives
-   * through an OID4VCI wallet proof, and direct delivery has neither wallet nor proof. Absent
-   * AND empty both count as eligible, because the issuer normalizes an empty set to an omitted
-   * field and either shape can reach us.
+   * through an OID4VCI wallet proof, and direct delivery has neither wallet nor proof.
    *
    * Fail-closed, like the rest of this service: with no usable metadata the option is not
    * offered. Withholding a delivery mode beats offering one the backend will reject.
@@ -145,7 +154,30 @@ export class CredentialIssuerMetadataService {
     if (this.loadFailed()) return false;
     const config = this.getConfigurationById(configId);
     if (!config) return false;
-    const methods = config.cryptographic_binding_methods_supported;
-    return !methods || methods.length === 0;
+    return !this.isWalletBound(config);
+  }
+
+  /**
+   * Whether the issuance request has to carry the holder key itself.
+   *
+   * Mirrors `CredentialProfile.holderKeyRequired()`, and it is a conjunction of both published
+   * halves: `cnf_required` says the credential is bound to a holder key at all, the binding
+   * methods say who supplies it. Three states, not two — a configuration with no binding method
+   * is direct-eligible either way, but only a `cnf_required` one needs a key generated for it.
+   *
+   * Applies to EVERY delivery mode, not only `direct`: a type with no binding method gets no
+   * wallet proof either, so the key supplied at intake is the only one the credential will ever
+   * have — the wallet channels just deliver a credential already bound to it.
+   *
+   * Fails to `false` on unusable metadata, the opposite direction from
+   * `isDirectDeliveryEligible`. Not asking for a key the issuer wanted is rejected at intake,
+   * loudly; generating one the issuer discards would hand the Operator a private key the
+   * credential is not bound to, and nothing downstream would ever reveal it.
+   */
+  isHolderKeyRequired(configId: string): boolean {
+    if (this.loadFailed()) return false;
+    const config = this.getConfigurationById(configId);
+    if (!config) return false;
+    return config.cnf_required === true && !this.isWalletBound(config);
   }
 }

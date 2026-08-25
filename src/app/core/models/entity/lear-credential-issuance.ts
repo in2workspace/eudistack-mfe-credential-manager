@@ -62,18 +62,6 @@ export function toDeliveryCsv(modes: Iterable<DeliveryMode>): string {
   return [...new Set(modes)].sort((a, b) => a.localeCompare(b)).join(',');
 }
 
-/**
- * Types whose credential binds to a holder key the Operator must keep.
- *
- * The authoritative condition on the backend is `cnf_required && no
- * cryptographic_binding_methods_supported`, but the issuer metadata publishes only the second
- * half of it, so `cnf_required` cannot be read here. Until it is exposed, the set of types that
- * carry a holder-bound key is small and known, and naming it is more honest than inferring it
- * from the half we can see.
- */
-export const TYPES_REQUIRING_HOLDER_KEY: ReadonlySet<IssuanceCredentialType> =
-  new Set<IssuanceCredentialType>(['learcredential.machine']);
-
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
   format: 'mso_mdoc',

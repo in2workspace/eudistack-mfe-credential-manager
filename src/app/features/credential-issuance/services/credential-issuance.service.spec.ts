@@ -39,6 +39,7 @@ describe('CredentialIssuanceService', () => {
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
   let policyLoadFailed: ReturnType<typeof signal<boolean>>;
   let directEligible: ReturnType<typeof signal<boolean>>;
+  let holderKeyRequired: ReturnType<typeof signal<boolean>>;
   // The policy load is held open by default: with an already-resolved promise the forkJoin
   // settles between beforeEach and the test body, leaving no "still loading" window to assert
   // on. Tests that need the loads finished call resolvePolicyLoad() themselves.
@@ -51,6 +52,7 @@ describe('CredentialIssuanceService', () => {
     getIssuableCredentialTypes: jest.Mock;
     hasMetadataLoadFailed: jest.Mock;
     isDirectDeliveryEligible: jest.Mock;
+    isHolderKeyRequired: jest.Mock;
   };
 
 
@@ -78,6 +80,8 @@ describe('CredentialIssuanceService', () => {
     metadataLoadFailed = signal<boolean>(false);
     policyLoadFailed = signal<boolean>(false);
     directEligible = signal<boolean>(true);
+    // Bearer by default: only the tests about holder-bound types flip it.
+    holderKeyRequired = signal<boolean>(false);
     policyLoadPromise = new Promise<void>(resolve => { resolvePolicyLoad = resolve; });
     mockMetadataService = {
       loadMetadata: jest.fn(() => of(undefined)),
@@ -86,7 +90,10 @@ describe('CredentialIssuanceService', () => {
       getIssuableCredentialTypes: jest.fn(() => issuableTypes()),
       hasMetadataLoadFailed: jest.fn(() => metadataLoadFailed()),
       // Direct-eligible by default; the delivery tests below flip it per case.
-      isDirectDeliveryEligible: jest.fn(() => directEligible())
+      isDirectDeliveryEligible: jest.fn(() => directEligible()),
+      // Whether the request must carry a holder key. Decided by the issuer metadata
+      // (cnf_required AND no cryptographic binding method), not by the delivery modes.
+      isHolderKeyRequired: jest.fn(() => holderKeyRequired())
     };
 
     TestBed.configureTestingModule({
@@ -439,12 +446,15 @@ describe('CredentialIssuanceService', () => {
           deliveryModes: ['ui', 'email'],
           credentialToken: undefined,
           privateKey: undefined,
-          credentialOfferUri: 'openid-credential-offer://abc'
+          credentialOfferUri: 'openid-credential-offer://abc',
+          deliveryResults: undefined,
+          failed: false
         });
         expect(dialogService.openDialog).not.toHaveBeenCalled();
       });
 
       it('should carry the token and the private key when direct is selected', fakeAsync(() => {
+        holderKeyRequired.set(true);
         service.selectedCredentialType$.set('learcredential.machine');
         service.selectedDeliveryModes$.set(new Set(['direct']));
         mockProcedureService.createProcedure.mockReturnValue(of({ signed_credential: 'eyJ.token' }));
@@ -458,12 +468,15 @@ describe('CredentialIssuanceService', () => {
           deliveryModes: ['direct'],
           credentialToken: 'eyJ.token',
           privateKey: '0xdeadbeef',
-          credentialOfferUri: undefined
+          credentialOfferUri: undefined,
+          deliveryResults: undefined,
+          failed: false
         });
       }));
 
       it('should still open the dialog with the key when the response brings no token', fakeAsync(() => {
         // The key exists nowhere else. Falling through to a generic dialog would destroy it.
+        holderKeyRequired.set(true);
         service.selectedCredentialType$.set('learcredential.machine');
         service.selectedDeliveryModes$.set(new Set(['direct']));
         mockProcedureService.createProcedure.mockReturnValue(of({}));
@@ -476,7 +489,139 @@ describe('CredentialIssuanceService', () => {
         expect(dialogService.openDialog).not.toHaveBeenCalled();
       }));
 
-      it('should not generate a key for wallet-only delivery', () => {
+      // The issuer requires the holder key for EVERY delivery mode of a type with no
+      // cryptographic binding method: no wallet proof will ever arrive for it, so the key
+      // generated here is the only one the credential will ever be bound to.
+      it('should generate a key for wallet-only delivery of a holder-bound type', fakeAsync(() => {
+        holderKeyRequired.set(true);
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(mockKeyGenerator.generateHolderKeyPair).toHaveBeenCalledTimes(1);
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' } });
+      }));
+
+      // The plain success dialog has no slot for a key, and the key exists nowhere else.
+      it('should show the multi-box result dialog for an email-only issuance that generated a key', fakeAsync(() => {
+        holderKeyRequired.set(true);
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData().privateKey).toBe('0xdeadbeef');
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
+      }));
+
+      // --- EUD-33 AC-06: routing and the key must follow the per-mode outcome, not the HTTP status ---
+
+      it('should not claim success when the only mode came back failed', fakeAsync(() => {
+        // A 200 whose only mode failed used to land on the plain success dialog, telling the Operator
+        // the offer had been emailed when the backend had just reported it had not.
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          delivery_results: [{ mode: 'email', status: 'failed', error: 'SMTP unavailable' }]
+        }));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData().deliveryResults).toEqual([
+          { mode: 'email', status: 'failed', error: 'SMTP unavailable' }
+        ]);
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
+      }));
+
+      it('should keep the plain success dialog when every mode dispatched', fakeAsync(() => {
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          delivery_results: [{ mode: 'email', status: 'dispatched' }]
+        }));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+      }));
+
+      it('should surface the per-mode results carried by an error body', fakeAsync(() => {
+        // A hybrid whose direct leg failed answers 5xx, but its wallet leg may already have
+        // dispatched. Dropping that left the Operator unable to tell whether an email had gone out.
+        service.selectedDeliveryModes$.set(new Set(['direct', 'email']));
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({
+          status: 500,
+          error: {
+            detail: 'Direct delivery failed; the credential was not returned',
+            delivery_results: [
+              { mode: 'direct', status: 'failed', error: 'QTSP down' },
+              { mode: 'email', status: 'dispatched' }
+            ]
+          }
+        })));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData().failed).toBe(true);
+        expect(dialogData().deliveryResults).toHaveLength(2);
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
+      }));
+
+      it('should still hand over the generated key when the issuance fails', fakeAsync(() => {
+        // The key lives only in the submit closure. Closing with the generic dialog destroyed the
+        // only copy of the key the dispatched credential is bound to.
+        holderKeyRequired.set(true);
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['direct', 'email']));
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData().privateKey).toBe('0xdeadbeef');
+        expect(dialogData().failed).toBe(true);
+      }));
+
+      it('should keep the generic failure dialog for an error with neither key nor per-mode results', fakeAsync(() => {
+        // ES-02 wants a cause-agnostic message for a validation error, a 403 or a timeout: nothing
+        // ran, so there is nothing per-mode to say and no key to protect.
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 400 })));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+      }));
+
+      it('should ignore a delivery_results field that is not a list of results', fakeAsync(() => {
+        // A proxy 502 with an HTML or plain-text body must not be read as a per-mode report.
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({
+          status: 502, error: { delivery_results: 'gateway timeout' }
+        })));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+      }));
+
+      it('should not generate a key for a wallet-bound type, whatever the modes', () => {
         service.selectedCredentialType$.set('learcredential.machine');
         service.selectedDeliveryModes$.set(new Set(['email']));
         mockProcedureService.createProcedure.mockReturnValue(of({}));
