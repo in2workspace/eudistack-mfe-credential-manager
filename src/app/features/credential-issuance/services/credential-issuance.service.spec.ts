@@ -578,6 +578,28 @@ describe('CredentialIssuanceService', () => {
         expect(dialogService.openDialog).not.toHaveBeenCalled();
       }));
 
+      it('should carry the offer URI an error body still reports', fakeAsync(() => {
+        // direct is decisive, so the issuance is a 5xx -- but the offer the wallet leg produced is
+        // redeemable, and without the URI the QR box could only claim it had not been generated.
+        service.selectedDeliveryModes$.set(new Set(['direct', 'ui']));
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({
+          status: 500,
+          error: {
+            detail: 'Direct delivery failed; the credential was not returned',
+            credential_offer_uri: 'openid-credential-offer://abc',
+            delivery_results: [
+              { mode: 'direct', status: 'failed', error: 'QTSP down' },
+              { mode: 'ui', status: 'dispatched' }
+            ]
+          }
+        })));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogData().credentialOfferUri).toBe('openid-credential-offer://abc');
+      }));
+
       it('should still hand over the generated key when the issuance fails', fakeAsync(() => {
         // The key lives only in the submit closure. Closing with the generic dialog destroyed the
         // only copy of the key the dispatched credential is bound to.

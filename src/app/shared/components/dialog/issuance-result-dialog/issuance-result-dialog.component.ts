@@ -7,11 +7,23 @@ import { IssuanceDeliveryResultDto } from 'src/app/core/models/dto/lear-credenti
 import { CopyableFieldComponent } from '../copyable-field/copyable-field.component';
 import { CredentialOfferQrComponent } from '../credential-offer-qr/credential-offer-qr.component';
 
+const DIALOG = 'credentialIssuance.issuance-result-dialog.';
+const HANDOVER_TITLE = `${DIALOG}handover.`;
+
+/**
+ * What the dialog knows about a declared delivery mode.
+ *
+ * `unconfirmed` is a third answer on purpose. The issuance failed as a whole and the error body
+ * said nothing about this mode, so claiming either outcome would be an invention — and the success
+ * branch inventing one is what used to make a box announce an email that may never have gone out.
+ */
+export type ModeOutcome = 'ok' | 'failed' | 'unconfirmed';
+
 export interface IssuanceResultDialogData {
   /** Modes the Operator selected. Drives which boxes appear; order comes from DELIVERY_RESULT_ORDER. */
   deliveryModes: readonly DeliveryMode[];
   /**
-   * The signed credential, for the `direct` box. Optional on purpose: if the backend answered
+   * The signed credential, for the hand-over box. Optional on purpose: if the backend answered
    * without it, the dialog still has to open, because closing it destroys the only copy of the
    * private key.
    */
@@ -20,10 +32,10 @@ export interface IssuanceResultDialogData {
    * Private half of the holder key, when one was generated. Absent for credential types that do
    * not bind to a holder key, and no key is then rendered at all.
    *
-   * Where it renders depends on whether there is a credential to pair it with — see
-   * `keyInsideDirectBox`. The key belongs to the credential, not to a delivery channel: a type
-   * with no cryptographic binding method binds to it whichever way the credential travelled, so
-   * the Operator has to keep it after a QR or an email just as much as after a direct issuance.
+   * Goes in the hand-over box, with the credential when there is one. The key belongs to the
+   * credential, not to a delivery channel: a type with no cryptographic binding method binds to it
+   * whichever way the credential travelled, so the Operator has to keep it after a QR or an email
+   * just as much as after a direct issuance.
    */
   privateKey?: string;
   /** Offer URI for the `ui` box. */
@@ -42,17 +54,17 @@ export interface IssuanceResultDialogData {
 }
 
 /**
- * Result of a successful issuance: one box per delivery mode the Operator chose, plus the holder
- * key wherever it belongs.
+ * Result of an issuance: a hand-over box carrying whatever exists nowhere else, then one status
+ * box per remaining channel.
+ *
+ * Split by what the Operator has to DO, not by delivery mode. The credential token and the holder
+ * key are hand-overs — shown once, destroyed by closing the dialog — so they share a single box
+ * and a single warning, whichever of them is present. `ui` and `email` are notifications about a
+ * credential travelling elsewhere, and so is a `direct` delivery that failed; those get a box
+ * each, in `DELIVERY_RESULT_ORDER`.
  *
  * Single-mode `email` and single-mode `ui` come here only when there is a key to hand over —
- * otherwise they keep their existing dialogs untouched. This handles every combination, and
- * every selection containing `direct`.
- *
- * Boxes are ordered by how urgently the Operator has to act on them (`DELIVERY_RESULT_ORDER`):
- * `direct` hands over a credential, `ui` a QR to scan now, `email` only an acknowledgement. A
- * key with no direct box to live in comes first, because it is then the only thing in the dialog
- * that exists nowhere else and cannot be recovered after closing.
+ * otherwise they keep their existing dialogs untouched.
  */
 @Component({
   selector: 'app-issuance-result-dialog',
@@ -86,24 +98,69 @@ export class IssuanceResultDialogComponent {
 
   public readonly failed: boolean = this.data.failed === true;
 
+  /**
+   * Nothing is confirmed as working, and at least one channel's outcome is unknown.
+   *
+   * The distinction that matters for the holder key: "every channel failed" means the credential is
+   * nowhere and the key unlocks nothing, while "we could not find out" leaves a dispatch that may
+   * well have happened, bound to a key this dialog holds the only copy of.
+   */
+  public readonly deliveryUnconfirmed: boolean =
+    !this.orderedModes.some(mode => this.canDeliver(mode))
+    && this.orderedModes.some(mode => this.outcomeOf(mode) === 'unconfirmed');
+
   /** Whether any declared mode came back failed — drives the summary banner. */
   public readonly hasAnyFailure: boolean =
     this.orderedModes.some(mode => this.hasFailed(mode));
 
   /**
-   * The key renders INSIDE the `direct` box when that box exists AND direct actually delivered:
-   * there the credential and the key are the two halves of a single hand-over, and splitting them
-   * across boxes would ask the Operator to copy two things that only work together from two
-   * different places. With no credential to pair it with, the key gets its own box instead.
+   * Whether the credential itself is handed over here. Only `direct` returns it in the issuance
+   * response, and only when its outcome is known to be good.
    */
-  public readonly keyInsideDirectBox: boolean =
-    !!this.data.privateKey && this.orderedModes.includes('direct') && !this.hasFailed('direct');
+  public readonly showsToken: boolean =
+    this.orderedModes.includes('direct') && this.outcomeOf('direct') === 'ok';
 
   /**
-   * With no direct box to live in — a wallet-only issuance of a type that still binds to a key —
-   * the key gets a box of its own, first, since nothing else in the dialog is unrecoverable.
+   * Whether the holder key is worth handing over, i.e. whether the Operator can actually end up
+   * with the credential it binds.
+   *
+   * A key is only ever useful next to a channel that worked: the credential the holder redeems is
+   * bound to it, and without it that credential cannot be presented. With every declared channel
+   * failed there is nothing to redeem and nothing to pair the key with — showing it would ask the
+   * Operator to keep a secret that unlocks nothing, since re-issuing generates a new one.
+   *
+   * The exception is {@link deliveryUnconfirmed}: not knowing is not the same as knowing it failed,
+   * and a key withheld from a delivery that did go out is unrecoverable.
    */
-  public readonly keyInOwnBox: boolean = !!this.data.privateKey && !this.keyInsideDirectBox;
+  public readonly showsKey: boolean = !!this.data.privateKey
+    && (this.orderedModes.some(mode => this.canDeliver(mode)) || this.deliveryUnconfirmed);
+
+  /**
+   * Title of the hand-over box, naming whatever ended up inside it, or {@code null} when there is
+   * nothing to hand over and the box does not render at all.
+   */
+  public readonly handoverTitleKey: string | null =
+    IssuanceResultDialogComponent.handoverTitle(this.showsToken, this.showsKey);
+
+  /** The warning above the contents says something different when nothing could be confirmed. */
+  public readonly handoverNoteKey: string =
+    this.deliveryUnconfirmed ? `${DIALOG}handoverNoteUnconfirmed` : `${DIALOG}handoverNote`;
+
+  /**
+   * Whether the box ended up with something the Operator can actually copy. It can exist without:
+   * a direct delivery whose response carried no token, with no key beside it, leaves only the
+   * "not returned" line, and telling the Operator to save that would be nonsense.
+   */
+  public readonly hasSavableContent: boolean =
+    (this.showsToken && !!this.data.credentialToken) || this.showsKey;
+
+  /**
+   * Modes that get a status box of their own. The wallet channels always do; `direct` only when it
+   * did not deliver, because a failed or unconfirmed direct is a report like theirs rather than a
+   * hand-over — in its successful form it lives in the hand-over box above.
+   */
+  public readonly statusModes: DeliveryMode[] =
+    this.orderedModes.filter(mode => mode !== 'direct' || this.outcomeOf('direct') !== 'ok');
 
   /**
    * Both wallet channels serve the SAME credential offer, and it can only be redeemed once, so
@@ -118,25 +175,47 @@ export class IssuanceResultDialogComponent {
     && !this.hasFailed('ui') && !this.hasFailed('email');
 
   /**
-   * Whether this mode is reported as failed.
+   * What is known about a declared mode.
    *
-   * Absent results mean the backend said nothing about the mode, which is NOT a failure: an older
-   * backend, or a failure that never reached the delivery stage. Boxes then keep their previous
-   * rendering rather than inventing a verdict.
+   * Silence means different things on either side of the contract. In a successful issuance the
+   * issuer only answers 200 when something was delivered, so a mode it said nothing about worked
+   * (an older backend says nothing about any of them). Inside a failure, silence is silence: a
+   * timeout or a proxy error can hide a dispatch that did happen, and the box must say so instead
+   * of picking the reassuring answer.
    */
+  public outcomeOf(mode: DeliveryMode): ModeOutcome {
+    const status = this.resultByMode.get(mode)?.status;
+    if (status === 'failed') return 'failed';
+    if (status) return 'ok';
+    return this.failed ? 'unconfirmed' : 'ok';
+  }
+
+  /** Kept for the callers that only care about the failed verdict. */
   public hasFailed(mode: DeliveryMode): boolean {
-    return this.resultByMode.get(mode)?.status === 'failed';
+    return this.outcomeOf(mode) === 'failed';
   }
 
-  /** Backend-supplied detail for a failed mode, shown verbatim under the box title. */
-  public errorOf(mode: DeliveryMode): string | undefined {
-    return this.resultByMode.get(mode)?.error;
+  /**
+   * Whether the credential can actually be obtained through this mode — which is more than the mode
+   * having worked. A QR channel that dispatched is useless to the Operator if the offer URI never
+   * reached this dialog: there is then nothing to show and nobody can redeem anything.
+   */
+  private canDeliver(mode: DeliveryMode): boolean {
+    if (this.outcomeOf(mode) !== 'ok') return false;
+    if (mode === 'direct') return !!this.data.credentialToken;
+    if (mode === 'ui') return !!this.data.credentialOfferUri;
+    return true;
   }
 
-  /** The `direct` box announces the key only when the key actually renders inside it. */
-  public sectionTitleKey(mode: DeliveryMode): string {
-    const suffix = mode === 'direct' && this.keyInsideDirectBox ? 'directWithKey' : mode;
-    return `credentialIssuance.issuance-result-dialog.section.${suffix}`;
+  /**
+   * The hand-over box is titled by its contents rather than by a delivery mode: the credential and
+   * the key get there through independent conditions and either can turn up alone.
+   */
+  private static handoverTitle(hasToken: boolean, hasKey: boolean): string | null {
+    if (hasToken && hasKey) return `${HANDOVER_TITLE}credentialAndKey`;
+    if (hasToken) return `${HANDOVER_TITLE}credential`;
+    if (hasKey) return `${HANDOVER_TITLE}key`;
+    return null;
   }
 
   private readonly dialogRef = inject(MatDialogRef<IssuanceResultDialogComponent>);

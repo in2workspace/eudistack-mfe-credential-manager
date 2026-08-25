@@ -12,55 +12,56 @@
             : "credentialIssuance.issuance-result-dialog.partialBanner") | translate }}
     </p>
   }
-  @if (keyInOwnBox && data.privateKey) {
-    <section class="result-box" data-mode="holderKey">
-      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section.holderKey" | translate }}</h3>
-      <p class="holder-key-note" role="status">
-        {{ "credentialIssuance.issuance-result-dialog.holderKeyNote" | translate }}
-      </p>
-      <app-copyable-field
-        labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
-        [value]="data.privateKey">
-      </app-copyable-field>
+
+  <!-- What the Operator has to take away: shown once, gone on close. One box, one warning,
+       whichever of the two ended up in it. -->
+  @if (handoverTitleKey) {
+    <section class="result-box" data-mode="handover">
+      <h3 class="box-title">{{ handoverTitleKey | translate }}</h3>
+
+      @if (hasSavableContent) {
+        <p class="handover-note" role="status">{{ handoverNoteKey | translate }}</p>
+      }
+
+      @if (showsToken) {
+        @if (data.credentialToken) {
+          <app-copyable-field
+            labelKey="credentialIssuance.issuance-result-dialog.credential"
+            [value]="data.credentialToken">
+          </app-copyable-field>
+        } @else {
+          <p class="token-missing" role="status">
+            {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
+          </p>
+        }
+      }
+
+      @if (showsKey && data.privateKey) {
+        <app-copyable-field
+          labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
+          [value]="data.privateKey">
+        </app-copyable-field>
+      }
     </section>
   }
 
-  @for (mode of orderedModes; track mode) {
+  @for (mode of statusModes; track mode) {
+    @let outcome = outcomeOf(mode);
     <section class="result-box" [attr.data-mode]="mode">
-      <h3 class="box-title">{{ sectionTitleKey(mode) | translate }}</h3>
+      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section." + mode | translate }}</h3>
 
-      @if (hasFailed(mode)) {
+      @if (outcome === 'failed') {
+        <!-- One generic sentence per channel. The issuer's own wording is technical and reaches the
+             Operator with no context to act on it; it stays in the log and the audit trace. -->
         <p class="mode-failed" role="status">
-          {{ "credentialIssuance.issuance-result-dialog.modeFailed" | translate }}
-          @if (errorOf(mode)) {
-            <span class="mode-failed-detail">{{ errorOf(mode) }}</span>
-          }
+          {{ "credentialIssuance.issuance-result-dialog.modeFailed." + mode | translate }}
+        </p>
+      } @else if (outcome === 'unconfirmed') {
+        <p class="mode-unconfirmed" role="status">
+          {{ "credentialIssuance.issuance-result-dialog.modeUnconfirmed" | translate }}
         </p>
       } @else {
         @switch (mode) {
-          @case ('direct') {
-            @if (data.credentialToken) {
-              <app-copyable-field
-                labelKey="credentialIssuance.issuance-result-dialog.credential"
-                [value]="data.credentialToken">
-              </app-copyable-field>
-            } @else {
-              <p class="token-missing" role="status">
-                {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
-              </p>
-            }
-
-            @if (keyInsideDirectBox && data.privateKey) {
-              <p class="holder-key-note" role="status">
-                {{ "credentialIssuance.issuance-result-dialog.holderKeyNote" | translate }}
-              </p>
-              <app-copyable-field
-                labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
-                [value]="data.privateKey">
-              </app-copyable-field>
-            }
-          }
-
           @case ('ui') {
             @if (data.credentialOfferUri) {
               <app-credential-offer-qr [credentialOfferUri]="data.credentialOfferUri"></app-credential-offer-qr>

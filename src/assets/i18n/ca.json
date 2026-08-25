@@ -361,7 +361,12 @@
       "titleFailed": "No s'ha pogut completar l'emissió",
       "failedBanner": "L'emissió ha fallat. Revisa el detall de cada canal abans de tornar-ho a provar.",
       "partialBanner": "L'emissió s'ha completat, però algun canal d'entrega ha fallat.",
-      "modeFailed": "Aquest canal d'entrega ha fallat.",
+      "modeFailed": {
+        "direct": "No s'ha pogut emetre la credencial, així que no es retorna aquí.",
+        "ui": "No s'ha pogut generar el codi QR.",
+        "email": "No s'ha pogut enviar el correu electrònic."
+      },
+      "modeUnconfirmed": "No s'ha pogut confirmar aquest canal. Revisa la llista de credencials abans de tornar a emetre.",
       "credential": "Credencial",
       "credentialKey": "Clau de la credencial",
       "copied": "Credencial copiada",
@@ -369,13 +374,17 @@
       "bothWalletChannels": "La credencial es pot obtenir des del codi QR o des del correu electrònic, però només funcionarà el primer que s'utilitzi.",
       "tokenUnavailable": "La credencial s'ha creat, però no s'ha retornat en la resposta.",
       "offerUnavailable": "No s'ha pogut generar l'oferta de credencial.",
-      "holderKeyNote": "Aquesta clau només existeix aquí i no es pot recuperar: copia-la i lliura-la al titular de la credencial abans de tancar aquesta finestra.",
+      "handoverNote": "Desa aquesta informació ara. Només es mostra un cop i no es podrà recuperar després.",
+      "handoverNoteUnconfirmed": "No s'ha pogut confirmar el lliurament. Si la credencial arriba al titular, estarà lligada a aquesta clau: desa-la ara, només es mostra un cop.",
+      "handover": {
+        "credentialAndKey": "Credencial i clau",
+        "credential": "Credencial",
+        "key": "Clau de la credencial"
+      },
       "section": {
-        "direct": "Credencial",
-        "directWithKey": "Credencial i clau",
+        "direct": "Lliurament directe",
         "ui": "Codi QR",
-        "email": "Correu electrònic",
-        "holderKey": "Clau de la credencial"
+        "email": "Correu electrònic"
       }
     },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",

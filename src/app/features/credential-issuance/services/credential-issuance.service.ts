@@ -630,7 +630,7 @@ export class CredentialIssuanceService {
     holderKey: HolderKeyMaterial | undefined
   ): Observable<any> {
     console.error('POST /api/v1/issuances failed', error);
-    const deliveryResults = this.extractDeliveryResults(error);
+    const { deliveryResults, credentialOfferUri } = this.extractFailureBody(error);
 
     // Two reasons to show the result dialog instead of the generic one, and either is enough:
     // a generated private key exists nowhere else and dies with this closure, and the error body
@@ -638,7 +638,10 @@ export class CredentialIssuanceService {
     // but its email may have gone out). The generic dialog stays for failures with neither -- a
     // validation error, a 403, a timeout -- where ES-02 wants a cause-agnostic message.
     if (holderKey || deliveryResults) {
-      this.openIssuanceResultDialog(modes, undefined, holderKey, deliveryResults, true);
+      // The offer survives the failure: a channel the issuer reports as dispatched is redeemable
+      // whatever the direct leg did, so the QR still has to reach the Operator.
+      this.openIssuanceResultDialog(
+        modes, { credential_offer_uri: credentialOfferUri }, holderKey, deliveryResults, true);
       return EMPTY;
     }
 
@@ -647,24 +650,36 @@ export class CredentialIssuanceService {
   }
 
   /**
-   * Reads `delivery_results` out of an error body, defensively: the shape is only trusted when it
-   * really is an array of entries carrying a mode and a status. Anything else (a plain-text 502 from
-   * a proxy, an HTML error page, a timeout with no body at all) yields undefined and falls back to
-   * the generic failure dialog.
+   * Reads what an error body can still tell us, defensively: each shape is only trusted when it
+   * really is what it claims to be. Anything else (a plain-text 502 from a proxy, an HTML error
+   * page, a timeout with no body at all) yields an empty answer, and with no holder key either the
+   * caller falls back to the generic failure dialog.
+   *
+   * `credential_offer_uri` travels on the error side of the contract too: a declared `direct` that
+   * fails makes the whole issuance a failure even when the wallet leg produced a perfectly
+   * redeemable offer.
    */
-  private extractDeliveryResults(error: unknown): readonly IssuanceDeliveryResultDto[] | undefined {
+  private extractFailureBody(error: unknown): {
+    deliveryResults?: readonly IssuanceDeliveryResultDto[];
+    credentialOfferUri?: string;
+  } {
     const body = (error as { error?: unknown } | null)?.error;
-    if (!body || typeof body !== 'object') return undefined;
+    if (!body || typeof body !== 'object') return {};
 
     const raw = (body as { delivery_results?: unknown }).delivery_results;
-    if (!Array.isArray(raw)) return undefined;
+    const results = Array.isArray(raw)
+      ? raw.filter((entry): entry is IssuanceDeliveryResultDto =>
+          !!entry && typeof entry === 'object'
+          && typeof (entry as IssuanceDeliveryResultDto).mode === 'string'
+          && typeof (entry as IssuanceDeliveryResultDto).status === 'string')
+      : [];
 
-    const results = raw.filter((entry): entry is IssuanceDeliveryResultDto =>
-      !!entry && typeof entry === 'object'
-      && typeof (entry as IssuanceDeliveryResultDto).mode === 'string'
-      && typeof (entry as IssuanceDeliveryResultDto).status === 'string');
+    const offerUri = (body as { credential_offer_uri?: unknown }).credential_offer_uri;
 
-    return results.length > 0 ? results : undefined;
+    return {
+      deliveryResults: results.length > 0 ? results : undefined,
+      credentialOfferUri: typeof offerUri === 'string' && offerUri.length > 0 ? offerUri : undefined
+    };
   }
 
   private openFailedCreateDialog(): Observable<any> {

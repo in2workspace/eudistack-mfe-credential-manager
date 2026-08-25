@@ -386,7 +386,12 @@
       "titleFailed": "The issuance could not be completed",
       "failedBanner": "The issuance failed. Check the detail of each channel before trying again.",
       "partialBanner": "The issuance completed, but one of the delivery channels failed.",
-      "modeFailed": "This delivery channel failed.",
+      "modeFailed": {
+        "direct": "The credential could not be issued, so it was not returned here.",
+        "ui": "The QR code could not be generated.",
+        "email": "The email could not be sent."
+      },
+      "modeUnconfirmed": "This channel could not be confirmed. Check the credential list before issuing again.",
       "credential": "Credential",
       "credentialKey": "Credential key",
       "copied": "Credential copied",
@@ -394,13 +399,17 @@
       "bothWalletChannels": "The credential can be obtained either from the QR code or from the email, but only the first one used will work.",
       "tokenUnavailable": "The credential was created, but it was not returned in the response.",
       "offerUnavailable": "The credential offer could not be generated.",
-      "holderKeyNote": "This key exists only here and cannot be recovered: copy it and give it to the credential holder before closing this window.",
+      "handoverNote": "Save this information now. It is shown only once and cannot be retrieved later.",
+      "handoverNoteUnconfirmed": "The delivery could not be confirmed. If the credential does reach its holder it will be bound to this key, so save it now: it is shown only once.",
+      "handover": {
+        "credentialAndKey": "Credential and key",
+        "credential": "Credential",
+        "key": "Credential key"
+      },
       "section": {
-        "direct": "Credential",
-        "directWithKey": "Credential and key",
+        "direct": "Direct delivery",
         "ui": "QR code",
-        "email": "Email",
-        "holderKey": "Credential key"
+        "email": "Email"
       }
     },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",

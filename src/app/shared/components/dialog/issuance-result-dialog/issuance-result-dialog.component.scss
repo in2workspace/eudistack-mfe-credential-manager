@@ -22,7 +22,7 @@
     }
   }
 
-  .holder-key-note {
+  .handover-note {
     font-size: 0.85rem;
     color: var(--text-secondary, #6B7280);
   }
@@ -35,6 +35,7 @@
   .token-missing,
   .offer-missing,
   .mode-failed,
+  .mode-unconfirmed,
   .failure-banner {
     font-size: 0.9rem;
     color: var(--status-error, #DC2626);
@@ -44,15 +45,13 @@
     font-weight: 600;
   }
 
-  .mode-failed-detail {
-    display: block;
-    margin-top: 0.25rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary, #6B7280);
-    overflow-wrap: anywhere;
-  }
-
-  .result-box:has(.mode-failed) {
+  // A box is marked failed whenever it could not show what it exists to show -- a reported failure,
+  // an unconfirmed channel, or content that never arrived. From the Operator's side those read the
+  // same: this box did not do its job.
+  .result-box:has(.mode-failed),
+  .result-box:has(.mode-unconfirmed),
+  .result-box:has(.offer-missing),
+  .result-box:has(.token-missing) {
     border-color: var(--status-error, #DC2626);
   }
 
