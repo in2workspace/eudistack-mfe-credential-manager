@@ -295,8 +295,6 @@
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "Segur que vols crear aquesta credencial?",
-      "checkboxLabel": "Confirmo que he copiat i desat de manera segura la clau privada.",
-      "belowText": "Sense la clau privada no podràs utilitzar aquesta credencial més endavant.",
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {
@@ -349,13 +347,29 @@
     "delivery": {
       "label": "Mètode de lliurament",
       "email": "Correu electrònic",
-      "qrCode": "Codi QR"
+      "qrCode": "Codi QR",
+      "direct": "Directa"
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",
       "copy": "Copiar enllaç",
       "copied": "Copiat!"
+    },
+    "issuance-result-dialog": {
+      "title": "Credencial creada correctament",
+      "credential": "Credencial",
+      "credentialKey": "Clau de la credencial",
+      "copied": "Credencial copiada",
+      "emailSent": "L'oferta de credencial s'ha enviat per correu electrònic.",
+      "bothWalletChannels": "La credencial es pot obtenir des del codi QR o des del correu electrònic, però només funcionarà el primer que s'utilitzi.",
+      "tokenUnavailable": "La credencial s'ha creat, però no s'ha retornat en la resposta.",
+      "offerUnavailable": "No s'ha pogut generar l'oferta de credencial.",
+      "section": {
+        "direct": "Credencial i clau",
+        "ui": "Codi QR",
+        "email": "Correu electrònic"
+      }
     },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",
     "unloadAlert": "Segur que vols sortir? Perdràs el progrés fet."
@@ -429,12 +443,6 @@
     "delete" : "Eliminar",
     "save" : "Desar",
     "loading-default-title": "Esperi mentre es completa el procés..."
-  },
-  "keys": {
-    "title": "Clau privada",
-    "buttonText": "Generar clau",
-    "alert": "Asseguri's de guardar aquesta clau.",
-    "tooltip": "La clau privada és un secret que et permet signar i demostrar la propietat de la credencial. Sense ella, no pots usar la credencial. Guarda-la de manera segura i no la comparteixis."
   },
   "countries": {
     "spain": "Espanya",

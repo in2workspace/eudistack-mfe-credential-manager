@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialIssuanceService } from './credential-issuance.service';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
+import { KeyGeneratorService } from './key-generator.service';
 import { CountryService } from 'src/app/shared/services/country.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CREDENTIAL_SCHEMA_PROVIDERS, IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
@@ -30,12 +31,14 @@ describe('CredentialIssuanceService', () => {
   let mockSchemaBuilder: { formSchemasBuilder: jest.Mock, getIssuancePowerFormSchema: jest.Mock };
   let dialogService: MockDialogWrapperService;
   let mockMatDialog: { open: jest.Mock };
+  let mockKeyGenerator: { generateHolderKeyPair: jest.Mock };
   let mockAuthService: {
     getMandateeEmail: jest.Mock
   };
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
   let policyLoadFailed: ReturnType<typeof signal<boolean>>;
+  let directEligible: ReturnType<typeof signal<boolean>>;
   // The policy load is held open by default: with an already-resolved promise the forkJoin
   // settles between beforeEach and the test body, leaving no "still loading" window to assert
   // on. Tests that need the loads finished call resolvePolicyLoad() themselves.
@@ -47,6 +50,7 @@ describe('CredentialIssuanceService', () => {
     getConfigurationById: jest.Mock;
     getIssuableCredentialTypes: jest.Mock;
     hasMetadataLoadFailed: jest.Mock;
+    isDirectDeliveryEligible: jest.Mock;
   };
 
 
@@ -59,6 +63,13 @@ describe('CredentialIssuanceService', () => {
     // into a failure-dialog false positive.
     mockMatDialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
     mockProcedureService = { createProcedure: jest.fn() }
+    mockKeyGenerator = {
+      generateHolderKeyPair: jest.fn(() => Promise.resolve({
+        privateKeyHex: '0xdeadbeef',
+        didKey: 'did:key:zGenerated',
+        publicJwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' }
+      }))
+    };
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
     mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
     // Backed by real signals: if these were fixed values, the service's computed
@@ -66,13 +77,16 @@ describe('CredentialIssuanceService', () => {
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
     metadataLoadFailed = signal<boolean>(false);
     policyLoadFailed = signal<boolean>(false);
+    directEligible = signal<boolean>(true);
     policyLoadPromise = new Promise<void>(resolve => { resolvePolicyLoad = resolve; });
     mockMetadataService = {
       loadMetadata: jest.fn(() => of(undefined)),
       findConfigurationsForType: jest.fn(() => []),
       getConfigurationById: jest.fn(() => undefined),
       getIssuableCredentialTypes: jest.fn(() => issuableTypes()),
-      hasMetadataLoadFailed: jest.fn(() => metadataLoadFailed())
+      hasMetadataLoadFailed: jest.fn(() => metadataLoadFailed()),
+      // Direct-eligible by default; the delivery tests below flip it per case.
+      isDirectDeliveryEligible: jest.fn(() => directEligible())
     };
 
     TestBed.configureTestingModule({
@@ -82,6 +96,7 @@ describe('CredentialIssuanceService', () => {
         CredentialIssuanceService,
         { provide: DialogWrapperService, useValue: dialogService },
         { provide: MatDialog, useValue: mockMatDialog },
+        { provide: KeyGeneratorService, useValue: mockKeyGenerator },
         // navigate() must return a Promise (Router's real contract): submitCredentialPayload()'s
         // chain wraps the navigation with from(...), which blows up synchronously if it
         // receives undefined instead of a thenable.
@@ -102,6 +117,73 @@ describe('CredentialIssuanceService', () => {
       ]
     });
     service = TestBed.inject(CredentialIssuanceService);
+  });
+
+
+  describe('delivery mode selection', () => {
+    it('should start with email selected and nothing else', () => {
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it('should offer direct only when the selected configuration is eligible for it', () => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+
+      directEligible.set(true);
+      expect(service.availableDeliveryOptions$().map(o => o.value)).toEqual(['email', 'ui', 'direct']);
+
+      directEligible.set(false);
+      expect(service.availableDeliveryOptions$().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('should not offer direct while no configuration is selected', () => {
+      expect(service.availableDeliveryOptions$().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('should add and remove modes', () => {
+      service.toggleDelivery('ui', true);
+      expect([...service.selectedDeliveryModes$()].sort()).toEqual(['email', 'ui']);
+
+      service.toggleDelivery('email', false);
+      expect([...service.selectedDeliveryModes$()]).toEqual(['ui']);
+    });
+
+    it('should refuse to unselect the last remaining mode', () => {
+      service.toggleDelivery('email', false);
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it('should drop direct when the configuration stops being eligible for it', () => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      service.toggleDelivery('direct', true);
+      TestBed.flushEffects();
+      expect(service.isDeliverySelected('direct')).toBe(true);
+
+      directEligible.set(false);
+      TestBed.flushEffects();
+
+      expect(service.isDeliverySelected('direct')).toBe(false);
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it('should fall back to the first available mode when pruning empties the selection', () => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      service.selectedDeliveryModes$.set(new Set(['direct']));
+      TestBed.flushEffects();
+
+      directEligible.set(false);
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
   });
 
   it('should be created', () => {
@@ -327,17 +409,102 @@ describe('CredentialIssuanceService', () => {
       expect(service.hasSubmitted$()).toBe(true);
     });
 
-    it('should show the scannable QR dialog when the response carries an offer URI (AC-05, "Código QR" delivery)', () => {
+    it('should show the scannable QR dialog when "Código QR" is the only delivery mode (AC-05)', () => {
+      // Routing is decided on the SELECTED modes, not on whether the response carries an
+      // offer URI, so the ui mode has to be selected for this branch to be taken.
+      service.selectedDeliveryModes$.set(new Set(['ui']));
       mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
 
       service.openSubmitDialog();
 
-      // The backend only sets credential_offer_uri for DeliveryMode.UI (returnsUri=true) --
-      // never for EMAIL -- so this is already scoped to the "Código QR" delivery option.
       expect(mockMatDialog.open).toHaveBeenCalledTimes(1);
       expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(service.hasSubmitted$()).toBe(true);
+    });
+
+
+    describe('result dialog routing', () => {
+      const dialogComponentName = () => (mockMatDialog.open.mock.calls[0][0] as { name: string }).name;
+      const dialogData = () => mockMatDialog.open.mock.calls[0][1].data;
+
+      it('should show the multi-box result dialog when more than one mode is selected', () => {
+        service.selectedDeliveryModes$.set(new Set(['ui', 'email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
+
+        service.openSubmitDialog();
+
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData()).toEqual({
+          deliveryModes: ['ui', 'email'],
+          credentialToken: undefined,
+          privateKey: undefined,
+          credentialOfferUri: 'openid-credential-offer://abc'
+        });
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
+      });
+
+      it('should carry the token and the private key when direct is selected', fakeAsync(() => {
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['direct']));
+        mockProcedureService.createProcedure.mockReturnValue(of({ signed_credential: 'eyJ.token' }));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(mockKeyGenerator.generateHolderKeyPair).toHaveBeenCalledTimes(1);
+        expect(dialogComponentName()).toBe('IssuanceResultDialogComponent');
+        expect(dialogData()).toEqual({
+          deliveryModes: ['direct'],
+          credentialToken: 'eyJ.token',
+          privateKey: '0xdeadbeef',
+          credentialOfferUri: undefined
+        });
+      }));
+
+      it('should still open the dialog with the key when the response brings no token', fakeAsync(() => {
+        // The key exists nowhere else. Falling through to a generic dialog would destroy it.
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['direct']));
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+        tick();
+
+        expect(dialogData().privateKey).toBe('0xdeadbeef');
+        expect(dialogData().credentialToken).toBeUndefined();
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
+      }));
+
+      it('should not generate a key for wallet-only delivery', () => {
+        service.selectedCredentialType$.set('learcredential.machine');
+        service.selectedDeliveryModes$.set(new Set(['email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        expect(mockKeyGenerator.generateHolderKeyPair).not.toHaveBeenCalled();
+      });
+
+      it('should not generate a key for a type that does not bind one, even with direct', () => {
+        service.selectedDeliveryModes$.set(new Set(['direct']));
+        mockProcedureService.createProcedure.mockReturnValue(of({ signed_credential: 'eyJ.token' }));
+
+        service.openSubmitDialog();
+
+        expect(mockKeyGenerator.generateHolderKeyPair).not.toHaveBeenCalled();
+        expect(dialogData().privateKey).toBeUndefined();
+      });
+
+      it('should send the delivery modes as canonical CSV', () => {
+        service.selectedDeliveryModes$.set(new Set(['ui', 'email']));
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.delivery).toBe('email,ui');
+      });
     });
 
     it('should submit the newest version of the selected format, not the bare type', () => {

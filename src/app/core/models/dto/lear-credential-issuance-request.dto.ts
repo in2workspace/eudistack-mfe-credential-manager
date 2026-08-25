@@ -1,6 +1,11 @@
+import { HolderPublicJwk } from "../entity/lear-credential-issuance";
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
 
-export type IssuanceDelivery = 'email' | 'ui';
+/**
+ * CSV of delivery modes, e.g. `email` or `direct,email` — the Operator can pick more than one.
+ * Build it with `toDeliveryCsv()` so the order is always canonical.
+ */
+export type IssuanceDelivery = string;
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
@@ -10,6 +15,12 @@ export interface IssuanceLEARCredentialRequestDto {
     delivery: IssuanceDelivery;
     email: string;
     grant_type: IssuanceGrantType;
+    /**
+     * Holder key for credential types that bind to one without a wallet proof. Only sent when
+     * `direct` is among the delivery modes: with `email`/`ui` alone the cnf comes from the
+     * wallet's OID4VCI proof, and the backend fills `mandatee.id` from it.
+     */
+    holder_key?: { jwk: HolderPublicJwk };
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
@@ -32,7 +43,9 @@ export interface IssuanceLEARCredentialMachinePayload {
         country: string,
     },
     mandatee: {
-        id: string, //did-key
+        // Omitted when no key was generated locally (wallet-only delivery): the backend then
+        // injects the proof-derived did:key (GenericCredentialBuilder.bindHolderDid).
+        id?: string, //did-key
         domain: string,
         ipAddress: string
     },
@@ -45,6 +58,15 @@ export interface IssuanceLEARCredentialEmployeePayload {
       power: IssuancePayloadPower[];
 }
 
+export interface IssuanceDeliveryResultDto {
+    mode: string;
+    status: string;
+    error?: string;
+}
+
 export interface IssuanceResponseDto {
     credential_offer_uri?: string;
+    /** The signed credential itself. Only returned when `direct` is among the delivery modes. */
+    signed_credential?: string;
+    delivery_results?: IssuanceDeliveryResultDto[];
 }

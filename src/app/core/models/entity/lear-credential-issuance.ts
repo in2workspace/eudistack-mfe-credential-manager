@@ -1,7 +1,6 @@
 import { ValidatorEntryUnion } from "src/app/shared/validators/credential-issuance/all-validators";
 import { TmfAction, TmfFunction } from "./lear-credential";
 import { ComponentType } from "@angular/cdk/portal";
-import { FormControl } from "@angular/forms";
 import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details/components/base-issuance-custom-form-child";
 import { ClaimDefinitionDto } from "../dto/credential-issuer-metadata.dto";
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['learcredential.employee', 'learcredential.machine'] as const;
@@ -34,7 +33,7 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
   { value: 'urn:ietf:params:oauth:grant-type:pre-authorized_code', labelKey: 'credentialIssuance.grantType.preAuthorizedCode' },
 ];
 
-export type DeliveryMode = 'email' | 'ui';
+export type DeliveryMode = 'email' | 'ui' | 'direct';
 
 export interface DeliveryOption {
   value: DeliveryMode;
@@ -44,7 +43,36 @@ export interface DeliveryOption {
 export const DELIVERY_OPTIONS: DeliveryOption[] = [
   { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
   { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
 ];
+
+/**
+ * Order the result dialog renders one box per selected mode in: what the Operator has to act on
+ * first comes first. `direct` hands over a credential and a key that exist nowhere else, `ui` a
+ * QR to scan now, `email` only an acknowledgement.
+ */
+export const DELIVERY_RESULT_ORDER: readonly DeliveryMode[] = ['direct', 'ui', 'email'];
+
+/**
+ * The `delivery` field of the issuance request is CSV (e.g. `direct,email`). Sorted so the same
+ * selection always produces the same string, matching the backend's canonical form
+ * (`DeliveryMode.toCanonicalCsv`).
+ */
+export function toDeliveryCsv(modes: Iterable<DeliveryMode>): string {
+  return [...new Set(modes)].sort((a, b) => a.localeCompare(b)).join(',');
+}
+
+/**
+ * Types whose credential binds to a holder key the Operator must keep.
+ *
+ * The authoritative condition on the backend is `cnf_required && no
+ * cryptographic_binding_methods_supported`, but the issuer metadata publishes only the second
+ * half of it, so `cnf_required` cannot be read here. Until it is exposed, the set of types that
+ * carry a holder-bound key is small and known, and naming it is more honest than inferring it
+ * from the half we can see.
+ */
+export const TYPES_REQUIRING_HOLDER_KEY: ReadonlySet<IssuanceCredentialType> =
+  new Set<IssuanceCredentialType>(['learcredential.machine']);
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
@@ -127,11 +155,26 @@ export interface IssuanceFormPowerSchema{
 }
 
 // Key component and service types
-export interface KeyState {
-  desmosPrivateKeyValue: string,
-  desmosDidKeyValue: string
+/** Public half of a holder key, in the shape the request's `holder_key.jwk` expects. */
+export interface HolderPublicJwk {
+  kty: 'EC';
+  crv: 'P-256';
+  x: string;
+  y: string;
 }
 
-export interface KeyForm{
-  didKey: FormControl<string>,
+/**
+ * A freshly generated holder key pair.
+ *
+ * Deliberately a plain return value and not service state: the private half is shown to the
+ * Operator once, in the result dialog, and must not outlive it. Nothing stores it, nothing
+ * caches it, and it never reaches a log.
+ */
+export interface HolderKeyMaterial {
+  /** Private key, hex-encoded. Shown once; never persisted, never sent to the backend. */
+  privateKeyHex: string;
+  /** did:key derived from the public half. Sent as `mandatee.id`. */
+  didKey: string;
+  /** Public half, sent as `holder_key.jwk`. */
+  publicJwk: HolderPublicJwk;
 }

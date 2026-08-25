@@ -1,0 +1,57 @@
+<h2 mat-dialog-title>{{ "credentialIssuance.issuance-result-dialog.title" | translate }}</h2>
+
+<div mat-dialog-content class="result-content">
+  @for (mode of orderedModes; track mode) {
+    <section class="result-box" [attr.data-mode]="mode">
+      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section." + mode | translate }}</h3>
+
+      @switch (mode) {
+        @case ('direct') {
+          @if (data.credentialToken) {
+            <app-copyable-field
+              labelKey="credentialIssuance.issuance-result-dialog.credential"
+              [value]="data.credentialToken">
+            </app-copyable-field>
+          } @else {
+            <p class="token-missing" role="status">
+              {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
+            </p>
+          }
+
+          @if (data.privateKey) {
+            <app-copyable-field
+              labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
+              [value]="data.privateKey">
+            </app-copyable-field>
+          }
+        }
+
+        @case ('ui') {
+          @if (data.credentialOfferUri) {
+            <app-credential-offer-qr [credentialOfferUri]="data.credentialOfferUri"></app-credential-offer-qr>
+          } @else {
+            <p class="offer-missing" role="status">
+              {{ "credentialIssuance.issuance-result-dialog.offerUnavailable" | translate }}
+            </p>
+          }
+        }
+
+        @case ('email') {
+          <p class="email-sent">{{ "credentialIssuance.issuance-result-dialog.emailSent" | translate }}</p>
+        }
+      }
+    </section>
+  }
+
+  @if (showBothWalletChannelsNote) {
+    <p class="both-channels-note">
+      {{ "credentialIssuance.issuance-result-dialog.bothWalletChannels" | translate }}
+    </p>
+  }
+</div>
+
+<div mat-dialog-actions>
+  <button mat-flat-button color="primary" (click)="close()">
+    {{ "dialog.close" | translate }}
+  </button>
+</div>

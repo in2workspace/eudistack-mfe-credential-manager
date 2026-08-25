@@ -1,5 +1,5 @@
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
@@ -7,17 +7,18 @@ import { IssuanceRequestFactoryService } from './issuance-request-factory.servic
 import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryMode, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, toDeliveryCsv, TYPES_REQUIRING_HOLDER_KEY } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
 import { TranslateService } from '@ngx-translate/core';
 import { CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
-import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
+import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
+import { IssuanceResultDialogComponent, IssuanceResultDialogData } from 'src/app/shared/components/dialog/issuance-result-dialog/issuance-result-dialog.component';
+import { KeyGeneratorService } from './key-generator.service';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
@@ -126,7 +127,29 @@ export class CredentialIssuanceService {
 
   // DELIVERY SELECTOR
   public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
-  public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
+
+  /**
+   * Delivery modes the Operator picked. More than one is allowed (the backend takes CSV), and
+   * `email` is the default because it is the channel that always works.
+   */
+  public selectedDeliveryModes$ = signal<ReadonlySet<DeliveryMode>>(new Set<DeliveryMode>(['email']));
+
+  /**
+   * Which modes the selected configuration can actually be delivered through.
+   *
+   * `email` and `ui` always can. `direct` only when the configuration declares no cryptographic
+   * binding method: declaring one means the holder key arrives through an OID4VCI wallet proof,
+   * and direct delivery has neither wallet nor proof, so the backend would refuse it
+   * (`CredentialProfile.directDeliveryEligible()`).
+   *
+   * Keyed on the configId, not on the type: two formats of one type can declare different
+   * binding methods, and the configId is what the request carries.
+   */
+  public readonly availableDeliveryOptions$ = computed<DeliveryOption[]>(() => {
+    const configId = this.effectiveFormatOption$()?.configId;
+    const directEligible = !!configId && this.metadataService.isDirectDeliveryEligible(configId);
+    return DELIVERY_OPTIONS.filter(option => option.value !== 'direct' || directEligible);
+  });
 
   // AD-2: claims come from the config that will actually be sent to the backend
   // (effectiveFormatOption.configId), not from the type: two formats of the same
@@ -201,6 +224,7 @@ export class CredentialIssuanceService {
   private readonly metadataService = inject(CredentialIssuerMetadataService);
   private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+  private readonly keyGenerator = inject(KeyGeneratorService);
 
   constructor() {
     // Load credential configurations once so format options are available,
@@ -254,9 +278,45 @@ export class CredentialIssuanceService {
     this.selectedGrantType$.set(option);
   }
 
-  public updateSelectedDelivery(option: DeliveryOption): void {
-    this.selectedDelivery$.set(option);
+  /**
+   * Adds or removes one delivery mode.
+   *
+   * Unchecking the last remaining mode is refused rather than silently re-adding a default: an
+   * issuance with no delivery mode has nowhere to go, and the checkbox of the only selected mode
+   * is disabled in the template so this is a backstop, not the primary guard.
+   */
+  public toggleDelivery(mode: DeliveryMode, selected: boolean): void {
+    const modes = new Set(this.selectedDeliveryModes$());
+    if (selected) {
+      modes.add(mode);
+    } else {
+      if (modes.size === 1) return;
+      modes.delete(mode);
+    }
+    this.selectedDeliveryModes$.set(modes);
   }
+
+  public isDeliverySelected(mode: DeliveryMode): boolean {
+    return this.selectedDeliveryModes$().has(mode);
+  }
+
+  /**
+   * Keeps the selection inside what the current configuration allows.
+   *
+   * Changing type or format can withdraw `direct`. Leaving it selected would submit a mode the
+   * checkbox list no longer even shows, so it is dropped; if that empties the selection, it
+   * falls back to the first available mode.
+   */
+  private readonly pruneUnavailableDeliveryModes = effect(() => {
+    const available = new Set(this.availableDeliveryOptions$().map(option => option.value));
+    const selected = this.selectedDeliveryModes$();
+    const kept = [...selected].filter(mode => available.has(mode));
+
+    if (kept.length === selected.size) return;
+
+    const fallback = this.availableDeliveryOptions$()[0]?.value;
+    this.selectedDeliveryModes$.set(new Set(kept.length > 0 ? kept : (fallback ? [fallback] : [])));
+  });
 
   // if the message is new, add it; otherwise, delete it
   // this is called by some custom form child components
@@ -303,25 +363,6 @@ export class CredentialIssuanceService {
     };
 
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, this.submitAsCallback);
-  }
-
-  // LEARCredentialMachine needs a dialog with a checkbox to confirm
-  public openLEARCredentialMachineSubmitDialog(){
-    const dialogData: ConditionalConfirmDialogData = {
-          title: this.translate.instant("credentialIssuance.create-confirm-dialog.title"),
-          message: this.translate.instant("credentialIssuance.create-confirm-dialog.message"),
-          checkboxLabel: this.translate.instant("credentialIssuance.create-confirm-dialog.checkboxLabel"),
-          belowText: this.translate.instant("credentialIssuance.create-confirm-dialog.belowText"),
-          status: 'default',
-          confirmationType: 'async',
-          loadingData: {
-            title: this.translate.instant("credentialIssuance.creating-credential"),
-            message: ''
-          }
-        };
-
-
-    this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
   }
 
   private issuanceViewModelsBuilder(
@@ -416,29 +457,91 @@ export class CredentialIssuanceService {
 
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const delivery = this.selectedDelivery$().value;
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType);
+      const modes = [...this.selectedDeliveryModes$()];
+      const delivery = toDeliveryCsv(modes);
 
-      return this.sendCredentialRequest(request).pipe(
-        timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
-        tap(() => { this.hasSubmitted$.set(true); }),
-        // AD-3 correction: `credential_offer_uri` is only populated by the backend for
-        // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
-        // So this branch is already scoped to the QR delivery mode -- removing it (as an
-        // earlier version of this Story did) broke the "Código QR" option's only purpose:
-        // showing the wallet-scannable QR (CredentialOfferDialogComponent, angularx-qrcode).
-        // AC-05's "no offer artifacts" is still honored for email/direct delivery, where the
-        // response never carries this URI.
-        switchMap((response) => {
-          if (response?.credential_offer_uri) {
-            return this.openCredentialOfferDialog(response.credential_offer_uri);
-          }
-          return this.openSuccessfulCreateDialog();
+      // The holder key is generated here and lives in this closure only: the public half reaches
+      // the request, the private half reaches the result dialog, and nothing else ever sees it.
+      return this.holderKeyIfNeeded$(credentialType, modes).pipe(
+        switchMap(holderKey => {
+          const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType, holderKey);
+
+          return this.sendCredentialRequest(request).pipe(
+            timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
+            tap(() => { this.hasSubmitted$.set(true); }),
+            switchMap(response => this.openResultDialog(modes, response, holderKey))
+          );
         }),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
+
+  /**
+   * A holder key, but only when the credential type binds to one AND `direct` was selected.
+   *
+   * With a wallet in the loop the wallet proves possession of its own key through the OID4VCI
+   * proof, and the backend derives both the cnf and `mandatee.id` from it. Generating one here
+   * for wallet-only delivery would hand the Operator a private key the credential is not bound to.
+   */
+  private holderKeyIfNeeded$(
+    credentialType: IssuanceCredentialType,
+    modes: readonly DeliveryMode[]
+  ): Observable<HolderKeyMaterial | undefined> {
+    const needsKey = modes.includes('direct') && TYPES_REQUIRING_HOLDER_KEY.has(credentialType);
+    // `of(undefined)` rather than a resolved promise: without a key to generate the chain stays
+    // synchronous, exactly as it was before this step existed. Only `direct` pays for the await.
+    return needsKey ? from(this.keyGenerator.generateHolderKeyPair()) : of(undefined);
+  }
+
+  /**
+   * Which success dialog to show.
+   *
+   * The two single wallet modes keep the dialogs they always had. Everything else -- any
+   * combination of modes, and anything including `direct` -- goes to the multi-box result dialog.
+   *
+   * Decided on the SELECTED modes rather than on what the response happens to carry: with
+   * `direct` the dialog holds the only copy of the private key, so it must open even when the
+   * response came back without the credential token, or when the wallet leg failed. Falling
+   * through to a generic dialog there would destroy the key.
+   */
+  private openResultDialog(
+    modes: readonly DeliveryMode[],
+    response: IssuanceResponseDto | undefined,
+    holderKey: HolderKeyMaterial | undefined
+  ): Observable<any> {
+    const isSingle = (mode: DeliveryMode) => modes.length === 1 && modes[0] === mode;
+
+    if (isSingle('email')) {
+      return this.openSuccessfulCreateDialog();
+    }
+    if (isSingle('ui') && response?.credential_offer_uri) {
+      return this.openCredentialOfferDialog(response.credential_offer_uri);
+    }
+
+    return this.openIssuanceResultDialog(modes, response, holderKey);
+  }
+
+  private openIssuanceResultDialog(
+    modes: readonly DeliveryMode[],
+    response: IssuanceResponseDto | undefined,
+    holderKey: HolderKeyMaterial | undefined
+  ): Observable<any> {
+    const dialogData: IssuanceResultDialogData = {
+      deliveryModes: modes,
+      credentialToken: response?.signed_credential,
+      privateKey: holderKey?.privateKeyHex,
+      credentialOfferUri: response?.credential_offer_uri
+    };
+
+    const dialogRef = this.matDialog.open(IssuanceResultDialogComponent, {
+      data: dialogData,
+      autoFocus: false,
+      width: '560px',
+      panelClass: 'dialog-custom'
+    });
+    return dialogRef.afterClosed();
+  }
 
   private navigateToCredentials(): Promise<boolean> {
     return this.router.navigate(['/organization/credentials']);
@@ -450,8 +553,9 @@ export class CredentialIssuanceService {
     configId: string,
     delivery: IssuanceDelivery,
     grantType: IssuanceGrantType,
+    holderKey?: HolderKeyMaterial,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType, holderKey);
   }
 
 

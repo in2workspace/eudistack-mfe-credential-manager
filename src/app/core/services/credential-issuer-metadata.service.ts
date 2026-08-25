@@ -128,4 +128,24 @@ export class CredentialIssuerMetadataService {
   getAllConfigurations(): Record<string, CredentialConfigurationDto> | null {
     return this.configurations();
   }
+
+  /**
+   * Whether this configuration can be issued synchronously (`direct` delivery).
+   *
+   * Mirrors the backend rule (`CredentialProfile.directDeliveryEligible()`): a configuration
+   * that declares `cryptographic_binding_methods_supported` states that the holder key arrives
+   * through an OID4VCI wallet proof, and direct delivery has neither wallet nor proof. Absent
+   * AND empty both count as eligible, because the issuer normalizes an empty set to an omitted
+   * field and either shape can reach us.
+   *
+   * Fail-closed, like the rest of this service: with no usable metadata the option is not
+   * offered. Withholding a delivery mode beats offering one the backend will reject.
+   */
+  isDirectDeliveryEligible(configId: string): boolean {
+    if (this.loadFailed()) return false;
+    const config = this.getConfigurationById(configId);
+    if (!config) return false;
+    const methods = config.cryptographic_binding_methods_supported;
+    return !methods || methods.length === 0;
+  }
 }

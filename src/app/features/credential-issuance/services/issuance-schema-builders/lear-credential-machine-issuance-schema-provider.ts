@@ -4,7 +4,6 @@ import { AuthService } from "src/app/core/services/auth.service";
 import { CountryService } from "src/app/shared/services/country.service";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
 import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
-import { KeyGeneratorComponent } from "../../components/key-generator/key-generator.component";
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 
 @Injectable({ providedIn: 'root' })
@@ -42,24 +41,10 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
       type: 'learcredential.machine',
       schema:
       [
-      // KEYS
-      {
-        key: 'keys',
-        type: 'group',
-        display: 'main',
-        custom: {
-          component: KeyGeneratorComponent
-        },
-        groupFields: [
-          {
-            key: 'didKey',
-            type: 'control',
-            controlType: 'text',
-            validators: [{name: 'required'}]
-          }
-        ]
-      },
       // MANDATEE
+      // No key group here any more: the holder key is not generated from a button on this form.
+      // It is generated during submission -- only when `direct` is among the delivery modes,
+      // the only case that needs it -- and its private half is shown once in the result dialog.
       {
         key: 'mandatee',
         type: 'group',

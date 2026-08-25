@@ -11,7 +11,6 @@ import {
   organizationIdentifierField,
   serialNumberField,
 } from './common-issuance-schema-fields';
-import { KeyGeneratorComponent } from '../../components/key-generator/key-generator.component';
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 import { CredentialIssuanceTypedViewModelSchema } from 'src/app/core/models/entity/lear-credential-issuance';
 
@@ -64,20 +63,10 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
       schema = service.getSchema();
     });
 
-    it('includes the keys group with KeyGeneratorComponent', () => {
-      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
-      const keysGroup = schema.schema.find(f => f.key === 'keys');
-      expect(keysGroup).toBeDefined();
-      expect(keysGroup?.type).toBe('group');
-      expect(keysGroup?.display).toBe('main');
-      expect(keysGroup?.custom?.component).toBe(KeyGeneratorComponent);
-
-      const didField = keysGroup?.groupFields[0];
-      expect(didField).toMatchObject({
-        key: 'didKey',
-        type: 'control',
-        validators: [{ name: 'required' }],
-      });
+    it('does not include a keys group: the holder key is generated at submission time', () => {
+      // The key used to be generated from a button in this form. It now belongs to the
+      // submission flow (only for direct delivery) and is shown once in the result dialog.
+      expect(schema.schema.find(f => f.key === 'keys')).toBeUndefined();
     });
 
     it('includes the mandatee group with domain and ipAddress fields', () => {

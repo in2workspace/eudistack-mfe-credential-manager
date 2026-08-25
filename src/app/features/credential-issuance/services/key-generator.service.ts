@@ -1,40 +1,45 @@
-import { computed, Injectable, Signal, signal, WritableSignal } from '@angular/core';
-import { KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
+import { Injectable } from '@angular/core';
+import { HolderKeyMaterial, HolderPublicJwk } from 'src/app/core/models/entity/lear-credential-issuance';
 
-
-@Injectable() //not provided in root but in key generator component
+/**
+ * Generates the holder key pair for credential types that bind to one without a wallet proof.
+ *
+ * The key used to be generated from a button on the issuance form, which forced this service to
+ * keep it in signals for the template to read. It is now generated during submission and shown
+ * once, in the result dialog, so `generateHolderKeyPair()` RETURNS the material and this service
+ * holds no state at all: nothing to read back, nothing to leak into a later issuance, nothing
+ * left behind if the Operator navigates away.
+ */
+@Injectable({ providedIn: 'root' })
 export class KeyGeneratorService {
 
-  public readonly displayedKeys$: Signal<Partial<KeyState>|undefined> = computed(() => {
-    return { desmosPrivateKeyValue: this.keyState$()?.desmosPrivateKeyValue }
-  });
-  private readonly keyState$: WritableSignal<KeyState|undefined> = signal(undefined);
-  public getState(): Signal<KeyState | undefined>{
-    return this.keyState$.asReadonly();
+  /**
+   * A P-256 pair, as the three representations the flow needs: the private half to show the
+   * Operator, the did:key that goes in `mandatee.id`, and the public JWK that goes in
+   * `holder_key.jwk`. All three derive from the same `CryptoKeyPair`, so they cannot drift.
+   */
+  public async generateHolderKeyPair(): Promise<HolderKeyMaterial> {
+    const keyPair = await this.generateP256KeyPair();
+
+    const privateKeyHex = await this.generateP256PrivateKeyHex(keyPair);
+    const publicKeyHex = await this.generateP256PublicKeyHex(keyPair);
+    const didKey = await this.generateDidKey(publicKeyHex);
+    const publicJwk = await this.exportPublicJwk(keyPair);
+
+    return { privateKeyHex, didKey, publicJwk };
   }
-  
-  public updateState(key: keyof(KeyState), value: string): void{
-    const current = this.keyState$() ?? {
-    desmosPrivateKeyValue: '',
-    desmosDidKeyValue: '',
-  };
-    this.keyState$.set({...current, [key]: value});
+
+  /**
+   * Only `kty`/`crv`/`x`/`y` survive the export. WebCrypto also returns `ext` and `key_ops`,
+   * which are browser bookkeeping rather than key material and have no business on the wire.
+   */
+  private async exportPublicJwk(keyPair: CryptoKeyPair): Promise<HolderPublicJwk> {
+    const jwk = await globalThis.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+    if (!jwk.x || !jwk.y) {
+      throw new Error('Exported public JWK is missing its EC coordinates');
+    }
+    return { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y };
   }
-
-  public async generateP256(): Promise<void> {
-          const keyPair = await this.generateP256KeyPair();
-
-          const privateKeyHex = await this.generateP256PrivateKeyHex(keyPair);
-
-          const publicKeyHex = await this.generateP256PublicKeyHex(keyPair)
-
-          const didKey = await this.generateDidKey(publicKeyHex)
-
-
-          this.updateState("desmosPrivateKeyValue", privateKeyHex);
-          this.updateState("desmosDidKeyValue", didKey);
-
-      }
 
   private async generateP256KeyPair(): Promise<CryptoKeyPair> {
       return await globalThis.crypto.subtle.generateKey(

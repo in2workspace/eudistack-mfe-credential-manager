@@ -320,8 +320,6 @@
     "create-confirm-dialog": {
       "title": "Create credential",
       "message": "Are you sure you want to create this credential?",
-      "checkboxLabel": "I confirm that I have copied and safely stored the private key.",
-      "belowText": "Without the private key, you will not be able to use this credential later.",
       "defaultLoadingTitle": "Please wait while the process is completed..."
     },
     "create-success-dialog": {
@@ -374,13 +372,29 @@
     "delivery": {
       "label": "Delivery method",
       "email": "Email",
-      "qrCode": "QR Code"
+      "qrCode": "QR Code",
+      "direct": "Direct"
     },
     "credential-offer-dialog": {
       "title": "Credential created",
       "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",
       "copy": "Copy link",
       "copied": "Copied!"
+    },
+    "issuance-result-dialog": {
+      "title": "Credential created successfully",
+      "credential": "Credential",
+      "credentialKey": "Credential key",
+      "copied": "Credential copied",
+      "emailSent": "The credential offer has been sent by email.",
+      "bothWalletChannels": "The credential can be obtained either from the QR code or from the email, but only the first one used will work.",
+      "tokenUnavailable": "The credential was created, but it was not returned in the response.",
+      "offerUnavailable": "The credential offer could not be generated.",
+      "section": {
+        "direct": "Credential and key",
+        "ui": "QR code",
+        "email": "Email"
+      }
     },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",
     "unloadAlert": "Are you sure you want to leave? Your progress will be lost."
@@ -454,12 +468,6 @@
     "delete": "Delete",
     "save": "Save",
     "loading-default-title": "Please wait while the process is completed..."
-  },
-  "keys": {
-    "title": "Private Key",
-    "buttonText": "Generate Key",
-    "alert": "Make sure to copy this key.",
-    "tooltip": "Your private key is a secret that lets you sign and prove ownership of your credential. Without it you can’t use your credential. Store it safely, back it up and never share it."
   },
   "countries": {
     "spain": "Spain",
