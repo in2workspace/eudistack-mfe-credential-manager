@@ -64,8 +64,6 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
     });
 
     it('does not include a keys group: the holder key is generated at submission time', () => {
-      // The key used to be generated from a button in this form. It now belongs to the
-      // submission flow (only for direct delivery) and is shown once in the result dialog.
       expect(schema.schema.find(f => f.key === 'keys')).toBeUndefined();
     });
 

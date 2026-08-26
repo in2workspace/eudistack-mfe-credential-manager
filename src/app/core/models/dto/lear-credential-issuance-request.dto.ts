@@ -1,25 +1,15 @@
-import { HolderPublicJwk } from "../entity/lear-credential-issuance";
+import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-
-/**
- * CSV of delivery modes, e.g. `email` or `direct,email` — the Operator can pick more than one.
- * Build it with `toDeliveryCsv()` so the order is always canonical.
- */
-export type IssuanceDelivery = string;
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    delivery: IssuanceDelivery;
+    /** CSV of the selected delivery modes; only `toDeliveryCsv()` produces one. */
+    delivery: DeliveryCsv;
     email: string;
     grant_type: IssuanceGrantType;
-    /**
-     * Holder key for credential types that bind to one without a wallet proof. Only sent when
-     * `direct` is among the delivery modes: with `email`/`ui` alone the cnf comes from the
-     * wallet's OID4VCI proof, and the backend fills `mandatee.id` from it.
-     */
     holder_key?: { jwk: HolderPublicJwk };
 }
 
@@ -44,7 +34,7 @@ export interface IssuanceLEARCredentialMachinePayload {
     },
     mandatee: {
         // Omitted when no key was generated locally (wallet-only delivery): the backend then
-        // injects the proof-derived did:key (GenericCredentialBuilder.bindHolderDid).
+        // injects the proof-derived did:key.
         id?: string, //did-key
         domain: string,
         ipAddress: string
@@ -66,7 +56,6 @@ export interface IssuanceDeliveryResultDto {
 
 export interface IssuanceResponseDto {
     credential_offer_uri?: string;
-    /** The signed credential itself. Only returned when `direct` is among the delivery modes. */
     signed_credential?: string;
     delivery_results?: IssuanceDeliveryResultDto[];
 }

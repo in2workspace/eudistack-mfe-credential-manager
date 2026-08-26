@@ -89,10 +89,7 @@ describe('CredentialIssuanceService', () => {
       getConfigurationById: jest.fn(() => undefined),
       getIssuableCredentialTypes: jest.fn(() => issuableTypes()),
       hasMetadataLoadFailed: jest.fn(() => metadataLoadFailed()),
-      // Direct-eligible by default; the delivery tests below flip it per case.
       isDirectDeliveryEligible: jest.fn(() => directEligible()),
-      // Whether the request must carry a holder key. Decided by the issuer metadata
-      // (cnf_required AND no cryptographic binding method), not by the delivery modes.
       isHolderKeyRequired: jest.fn(() => holderKeyRequired())
     };
 
@@ -417,8 +414,6 @@ describe('CredentialIssuanceService', () => {
     });
 
     it('should show the scannable QR dialog when "Código QR" is the only delivery mode (AC-05)', () => {
-      // Routing is decided on the SELECTED modes, not on whether the response carries an
-      // offer URI, so the ui mode has to be selected for this branch to be taken.
       service.selectedDeliveryModes$.set(new Set(['ui']));
       mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
 
@@ -506,7 +501,6 @@ describe('CredentialIssuanceService', () => {
         expect(request.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' } });
       }));
 
-      // The plain success dialog has no slot for a key, and the key exists nowhere else.
       it('should show the multi-box result dialog for an email-only issuance that generated a key', fakeAsync(() => {
         holderKeyRequired.set(true);
         service.selectedCredentialType$.set('learcredential.machine');

@@ -42,9 +42,6 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
       schema:
       [
       // MANDATEE
-      // No key group here any more: the holder key is not generated from a button on this form.
-      // It is generated during submission -- only when `direct` is among the delivery modes,
-      // the only case that needs it -- and its private half is shown once in the result dialog.
       {
         key: 'mandatee',
         type: 'group',

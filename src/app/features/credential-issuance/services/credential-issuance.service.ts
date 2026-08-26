@@ -2,12 +2,12 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceDelivery, IssuanceDeliveryResultDto, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceDeliveryResultDto, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryMode, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryMode, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -458,13 +458,12 @@ export class CredentialIssuanceService {
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
       const modes = [...this.selectedDeliveryModes$()];
-      const delivery = toDeliveryCsv(modes);
 
       // The holder key is generated here and lives in this closure only: the public half reaches
       // the request, the private half reaches the result dialog, and nothing else ever sees it.
       return this.holderKeyIfNeeded$(configId).pipe(
         switchMap(holderKey => {
-          const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType, holderKey);
+          const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, modes, grantType, holderKey);
 
           // catchError lives INSIDE this switchMap so `holderKey` is still in scope on the error
           // path. It used to sit outside, which meant a failed issuance closed with a generic dialog
@@ -572,11 +571,11 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
-    delivery: IssuanceDelivery,
+    deliveryModes: readonly DeliveryMode[],
     grantType: IssuanceGrantType,
     holderKey?: HolderKeyMaterial,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType, holderKey);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, deliveryModes, grantType, holderKey);
   }
 
 

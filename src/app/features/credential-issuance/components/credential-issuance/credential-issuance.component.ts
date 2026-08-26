@@ -114,10 +114,6 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     return this.issuanceService.isDeliverySelected(mode);
   }
 
-  /**
-   * The last selected mode cannot be unchecked: an issuance with no delivery mode has nowhere to
-   * go. Disabling its checkbox shows why, instead of letting the click do nothing.
-   */
   public isDeliveryLocked(mode: DeliveryMode): boolean {
     const selected = this.selectedDeliveryModes$();
     return selected.size === 1 && selected.has(mode);

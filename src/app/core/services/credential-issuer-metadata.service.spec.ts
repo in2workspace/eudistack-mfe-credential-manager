@@ -118,9 +118,6 @@ describe('CredentialIssuerMetadataService', () => {
     });
   });
 
-  // The two halves of the holder-binding rule, mirrored from CredentialProfile: the binding
-  // methods say WHO supplies the holder key, cnf_required says whether there is one at all.
-  // Three states, and each predicate reads a different pair of them.
   describe('holder binding rules', () => {
     const bindingMetadata = {
       credential_issuer: 'https://example.com',

@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryMode, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -19,7 +19,8 @@ export class IssuanceRequestFactoryService {
   }
 
   /**
-   * @param delivery  CSV of delivery modes (see `toDeliveryCsv`).
+   * @param deliveryModes the modes the Operator selected; serialised to the CSV the backend
+   *                  expects here, so no caller has to build (or mis-build) that string.
    * @param holderKey generated during submission when the selected configuration requires one
    *                  (`cnf_required` and no cryptographic binding method), for every delivery
    *                  mode alike. It supplies both `mandatee.id` (did:key) and `holder_key.jwk`.
@@ -29,13 +30,13 @@ export class IssuanceRequestFactoryService {
       credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      delivery: IssuanceDelivery = 'email',
+      deliveryModes: readonly DeliveryMode[] = ['email'],
       grantType: IssuanceGrantType = 'authorization_code',
       holderKey?: HolderKeyMaterial
   ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType, holderKey);
         const email = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, delivery, payload, email, grantType, holderKey);
+        return this.buildRequestDto(configId, deliveryModes, payload, email, grantType, holderKey);
       }
 
   public createCredentialRequestPayload(
@@ -212,11 +213,11 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, holderKey?: HolderKeyMaterial): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, deliveryModes: readonly DeliveryMode[], payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, holderKey?: HolderKeyMaterial): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,
-      delivery,
+      delivery: toDeliveryCsv(deliveryModes),
       email,
       grant_type: grantType,
       // Only the public half travels. The private key never leaves the browser.

@@ -35,6 +35,16 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
 
 export type DeliveryMode = 'email' | 'ui' | 'direct';
 
+/**
+ * Wire form of the request's `delivery` field: a CSV of `DeliveryMode` (e.g. `direct,email`).
+ *
+ * Branded so the only way to obtain one is `toDeliveryCsv()`.
+ */
+export type DeliveryCsv = string & { readonly __brand: 'DeliveryCsv' };
+
+export function toDeliveryCsv(modes: Iterable<DeliveryMode>): DeliveryCsv {
+  return [...new Set(modes)].join(',') as DeliveryCsv;
+}
 export interface DeliveryOption {
   value: DeliveryMode;
   labelKey: string;
@@ -48,19 +58,9 @@ export const DELIVERY_OPTIONS: DeliveryOption[] = [
 
 /**
  * Order the result dialog renders one box per selected mode in: what the Operator has to act on
- * first comes first. `direct` hands over a credential and a key that exist nowhere else, `ui` a
- * QR to scan now, `email` only an acknowledgement.
+ * first comes first.
  */
 export const DELIVERY_RESULT_ORDER: readonly DeliveryMode[] = ['direct', 'ui', 'email'];
-
-/**
- * The `delivery` field of the issuance request is CSV (e.g. `direct,email`). Sorted so the same
- * selection always produces the same string, matching the backend's canonical form
- * (`DeliveryMode.toCanonicalCsv`).
- */
-export function toDeliveryCsv(modes: Iterable<DeliveryMode>): string {
-  return [...new Set(modes)].sort((a, b) => a.localeCompare(b)).join(',');
-}
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
@@ -151,18 +151,9 @@ export interface HolderPublicJwk {
   y: string;
 }
 
-/**
- * A freshly generated holder key pair.
- *
- * Deliberately a plain return value and not service state: the private half is shown to the
- * Operator once, in the result dialog, and must not outlive it. Nothing stores it, nothing
- * caches it, and it never reaches a log.
- */
+
 export interface HolderKeyMaterial {
-  /** Private key, hex-encoded. Shown once; never persisted, never sent to the backend. */
   privateKeyHex: string;
-  /** did:key derived from the public half. Sent as `mandatee.id`. */
   didKey: string;
-  /** Public half, sent as `holder_key.jwk`. */
   publicJwk: HolderPublicJwk;
 }

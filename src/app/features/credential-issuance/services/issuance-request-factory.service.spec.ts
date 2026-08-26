@@ -106,7 +106,7 @@ describe('IssuanceRequestFactoryService', () => {
     };
 
     const result = service.createCredentialRequest(
-      credentialData, 'learcredential.machine', 'cfg', 'direct', 'authorization_code', holderKey('did:desmos:abc'));
+      credentialData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:desmos:abc'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -152,7 +152,7 @@ describe('IssuanceRequestFactoryService', () => {
     };
 
     const result = service.createCredentialRequest(
-      credentialData, 'learcredential.machine', 'cfg', 'direct', 'authorization_code', holderKey('did:test'));
+      credentialData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:test'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');
@@ -350,7 +350,7 @@ describe('IssuanceRequestFactoryService', () => {
 
     it('should send only the public half of the key', () => {
       const result = service.createCredentialRequest(
-        machineData, 'learcredential.machine', 'cfg', 'direct', 'authorization_code', holderKey('did:key:zAbc'));
+        machineData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:key:zAbc'));
 
       expect(result.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' } });
       expect(JSON.stringify(result)).not.toContain('0xdeadbeef');
@@ -359,16 +359,16 @@ describe('IssuanceRequestFactoryService', () => {
     it('should omit holder_key and mandatee.id without a generated key (wallet-only delivery)', () => {
       // The backend then injects the did:key derived from the wallet's OID4VCI proof; sending
       // a blank id would leave it with a value it must not overwrite.
-      const result = service.createCredentialRequest(machineData, 'learcredential.machine', 'cfg', 'email');
+      const result = service.createCredentialRequest(machineData, 'learcredential.machine', 'cfg', ['email']);
       const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
       expect(result.holder_key).toBeUndefined();
       expect('id' in mach.mandatee).toBe(false);
     });
 
-    it('should pass the delivery CSV through untouched', () => {
+    it('should serialise the selected modes as canonical CSV, whatever order they arrive in', () => {
       const result = service.createCredentialRequest(
-        machineData, 'learcredential.machine', 'cfg', 'direct,email', 'authorization_code', holderKey('did:key:zAbc'));
+        machineData, 'learcredential.machine', 'cfg', ['email', 'direct'], 'authorization_code', holderKey('did:key:zAbc'));
 
       expect(result.delivery).toBe('direct,email');
     });
