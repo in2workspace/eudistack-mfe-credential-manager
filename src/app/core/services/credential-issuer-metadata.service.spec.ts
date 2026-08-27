@@ -240,6 +240,70 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithMisleadingId);
     });
 
+    it('should read credential_definition for every W3C VC format', (done) => {
+      // jwt_vc_json-ld and ldp_vc carry the same type parameter as jwt_vc_json.
+      const metaWithLinkedDataFormats = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'learcredential.employee.jsonld.1': {
+            format: 'jwt_vc_json-ld',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.jsonld.1'] }
+          },
+          'learcredential.employee.ldp.1': {
+            format: 'ldp_vc',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.ldp.1'] }
+          }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.employee.jsonld.1', format: 'jwt_vc_json-ld' },
+          { configId: 'learcredential.employee.ldp.1', format: 'ldp_vc' }
+        ]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithLinkedDataFormats);
+    });
+
+    it('should ignore a configuration that omits the type parameter of its own format', (done) => {
+      // A W3C configuration with no credential_definition, an sd-jwt with no vct and an mdoc
+      // with no doctype declare nothing: there is no type to match, whatever the id says.
+      const metaWithIncompleteConfigs = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'learcredential.employee.w3c.9': { format: 'jwt_vc_json' },
+          'learcredential.employee.sd.9': { format: 'dc+sd-jwt' },
+          'learcredential.employee.mdoc.9': { format: 'mso_mdoc' }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([]);
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithIncompleteConfigs);
+    });
+
+    it('should ignore a configuration whose format declares no type parameter', (done) => {
+      // Each format declares its type in its own parameter; an unknown format has none to
+      // read, so it cannot be matched to a credential type — fail closed, do not guess.
+      const metaWithUnknownFormat = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'learcredential.employee.exotic.1': {
+            format: 'application/vnd.unknown',
+            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.exotic.1'] }
+          }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([]);
+        expect(service.getIssuableCredentialTypes()).toEqual([]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithUnknownFormat);
+    });
+
     it('should not match a configuration of another lineage', (done) => {
       const metaWithNoTypeDef = {
         credential_issuer: 'https://example.com',
