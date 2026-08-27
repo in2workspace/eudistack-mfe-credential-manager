@@ -23,7 +23,7 @@ describe('CredentialIssuerMetadataService', () => {
       },
       'learcredential.employee.mdoc.1': {
         format: 'mso_mdoc',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.mdoc.1'] }
+        doctype: 'learcredential.employee.mdoc.1'
       },
       'learcredential.machine.w3c.3': {
         format: 'jwt_vc_json',
@@ -73,11 +73,11 @@ describe('CredentialIssuerMetadataService', () => {
       },
       'learcredential.employee.sd.2': {
         format: 'dc+sd-jwt',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.2'] }
+        vct: 'learcredential.employee.sd.2'
       },
       'learcredential.employee.sd.1': {
         format: 'dc+sd-jwt',
-        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.1'] }
+        vct: 'learcredential.employee.sd.1'
       }
     }
   };
@@ -154,7 +154,7 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
     });
 
-    it('should offer the sd-jwt format even though it declares no credential_definition', (done) => {
+    it('should offer the sd-jwt format, which declares its type through vct', (done) => {
       service.loadMetadata().subscribe(() => {
         const result = service.findConfigurationsForType('learcredential.employee');
 
@@ -218,6 +218,28 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
     });
 
+    it('should ignore the configuration id when it disagrees with the declared type', (done) => {
+      // The id grammar is a convention of ours; the format's type parameter is the normative
+      // statement. An id that says one thing and a `vct` that says another follows the vct.
+      const metaWithMisleadingId = {
+        credential_issuer: 'https://example.com',
+        credential_configurations_supported: {
+          'learcredential.machine.sd.1': {
+            format: 'dc+sd-jwt',
+            vct: 'learcredential.employee.sd.1'
+          }
+        }
+      };
+      service.loadMetadata().subscribe(() => {
+        expect(service.findConfigurationsForType('learcredential.machine')).toEqual([]);
+        expect(service.findConfigurationsForType('learcredential.employee')).toEqual([
+          { configId: 'learcredential.machine.sd.1', format: 'dc+sd-jwt' }
+        ]);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(metaWithMisleadingId);
+    });
+
     it('should not match a configuration of another lineage', (done) => {
       const metaWithNoTypeDef = {
         credential_issuer: 'https://example.com',
@@ -235,7 +257,7 @@ describe('CredentialIssuerMetadataService', () => {
   });
 
   describe('getIssuableCredentialTypes()', () => {
-    it('should derive the type from the configuration id, not from credential_definition', (done) => {
+    it('should derive the type from the parameter each format defines for it', (done) => {
       service.loadMetadata().subscribe(() => {
         expect(service.getIssuableCredentialTypes()).toEqual(['learcredential.employee']);
         done();
@@ -387,7 +409,7 @@ describe('CredentialIssuerMetadataService', () => {
           },
           'learcredential.employee.sd.2': {
             format: 'dc+sd-jwt',
-            credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.sd.2'] }
+            vct: 'learcredential.employee.sd.2'
           }
         }
       });
