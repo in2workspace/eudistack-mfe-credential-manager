@@ -6,7 +6,6 @@ export interface ClaimDisplayDto {
 export interface ClaimDefinitionDto {
   path: string[];
   display: ClaimDisplayDto[];
-  value_map?: Record<string, string>;
 }
 
 export interface CredentialMetadataDto {
