@@ -14,6 +14,21 @@ interface KeyedCredentialConfiguration {
   readonly config: CredentialConfigurationDto;
 }
 
+/**
+ * Whether a configuration belongs to a credential type, read off the configuration id
+ * (`<type>.<format-family>.<version>`, see `credential-configuration-id.ts`).
+ *
+ * Read off the id and not off `credential_definition.type`: OID4VCI 1.0 Final section 12.2.4
+ * scopes `credential_definition` to the W3C VC formats, so a `dc+sd-jwt` configuration
+ * legitimately has none and matching on it would hide every SD-JWT format option.
+ *
+ * The separator is part of the comparison so `learcredential.employee` cannot swallow a
+ * hypothetical `learcredential.employeeextra` lineage.
+ */
+function declaresType(configId: string, type: IssuanceCredentialType): boolean {
+  return configId === type || configId.startsWith(`${type}.`);
+}
+
 @Injectable({ providedIn: 'root' })
 export class CredentialIssuerMetadataService {
   private readonly http = inject(HttpClient);
@@ -69,13 +84,11 @@ export class CredentialIssuerMetadataService {
     // Derived from the version-filtered set, like findConfigurationsForType(): a type known
     // only through a superseded or unversioned configuration would otherwise reach the
     // selector with no format option behind it.
-    for (const { config } of this.latestConfigurations()) {
+    for (const { configId } of this.latestConfigurations()) {
       // Same predicate as findConfigurationsForType(): if a type were derived from another
       // source, it would show up in the selector with no associated format options.
-      for (const declaredType of config.credential_definition?.type ?? []) {
-        const renderableType = ISSUANCE_CREDENTIAL_TYPES_ARRAY.find(known => declaredType.startsWith(known));
-        if (renderableType) derived.add(renderableType);
-      }
+      const renderableType = ISSUANCE_CREDENTIAL_TYPES_ARRAY.find(known => declaresType(configId, known));
+      if (renderableType) derived.add(renderableType);
     }
     return [...derived];
   });
@@ -117,7 +130,7 @@ export class CredentialIssuerMetadataService {
    */
   findConfigurationsForType(type: IssuanceCredentialType): Array<{ configId: string; format: string }> {
     return this.latestConfigurations()
-      .filter(({ config }) => config.credential_definition?.type?.some(t => t.startsWith(type)))
+      .filter(({ configId }) => declaresType(configId, type))
       .map(({ configId, config }) => ({ configId, format: config.format }));
   }
 

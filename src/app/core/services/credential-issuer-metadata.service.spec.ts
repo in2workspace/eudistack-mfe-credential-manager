@@ -36,6 +36,25 @@ describe('CredentialIssuerMetadataService', () => {
     }
   };
 
+  /**
+   * The shape the Issuer publishes since it was made OID4VCI-conformant: section 12.2.4 scopes
+   * `credential_definition` to the W3C VC formats, so the dc+sd-jwt configuration carries `vct`
+   * and no `credential_definition` at all.
+   */
+  const mockConformantMetadata = {
+    credential_issuer: 'https://example.com',
+    credential_configurations_supported: {
+      'learcredential.employee.w3c.4': {
+        format: 'jwt_vc_json',
+        credential_definition: { type: ['VerifiableCredential', 'learcredential.employee.w3c.4'] }
+      },
+      'learcredential.employee.sd.1': {
+        format: 'dc+sd-jwt',
+        vct: 'learcredential.employee.sd.1'
+      }
+    }
+  };
+
   /** Several versions of the same lineage, declared oldest-first and newest-first. */
   const mockVersionedMetadata = {
     credential_issuer: 'https://example.com',
@@ -135,6 +154,16 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
     });
 
+    it('should offer the sd-jwt format even though it declares no credential_definition', (done) => {
+      service.loadMetadata().subscribe(() => {
+        const result = service.findConfigurationsForType('learcredential.employee');
+
+        expect(result).toContainEqual({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt' });
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockConformantMetadata);
+    });
+
     it('should return only the newest version of each format, one entry per format', (done) => {
       service.loadMetadata().subscribe(() => {
         const result = service.findConfigurationsForType('learcredential.employee');
@@ -189,7 +218,7 @@ describe('CredentialIssuerMetadataService', () => {
       httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockMetadata);
     });
 
-    it('should handle configs without credential_definition (no match)', (done) => {
+    it('should not match a configuration of another lineage', (done) => {
       const metaWithNoTypeDef = {
         credential_issuer: 'https://example.com',
         credential_configurations_supported: {
@@ -206,6 +235,14 @@ describe('CredentialIssuerMetadataService', () => {
   });
 
   describe('getIssuableCredentialTypes()', () => {
+    it('should derive the type from the configuration id, not from credential_definition', (done) => {
+      service.loadMetadata().subscribe(() => {
+        expect(service.getIssuableCredentialTypes()).toEqual(['learcredential.employee']);
+        done();
+      });
+      httpMock.expectOne(environment.server_url + API_PATH.CREDENTIAL_ISSUER_METADATA).flush(mockConformantMetadata);
+    });
+
     it('should return an empty list when metadata has not been loaded yet (fail-closed)', () => {
       expect(service.getIssuableCredentialTypes()).toEqual([]);
       expect(service.hasMetadataLoadFailed()).toBe(false);
