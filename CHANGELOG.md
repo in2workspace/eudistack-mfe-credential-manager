@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`serialNumber` is no longer a required field in the issuance form.**
+
 ### Added
 
 - **CI — control de composición de software (SCA)**
@@ -15,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **SBOM CycloneDX** (`@cyclonedx/cyclonedx-npm@6.0.1`, spec 1.6, solo dependencias de producción) generado en `ci-cd.yml`, publicado como artefacto con 90 días de retención y adjuntado al GitHub Release como `sbom.cdx.json`.
   - **Dependabot**: configuración de actualizaciones para `npm` y `github-actions`. Tener las alertas activadas no basta — sin fichero de configuración el grafo de dependencias no estaba produciendo alertas en este repositorio.
   - `config/trivy/**` añadido al `paths-ignore` de `ci-cd.yml`: cambiar la lista de exclusiones es un cambio de política, no un despliegue.
-
 
 ### Fixed
 - **Home Wallet links** - Show the correct Wallet link using the resolved URL from `TenantService`.
