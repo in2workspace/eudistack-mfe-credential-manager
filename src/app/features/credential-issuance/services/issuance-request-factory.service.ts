@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryMode, HolderKeyMaterial, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -13,29 +13,39 @@ export class IssuanceRequestFactoryService {
   private readonly authService = inject(AuthService);
   private readonly themeService = inject(ThemeService);
 
-  private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
+  private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload, holderKey?: HolderKeyMaterial) => IssuanceLEARCredentialPayload> = {
     'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
-    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data)
+    'learcredential.machine': (data, holderKey) => this.createLearCredentialMachineRequest(data, holderKey)
   }
 
+  /**
+   * @param deliveryModes the modes the Operator selected; serialised to the CSV the backend
+   *                  expects here, so no caller has to build (or mis-build) that string.
+   * @param holderKey generated during submission when the selected configuration requires one
+   *                  (`cnf_required` and no cryptographic binding method), for every delivery
+   *                  mode alike. It supplies both `mandatee.id` (did:key) and `holder_key.jwk`.
+   *                  Absent for wallet-bound types, where the backend derives both from the proof.
+   */
   public createCredentialRequest(
       credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      delivery: IssuanceDelivery = 'email',
-      grantType: IssuanceGrantType = 'authorization_code'
+      deliveryModes: readonly DeliveryMode[] = ['email'],
+      grantType: IssuanceGrantType = 'authorization_code',
+      holderKey?: HolderKeyMaterial
   ): IssuanceLEARCredentialRequestDto {
-        const payload = this.createCredentialRequestPayload(credentialData, credentialType);
+        const payload = this.createCredentialRequestPayload(credentialData, credentialType, holderKey);
         const email = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, delivery, payload, email, grantType);
+        return this.buildRequestDto(configId, deliveryModes, payload, email, grantType, holderKey);
       }
 
   public createCredentialRequestPayload(
-      credentialData: IssuanceRawCredentialPayload, 
-      credentialType: IssuanceCredentialType
+      credentialData: IssuanceRawCredentialPayload,
+      credentialType: IssuanceCredentialType,
+      holderKey?: HolderKeyMaterial
     ): IssuanceLEARCredentialPayload{
 
-     return this.credentialRequestFactoryMap[credentialType](credentialData);
+     return this.credentialRequestFactoryMap[credentialType](credentialData, holderKey);
     }
 
   private createLearCredentialEmployeeRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialEmployeePayload{
@@ -77,7 +87,7 @@ export class IssuanceRequestFactoryService {
       return payload;
   }
 
-  private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialMachinePayload{
+  private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload, holderKey?: HolderKeyMaterial): IssuanceLEARCredentialMachinePayload{
     // Power
     const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
@@ -97,8 +107,6 @@ export class IssuanceRequestFactoryService {
     const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
     const mandatorEmail = mandator['email'];
 
-    const didKey = credentialData.formData['keys']['didKey'];
-    
     // Payload
     const payload: IssuanceLEARCredentialMachinePayload =    
       {
@@ -112,7 +120,9 @@ export class IssuanceRequestFactoryService {
         country:  mandator['country'],
       },
       mandatee: {
-          id:  didKey,
+          // Only when a key was generated locally (direct delivery). Left out otherwise so the
+          // backend can inject the proof-derived did:key instead of finding a blank already there.
+          ...(holderKey ? { id: holderKey.didKey } : {}),
           domain:  mandatee['domain'],
           ipAddress:  mandatee["ipAddress"]
       },
@@ -203,13 +213,15 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, deliveryModes: readonly DeliveryMode[], payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, holderKey?: HolderKeyMaterial): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,
-      delivery,
+      delivery: toDeliveryCsv(deliveryModes),
       email,
-      grant_type: grantType
+      grant_type: grantType,
+      // Only the public half travels. The private key never leaves the browser.
+      ...(holderKey ? { holder_key: { jwk: holderKey.publicJwk } } : {})
     };
   }
 }

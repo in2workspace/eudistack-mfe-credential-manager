@@ -5,6 +5,7 @@ import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TitleCasePipe, KeyValuePipe, CommonModule } from '@angular/common';
@@ -14,7 +15,7 @@ import { MatCard, MatCardContent } from '@angular/material/card';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
-import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, DeliveryOption, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, DeliveryMode, DeliveryOption, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
 /**
  * CredentialIssuanceComponent
@@ -24,7 +25,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
 @Component({
     selector: 'app-credential-issuance',
     providers: [CredentialIssuanceService],
-    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
@@ -44,9 +45,9 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]>;
   public selectedGrantType$: WritableSignal<GrantTypeOption>;
 
-  // DELIVERY SELECTOR
-  public readonly deliveryOptions: Readonly<DeliveryOption[]>;
-  public selectedDelivery$: WritableSignal<DeliveryOption>;
+  // DELIVERY SELECTOR (multi-select: the Operator may pick more than one channel)
+  public availableDeliveryOptions$: Signal<DeliveryOption[]>;
+  public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryMode>>;
 
   // FORM STATE
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
@@ -81,8 +82,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.effectiveFormatOption$ = this.issuanceService.effectiveFormatOption$;
     this.grantTypeOptions = this.issuanceService.grantTypeOptions;
     this.selectedGrantType$ = this.issuanceService.selectedGrantType$;
-    this.deliveryOptions = this.issuanceService.deliveryOptions;
-    this.selectedDelivery$ = this.issuanceService.selectedDelivery$;
+    this.availableDeliveryOptions$ = this.issuanceService.availableDeliveryOptions$;
+    this.selectedDeliveryModes$ = this.issuanceService.selectedDeliveryModes$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
     this.form$ = this.issuanceService.form$;
@@ -105,8 +106,17 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.issuanceService.updateSelectedGrantType(option);
   }
 
-  public onDeliverySelectionChange(option: DeliveryOption): void {
-    this.issuanceService.updateSelectedDelivery(option);
+  public onDeliveryToggle(mode: DeliveryMode, selected: boolean): void {
+    this.issuanceService.toggleDelivery(mode, selected);
+  }
+
+  public isDeliverySelected(mode: DeliveryMode): boolean {
+    return this.issuanceService.isDeliverySelected(mode);
+  }
+
+  public isDeliveryLocked(mode: DeliveryMode): boolean {
+    const selected = this.selectedDeliveryModes$();
+    return selected.size === 1 && selected.has(mode);
   }
 
   public canLeave(): boolean{
@@ -125,11 +135,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
       return;
     }
 
-    if(this.selectedCredentialType$() === 'learcredential.machine'){
-      this.issuanceService.openLEARCredentialMachineSubmitDialog();
-    }else{
-      this.issuanceService.openSubmitDialog();
-    }
+    this.issuanceService.openSubmitDialog();
   }
 
 

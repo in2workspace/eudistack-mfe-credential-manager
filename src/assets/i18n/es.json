@@ -320,8 +320,6 @@
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "¿Estás seguro de que quieres crear esta credencial?",
-      "checkboxLabel": "Confirmo que he copiado y guardado de forma segura la clave privada.",
-      "belowText": "Sin la clave privada, no podrás usar esta credencial más adelante.",
       "defaultLoadingTitle": "Espere mientras se completa el proceso..."
     },
     "create-success-dialog": {
@@ -374,13 +372,45 @@
     "delivery": {
       "label": "Método de entrega",
       "email": "Correo electrónico",
-      "qrCode": "Código QR"
+      "qrCode": "Código QR",
+      "direct": "Directa"
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",
       "copy": "Copiar enlace",
       "copied": "¡Copiado!"
+    },
+    "issuance-result-dialog": {
+      "title": "Credencial creada correctamente",
+      "titleFailed": "No se ha podido completar la emisión",
+      "failedBanner": "La emisión ha fallado. Revisa el detalle de cada canal antes de volver a intentarlo.",
+      "partialBanner": "La emisión se ha completado, pero alguno de los canales de entrega ha fallado.",
+      "modeFailed": {
+        "direct": "No se ha podido emitir la credencial, así que no se devuelve aquí.",
+        "ui": "No se ha podido generar el código QR.",
+        "email": "No se ha podido enviar el correo electrónico."
+      },
+      "modeUnconfirmed": "No se ha podido confirmar este canal. Revisa la lista de credenciales antes de volver a emitir.",
+      "credential": "Credencial",
+      "credentialKey": "Clave de la credencial",
+      "copied": "Credencial copiada",
+      "emailSent": "La oferta de credencial se ha enviado por correo electrónico.",
+      "bothWalletChannels": "La credencial se puede obtener desde el código QR o desde el correo electrónico, pero solo funcionará el primero que se utilice.",
+      "tokenUnavailable": "La credencial se ha creado, pero no se ha devuelto en la respuesta.",
+      "offerUnavailable": "No se ha podido generar la oferta de credencial.",
+      "handoverNote": "Guarda esta información ahora. Solo se muestra una vez y no se podrá recuperar después.",
+      "handoverNoteUnconfirmed": "No se ha podido confirmar la entrega. Si la credencial llega a su titular, estará vinculada a esta clave: guárdala ahora, solo se muestra una vez.",
+      "handover": {
+        "credentialAndKey": "Credencial y clave",
+        "credential": "Credencial",
+        "key": "Clave de la credencial"
+      },
+      "section": {
+        "direct": "Entrega directa",
+        "ui": "Código QR",
+        "email": "Correo electrónico"
+      }
     },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."
@@ -454,12 +484,6 @@
     "delete": "Eliminar",
     "save": "Guardar",
     "loading-default-title": "Espere mientras se completa el proceso..."
-  },
-  "keys": {
-    "title": "Llave privada",
-    "buttonText": "Generar llave",
-    "alert": "Asegúrese de guardar esa llave.",
-    "tooltip": "La clave privada es un secreto que te permite firmar y demostrar la propiedad de la credencial. Sin ella, no puedes usar la credencial. Guárdala de manera segura y no la compartas."
   },
   "countries": {
     "spain": "España",

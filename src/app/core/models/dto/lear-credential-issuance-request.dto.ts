@@ -1,15 +1,16 @@
+import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-
-export type IssuanceDelivery = 'email' | 'ui';
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    delivery: IssuanceDelivery;
+    /** CSV of the selected delivery modes; only `toDeliveryCsv()` produces one. */
+    delivery: DeliveryCsv;
     email: string;
     grant_type: IssuanceGrantType;
+    holder_key?: { jwk: HolderPublicJwk };
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
@@ -32,7 +33,9 @@ export interface IssuanceLEARCredentialMachinePayload {
         country: string,
     },
     mandatee: {
-        id: string, //did-key
+        // Omitted when no key was generated locally (wallet-only delivery): the backend then
+        // injects the proof-derived did:key.
+        id?: string, //did-key
         domain: string,
         ipAddress: string
     },
@@ -45,6 +48,14 @@ export interface IssuanceLEARCredentialEmployeePayload {
       power: IssuancePayloadPower[];
 }
 
+export interface IssuanceDeliveryResultDto {
+    mode: string;
+    status: string;
+    error?: string;
+}
+
 export interface IssuanceResponseDto {
     credential_offer_uri?: string;
+    signed_credential?: string;
+    delivery_results?: IssuanceDeliveryResultDto[];
 }

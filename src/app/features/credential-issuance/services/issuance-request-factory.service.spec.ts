@@ -78,6 +78,16 @@ describe('IssuanceRequestFactoryService', () => {
     expect(emp.mandator.organizationIdentifier).toBe('VATFR-999');
   });
 
+
+  /** Stand-in for what KeyGeneratorService returns during a direct submission. */
+  function holderKey(didKey: string) {
+    return {
+      privateKeyHex: '0xdeadbeef',
+      didKey,
+      publicJwk: { kty: 'EC' as const, crv: 'P-256' as const, x: 'X', y: 'Y' }
+    };
+  }
+
   it('should create machine request with did and mandatee fields', () => {
     const credentialData: any = {
       onBehalf: true,
@@ -91,12 +101,12 @@ describe('IssuanceRequestFactoryService', () => {
           organizationIdentifier: '246',
           serialNumber: 'S246'
         },
-        mandatee: { domain: 'example.com', ipAddress: '127.0.0.1' },
-        keys: { didKey: 'did:desmos:abc' }
+        mandatee: { domain: 'example.com', ipAddress: '127.0.0.1' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(
+      credentialData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:desmos:abc'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -137,12 +147,12 @@ describe('IssuanceRequestFactoryService', () => {
           organizationIdentifier: 'VATDE-555',
           serialNumber: 'SN555'
         },
-        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
-        keys: { didKey: 'did:test' }
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(
+      credentialData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:test'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');
@@ -192,8 +202,7 @@ describe('IssuanceRequestFactoryService', () => {
       formData: {
         power: { Onboarding: { Execute: true } },
         mandator: null,
-        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
-        keys: { didKey: 'did:test' }
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
     const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
@@ -322,4 +331,47 @@ describe('IssuanceRequestFactoryService', () => {
 
     expect(result.email).toBe('');
   });
+
+  describe('holder key', () => {
+    const machineData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: {
+          commonName: 'MachineCo',
+          organization: 'Org',
+          country: 'DE',
+          organizationIdentifier: 'VATDE-555',
+          serialNumber: 'SN555'
+        },
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
+      }
+    };
+
+    it('should send only the public half of the key', () => {
+      const result = service.createCredentialRequest(
+        machineData, 'learcredential.machine', 'cfg', ['direct'], 'authorization_code', holderKey('did:key:zAbc'));
+
+      expect(result.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' } });
+      expect(JSON.stringify(result)).not.toContain('0xdeadbeef');
+    });
+
+    it('should omit holder_key and mandatee.id without a generated key (wallet-only delivery)', () => {
+      // The backend then injects the did:key derived from the wallet's OID4VCI proof; sending
+      // a blank id would leave it with a value it must not overwrite.
+      const result = service.createCredentialRequest(machineData, 'learcredential.machine', 'cfg', ['email']);
+      const mach = result.payload as IssuanceLEARCredentialMachinePayload;
+
+      expect(result.holder_key).toBeUndefined();
+      expect('id' in mach.mandatee).toBe(false);
+    });
+
+    it('should serialise the selected modes as canonical CSV, whatever order they arrive in', () => {
+      const result = service.createCredentialRequest(
+        machineData, 'learcredential.machine', 'cfg', ['email', 'direct'], 'authorization_code', holderKey('did:key:zAbc'));
+
+      expect(result.delivery).toBe('direct,email');
+    });
+  });
+
 });

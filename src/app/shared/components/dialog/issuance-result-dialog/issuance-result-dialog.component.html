@@ -1,0 +1,94 @@
+<h2 mat-dialog-title>
+  {{ (failed
+        ? "credentialIssuance.issuance-result-dialog.titleFailed"
+        : "credentialIssuance.issuance-result-dialog.title") | translate }}
+</h2>
+
+<div mat-dialog-content class="result-content">
+  @if (failed || hasAnyFailure) {
+    <p class="failure-banner" role="alert">
+      {{ (failed
+            ? "credentialIssuance.issuance-result-dialog.failedBanner"
+            : "credentialIssuance.issuance-result-dialog.partialBanner") | translate }}
+    </p>
+  }
+
+  <!-- What the Operator has to take away: shown once, gone on close. One box, one warning,
+       whichever of the two ended up in it. -->
+  @if (handoverTitleKey) {
+    <section class="result-box" data-mode="handover">
+      <h3 class="box-title">{{ handoverTitleKey | translate }}</h3>
+
+      @if (hasSavableContent) {
+        <p class="handover-note" role="status">{{ handoverNoteKey | translate }}</p>
+      }
+
+      @if (showsToken) {
+        @if (data.credentialToken) {
+          <app-copyable-field
+            labelKey="credentialIssuance.issuance-result-dialog.credential"
+            [value]="data.credentialToken">
+          </app-copyable-field>
+        } @else {
+          <p class="token-missing" role="status">
+            {{ "credentialIssuance.issuance-result-dialog.tokenUnavailable" | translate }}
+          </p>
+        }
+      }
+
+      @if (showsKey && data.privateKey) {
+        <app-copyable-field
+          labelKey="credentialIssuance.issuance-result-dialog.credentialKey"
+          [value]="data.privateKey">
+        </app-copyable-field>
+      }
+    </section>
+  }
+
+  @for (mode of statusModes; track mode) {
+    @let outcome = outcomeOf(mode);
+    <section class="result-box" [attr.data-mode]="mode">
+      <h3 class="box-title">{{ "credentialIssuance.issuance-result-dialog.section." + mode | translate }}</h3>
+
+      @if (outcome === 'failed') {
+        <!-- One generic sentence per channel. The issuer's own wording is technical and reaches the
+             Operator with no context to act on it; it stays in the log and the audit trace. -->
+        <p class="mode-failed" role="status">
+          {{ "credentialIssuance.issuance-result-dialog.modeFailed." + mode | translate }}
+        </p>
+      } @else if (outcome === 'unconfirmed') {
+        <p class="mode-unconfirmed" role="status">
+          {{ "credentialIssuance.issuance-result-dialog.modeUnconfirmed" | translate }}
+        </p>
+      } @else {
+        @switch (mode) {
+          @case ('ui') {
+            @if (data.credentialOfferUri) {
+              <app-credential-offer-qr [credentialOfferUri]="data.credentialOfferUri"></app-credential-offer-qr>
+            } @else {
+              <p class="offer-missing" role="status">
+                {{ "credentialIssuance.issuance-result-dialog.offerUnavailable" | translate }}
+              </p>
+            }
+          }
+
+          @case ('email') {
+            <p class="email-sent">{{ "credentialIssuance.issuance-result-dialog.emailSent" | translate }}</p>
+          }
+        }
+      }
+    </section>
+  }
+
+  @if (showBothWalletChannelsNote) {
+    <p class="both-channels-note">
+      {{ "credentialIssuance.issuance-result-dialog.bothWalletChannels" | translate }}
+    </p>
+  }
+</div>
+
+<div mat-dialog-actions>
+  <button mat-flat-button color="primary" (click)="close()">
+    {{ "dialog.close" | translate }}
+  </button>
+</div>

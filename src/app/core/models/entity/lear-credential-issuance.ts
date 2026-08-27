@@ -1,7 +1,6 @@
 import { ValidatorEntryUnion } from "src/app/shared/validators/credential-issuance/all-validators";
 import { TmfAction, TmfFunction } from "./lear-credential";
 import { ComponentType } from "@angular/cdk/portal";
-import { FormControl } from "@angular/forms";
 import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details/components/base-issuance-custom-form-child";
 import { ClaimDefinitionDto } from "../dto/credential-issuer-metadata.dto";
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['learcredential.employee', 'learcredential.machine'] as const;
@@ -34,8 +33,18 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
   { value: 'urn:ietf:params:oauth:grant-type:pre-authorized_code', labelKey: 'credentialIssuance.grantType.preAuthorizedCode' },
 ];
 
-export type DeliveryMode = 'email' | 'ui';
+export type DeliveryMode = 'email' | 'ui' | 'direct';
 
+/**
+ * Wire form of the request's `delivery` field: a CSV of `DeliveryMode` (e.g. `direct,email`).
+ *
+ * Branded so the only way to obtain one is `toDeliveryCsv()`.
+ */
+export type DeliveryCsv = string & { readonly __brand: 'DeliveryCsv' };
+
+export function toDeliveryCsv(modes: Iterable<DeliveryMode>): DeliveryCsv {
+  return [...new Set(modes)].join(',') as DeliveryCsv;
+}
 export interface DeliveryOption {
   value: DeliveryMode;
   labelKey: string;
@@ -44,7 +53,14 @@ export interface DeliveryOption {
 export const DELIVERY_OPTIONS: DeliveryOption[] = [
   { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
   { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
 ];
+
+/**
+ * Order the result dialog renders one box per selected mode in: what the Operator has to act on
+ * first comes first.
+ */
+export const DELIVERY_RESULT_ORDER: readonly DeliveryMode[] = ['direct', 'ui', 'email'];
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
@@ -127,11 +143,17 @@ export interface IssuanceFormPowerSchema{
 }
 
 // Key component and service types
-export interface KeyState {
-  desmosPrivateKeyValue: string,
-  desmosDidKeyValue: string
+/** Public half of a holder key, in the shape the request's `holder_key.jwk` expects. */
+export interface HolderPublicJwk {
+  kty: 'EC';
+  crv: 'P-256';
+  x: string;
+  y: string;
 }
 
-export interface KeyForm{
-  didKey: FormControl<string>,
+
+export interface HolderKeyMaterial {
+  privateKeyHex: string;
+  didKey: string;
+  publicJwk: HolderPublicJwk;
 }

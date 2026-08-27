@@ -4,7 +4,6 @@ import { AuthService } from "src/app/core/services/auth.service";
 import { CountryService } from "src/app/shared/services/country.service";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
 import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
-import { KeyGeneratorComponent } from "../../components/key-generator/key-generator.component";
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 
 @Injectable({ providedIn: 'root' })
@@ -42,23 +41,6 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
       type: 'learcredential.machine',
       schema:
       [
-      // KEYS
-      {
-        key: 'keys',
-        type: 'group',
-        display: 'main',
-        custom: {
-          component: KeyGeneratorComponent
-        },
-        groupFields: [
-          {
-            key: 'didKey',
-            type: 'control',
-            controlType: 'text',
-            validators: [{name: 'required'}]
-          }
-        ]
-      },
       // MANDATEE
       {
         key: 'mandatee',

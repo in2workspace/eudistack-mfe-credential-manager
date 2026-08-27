@@ -22,38 +22,58 @@ describe('KeyGeneratorService', () => {
     jest.restoreAllMocks();
   });
 
-  it('should have initial state undefined and displayedKeys$ returns partial with undefined', () => {
-    expect(service.getState()()).toBeUndefined();
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: undefined });
-  });
-
-  it('should update desmosPrivateKeyValue correctly', () => {
-    service.updateState('desmosPrivateKeyValue', 'abc');
-    expect(service.getState()()).toMatchObject({ desmosPrivateKeyValue: 'abc' });
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: 'abc' });
-  });
-
-  it('should update desmosDidKeyValue correctly', () => {
-    service.updateState('desmosDidKeyValue', 'did:abc');
-    expect(service.getState()()).toMatchObject({ desmosDidKeyValue: 'did:abc' });
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: '' });
-  });
-
-  it('generateP256 should call sub-methods and update state', async () => {
-    const mockPrivateHex = 'deadbeef';
-    const mockDid = 'did:key:zTest';
-    const mockKeyPair = {} as CryptoKeyPair;
-
-    jest.spyOn(service as any, 'generateP256KeyPair').mockResolvedValue(mockKeyPair);
-    jest.spyOn(service as any, 'generateP256PrivateKeyHex').mockResolvedValue(mockPrivateHex);
+  it('generateHolderKeyPair should return the private key, the did:key and the public JWK', async () => {
+    jest.spyOn(service as any, 'generateP256KeyPair').mockResolvedValue({} as CryptoKeyPair);
+    jest.spyOn(service as any, 'generateP256PrivateKeyHex').mockResolvedValue('deadbeef');
     jest.spyOn(service as any, 'generateP256PublicKeyHex').mockResolvedValue('0x04cafebabe');
-    jest.spyOn(service as any, 'generateDidKey').mockResolvedValue(mockDid);
+    jest.spyOn(service as any, 'generateDidKey').mockResolvedValue('did:key:zTest');
+    jest.spyOn(service as any, 'exportPublicJwk').mockResolvedValue({ kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' });
 
-    await service.generateP256();
+    const material = await service.generateHolderKeyPair();
 
-    expect(service.getState()()).toMatchObject({
-      desmosPrivateKeyValue: mockPrivateHex,
-      desmosDidKeyValue: mockDid,
+    expect(material).toEqual({
+      privateKeyHex: 'deadbeef',
+      didKey: 'did:key:zTest',
+      publicJwk: { kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' },
+    });
+  });
+
+  it('generateHolderKeyPair should keep no state, so two calls cannot leak into each other', async () => {
+    jest.spyOn(service as any, 'generateP256KeyPair').mockResolvedValue({} as CryptoKeyPair);
+    jest.spyOn(service as any, 'generateP256PublicKeyHex').mockResolvedValue('0x04cafebabe');
+    jest.spyOn(service as any, 'generateDidKey').mockResolvedValue('did:key:zTest');
+    jest.spyOn(service as any, 'exportPublicJwk').mockResolvedValue({ kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' });
+    jest.spyOn(service as any, 'generateP256PrivateKeyHex')
+      .mockResolvedValueOnce('first')
+      .mockResolvedValueOnce('second');
+
+    const first = await service.generateHolderKeyPair();
+    const second = await service.generateHolderKeyPair();
+
+    expect(first.privateKeyHex).toBe('first');
+    expect(second.privateKeyHex).toBe('second');
+    // The private key must not be reachable anywhere on the service after the call returns.
+    expect(JSON.stringify(service)).not.toContain('first');
+  });
+
+  describe('exportPublicJwk', () => {
+    it('should keep only kty, crv, x and y', async () => {
+      // @ts-ignore
+      (window.crypto.subtle.exportKey as jest.Mock).mockResolvedValue({
+        kty: 'EC', crv: 'P-256', x: 'X', y: 'Y', d: 'PRIVATE', ext: true, key_ops: ['verify'],
+      });
+
+      const jwk = await (service as any).exportPublicJwk({ publicKey: {} } as CryptoKeyPair);
+
+      expect(jwk).toEqual({ kty: 'EC', crv: 'P-256', x: 'X', y: 'Y' });
+    });
+
+    it('should throw when the export comes back without EC coordinates', async () => {
+      // @ts-ignore
+      (window.crypto.subtle.exportKey as jest.Mock).mockResolvedValue({ kty: 'EC', crv: 'P-256' });
+
+      await expect((service as any).exportPublicJwk({ publicKey: {} } as CryptoKeyPair))
+        .rejects.toThrow('Exported public JWK is missing its EC coordinates');
     });
   });
 

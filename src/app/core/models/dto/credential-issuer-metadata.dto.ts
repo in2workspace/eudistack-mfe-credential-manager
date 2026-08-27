@@ -16,6 +16,9 @@ export interface CredentialMetadataDto {
 
 export interface CredentialConfigurationDto {
   format: string;
+  // determines whether the credential can be issued with 'direct' delivery.
+  cryptographic_binding_methods_supported?: string[];
+  cnf_required?: boolean;
   credential_definition?: { type: string[] };
   credential_metadata?: CredentialMetadataDto;
 }

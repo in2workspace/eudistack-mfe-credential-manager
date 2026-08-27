@@ -1,0 +1,75 @@
+.result-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  p {
+    margin: 0;
+  }
+
+  .result-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-default, #D1D5DB);
+    border-radius: var(--radius-md, 8px);
+
+    .box-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+  }
+
+  .handover-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  .email-sent {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  .token-missing,
+  .offer-missing,
+  .mode-failed,
+  .mode-unconfirmed,
+  .failure-banner {
+    font-size: 0.9rem;
+    color: var(--status-error, #DC2626);
+  }
+
+  .failure-banner {
+    font-weight: 600;
+  }
+
+  // A box is marked failed whenever it could not show what it exists to show -- a reported failure,
+  // an unconfirmed channel, or content that never arrived. From the Operator's side those read the
+  // same: this box did not do its job.
+  .result-box:has(.mode-failed),
+  .result-box:has(.mode-unconfirmed),
+  .result-box:has(.offer-missing),
+  .result-box:has(.token-missing) {
+    border-color: var(--status-error, #DC2626);
+  }
+
+  .both-channels-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6B7280);
+    text-align: center;
+  }
+}
+
+:host ::ng-deep div[mat-dialog-actions] {
+  justify-content: center !important;
+  padding: 16px 24px;
+
+  .mat-mdc-button-base.mat-primary {
+    --mdc-filled-button-container-color: var(--primary-color, #001E8C);
+    --mdc-filled-button-label-text-color: var(--primary-contrast-color, #fff);
+    --mdc-protected-button-container-color: var(--primary-color, #001E8C);
+    --mdc-protected-button-label-text-color: var(--primary-contrast-color, #fff);
+  }
+}

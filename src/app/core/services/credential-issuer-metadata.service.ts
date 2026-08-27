@@ -128,4 +128,43 @@ export class CredentialIssuerMetadataService {
   getAllConfigurations(): Record<string, CredentialConfigurationDto> | null {
     return this.configurations();
   }
+
+  /**
+   * Absent AND empty both count as "no",
+   * because the issuer normalizes an empty set to an omitted field and either shape can reach us.
+   */
+  private isWalletBound(config: CredentialConfigurationDto): boolean {
+    const methods = config.cryptographic_binding_methods_supported;
+    return !!methods && methods.length > 0;
+  }
+
+  /**
+   * Fail-closed, like the rest of this service: with no usable metadata the option is not
+   * offered. Withholding a delivery mode beats offering one the backend will reject.
+   */
+  isDirectDeliveryEligible(configId: string): boolean {
+    if (this.loadFailed()) return false;
+    const config = this.getConfigurationById(configId);
+    if (!config) return false;
+    return !this.isWalletBound(config);
+  }
+
+  /**
+   * Whether the issuance request has to carry the holder key itself.
+   * 
+   * Applies to EVERY delivery mode, not only `direct`: a type with no binding method gets no
+   * wallet proof either, so the key supplied at intake is the only one the credential will ever
+   * have — the wallet channels just deliver a credential already bound to it.
+   *
+   * Fails to `false` on unusable metadata, the opposite direction from
+   * `isDirectDeliveryEligible`. Not asking for a key the issuer wanted is rejected at intake,
+   * loudly; generating one the issuer discards would hand the Operator a private key the
+   * credential is not bound to, and nothing downstream would ever reveal it.
+   */
+  isHolderKeyRequired(configId: string): boolean {
+    if (this.loadFailed()) return false;
+    const config = this.getConfigurationById(configId);
+    if (!config) return false;
+    return config.cnf_required === true && !this.isWalletBound(config);
+  }
 }
