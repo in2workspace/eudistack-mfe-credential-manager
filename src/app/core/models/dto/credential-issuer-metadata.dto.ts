@@ -6,7 +6,6 @@ export interface ClaimDisplayDto {
 export interface ClaimDefinitionDto {
   path: string[];
   display: ClaimDisplayDto[];
-  value_map?: Record<string, string>;
 }
 
 export interface CredentialMetadataDto {
@@ -16,7 +15,12 @@ export interface CredentialMetadataDto {
 
 export interface CredentialConfigurationDto {
   format: string;
+  /** W3C VC formats (jwt_vc_json, jwt_vc_json-ld, ldp_vc). */
   credential_definition?: { type: string[] };
+  /** dc+sd-jwt. */
+  vct?: string;
+  /** mso_mdoc. */
+  doctype?: string;
   credential_metadata?: CredentialMetadataDto;
 }
 
