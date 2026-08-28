@@ -628,4 +628,49 @@ describe('CredentialIssuerMetadataService', () => {
       flush(mockVersionedMetadata);
     });
   });
+
+  describe('requiresHolderBinding()', () => {
+
+    const flushBinding = (metadata: object) => {
+      service.loadMetadata().subscribe();
+      httpMock.expectOne(req => req.url.includes('.well-known/openid-credential-issuer'))
+        .flush(metadata);
+    };
+
+    const metadataWith = (configs: Record<string, unknown>) => ({
+      credential_issuer: 'https://example.com',
+      credential_configurations_supported: configs,
+    });
+
+    it('is true for a type publishing proof_types_supported', () => {
+      flushBinding(metadataWith({
+        'learcredential.employee.w3c.4': {
+          format: 'jwt_vc_json',
+          proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
+        },
+      }));
+
+      expect(service.requiresHolderBinding('learcredential.employee.w3c.4')).toBe(true);
+    });
+
+    it('is false for a migrated type that publishes neither binding field', () => {
+      // EUD-168 withdraws both fields from the machine profiles so they stay eligible for direct
+      // delivery; the form must reach that same conclusion from the published metadata alone.
+      flushBinding(metadataWith({
+        'learcredential.machine.w3c.3': { format: 'jwt_vc_json' },
+      }));
+
+      expect(service.requiresHolderBinding('learcredential.machine.w3c.3')).toBe(false);
+    });
+
+    it('is false for an unknown configuration id', () => {
+      flushBinding(metadataWith({}));
+
+      expect(service.requiresHolderBinding('does.not.exist')).toBe(false);
+    });
+
+    it('is false before any metadata has been loaded', () => {
+      expect(service.requiresHolderBinding('learcredential.employee.w3c.4')).toBe(false);
+    });
+  });
 });

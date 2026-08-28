@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **EUD-168 — los modos de entrega ofrecidos se derivan del esquema publicado**: `deliveryOptions` deja de ser la constante `DELIVERY_OPTIONS` y pasa a ser un `computed()` sobre la configuración seleccionada, filtrado por `resolveOfferableDeliveryOptions` (`core/helpers/delivery-eligibility.ts`). La señal es `proof_types_supported` de la Credential Issuer Metadata, el mismo campo con el que decide el Issuer (ADR-110): un tipo vinculado a una clave del holder no puede entregarse sin wallet, y el formulario no debe ofrecer lo que la emisión rechazaría.
+  - **Sin cambio visible hoy.** `DELIVERY_OPTIONS` sólo contiene modos de wallet (`email`, `ui`), que son siempre elegibles para cualquier tipo, así que el filtro no descarta nada. La costura existe para que añadir el modo directo (EUD-233) no lo ofrezca en silencio para todos los tipos, que es la regresión que esta Story cierra en el backend.
+  - `CredentialIssuerMetadataService.requiresHolderBinding(configId)` expone la misma respuesta sobre las configuraciones ya cargadas. Una configuración desconocida responde `false`: la ausencia de metadata no es evidencia de vinculación, y la emisión valida la regla en servidor de todos modos.
+  - `'direct'` **no** se añade a la unión `DeliveryMode`: el formulario no puede ofrecerlo ni el DTO de respuesta sabe representar la credencial firmada que devuelve. Esa superficie es alcance de EUD-233, junto con la guarda de reinicio de `selectedDelivery$` cuando un modo elegido deja de ofrecerse — hoy inalcanzable, porque ningún modo puede dejar de estar disponible.
+
 - **EUD-38 — allowlist de licencias unificada**: `.github/license-policy.json` es ahora la transcripción íntegra de `conv-quality-security-gates.md` §16.1, idéntica en los trece repositorios con gate. Añade `LGPL-2.1-only`, la grafía SPDX vigente del mismo permiso que `LGPL-2.1`, que ya estaba admitido: `logback` 1.5.34 la declara así y el gate la bloqueaba por la grafía, no por la licencia.
 
 ### Added

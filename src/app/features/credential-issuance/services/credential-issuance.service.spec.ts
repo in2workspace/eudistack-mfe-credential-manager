@@ -250,6 +250,53 @@ describe('CredentialIssuanceService', () => {
     });
   });
 
+  describe('deliveryOptions (EUD-168)', () => {
+
+    const selectType = (configId: string) => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId, format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+    };
+
+    it('derives the offered modes from the selected configuration, not from a fixed list', () => {
+      selectType('learcredential.employee.w3c.4');
+      mockMetadataService.getConfigurationById.mockReturnValue({
+        format: 'jwt_vc_json',
+        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
+      });
+
+      service.deliveryOptions();
+
+      expect(mockMetadataService.getConfigurationById)
+        .toHaveBeenCalledWith('learcredential.employee.w3c.4');
+    });
+
+    it('offers the wallet modes for a holder-bound type', () => {
+      // Today this narrows nothing -- the catalogue holds only wallet modes, which are always
+      // eligible. The assertion pins the behaviour so adding the direct mode (EUD-233) cannot
+      // silently start offering it for bound types.
+      selectType('learcredential.employee.w3c.4');
+      mockMetadataService.getConfigurationById.mockReturnValue({
+        format: 'jwt_vc_json',
+        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
+      });
+
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('offers the wallet modes for an unbound type too', () => {
+      selectType('learcredential.machine.w3c.3');
+      mockMetadataService.getConfigurationById.mockReturnValue({ format: 'jwt_vc_json' });
+
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('falls back to the full catalogue when no type is selected', () => {
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+  });
+
   describe('submitCredentialPayload (Slice C)', () => {
     const successDialogData = expect.objectContaining({
       title: 'credentialIssuance.create-success-dialog.title',

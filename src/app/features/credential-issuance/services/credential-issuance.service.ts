@@ -7,6 +7,7 @@ import { IssuanceRequestFactoryService } from './issuance-request-factory.servic
 import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
+import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -125,7 +126,19 @@ export class CredentialIssuanceService {
   public selectedGrantType$ = signal<GrantTypeOption>(GRANT_TYPE_OPTIONS[0]);
 
   // DELIVERY SELECTOR
-  public readonly deliveryOptions: Readonly<DeliveryOption[]> = DELIVERY_OPTIONS;
+  //
+  // Derived from the selected configuration's published metadata rather than being a fixed list
+  // (EUD-168): a credential type bound to a holder key cannot be delivered without a wallet, and the
+  // form must not offer what issuance would reject. Reading the same field the issuer decides with
+  // (proof_types_supported) is what keeps the two from drifting apart.
+  //
+  // Today this narrows nothing: DELIVERY_OPTIONS holds only wallet modes, which are always eligible.
+  // The seam exists so that adding the direct mode (EUD-233) cannot silently offer it for every type.
+  public readonly deliveryOptions = computed<readonly DeliveryOption[]>(() => {
+    const configId = this.effectiveFormatOption$()?.configId;
+    const config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
+    return resolveOfferableDeliveryOptions(config, DELIVERY_OPTIONS);
+  });
   public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
 
   // AD-2: claims come from the config that will actually be sent to the backend
