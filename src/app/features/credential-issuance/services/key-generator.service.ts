@@ -1,5 +1,5 @@
 import { computed, Injectable, Signal, signal, WritableSignal } from '@angular/core';
-import { KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
+import { HolderPublicJwk, KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
 
 
 @Injectable() //not provided in root but in key generator component
@@ -21,6 +21,15 @@ export class KeyGeneratorService {
     this.keyState$.set({...current, [key]: value});
   }
 
+  /**
+   * Kept apart from {@link updateState} because the public JWK is an object, not a string, and
+   * widening that setter's value type would let any string field be assigned a JWK by mistake.
+   */
+  private setPublicJwk(publicJwk: HolderPublicJwk): void {
+    const current = this.keyState$() ?? { desmosPrivateKeyValue: '', desmosDidKeyValue: '' };
+    this.keyState$.set({ ...current, desmosPublicJwk: publicJwk });
+  }
+
   public async generateP256(): Promise<void> {
           const keyPair = await this.generateP256KeyPair();
 
@@ -33,8 +42,24 @@ export class KeyGeneratorService {
 
           this.updateState("desmosPrivateKeyValue", privateKeyHex);
           this.updateState("desmosDidKeyValue", didKey);
+          // EUD-168 AD-8: the machine credential takes its cnf from the issuance request, so the
+          // public half of the pair the Operator just generated has to travel with it. Derived from
+          // the same CryptoKeyPair as the other two, so the three cannot disagree.
+          this.setPublicJwk(await this.exportPublicJwk(keyPair));
 
       }
+
+  /**
+   * Only `kty`/`crv`/`x`/`y` survive the export: WebCrypto also returns `ext` and `key_ops`, which
+   * are browser bookkeeping rather than key material and have no business on the wire.
+   */
+  private async exportPublicJwk(keyPair: CryptoKeyPair): Promise<HolderPublicJwk> {
+    const jwk = await globalThis.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+    if (!jwk.x || !jwk.y) {
+      throw new Error('Exported public JWK is missing its EC coordinates');
+    }
+    return { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y };
+  }
 
   private async generateP256KeyPair(): Promise<CryptoKeyPair> {
       return await globalThis.crypto.subtle.generateKey(

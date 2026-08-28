@@ -8,6 +8,8 @@ import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
+import { requiresRequestHolderKey } from 'src/app/core/helpers/holder-binding-exemption';
+import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -205,6 +207,7 @@ export class CredentialIssuanceService {
   public bottomAlertMessages$: WritableSignal<string[]> = signal([]);
 
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
+  private readonly holderKeyStore = inject(HolderKeyStoreService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly matDialog = inject(MatDialog);
@@ -430,7 +433,9 @@ export class CredentialIssuanceService {
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
       const delivery = this.selectedDelivery$().value;
-      const request = this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType);
+      const request = this.withHolderKey(
+        this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType),
+        configId);
 
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
@@ -452,6 +457,30 @@ export class CredentialIssuanceService {
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
+
+  /**
+   * Attaches the holder key for the credential types that take their `cnf` from the issuance request
+   * (EUD-168 AD-8), and for no others.
+   *
+   * Not gated on the delivery mode: a type with no `proof_types_supported` gets no wallet key proof
+   * either, so even an email or QR issuance binds to the key the Operator generated on the form.
+   *
+   * A missing key is left to the Issuer to reject. It answers with a 400 naming the field, which is
+   * a better outcome than issuing without one and binding the credential to nothing — and the form
+   * already requires the generated `didKey`, so reaching here empty means the store was cleared, not
+   * that the Operator skipped a step.
+   */
+  private withHolderKey(
+    request: IssuanceLEARCredentialRequestDto,
+    configId: string
+  ): IssuanceLEARCredentialRequestDto {
+    if (!requiresRequestHolderKey(configId)) {
+      this.holderKeyStore.clear();
+      return request;
+    }
+    const publicJwk = this.holderKeyStore.take();
+    return publicJwk ? { ...request, holder_key: { jwk: publicJwk } } : request;
+  }
 
   private navigateToCredentials(): Promise<boolean> {
     return this.router.navigate(['/organization/credentials']);

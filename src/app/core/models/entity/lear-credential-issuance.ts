@@ -34,6 +34,31 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
   { value: 'urn:ietf:params:oauth:grant-type:pre-authorized_code', labelKey: 'credentialIssuance.grantType.preAuthorizedCode' },
 ];
 
+/**
+ * The public half of a holder key, in the only shape the Issuer accepts on `holder_key.jwk`.
+ *
+ * Deliberately narrower than WebCrypto's JWK export: `ext` and `key_ops` are browser bookkeeping,
+ * not key material, and have no business on the wire.
+ */
+export interface HolderPublicJwk {
+  kty: 'EC';
+  crv: 'P-256';
+  x: string;
+  y: string;
+}
+
+/**
+ * A generated holder key pair, in the representations the issuance flow needs: the public JWK that
+ * travels in `holder_key`, the `did:key` form, and the private half that must reach the Operator.
+ *
+ * All three derive from one `CryptoKeyPair`, so they cannot disagree with each other.
+ */
+export interface HolderKeyMaterial {
+  privateKeyHex: string;
+  didKey: string;
+  publicJwk: HolderPublicJwk;
+}
+
 export type DeliveryMode = 'email' | 'ui';
 
 export interface DeliveryOption {
@@ -129,7 +154,12 @@ export interface IssuanceFormPowerSchema{
 // Key component and service types
 export interface KeyState {
   desmosPrivateKeyValue: string,
-  desmosDidKeyValue: string
+  desmosDidKeyValue: string,
+  /**
+   * The public half, for `holder_key.jwk` (EUD-168 AD-8). Deliberately absent from
+   * `displayedKeys$`: it is wire material, not something the Operator needs to read or copy.
+   */
+  desmosPublicJwk?: HolderPublicJwk
 }
 
 export interface KeyForm{
