@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **EUD-38 — allowlist de licencias unificada**: `.github/license-policy.json` es ahora la transcripción íntegra de `conv-quality-security-gates.md` §16.1, idéntica en los trece repositorios con gate. Añade `LGPL-2.1-only`, la grafía SPDX vigente del mismo permiso que `LGPL-2.1`, que ya estaba admitido: `logback` 1.5.34 la declara así y el gate la bloqueaba por la grafía, no por la licencia.
+
 ### Added
 
 - **CI — control de composición de software (SCA)**
