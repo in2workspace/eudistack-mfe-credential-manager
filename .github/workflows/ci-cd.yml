@@ -130,7 +130,7 @@ jobs:
       ENVIRONMENT: stg
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: spa-build-${{ github.sha }}
           path: dist/out/browser/
@@ -217,7 +217,7 @@ jobs:
       ENVIRONMENT: pro
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: spa-build-${{ github.sha }}
           path: dist/out/browser/
@@ -300,7 +300,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Download SBOM Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: sbom-v${{ needs.ci.outputs.version }}
           path: build/sbom/
