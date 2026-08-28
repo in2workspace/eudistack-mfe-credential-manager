@@ -15,6 +15,22 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+      # The Angular framework, its build tooling and everything that peer-depends
+      # on it must move in a single major bump. Ungrouped, Dependabot splits the
+      # upgrade into one PR per package, each pinned to a different major, and
+      # every one of them dies in `npm ci` with ERESOLVE because the peer ranges
+      # cannot be satisfied one package at a time.
+      angular:
+        applies-to: version-updates
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "@ngx-translate/*"
+          - "angular-eslint"
+          - "angularx-qrcode"
+          - "jest-preset-angular"
+          - "typescript"
+          - "zone.js"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
