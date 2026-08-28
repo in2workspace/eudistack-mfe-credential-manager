@@ -19,7 +19,15 @@ export interface CredentialStatus {
   "statusListIndex": CredentialStatusListIndex,
   "statusListCredential": string;
 } 
-export type CredentialStatusType = 'PlainListEntity' | 'BitstringStatusListEntry';
+/**
+ * Status mechanism carried by the credential:
+ *  - BitstringStatusListEntry: W3C Bitstring Status List (`credentialStatus`), jwt_vc_json credentials.
+ *  - TokenStatusListEntry:     IETF Token Status List (`status.status_list`), dc+sd-jwt credentials.
+ *                              Synthesized by LEARCredentialDataNormalizer — the SD-JWT payload
+ *                              carries no `type`, only `{ uri, idx }`.
+ *  - PlainListEntity:          legacy DOME PlainList — no index, cannot be revoked by this issuer.
+ */
+export type CredentialStatusType = 'PlainListEntity' | 'BitstringStatusListEntry' | 'TokenStatusListEntry';
 export type CredentialStatusPurpose = 'revocation';
 export type CredentialStatusListIndex = '<nonce>';
 

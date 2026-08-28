@@ -50,11 +50,25 @@ describe('Credential Helpers', () => {
       ).toBeTruthy();
     });
 
+    it('returns true for TokenStatusListEntry (dc+sd-jwt credentials)', () => {
+      const credentialStatus = createCredentialStatus('TokenStatusListEntry');
+
+      expect(
+        credentialStatusHasRevokeCredentialButton(credentialStatus),
+      ).toBeTruthy();
+    });
+
     it('returns false for PlainListEntity', () => {
       const credentialStatus = createCredentialStatus('PlainListEntity');
 
       expect(
         credentialStatusHasRevokeCredentialButton(credentialStatus),
+      ).toBeFalsy();
+    });
+
+    it('returns false when credential status carries no type', () => {
+      expect(
+        credentialStatusHasRevokeCredentialButton({} as CredentialStatus),
       ).toBeFalsy();
     });
 
