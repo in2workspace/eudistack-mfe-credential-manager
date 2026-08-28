@@ -239,6 +239,22 @@ describe('CredentialDetailsService', () => {
           expect(service.enableRevokeCredentialButton$()).toBe(true);
         });
 
+        it('enableRevokeCredentialButton$() returns true for TokenStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'TokenStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.enableRevokeCredentialButton$()).toBe(true);
+        });
+
         it('enableRevokeCredentialButton$() returns false for PlainListEntity', () => {
           service.credentialProcedureDetails$.set({
             credential: {
@@ -264,6 +280,24 @@ describe('CredentialDetailsService', () => {
                 validUntil: '',
                 credentialStatus: {
                   type: 'BitstringStatusListEntry',
+                },
+              },
+            },
+          } as any);
+
+          expect(service.showRevokeCredentialButton$()).toBe(true);
+        });
+
+        // dc+sd-jwt credentials carry an IETF Token Status List; the button must show for them.
+        it('showRevokeCredentialButton$() returns true for VALID and TokenStatusListEntry', () => {
+          service.credentialProcedureDetails$.set({
+            lifeCycleStatus: 'VALID',
+            credential: {
+              vc: {
+                validFrom: '',
+                validUntil: '',
+                credentialStatus: {
+                  type: 'TokenStatusListEntry',
                 },
               },
             },

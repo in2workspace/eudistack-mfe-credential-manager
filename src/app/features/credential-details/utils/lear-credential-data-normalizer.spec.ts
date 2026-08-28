@@ -279,5 +279,44 @@ describe('LEARCredentialDataNormalizer', () => {
       expect(out.credentialSubject.mandate.power[0].action).toBe('Execute');
       expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
     });
+
+    // The issuer writes `status.status_list` into dc+sd-jwt credentials
+    // (GenericCredentialBuilder.injectCredentialStatus) and `credentialStatus` into
+    // jwt_vc_json ones. The normalizer bridges the first onto the unified envelope so
+    // the revoke action sees a status for both formats.
+    it('maps the SD-JWT Token Status List onto credentialStatus', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        status: {
+          status_list: {
+            uri: 'https://issuer.example/token/v1/credentials/status/3',
+            idx: 42,
+          },
+        },
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialStatus).toEqual({
+        id: 'https://issuer.example/token/v1/credentials/status/3#42',
+        type: 'TokenStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListIndex: '42',
+        statusListCredential: 'https://issuer.example/token/v1/credentials/status/3',
+      });
+    });
+
+    it('keeps an existing W3C credentialStatus untouched', () => {
+      const input: any = {
+        type: ['learcredential.employee.w3c.4'],
+        credentialStatus: { type: 'BitstringStatusListEntry', statusListIndex: '7' },
+        status: { status_list: { uri: 'https://issuer.example/token/v1/credentials/status/3', idx: 42 } },
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialStatus.type).toBe('BitstringStatusListEntry');
+      expect(out.credentialStatus.statusListIndex).toBe('7');
+    });
   });
 });
