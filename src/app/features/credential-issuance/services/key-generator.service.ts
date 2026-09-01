@@ -18,6 +18,16 @@ export class KeyGeneratorService {
     return this.keyState$.asReadonly();
   }
   
+  /**
+   * Empties the private half from the service's own state (EUD-168 AC-19, closes L3 / tech-debt
+   * TD-04). Called from the component's `ngOnDestroy` -- the service is `providers:`-scoped to the
+   * component, so it would be garbage-collected anyway, but this makes the private key's lifecycle
+   * explicit rather than relying on Angular DI teardown timing.
+   */
+  public clearState(): void {
+    this.keyState$.set(undefined);
+  }
+
   public updateState(key: keyof(KeyState), value: string): void{
     const current = this.keyState$() ?? {
     desmosPrivateKeyValue: '',

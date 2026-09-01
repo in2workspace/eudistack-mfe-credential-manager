@@ -18,10 +18,15 @@ import { FormGroup } from '@angular/forms';
     styleUrl: './key-generator.component.scss'
 })
 export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<FormGroup<KeyForm>> implements OnInit, OnDestroy{
+  // EUD-168 AC-19 / NFR-S-EUD168-04: the private key must not linger in the clipboard past this
+  // window. Chosen, not normative -- see acceptance-criteria.md §4.
+  private static readonly CLIPBOARD_CLEAR_TIMEOUT_MS = 60_000;
+
   public keyState$: Signal<KeyState | undefined>;
   public displayedKeys$: Signal<DisplayedKeyState | undefined>;
   public copiedKey = "";
   private readonly alertMessages = ["error.form.no_key"];
+  private clipboardClearTimer?: ReturnType<typeof setTimeout>;
 
   private readonly keyService = inject(KeyGeneratorService);
   private readonly holderKeyStore = inject(HolderKeyStoreService);
@@ -38,6 +43,9 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
 
   public ngOnDestroy(){
     this.cleanUpAlertMessages();
+    // EUD-168 AC-19: the private key must not outlive the form it was generated for.
+    this.keyService.clearState();
+    this.clearClipboardTimer();
   }
 
   public async generateKeys(): Promise<void>{
@@ -59,10 +67,32 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
     navigator.clipboard.writeText(text);
     this.copiedKey = text;
     setTimeout(() => this.resetCopiedKey(), 2000);
+    this.scheduleClipboardClear();
   }
 
   private resetCopiedKey(): void{
     this.copiedKey = "";
+  }
+
+  /**
+   * Independent from the 2s copy-feedback timer above: that one resets the button's visual state,
+   * this one overwrites the clipboard itself (AC-19, NFR-S-EUD168-04). Restarted, not stacked, on
+   * every copy -- without a `clipboard-read` permission the component cannot check whether the
+   * clipboard still holds the key it wrote, so a later copy always wins over an earlier pending clear.
+   */
+  private scheduleClipboardClear(): void {
+    this.clearClipboardTimer();
+    this.clipboardClearTimer = setTimeout(
+      () => navigator.clipboard.writeText(''),
+      KeyGeneratorComponent.CLIPBOARD_CLEAR_TIMEOUT_MS
+    );
+  }
+
+  private clearClipboardTimer(): void {
+    if (this.clipboardClearTimer !== undefined) {
+      clearTimeout(this.clipboardClearTimer);
+      this.clipboardClearTimer = undefined;
+    }
   }
 
   private cleanUpAlertMessages(): void{

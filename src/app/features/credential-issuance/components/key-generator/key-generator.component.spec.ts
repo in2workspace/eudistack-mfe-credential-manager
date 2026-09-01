@@ -27,6 +27,7 @@ describe('KeyGeneratorComponent', () => {
       getState: () => rawStateSignal,
       displayedKeys$: displayedSignal,
       generateP256: jest.fn().mockResolvedValue(undefined),
+      clearState: jest.fn(),
     };
 
     // Stub updateMessages on the prototype to avoid NG0950 "required Input"
@@ -144,6 +145,11 @@ it('generateKeys should NOT update alert message if it is NOT the first time', a
 
     tick(2000);
     expect(component.copiedKey).toBe('');
+
+    // Drain the independent 60s clipboard-clear timer too (AC-19 / NFR-S-EUD168-04), or fakeAsync
+    // fails the test with a pending-timer error.
+    tick(58000);
+    expect(writeSpy).toHaveBeenCalledWith('');
   }));
 
   it('resetCopiedKey should clear copiedKey', () => {
@@ -151,4 +157,38 @@ it('generateKeys should NOT update alert message if it is NOT the first time', a
     (component as any).resetCopiedKey();
     expect(component.copiedKey).toBe('');
   });
+
+  it('copying again before the clipboard-clear timer fires restarts it instead of stacking', fakeAsync(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: jest.fn().mockResolvedValue(undefined) },
+      writable: true
+    });
+    const writeSpy = jest.spyOn(navigator.clipboard, 'writeText');
+
+    component.copyToClipboard('first-key');
+    tick(30000); // halfway to the first timer's 60s deadline
+    component.copyToClipboard('second-key');
+    tick(30000); // 60s since the first copy, but only 30s since the second -- must not have cleared
+    expect(writeSpy).not.toHaveBeenCalledWith('');
+
+    tick(30000); // 60s since the second copy
+    expect(writeSpy).toHaveBeenCalledWith('');
+    expect(writeSpy).toHaveBeenCalledTimes(3); // 'first-key', 'second-key', ''
+  }));
+
+  it('ngOnDestroy clears the service state and cancels the pending clipboard-clear timer', fakeAsync(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: jest.fn().mockResolvedValue(undefined) },
+      writable: true
+    });
+    const writeSpy = jest.spyOn(navigator.clipboard, 'writeText');
+
+    component.copyToClipboard('test-key');
+    component.ngOnDestroy();
+
+    expect(mockService.clearState).toHaveBeenCalled();
+
+    tick(60000);
+    expect(writeSpy).not.toHaveBeenCalledWith('');
+  }));
 });
