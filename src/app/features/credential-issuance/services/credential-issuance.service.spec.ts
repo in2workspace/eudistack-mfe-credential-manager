@@ -14,6 +14,7 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { MatDialog } from '@angular/material/dialog';
+import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
 
 class MockDialogWrapperService {
   // The real DialogWrapperService internally subscribes to the observable returned by the
@@ -343,6 +344,34 @@ describe('CredentialIssuanceService', () => {
       TestBed.flushEffects();
     };
 
+    /** Same shape as givenASubmittableForm, but for an AD-8 exempt machine configId. */
+    const givenASubmittableMachineForm = (configId: string) => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId, format: 'jwt_vc_json' }
+      ]);
+      mockSchemaBuilder.formSchemasBuilder.mockReturnValue([
+        [
+          { id: 1, key: 'mandatee', type: 'group', display: 'main', groupFields: [] },
+          { id: 2, key: 'power', type: 'group', display: 'main', groupFields: [] },
+          // createLearCredentialMachineRequest reads formData['keys']['didKey'] directly.
+          { id: 3, key: 'keys', type: 'group', display: 'main', groupFields: [
+            { key: 'didKey', type: 'control', controlType: 'text', validators: [] }
+          ] }
+        ],
+        {
+          mandator: [
+            { key: 'country', value: 'ES' },
+            { key: 'organizationIdentifier', value: 'B12345678' },
+            { key: 'organization', value: 'Acme Corp' },
+            { key: 'email', value: 'mandator@acme.example' },
+            { key: 'serialNumber', value: 'S-001' }
+          ]
+        }
+      ]);
+      service.selectedCredentialType$.set('learcredential.machine');
+      TestBed.flushEffects();
+    };
+
     const originalLocation = window.location;
 
     beforeEach(() => {
@@ -462,6 +491,35 @@ describe('CredentialIssuanceService', () => {
       expect(service.hasSubmitted$()).toBe(true);
       expect(service.canLeave()).toBe(true);
       expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    describe('withHolderKey (AD-12, AC-17/AC-18)', () => {
+      it('attaches holder_key for an AD-8 exempt type when the store holds a key', () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+        TestBed.inject(HolderKeyStoreService).set(publicJwk);
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toEqual({ jwk: publicJwk });
+      });
+
+      it('never attaches holder_key for a non-exempt type, and clears a stale key from the store', () => {
+        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not in the AD-8 exempt list
+        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+        // A key left over from a previous machine-credential form interaction must not leak
+        // into an unrelated type's request.
+        holderKeyStore.set({ kty: 'EC', crv: 'P-256', x: 'stale-x', y: 'stale-y' });
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toBeUndefined();
+        expect(holderKeyStore.take()).toBeUndefined();
+      });
     });
   });
 

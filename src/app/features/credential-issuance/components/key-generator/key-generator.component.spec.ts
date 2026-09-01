@@ -7,6 +7,7 @@ import { KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
 import { FormGroup } from '@angular/forms';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
+import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
 
 describe('KeyGeneratorComponent', () => {
   let component: KeyGeneratorComponent;
@@ -103,6 +104,28 @@ describe('KeyGeneratorComponent', () => {
 
     expect(mockService.generateP256).toHaveBeenCalled();
     expect(fakeForm.patchValue).toHaveBeenCalledWith({ didKey: 'DID-123' });
+  });
+
+  /** EUD-168 AD-12/AC-17: the public half is the only thing that leaves the widget. */
+  it('generateKeys should hand the public JWK to HolderKeyStoreService', async () => {
+    const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+    const fakeState: KeyState = {
+      desmosDidKeyValue: 'DID-123',
+      desmosPrivateKeyValue: 'PRIV',
+      desmosPublicJwk: publicJwk
+    };
+    rawStateSignal.set(fakeState);
+
+    const fakeForm = { patchValue: jest.fn() } as unknown as FormGroup<any>;
+    Object.defineProperty(component, 'form', { configurable: true, value: () => fakeForm });
+    jest.spyOn(component as any, 'updateAlertMessages').mockImplementation(() => {});
+
+    const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+    const setSpy = jest.spyOn(holderKeyStore, 'set');
+
+    await component.generateKeys();
+
+    expect(setSpy).toHaveBeenCalledWith(publicJwk);
   });
 
 it('generateKeys should only update alert message if it is first time', async () => {
