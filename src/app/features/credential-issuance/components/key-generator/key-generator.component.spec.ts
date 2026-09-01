@@ -199,19 +199,34 @@ it('generateKeys should NOT update alert message if it is NOT the first time', a
     expect(writeSpy).toHaveBeenCalledTimes(3); // 'first-key', 'second-key', ''
   }));
 
-  it('ngOnDestroy clears the service state and cancels the pending clipboard-clear timer', fakeAsync(() => {
+  /**
+   * code-review FE-1: destroying the component must not leave the clipboard holding the key until
+   * the 60s timer eventually fires on its own -- the dominant path is the Operator copying the key
+   * and immediately leaving the form to paste it into the machine.
+   */
+  it('ngOnDestroy clears the service state, the holder key store, and the clipboard immediately', fakeAsync(() => {
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: jest.fn().mockResolvedValue(undefined) },
       writable: true
     });
     const writeSpy = jest.spyOn(navigator.clipboard, 'writeText');
+    const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+    const clearSpy = jest.spyOn(holderKeyStore, 'clear');
 
     component.copyToClipboard('test-key');
     component.ngOnDestroy();
 
     expect(mockService.clearState).toHaveBeenCalled();
+    expect(clearSpy).toHaveBeenCalled();
+    expect(writeSpy).toHaveBeenCalledWith('');
+    expect(writeSpy).toHaveBeenCalledTimes(2); // 'test-key', then the immediate clear on destroy
 
+    // The cancelled timer must not fire a second, redundant clear.
     tick(60000);
-    expect(writeSpy).not.toHaveBeenCalledWith('');
+    expect(writeSpy).toHaveBeenCalledTimes(2);
   }));
+
+  it('ngOnDestroy without a pending copy does not touch the clipboard', () => {
+    expect(() => component.ngOnDestroy()).not.toThrow();
+  });
 });

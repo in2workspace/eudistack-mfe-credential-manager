@@ -45,7 +45,18 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
     this.cleanUpAlertMessages();
     // EUD-168 AC-19: the private key must not outlive the form it was generated for.
     this.keyService.clearState();
-    this.clearClipboardTimer();
+    // A key generated for one machine must not silently bind the next issuance of a different type
+    // (code-review L6): HolderKeyStoreService.take() already clears on read, but an abandoned form
+    // that never reached submission would otherwise leave a stale public JWK behind.
+    this.holderKeyStore.clear();
+    // Perform the pending clipboard clear now rather than merely cancelling it (code-review FE-1):
+    // the dominant path is the Operator copying the key and then leaving the form to paste it into
+    // the machine, well before the timer below would otherwise fire on its own.
+    if (this.clipboardClearTimer !== undefined) {
+      clearTimeout(this.clipboardClearTimer);
+      this.clipboardClearTimer = undefined;
+      this.clearClipboardNow();
+    }
   }
 
   public async generateKeys(): Promise<void>{
@@ -64,7 +75,9 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
   }
 
   public copyToClipboard(text:string): void{
-    navigator.clipboard.writeText(text);
+    // Best effort (code-review FE-1): writeText rejects without a focused document, which a plain
+    // unhandled promise would surface as a console error for no actionable reason.
+    navigator.clipboard.writeText(text).catch(() => {});
     this.copiedKey = text;
     setTimeout(() => this.resetCopiedKey(), 2000);
     this.scheduleClipboardClear();
@@ -81,18 +94,21 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
    * clipboard still holds the key it wrote, so a later copy always wins over an earlier pending clear.
    */
   private scheduleClipboardClear(): void {
-    this.clearClipboardTimer();
-    this.clipboardClearTimer = setTimeout(
-      () => navigator.clipboard.writeText(''),
-      KeyGeneratorComponent.CLIPBOARD_CLEAR_TIMEOUT_MS
-    );
-  }
-
-  private clearClipboardTimer(): void {
     if (this.clipboardClearTimer !== undefined) {
       clearTimeout(this.clipboardClearTimer);
-      this.clipboardClearTimer = undefined;
     }
+    this.clipboardClearTimer = setTimeout(() => {
+      this.clipboardClearTimer = undefined;
+      this.clearClipboardNow();
+    }, KeyGeneratorComponent.CLIPBOARD_CLEAR_TIMEOUT_MS);
+  }
+
+  private clearClipboardNow(): void {
+    navigator.clipboard.writeText('').catch(() => {
+      // Best effort (code-review FE-1): by the time this fires -- on the timer, or immediately on
+      // destroy -- the Operator has typically switched to the machine's console, and the document
+      // losing focus makes writeText reject. Nothing actionable to do with that here.
+    });
   }
 
   private cleanUpAlertMessages(): void{
