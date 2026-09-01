@@ -1,13 +1,18 @@
 import { computed, Injectable, Signal, signal, WritableSignal } from '@angular/core';
-import { HolderPublicJwk, KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DisplayedKeyState, HolderPublicJwk, KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
 
 
 @Injectable() //not provided in root but in key generator component
 export class KeyGeneratorService {
 
-  public readonly displayedKeys$: Signal<Partial<KeyState>|undefined> = computed(() => {
-    return { desmosPrivateKeyValue: this.keyState$()?.desmosPrivateKeyValue }
-  });
+  // Always an object, even before a key exists (undefined desmosPrivateKeyValue): a falsy-string
+  // check here previously hid the private key value once a sibling field (e.g. desmosDidKeyValue)
+  // was set on its own, going back to "nothing to show" for a key that was in fact generated but
+  // happened to be blank. Whether there is anything worth rendering is the template's per-row
+  // @if(key.value) check, not this signal's own truthiness.
+  public readonly displayedKeys$: Signal<DisplayedKeyState | undefined> = computed(() => (
+    { desmosPrivateKeyValue: this.keyState$()?.desmosPrivateKeyValue }
+  ));
   private readonly keyState$: WritableSignal<KeyState|undefined> = signal(undefined);
   public getState(): Signal<KeyState | undefined>{
     return this.keyState$.asReadonly();

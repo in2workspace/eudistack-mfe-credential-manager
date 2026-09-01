@@ -6,7 +6,7 @@ import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.se
 import { KeyGeneratorService } from '../../services/key-generator.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
-import { KeyForm, KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DisplayedKeyState, KeyForm, KeyState } from 'src/app/core/models/entity/lear-credential-issuance';
 import { IssuanceCustomFormChildWithAlert } from 'src/app/features/credential-details/components/issuance-custom-form-child';
 import { FormGroup } from '@angular/forms';
 
@@ -19,7 +19,7 @@ import { FormGroup } from '@angular/forms';
 })
 export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<FormGroup<KeyForm>> implements OnInit, OnDestroy{
   public keyState$: Signal<KeyState | undefined>;
-  public displayedKeys$: Signal<Partial<KeyState> | undefined>;
+  public displayedKeys$: Signal<DisplayedKeyState | undefined>;
   public copiedKey = "";
   private readonly alertMessages = ["error.form.no_key"];
 

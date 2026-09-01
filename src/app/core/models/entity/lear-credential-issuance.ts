@@ -162,6 +162,13 @@ export interface KeyState {
   desmosPublicJwk?: HolderPublicJwk
 }
 
+/**
+ * What `displayedKeys$` shows as copyable text -- deliberately narrower than {@link KeyState} so a
+ * structured field like `desmosPublicJwk` can never end up typed as a string in the template
+ * (EUD-168 B4/F1's `strictTemplates` requires `key.value` to stay a plain string).
+ */
+export type DisplayedKeyState = Partial<Pick<KeyState, 'desmosPrivateKeyValue' | 'desmosDidKeyValue'>>;
+
 export interface KeyForm{
   didKey: FormControl<string>,
 }
