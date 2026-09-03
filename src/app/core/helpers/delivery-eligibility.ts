@@ -27,7 +27,7 @@ export function requiresHolderBinding(config: CredentialConfigurationDto | undef
  * (EUD-233 owns that). Widening the union here would have the type claim a capability the UI does
  * not have. This keeps the rule correct in advance without pretending the mode already exists.
  */
-const BOUND_INCOMPATIBLE_MODES: readonly string[] = ['direct'];
+const BOUND_INCOMPATIBLE_MODES: ReadonlySet<string> = new Set(['direct']);
 
 /**
  * Narrows the delivery options the form may offer for a given credential configuration.
@@ -45,5 +45,5 @@ export function resolveOfferableDeliveryOptions(
   if (!config || !requiresHolderBinding(config)) {
     return [...catalogue];
   }
-  return catalogue.filter(option => !BOUND_INCOMPATIBLE_MODES.includes(option.value));
+  return catalogue.filter(option => !BOUND_INCOMPATIBLE_MODES.has(option.value));
 }
