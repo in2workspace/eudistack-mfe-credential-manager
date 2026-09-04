@@ -473,7 +473,12 @@ export class CredentialIssuanceService {
     return !!response?.responses?.some(channel => !!channel.error);
   }
 
-  /** The offer URI, wherever in `responses[]` it landed -- `ui` and `email` both carry the same one. */
+  /**
+   * The offer URI, wherever in `responses[]` it landed. Backend only builds one when the requested
+   * modes include `ui` (`returnsUri`); an `email`-only dispatch has none (its `body` is absent
+   * entirely), but `email` requested alongside `ui` reports the same shared URI too -- so this reads
+   * across every channel rather than assuming a fixed one.
+   */
   private extractCredentialOfferUri(response: IssuanceResponseDto | undefined): string | undefined {
     return response?.responses?.find(channel => channel.body?.credential_offer_uri)?.body?.credential_offer_uri;
   }
