@@ -14,6 +14,7 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { MatDialog } from '@angular/material/dialog';
+import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
 
 class MockDialogWrapperService {
   // The real DialogWrapperService internally subscribes to the observable returned by the
@@ -250,6 +251,53 @@ describe('CredentialIssuanceService', () => {
     });
   });
 
+  describe('deliveryOptions (EUD-168)', () => {
+
+    const selectType = (configId: string) => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId, format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+    };
+
+    it('derives the offered modes from the selected configuration, not from a fixed list', () => {
+      selectType('learcredential.employee.w3c.4');
+      mockMetadataService.getConfigurationById.mockReturnValue({
+        format: 'jwt_vc_json',
+        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
+      });
+
+      service.deliveryOptions();
+
+      expect(mockMetadataService.getConfigurationById)
+        .toHaveBeenCalledWith('learcredential.employee.w3c.4');
+    });
+
+    it('offers the wallet modes for a holder-bound type', () => {
+      // Today this narrows nothing -- the catalogue holds only wallet modes, which are always
+      // eligible. The assertion pins the behaviour so adding the direct mode (EUD-233) cannot
+      // silently start offering it for bound types.
+      selectType('learcredential.employee.w3c.4');
+      mockMetadataService.getConfigurationById.mockReturnValue({
+        format: 'jwt_vc_json',
+        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
+      });
+
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('offers the wallet modes for an unbound type too', () => {
+      selectType('learcredential.machine.w3c.3');
+      mockMetadataService.getConfigurationById.mockReturnValue({ format: 'jwt_vc_json' });
+
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+
+    it('falls back to the full catalogue when no type is selected', () => {
+      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    });
+  });
+
   describe('submitCredentialPayload (Slice C)', () => {
     const successDialogData = expect.objectContaining({
       title: 'credentialIssuance.create-success-dialog.title',
@@ -296,6 +344,34 @@ describe('CredentialIssuanceService', () => {
       TestBed.flushEffects();
     };
 
+    /** Same shape as givenASubmittableForm, but for an AD-8 exempt machine configId. */
+    const givenASubmittableMachineForm = (configId: string) => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId, format: 'jwt_vc_json' }
+      ]);
+      mockSchemaBuilder.formSchemasBuilder.mockReturnValue([
+        [
+          { id: 1, key: 'mandatee', type: 'group', display: 'main', groupFields: [] },
+          { id: 2, key: 'power', type: 'group', display: 'main', groupFields: [] },
+          // createLearCredentialMachineRequest reads formData['keys']['didKey'] directly.
+          { id: 3, key: 'keys', type: 'group', display: 'main', groupFields: [
+            { key: 'didKey', type: 'control', controlType: 'text', validators: [] }
+          ] }
+        ],
+        {
+          mandator: [
+            { key: 'country', value: 'ES' },
+            { key: 'organizationIdentifier', value: 'B12345678' },
+            { key: 'organization', value: 'Acme Corp' },
+            { key: 'email', value: 'mandator@acme.example' },
+            { key: 'serialNumber', value: 'S-001' }
+          ]
+        }
+      ]);
+      service.selectedCredentialType$.set('learcredential.machine');
+      TestBed.flushEffects();
+    };
+
     const originalLocation = window.location;
 
     beforeEach(() => {
@@ -328,7 +404,9 @@ describe('CredentialIssuanceService', () => {
     });
 
     it('should show the scannable QR dialog when the response carries an offer URI (AC-05, "Código QR" delivery)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
+      mockProcedureService.createProcedure.mockReturnValue(of({
+        responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
+      }));
 
       service.openSubmitDialog();
 
@@ -338,6 +416,30 @@ describe('CredentialIssuanceService', () => {
       expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(service.hasSubmitted$()).toBe(true);
+    });
+
+    /**
+     * EUD-167 D-5/D-6: a 207 Multi-Status is still a 2xx to HttpClient, so a failed channel must
+     * be read out of the body on the success path, not assumed away because the HTTP call itself
+     * did not error. Not yet reachable from the form (single delivery mode per request today),
+     * but the mapping must already be correct for when a future Story submits more than one.
+     */
+    it('should show the failure dialog when a channel in the (2xx) response carries an error (D-6)', () => {
+      mockProcedureService.createProcedure.mockReturnValue(of({
+        responses: [{
+          channel: 'email',
+          status: 503,
+          error: { type: 'delivery_failed', title: 'Delivery failed', status: 503, detail: "Delivery failed for channel 'email'" }
+        }]
+      }));
+      const router = TestBed.inject(Router);
+
+      service.openSubmitDialog();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+      expect(mockMatDialog.open).not.toHaveBeenCalled();
+      // Same contract as a real HTTP error: no navigation, so the operator can see the failure.
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('should submit the newest version of the selected format, not the bare type', () => {
@@ -415,6 +517,35 @@ describe('CredentialIssuanceService', () => {
       expect(service.hasSubmitted$()).toBe(true);
       expect(service.canLeave()).toBe(true);
       expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    describe('withHolderKey (AD-12, AC-17/AC-18)', () => {
+      it('attaches holder_key for an AD-8 exempt type when the store holds a key', () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+        TestBed.inject(HolderKeyStoreService).set(publicJwk);
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toEqual({ jwk: publicJwk });
+      });
+
+      it('never attaches holder_key for a non-exempt type, and clears a stale key from the store', () => {
+        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not in the AD-8 exempt list
+        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+        // A key left over from a previous machine-credential form interaction must not leak
+        // into an unrelated type's request.
+        holderKeyStore.set({ kty: 'EC', crv: 'P-256', x: 'stale-x', y: 'stale-y' });
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toBeUndefined();
+        expect(holderKeyStore.take()).toBeUndefined();
+      });
     });
   });
 
