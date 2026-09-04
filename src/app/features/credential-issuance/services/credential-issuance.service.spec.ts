@@ -404,7 +404,9 @@ describe('CredentialIssuanceService', () => {
     });
 
     it('should show the scannable QR dialog when the response carries an offer URI (AC-05, "Código QR" delivery)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({ credential_offer_uri: 'openid-credential-offer://abc' }));
+      mockProcedureService.createProcedure.mockReturnValue(of({
+        responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
+      }));
 
       service.openSubmitDialog();
 
@@ -414,6 +416,30 @@ describe('CredentialIssuanceService', () => {
       expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(service.hasSubmitted$()).toBe(true);
+    });
+
+    /**
+     * EUD-167 D-5/D-6: a 207 Multi-Status is still a 2xx to HttpClient, so a failed channel must
+     * be read out of the body on the success path, not assumed away because the HTTP call itself
+     * did not error. Not yet reachable from the form (single delivery mode per request today),
+     * but the mapping must already be correct for when a future Story submits more than one.
+     */
+    it('should show the failure dialog when a channel in the (2xx) response carries an error (D-6)', () => {
+      mockProcedureService.createProcedure.mockReturnValue(of({
+        responses: [{
+          channel: 'email',
+          status: 503,
+          error: { type: 'delivery_failed', title: 'Delivery failed', status: 503, detail: "Delivery failed for channel 'email'" }
+        }]
+      }));
+      const router = TestBed.inject(Router);
+
+      service.openSubmitDialog();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+      expect(mockMatDialog.open).not.toHaveBeenCalled();
+      // Same contract as a real HTTP error: no navigation, so the operator can see the failure.
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('should submit the newest version of the selected format, not the bare type', () => {

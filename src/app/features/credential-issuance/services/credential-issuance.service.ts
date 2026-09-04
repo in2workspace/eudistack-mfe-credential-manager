@@ -440,16 +440,26 @@ export class CredentialIssuanceService {
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
         tap(() => { this.hasSubmitted$.set(true); }),
-        // AD-3 correction: `credential_offer_uri` is only populated by the backend for
-        // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
-        // So this branch is already scoped to the QR delivery mode -- removing it (as an
-        // earlier version of this Story did) broke the "Código QR" option's only purpose:
-        // showing the wallet-scannable QR (CredentialOfferDialogComponent, angularx-qrcode).
-        // AC-05's "no offer artifacts" is still honored for email/direct delivery, where the
-        // response never carries this URI.
         switchMap((response) => {
-          if (response?.credential_offer_uri) {
-            return this.openCredentialOfferDialog(response.credential_offer_uri);
+          // A 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6): it never reaches
+          // catchError, so a failed channel has to be read out of the body here, on the success
+          // path. Today the form only ever submits one delivery mode at a time, so this branch
+          // is not yet reachable in practice -- but a channel error must never render as success
+          // once a future Story submits more than one mode in the same request.
+          if (this.hasChannelError(response)) {
+            this.openFailedCreateDialog();
+            return EMPTY;
+          }
+          // AD-3 correction: `credential_offer_uri` is only populated by the backend for
+          // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
+          // So this branch is already scoped to the QR delivery mode -- removing it (as an
+          // earlier version of this Story did) broke the "Código QR" option's only purpose:
+          // showing the wallet-scannable QR (CredentialOfferDialogComponent, angularx-qrcode).
+          // AC-05's "no offer artifacts" is still honored for email/direct delivery, where the
+          // response never carries this URI.
+          const credentialOfferUri = this.extractCredentialOfferUri(response);
+          if (credentialOfferUri) {
+            return this.openCredentialOfferDialog(credentialOfferUri);
           }
           return this.openSuccessfulCreateDialog();
         }),
@@ -457,6 +467,16 @@ export class CredentialIssuanceService {
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
+
+  /** EUD-167 D-5/D-6: true once any requested channel came back with an `error`. */
+  private hasChannelError(response: IssuanceResponseDto | undefined): boolean {
+    return !!response?.responses?.some(channel => !!channel.error);
+  }
+
+  /** The offer URI, wherever in `responses[]` it landed -- `ui` and `email` both carry the same one. */
+  private extractCredentialOfferUri(response: IssuanceResponseDto | undefined): string | undefined {
+    return response?.responses?.find(channel => channel.body?.credential_offer_uri)?.body?.credential_offer_uri;
+  }
 
   /**
    * Attaches the holder key for the credential types that take their `cnf` from the issuance request

@@ -53,6 +53,32 @@ export interface IssuanceLEARCredentialEmployeePayload {
       power: IssuancePayloadPower[];
 }
 
-export interface IssuanceResponseDto {
+export type IssuanceChannel = 'direct' | 'ui' | 'email';
+
+export interface IssuanceChannelBody {
+    signed_credential?: string;
     credential_offer_uri?: string;
+}
+
+/** RFC 9457 Problem Details, scoped to one channel (EUD-167 D-6). */
+export interface IssuanceChannelError {
+    type: string;
+    title: string;
+    status: number;
+    detail: string;
+}
+
+/**
+ * One item of `responses[]` (EUD-167 D-5/D-6): `body` on success (`status: 200`) or `error` on
+ * failure (`status: 503`, or `504` for a timed-out wallet leg) -- never both.
+ */
+export interface IssuanceChannelResponse {
+    channel: IssuanceChannel;
+    status: number;
+    body?: IssuanceChannelBody;
+    error?: IssuanceChannelError;
+}
+
+export interface IssuanceResponseDto {
+    responses?: IssuanceChannelResponse[];
 }
