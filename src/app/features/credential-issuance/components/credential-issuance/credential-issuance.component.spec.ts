@@ -37,7 +37,7 @@ describe('CredentialIssuanceComponent', () => {
       effectiveFormatOption$: signal(null) as Signal<any>,
       grantTypeOptions: [],
       selectedGrantType$: signal({ value: 'authorization_code', labelKey: 'key' }) as WritableSignal<any>,
-      deliveryOptions: [],
+      deliveryOptions: signal([]) as Signal<any>,
       selectedDelivery$: signal({ value: 'email', labelKey: 'key' }) as WritableSignal<any>,
       // Methods
       updateSelectedType: jest.fn(),

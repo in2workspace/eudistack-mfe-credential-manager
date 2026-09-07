@@ -45,7 +45,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public selectedGrantType$: WritableSignal<GrantTypeOption>;
 
   // DELIVERY SELECTOR
-  public readonly deliveryOptions: Readonly<DeliveryOption[]>;
+  public readonly deliveryOptions: Signal<readonly DeliveryOption[]>;
   public selectedDelivery$: WritableSignal<DeliveryOption>;
 
   // FORM STATE

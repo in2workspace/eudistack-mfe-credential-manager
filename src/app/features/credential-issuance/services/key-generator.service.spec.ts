@@ -48,12 +48,17 @@ describe('KeyGeneratorService', () => {
     jest.spyOn(service as any, 'generateP256PrivateKeyHex').mockResolvedValue(mockPrivateHex);
     jest.spyOn(service as any, 'generateP256PublicKeyHex').mockResolvedValue('0x04cafebabe');
     jest.spyOn(service as any, 'generateDidKey').mockResolvedValue(mockDid);
+    const mockPublicJwk = { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' };
+    jest.spyOn(service as any, 'exportPublicJwk').mockResolvedValue(mockPublicJwk);
 
     await service.generateP256();
 
     expect(service.getState()()).toMatchObject({
       desmosPrivateKeyValue: mockPrivateHex,
       desmosDidKeyValue: mockDid,
+      // EUD-168 AD-8: the public half has to reach the issuance request, and it must come from the
+      // same pair as the private key the Operator is shown.
+      desmosPublicJwk: mockPublicJwk,
     });
   });
 
@@ -101,6 +106,28 @@ describe('KeyGeneratorService', () => {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
       expect(hex).toBe(expected);
+    });
+
+    it('exportPublicJwk keeps only the EC coordinates, dropping browser bookkeeping', async () => {
+      const fakeKeyPair = { publicKey: {} } as CryptoKeyPair;
+      // WebCrypto also returns ext/key_ops; they are not key material and must not go on the wire.
+      // @ts-ignore
+      (window.crypto.subtle.exportKey as jest.Mock).mockResolvedValue({
+        kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord', ext: true, key_ops: ['verify'],
+      });
+
+      const jwk = await (service as any).exportPublicJwk(fakeKeyPair);
+
+      expect(jwk).toEqual({ kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' });
+    });
+
+    it('exportPublicJwk fails loudly when the export has no coordinates', async () => {
+      const fakeKeyPair = { publicKey: {} } as CryptoKeyPair;
+      // @ts-ignore
+      (window.crypto.subtle.exportKey as jest.Mock).mockResolvedValue({ kty: 'EC', crv: 'P-256' });
+
+      await expect((service as any).exportPublicJwk(fakeKeyPair))
+        .rejects.toThrow('Exported public JWK is missing its EC coordinates');
     });
 
     it('generateP256PublicKeyHex should convert raw public key bytes to hex', async () => {
