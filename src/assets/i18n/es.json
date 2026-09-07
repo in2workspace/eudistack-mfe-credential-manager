@@ -398,6 +398,11 @@
         "title": "Acceso Denegado",
         "message": "No tienes los poderes necesarios para acceder."
     },
+    "auth": {
+        "title": "Error al iniciar sesión",
+        "tokenRejected": "No hemos podido validar tu inicio de sesión. Vuelve a intentarlo. Si el problema persiste, contacta con soporte.",
+        "clockSkew": "No hemos podido validar tu inicio de sesión porque la hora de este dispositivo no está sincronizada con la del servidor. Revisa la fecha y hora del dispositivo (activa la hora automática) e inténtalo de nuevo."
+    },
     "credentialOffer": {
       "invalid-url": "URL no válida. No se puede obtener la oferta de credencial.",
       "unexpected": "Se produjo un error inesperado. Inténtalo de nuevo más tarde o contacta con el Representante Legal de tu empresa para obtener una nueva credencial.",

@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, Signal, WritableSignal, signal, DestroyRef } from '@angular/core';
-import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
+import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService, ValidationResult } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
@@ -109,6 +109,31 @@ export class AuthService{
    */
   private static readonly SSO_SILENT_ATTEMPT_KEY = 'sso_silent_attempted';
 
+  /**
+   * Set by the `NewAuthenticationResult` handler when the auth library itself
+   * rejects a token on the login callback: bad signature / audience / nonce,
+   * or — the common one — an id_token whose `iat` is further from now than
+   * `maxIdTokenIatOffsetAllowedInSeconds` allows (a device or IdP clock out of
+   * sync). `checkAuth$()` reads it in the same synchronous turn to (a) show the
+   * user *why* sign-in failed instead of a silent bounce to /home, and (b) skip
+   * the one-shot `prompt=none` retry, which would only mint another token that
+   * fails the very same check.
+   */
+  private tokenValidationError: ValidationResult | null = null;
+
+  /**
+   * `NewAuthenticationResult` values that are not real failures and must never
+   * raise feedback: `Ok` (valid), `NotSet` (nothing was evaluated) and
+   * `LoginRequired` — the expected reply to the one-shot silent SSO probe
+   * (see `trySilentSsoOnce`), which `checkAuth$()` already treats as a normal
+   * "not authenticated" state.
+   */
+  private static readonly BENIGN_VALIDATION_RESULTS: readonly ValidationResult[] = [
+    ValidationResult.Ok,
+    ValidationResult.NotSet,
+    ValidationResult.LoginRequired,
+  ];
+
   public constructor() {
     this.subscribeToAuthEvents();
     this.checkAuth$().subscribe();
@@ -123,7 +148,8 @@ export class AuthService{
             EventTypes.SilentRenewStarted,
             EventTypes.SilentRenewFailed,
             EventTypes.IdTokenExpired,
-            EventTypes.TokenExpired
+            EventTypes.TokenExpired,
+            EventTypes.NewAuthenticationResult
           ].includes(e.type)
         )
       )
@@ -174,6 +200,22 @@ export class AuthService{
           case EventTypes.TokenExpired:
             console.error('Session expired at: ' + Date.now(), event);
             break;
+
+          case EventTypes.NewAuthenticationResult: {
+            // Fired both on success and on failure. We only care about a failed,
+            // non-silent result here — a rejected token from the login callback
+            // (e.g. `iat` clock skew -> MaxOffsetExpired). Silent-renew failures
+            // already route through SilentRenewFailed -> authorize().
+            const result = event.value as {
+              isAuthenticated?: boolean;
+              validationResult?: ValidationResult;
+              isRenewProcess?: boolean;
+            } | undefined;
+            if (result?.isAuthenticated === false && !result.isRenewProcess) {
+              this.recordTokenValidationError(result.validationResult);
+            }
+            break;
+          }
         }
       });
   }
@@ -207,9 +249,26 @@ export class AuthService{
         }
       } else {
         this.isAuthenticatedSubject.next(false);
-        console.error('Checking authentication: not authenticated.');
-        if (!this.isOnPublicRoute()) {
-          silentSsoRedirectPending = this.trySilentSsoOnce();
+
+        const validationError = this.tokenValidationError;
+        this.tokenValidationError = null;
+
+        if (validationError) {
+          // The auth library rejected the token itself (commonly `iat` clock
+          // skew -> MaxOffsetExpired). A silent prompt=none retry would fail
+          // the same way, so land on /home and tell the user why instead of
+          // redirecting there in silence. Navigate first so the dialog is not
+          // painted over a protected view that is about to unmount (same
+          // reasoning as rejectCrossTenantSession).
+          console.error('Checking authentication: token rejected by the auth library:', validationError);
+          if (!this.isOnPublicRoute()) {
+            this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
+          }
+        } else {
+          console.error('Checking authentication: not authenticated.');
+          if (!this.isOnPublicRoute()) {
+            silentSsoRedirectPending = this.trySilentSsoOnce();
+          }
         }
       }
     }),
@@ -261,6 +320,34 @@ export class AuthService{
     sessionStorage.setItem(AuthService.SSO_SILENT_ATTEMPT_KEY, 'true');
     this.oidcSecurityService.authorize(undefined, { customParams: { prompt: 'none' } });
     return true;
+  }
+
+  /**
+   * Remembers a token-validation failure reported by the auth library so
+   * `checkAuth$()` can surface it. Benign results (see
+   * `BENIGN_VALIDATION_RESULTS`) are ignored.
+   */
+  private recordTokenValidationError(result: ValidationResult | undefined): void {
+    if (!result || AuthService.BENIGN_VALIDATION_RESULTS.includes(result)) {
+      return;
+    }
+    this.tokenValidationError = result;
+  }
+
+  /**
+   * Opens the shared error dialog explaining why sign-in could not be
+   * completed. `MaxOffsetExpired` (the id_token `iat` is outside the allowed
+   * offset — almost always a device clock out of sync with the identity
+   * provider) gets a specific, actionable message; anything else falls back to
+   * a generic "could not validate your sign-in".
+   */
+  private notifyTokenValidationFailure(result: ValidationResult): void {
+    const messageKey = result === ValidationResult.MaxOffsetExpired
+      ? 'error.auth.clockSkew'
+      : 'error.auth.tokenRejected';
+    const title = this.translate.instant('error.auth.title');
+    const message = this.translate.instant(messageKey);
+    this.dialog.openErrorInfoDialog(DialogComponent, message, title);
   }
 
   /**

@@ -33,6 +33,13 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     ignoreNonceAfterRefresh: true,
     triggerRefreshWhenIdTokenExpired: false,
     autoUserInfo: false,
+    // Clock-skew tolerance for the id_token `iat` check. The library default is
+    // 120s, so a device or Keycloak clock a couple of minutes out makes the
+    // library reject the token on the login callback — which used to surface as
+    // a silent redirect to /home. Widened to a documented value (see
+    // environment.max_id_token_iat_offset_seconds) while keeping the OIDC
+    // replay-window check ON: `disableIatOffsetValidation` stays unset.
+    maxIdTokenIatOffsetAllowedInSeconds: environment.max_id_token_iat_offset_seconds,
     secureRoutes: [serverUrl || '/'].filter((r): r is string => !!r),
   };
 }

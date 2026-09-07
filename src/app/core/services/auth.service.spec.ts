@@ -5,7 +5,7 @@ import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
 import { TenantService } from './tenant.service';
-import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
+import { EventTypes, OidcSecurityService, PublicEventsService, ValidationResult } from 'angular-auth-oidc-client';
 import { UserDataAuthenticationResponse } from '../models/dto/user-data-authentication-response.dto';
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { TranslateService } from '@ngx-translate/core';
@@ -763,7 +763,7 @@ describe('AuthService', () => {
       });
     });
 
-    it('checkAuth$: SÍ emet authCheckComplete$=true quan el silent-SSO ja s\'havia intentat (no-op)', (done) => {
+    it('checkAuth$: SÍ emet authCheckComplete$=true quan el silent-SSO ja s\'havia intentat (no-op)', async () => {
       sessionStorage.clear();
       sessionStorage.setItem((AuthService as any).SSO_SILENT_ATTEMPT_KEY, 'true');
       jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
@@ -773,13 +773,12 @@ describe('AuthService', () => {
         accessToken: ''
       }));
 
-      service.checkAuth$().subscribe(() => {
-        expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
-        service.authCheckComplete$.subscribe((complete) => {
-          expect(complete).toBe(true);
-          done();
-        });
-      });
+      await firstValueFrom(service.checkAuth$());
+      // finalize() runs its callback after the value reaches the subscriber, so
+      // read the subject synchronously once the stream has settled (same pattern
+      // as the pending-redirect case above, which asserts it stays false).
+      expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+      expect((service as any).authCheckCompleteSubject.getValue()).toBe(true);
     });
   });
 
@@ -894,6 +893,115 @@ describe('AuthService', () => {
       eventSubject.next({ type: EventTypes.TokenExpired });
       expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Session expired'), expect.anything());
       consoleError.mockRestore();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // feedback quan la llibreria rebutja el token (iat / MaxOffsetExpired, EUD bug)
+  // --------------------------------------------------------------------------
+  describe('token rebutjat per la llibreria (NewAuthenticationResult)', () => {
+    let eventSubject: Subject<any>;
+    let dialog: { openErrorInfoDialog: jest.Mock };
+
+    const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+    const emitResult = (validationResult: ValidationResult, isRenewProcess = false) =>
+      eventSubject.next({
+        type: EventTypes.NewAuthenticationResult,
+        value: { isAuthenticated: false, validationResult, isRenewProcess },
+      });
+
+    beforeEach(() => {
+      sessionStorage.clear();
+      eventSubject = new Subject();
+      mockPublicEventsService.registerForEvents.mockReturnValue(eventSubject.asObservable());
+      dialog = TestBed.inject(DialogWrapperService) as unknown as { openErrorInfoDialog: jest.Mock };
+
+      // Re-wire the event subscription onto the live stream (constructor ran with of()).
+      service.subscribeToAuthEvents();
+
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false,
+        userData: null,
+        accessToken: '',
+      }));
+    });
+
+    it('MaxOffsetExpired: navega a /home, obre el diàleg específic de rellotge i NO fa silent-SSO', async () => {
+      emitResult(ValidationResult.MaxOffsetExpired);
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.clockSkew', 'error.auth.title'
+      );
+    });
+
+    it('altres ValidationResult de rebuig: missatge genèric error.auth.tokenRejected', async () => {
+      emitResult(ValidationResult.SignatureFailed);
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/home']);
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.tokenRejected', 'error.auth.title'
+      );
+      expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+    });
+
+    it('LoginRequired (resposta esperada del prompt=none) NO suprimeix el silent-SSO ni obre diàleg', async () => {
+      emitResult(ValidationResult.LoginRequired);
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(oidcSecurityServiceMock.authorize).toHaveBeenCalledWith(
+        undefined, { customParams: { prompt: 'none' } }
+      );
+      expect(dialog.openErrorInfoDialog).not.toHaveBeenCalled();
+      expect(routerMock.navigate).not.toHaveBeenCalledWith(['/home']);
+    });
+
+    it('isRenewProcess=true s\'ignora (ho gestiona SilentRenewFailed)', async () => {
+      emitResult(ValidationResult.MaxOffsetExpired, true);
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(dialog.openErrorInfoDialog).not.toHaveBeenCalled();
+      expect(routerMock.navigate).not.toHaveBeenCalledWith(['/home']);
+      expect(oidcSecurityServiceMock.authorize).toHaveBeenCalled(); // el silent-SSO segueix el seu curs
+    });
+
+    it('en ruta pública: ni diàleg ni silent-SSO tot i el rebuig', async () => {
+      (service as any).isOnPublicRoute.mockReturnValue(true);
+      emitResult(ValidationResult.MaxOffsetExpired);
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(dialog.openErrorInfoDialog).not.toHaveBeenCalled();
+      expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+      expect(routerMock.navigate).not.toHaveBeenCalledWith(['/home']);
+    });
+
+    it('el rebuig es consumeix un sol cop: un segon checkAuth$ sense esdeveniment torna a fer silent-SSO', async () => {
+      emitResult(ValidationResult.MaxOffsetExpired);
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+      jest.clearAllMocks();
+      sessionStorage.clear();
+
+      await firstValueFrom(service.checkAuth$());
+      await flush();
+
+      expect(dialog.openErrorInfoDialog).not.toHaveBeenCalled();
+      expect(oidcSecurityServiceMock.authorize).toHaveBeenCalled();
     });
   });
 

@@ -398,6 +398,11 @@
       "title": "Access Denied",
       "message": "You do not have the required power to access."
     },
+    "auth": {
+      "title": "Sign-in failed",
+      "tokenRejected": "We couldn't validate your sign-in. Please try signing in again. If the problem persists, contact support.",
+      "clockSkew": "We couldn't validate your sign-in because this device's clock is out of sync with the server. Check the device's date and time settings (turn on automatic time) and try signing in again."
+    },
     "credentialOffer": {
       "invalid-url": "Unexpected error: invalid URL, can't get credential offer.",
       "unexpected": "An unexpected error occurred. Please try again later or contact your company's Legal Representative to get a new credential.",
