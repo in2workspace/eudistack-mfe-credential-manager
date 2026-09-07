@@ -15,39 +15,39 @@ describe('HolderKeyStoreService', () => {
   });
 
   it('returns nothing before anything is stored', () => {
-    expect(service.take()).toBeUndefined();
+    expect(service.peek()).toBeUndefined();
   });
 
   it('returns what was stored', () => {
     service.set(jwk);
 
-    expect(service.take()).toEqual(jwk);
+    expect(service.peek()).toEqual(jwk);
   });
 
   /**
-   * The behaviour the store exists for. It is root-provided and therefore outlives the issuance
-   * form, so a key left behind would be attached to the next credential issued — binding it to a key
-   * that belongs to an earlier one, silently and unrecoverably.
+   * code-review L508: peek() must not drain the store -- a caller that has not yet confirmed
+   * whether its request succeeded (an HTTP failure, or a 207 channel error) needs the same key
+   * still there for the retry.
    */
-  it('clears on read, so a key cannot be reused by a later issuance', () => {
+  it('does not clear on read, so a pending attempt can read the same key again', () => {
     service.set(jwk);
 
-    expect(service.take()).toEqual(jwk);
-    expect(service.take()).toBeUndefined();
+    expect(service.peek()).toEqual(jwk);
+    expect(service.peek()).toEqual(jwk);
   });
 
   it('keeps only the most recently generated key', () => {
     service.set(jwk);
     service.set(otherJwk);
 
-    expect(service.take()).toEqual(otherJwk);
+    expect(service.peek()).toEqual(otherJwk);
   });
 
-  it('clear() discards without reading', () => {
+  it('clear() discards the stored key', () => {
     service.set(jwk);
 
     service.clear();
 
-    expect(service.take()).toBeUndefined();
+    expect(service.peek()).toBeUndefined();
   });
 });

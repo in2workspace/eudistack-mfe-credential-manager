@@ -440,6 +440,8 @@ describe('CredentialIssuanceService', () => {
       expect(mockMatDialog.open).not.toHaveBeenCalled();
       // Same contract as a real HTTP error: no navigation, so the operator can see the failure.
       expect(router.navigate).not.toHaveBeenCalled();
+      // code-review L449: a failed channel must not flip the "already submitted" guard either.
+      expect(service.hasSubmitted$()).toBe(false);
     });
 
     it('should submit the newest version of the selected format, not the bare type', () => {
@@ -544,7 +546,48 @@ describe('CredentialIssuanceService', () => {
 
         const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
         expect(request.holder_key).toBeUndefined();
-        expect(holderKeyStore.take()).toBeUndefined();
+        expect(holderKeyStore.peek()).toBeUndefined();
+      });
+
+      /** code-review L508: a drained-on-read store would send the retry with no holder_key at all. */
+      it('keeps the key in the store after an HTTP failure, so a retry still attaches it (AC-06)', () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+        holderKeyStore.set(publicJwk);
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+
+        expect(holderKeyStore.peek()).toEqual(publicJwk);
+
+        // Retry: same key attaches again, unlike the pre-fix take()-before-POST that would have
+        // left this second request with no holder_key.
+        mockProcedureService.createProcedure.mockReturnValue(of({}));
+        service.openSubmitDialog();
+
+        const [secondRequest] = mockProcedureService.createProcedure.mock.calls[1] as any[];
+        expect(secondRequest.holder_key).toEqual({ jwk: publicJwk });
+      });
+
+      /** code-review L449: a 207 channel error is a failed attempt, not a submitted one. */
+      it('keeps the key in the store after a 207 channel error, so a retry still attaches it (D-6)', () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+        holderKeyStore.set(publicJwk);
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{
+            channel: 'email',
+            status: 503,
+            error: { type: 'delivery_failed', title: 'Delivery failed', status: 503, detail: "Delivery failed for channel 'email'" }
+          }]
+        }));
+
+        service.openSubmitDialog();
+
+        expect(holderKeyStore.peek()).toEqual(publicJwk);
+        expect(service.hasSubmitted$()).toBe(false);
       });
     });
   });

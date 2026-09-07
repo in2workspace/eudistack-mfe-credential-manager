@@ -4,7 +4,7 @@ import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
@@ -439,7 +439,6 @@ export class CredentialIssuanceService {
 
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
-        tap(() => { this.hasSubmitted$.set(true); }),
         switchMap((response) => {
           // A 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6): it never reaches
           // catchError, so a failed channel has to be read out of the body here, on the success
@@ -450,6 +449,12 @@ export class CredentialIssuanceService {
             this.openFailedCreateDialog();
             return EMPTY;
           }
+          // Only flip hasSubmitted$/consume the holder key once the channel error above has been
+          // ruled out (code-review L449): a 207 with a failed channel is a failed attempt, and
+          // marking it as submitted would let canLeave() wave the Operator away from data that
+          // never actually issued, holder key included (code-review L508 -- see peek() above).
+          this.hasSubmitted$.set(true);
+          this.holderKeyStore.clear();
           // AD-3 correction: `credential_offer_uri` is only populated by the backend for
           // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
           // So this branch is already scoped to the QR delivery mode -- removing it (as an
@@ -495,6 +500,11 @@ export class CredentialIssuanceService {
    * a better outcome than issuing without one and binding the credential to nothing — and the form
    * already requires the generated `didKey`, so reaching here empty means the store was cleared, not
    * that the Operator skipped a step.
+   *
+   * Reads with `peek()`, not `take()` (code-review L508): draining the store here, before the POST
+   * even runs, would strand a retry after an HTTP failure without its holder_key even though the
+   * form still shows the same generated key. The key is only consumed once a real success is
+   * confirmed, inside submitCredentialPayload()'s success branch.
    */
   private withHolderKey(
     request: IssuanceLEARCredentialRequestDto,
@@ -504,7 +514,7 @@ export class CredentialIssuanceService {
       this.holderKeyStore.clear();
       return request;
     }
-    const publicJwk = this.holderKeyStore.take();
+    const publicJwk = this.holderKeyStore.peek();
     return publicJwk ? { ...request, holder_key: { jwk: publicJwk } } : request;
   }
 

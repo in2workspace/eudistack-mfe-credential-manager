@@ -27,6 +27,9 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
   public copiedKey = "";
   private readonly alertMessages = ["error.form.no_key"];
   private clipboardClearTimer?: ReturnType<typeof setTimeout>;
+  // code-review L66: generateP256() is async (WebCrypto); a Generate -> Cancel before it resolves
+  // must not let the continuation below write into a form/store that ngOnDestroy already tore down.
+  private destroyed = false;
 
   private readonly keyService = inject(KeyGeneratorService);
   private readonly holderKeyStore = inject(HolderKeyStoreService);
@@ -42,12 +45,13 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
   }
 
   public ngOnDestroy(){
+    this.destroyed = true;
     this.cleanUpAlertMessages();
     // EUD-168 AC-19: the private key must not outlive the form it was generated for.
     this.keyService.clearState();
     // A key generated for one machine must not silently bind the next issuance of a different type
-    // (code-review L6): HolderKeyStoreService.take() already clears on read, but an abandoned form
-    // that never reached submission would otherwise leave a stale public JWK behind.
+    // (code-review L6): withHolderKey() only reads via peek() now (code-review L508), so an
+    // abandoned form that never reached submission would otherwise leave a stale public JWK behind.
     this.holderKeyStore.clear();
     // Perform the pending clipboard clear now rather than merely cancelling it (code-review FE-1):
     // the dominant path is the Operator copying the key and then leaving the form to paste it into
@@ -62,6 +66,9 @@ export class KeyGeneratorComponent extends IssuanceCustomFormChildWithAlert<Form
   public async generateKeys(): Promise<void>{
     const isFirstKeyUpdate = this.keyState$();
     await this.keyService.generateP256();
+    if (this.destroyed) {
+      return;
+    }
     this.form().patchValue({ didKey:this.keyState$()?.desmosDidKeyValue });
     // EUD-168 AD-8: hand the public half to the issuance request. Regenerating overwrites it, so
     // the key that travels is always the one whose private half the Operator is looking at.

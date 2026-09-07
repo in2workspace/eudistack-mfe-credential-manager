@@ -24,16 +24,13 @@ export class HolderKeyStoreService {
   }
 
   /**
-   * Reads the stored key and clears it in the same step.
-   *
-   * Clearing on read is what stops a key generated for one issuance from being attached to the next
-   * one: the store outlives the form, so a value left behind would silently bind a later credential
-   * to a key that belongs to an earlier one — a mistake nothing downstream would ever reveal.
+   * Reads the stored key without consuming it (code-review L508): the caller does not yet know
+   * whether the request it is about to build will actually succeed, and clearing here would strand
+   * a retry after an HTTP failure or a channel error without its holder_key. The caller is
+   * responsible for calling `clear()` once — and only once — real success is confirmed.
    */
-  public take(): HolderPublicJwk | undefined {
-    const current = this.publicJwk();
-    this.publicJwk.set(undefined);
-    return current;
+  public peek(): HolderPublicJwk | undefined {
+    return this.publicJwk();
   }
 
   public clear(): void {

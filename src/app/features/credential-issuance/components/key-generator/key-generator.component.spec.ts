@@ -154,6 +154,34 @@ it('generateKeys should NOT update alert message if it is NOT the first time', a
 
 
 
+  /**
+   * code-review L66: generateP256() is async (WebCrypto). A Generate -> Cancel before it resolves
+   * must not let the continuation write a stale public JWK into the (root-provided, session-wide)
+   * HolderKeyStoreService, nor patch a form that no longer belongs to any visible component.
+   */
+  it('generateKeys does not patch the form or set the holder key store if destroyed before generateP256 resolves', async () => {
+    let resolveGeneration!: () => void;
+    (mockService.generateP256 as jest.Mock).mockReturnValue(
+      new Promise<void>(resolve => { resolveGeneration = resolve; })
+    );
+    const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+    rawStateSignal.set({ desmosDidKeyValue: 'DID-123', desmosPrivateKeyValue: 'PRIV', desmosPublicJwk: publicJwk });
+
+    const fakeForm = { patchValue: jest.fn() } as unknown as FormGroup<any>;
+    Object.defineProperty(component, 'form', { configurable: true, value: () => fakeForm });
+    jest.spyOn(component as any, 'updateAlertMessages').mockImplementation(() => {});
+    const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+    const setSpy = jest.spyOn(holderKeyStore, 'set');
+
+    const generation = component.generateKeys();
+    component.ngOnDestroy();
+    resolveGeneration();
+    await generation;
+
+    expect(fakeForm.patchValue).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+  });
+
   it('copyToClipboard should write to the clipboard and reset copiedKey after 2 seconds', fakeAsync(() => {
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: jest.fn().mockResolvedValue(undefined) },
