@@ -475,9 +475,10 @@ export class CredentialIssuanceService {
 
   /**
    * The offer URI, wherever in `responses[]` it landed. Backend only builds one when the requested
-   * modes include `ui` (`returnsUri`); an `email`-only dispatch has none (its `body` is absent
-   * entirely), but `email` requested alongside `ui` reports the same shared URI too -- so this reads
-   * across every channel rather than assuming a fixed one.
+   * modes include `ui` (`returnsUri`), and only the `ui` channel's `body` ever carries it -- `email`'s
+   * `body` is always absent, whether or not `ui` is also requested, since that URI was already
+   * delivered inside the email itself. Reading across every channel rather than assuming a fixed index
+   * still costs nothing and keeps this resilient if the backend ever adds another URI-bearing channel.
    */
   private extractCredentialOfferUri(response: IssuanceResponseDto | undefined): string | undefined {
     return response?.responses?.find(channel => channel.body?.credential_offer_uri)?.body?.credential_offer_uri;
