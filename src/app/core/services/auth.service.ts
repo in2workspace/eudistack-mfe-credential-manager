@@ -109,6 +109,14 @@ export class AuthService{
    */
   private static readonly SSO_SILENT_ATTEMPT_KEY = 'sso_silent_attempted';
 
+  /**
+   * Value of the `error` query param the Verifier redirects to
+   * (`<loginPageUri>?error=session_expired`) when RP-Initiated Logout rejects
+   * the request (e.g. a stale `id_token_hint`) instead of exposing its raw
+   * error response. See `consumeSessionExpiredRedirect()`.
+   */
+  private static readonly SESSION_EXPIRED_ERROR = 'session_expired';
+
   public constructor() {
     this.subscribeToAuthEvents();
     this.checkAuth$().subscribe();
@@ -208,7 +216,12 @@ export class AuthService{
       } else {
         this.isAuthenticatedSubject.next(false);
         console.error('Checking authentication: not authenticated.');
-        if (!this.isOnPublicRoute()) {
+        // consumeSessionExpiredRedirect() short-circuits trySilentSsoOnce() on
+        // purpose: the user just attempted an explicit logout and the Verifier
+        // rejected it (stale id_token_hint) — the Verifier's own SSO session may
+        // still be active, and an automatic prompt=none re-authentication here
+        // would silently undo the logout the user just asked for.
+        if (!this.consumeSessionExpiredRedirect() && !this.isOnPublicRoute()) {
           silentSsoRedirectPending = this.trySilentSsoOnce();
         }
       }
@@ -383,18 +396,72 @@ export class AuthService{
     this.oidcSecurityService.logoff().subscribe({
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
-        this.isAuthenticatedSubject.next(false);
-        this.userDataSubject.next(null);
-        this.tokenSubject.next('');
-        this.mandatorSubject.next(null);
-        this.mandateeEmailSubject.next('');
-        this.nameSubject.next('');
-        this.userPowers.set([]);
-        this.resetSessionRoleState();
-        sessionStorage.clear();
+        this.resetLocalAuthState();
         this.router.navigate(['/home']);
       }
     });
+  }
+
+  /**
+   * Tears down every piece of local session state: the auth subjects, the
+   * role/tenant state and `sessionStorage` (where angular-auth-oidc-client
+   * keeps its own PKCE/token artifacts). Shared by the two paths that reach
+   * this point without a working RP-Initiated Logout round trip: logout()'s
+   * local-library-failure fallback, and consumeSessionExpiredRedirect() below
+   * (the Verifier rejected the logout request itself).
+   */
+  private resetLocalAuthState(): void {
+    this.isAuthenticatedSubject.next(false);
+    this.userDataSubject.next(null);
+    this.tokenSubject.next('');
+    this.mandatorSubject.next(null);
+    this.mandateeEmailSubject.next('');
+    this.nameSubject.next('');
+    this.userPowers.set([]);
+    this.resetSessionRoleState();
+    sessionStorage.clear();
+  }
+
+  /**
+   * Detects a landing from the Verifier's OIDC logout failure redirect
+   * (`<loginPageUri>?error=session_expired`, added when `id_token_hint` was
+   * stale/expired instead of exposing the raw OAuth2 error response) and, if
+   * present, clears any leftover local session state and surfaces a guiding
+   * message instead of leaving the user on an inconsistent screen.
+   *
+   * Reads `location.search` directly rather than `ActivatedRoute`/`router.url`,
+   * for the same reason as `isOnPublicRoute()`: this runs from checkAuth$() at
+   * bootstrap, before the Angular router has resolved the initial navigation.
+   *
+   * Returns true when it handled such a redirect, so the caller can skip the
+   * silent-SSO retry (see the comment at its call site).
+   */
+  private consumeSessionExpiredRedirect(): boolean {
+    const params = new URLSearchParams(globalThis.location.search);
+    if (params.get('error') !== AuthService.SESSION_EXPIRED_ERROR) {
+      return false;
+    }
+
+    this.resetLocalAuthState();
+    this.stripSessionExpiredParam();
+
+    const title = this.translate.instant('error.sessionExpired.title');
+    const message = this.translate.instant('error.sessionExpired.message');
+    this.dialog.openErrorInfoDialog(DialogComponent, message, title);
+
+    return true;
+  }
+
+  /**
+   * Removes `error=session_expired` from the URL bar after handling it, so a
+   * page refresh does not re-clear the (by then legitimate) session or
+   * re-show the dialog.
+   */
+  private stripSessionExpiredParam(): void {
+    const params = new URLSearchParams(globalThis.location.search);
+    params.delete('error');
+    const query = params.toString();
+    globalThis.history.replaceState(null, '', globalThis.location.pathname + (query ? `?${query}` : ''));
   }
 
   /**

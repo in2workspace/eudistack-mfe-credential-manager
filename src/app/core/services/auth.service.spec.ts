@@ -784,6 +784,148 @@ describe('AuthService', () => {
   });
 
   // --------------------------------------------------------------------------
+  // consumeSessionExpiredRedirect() — landing from the Verifier's OIDC logout
+  // failure redirect (<loginPageUri>?error=session_expired)
+  // --------------------------------------------------------------------------
+  describe('consumeSessionExpiredRedirect (via checkAuth$)', () => {
+    let originalLocation: Location;
+    let replaceStateSpy: jest.SpyInstance;
+    let dialogMock: { openErrorInfoDialog: jest.Mock };
+
+    const setLocation = (pathname: string, search: string) => {
+      Object.defineProperty(globalThis, 'location', {
+        value: { pathname, search },
+        writable: true,
+        configurable: true,
+      });
+    };
+
+    beforeEach(() => {
+      originalLocation = globalThis.location;
+      replaceStateSpy = jest.spyOn(globalThis.history, 'replaceState').mockImplementation(() => undefined);
+      dialogMock = TestBed.inject(DialogWrapperService) as unknown as { openErrorInfoDialog: jest.Mock };
+    });
+
+    afterEach(() => {
+      Object.defineProperty(globalThis, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
+      replaceStateSpy.mockRestore();
+    });
+
+    it('with ?error=session_expired: clears sessionStorage', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      sessionStorage.setItem('some-leftover-key', 'stale');
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(sessionStorage.getItem('some-leftover-key')).toBeNull();
+        done();
+      });
+    });
+
+    it('with ?error=session_expired: opens the session-expired info dialog', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(dialogMock.openErrorInfoDialog).toHaveBeenCalledWith(
+          expect.anything(),
+          'error.sessionExpired.message',
+          'error.sessionExpired.title'
+        );
+        done();
+      });
+    });
+
+    it('with ?error=session_expired: does NOT trigger the silent-SSO retry', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(oidcSecurityServiceMock.authorize).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('with ?error=session_expired: strips the error param but keeps the rest of the query string', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired&foo=bar');
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/home?foo=bar');
+        done();
+      });
+    });
+
+    it('without ?error=session_expired: does not clear sessionStorage nor open the dialog', (done) => {
+      // Arrange
+      setLocation('/home', '');
+      sessionStorage.setItem('some-key', 'value');
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(true);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(sessionStorage.getItem('some-key')).toBe('value');
+        expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
+        expect(replaceStateSpy).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('with an unrelated ?error= value: falls through to the normal not-authenticated handling', (done) => {
+      // Arrange
+      // AuthService's constructor already ran checkAuth$() once on injection (real
+      // location, no ?error=), which flips SSO_SILENT_ATTEMPT_KEY on — clear it so
+      // this test's own trySilentSsoOnce() is not a no-op (same pattern as the
+      // "rutes públiques i silent-SSO" tests above).
+      sessionStorage.clear();
+      setLocation('/issuer/organization/credentials', '?error=login_required');
+      jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(false);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert
+        expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
+        expect(oidcSecurityServiceMock.authorize).toHaveBeenCalledWith(
+          undefined,
+          { customParams: { prompt: 'none' } }
+        );
+        done();
+      });
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // subscribeToAuthEvents
   // --------------------------------------------------------------------------
   describe('subscribeToAuthEvents', () => {

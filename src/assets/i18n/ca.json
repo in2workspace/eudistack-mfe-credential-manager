@@ -373,6 +373,10 @@
         "title": "Accés Denegat",
         "message": "No tens els poders necessaris per accedir-hi."
     },
+    "sessionExpired": {
+        "title": "Sessió Caducada",
+        "message": "La teva sessió ha caducat. Si us plau, torna a iniciar sessió."
+    },
     "credentialOffer": {
       "invalid-url": "URL no vàlida. No es pot obtenir l'oferta de credencial.",
       "unexpected": "S'ha produït un error inesperat. Torna-ho a intentar més tard o posa't en contacte amb el Representant Legal de la teva empresa per obtenir una nova credencial.",
