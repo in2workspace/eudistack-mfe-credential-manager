@@ -8,10 +8,12 @@ export const environment = {
   server_url: 'http://localhost:8081',
   /**
    * Clock-skew tolerance (seconds) for the id_token `iat` claim, passed to
-   * angular-auth-oidc-client as `maxIdTokenIatOffsetAllowedInSeconds`. Kept at
-   * the library default (120s); made explicit so it can be tuned per
-   * deployment via `window.env.max_id_token_iat_offset_seconds` without a code
-   * change if an environment shows clock drift.
+   * angular-auth-oidc-client as `maxIdTokenIatOffsetAllowedInSeconds`. The
+   * library default is 120s; a device or IdP clock a couple of minutes out
+   * then fails the login callback with no recoverable path. 300s keeps the
+   * OIDC replay-window check meaningful (spec §C8: "the acceptable range is
+   * Client specific") while tolerating realistic NTP drift. Overridable per
+   * deployment via `window.env.max_id_token_iat_offset_seconds`.
    */
-  max_id_token_iat_offset_seconds: 120
+  max_id_token_iat_offset_seconds: 300
 };

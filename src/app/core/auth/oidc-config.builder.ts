@@ -33,10 +33,11 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     ignoreNonceAfterRefresh: true,
     triggerRefreshWhenIdTokenExpired: false,
     autoUserInfo: false,
-    // Clock-skew tolerance for the id_token `iat` check. Set explicitly (from
-    // environment.max_id_token_iat_offset_seconds, default 120s = the library
-    // default) so it can be tuned per deployment without a code change. The
-    // OIDC replay-window check stays ON: `disableIatOffsetValidation` is unset.
+    // Clock-skew tolerance for the id_token `iat` check (library default 120s).
+    // Set from environment.max_id_token_iat_offset_seconds (300s) so a device or
+    // IdP clock a few minutes out doesn't get its token rejected on the login
+    // callback — which used to surface as a silent redirect to /home. The OIDC
+    // replay-window check stays ON: `disableIatOffsetValidation` is unset.
     maxIdTokenIatOffsetAllowedInSeconds: environment.max_id_token_iat_offset_seconds,
     secureRoutes: [serverUrl || '/'].filter((r): r is string => !!r),
   };
