@@ -10,6 +10,6 @@ export const environment = {
   // Issuer API base URL (REQUIRED)
   server_url: window["env"]["server_url"],
   // Clock-skew tolerance (s) for the id_token `iat` check (OPTIONAL).
-  // Defaults to 300 when unset in the deploy env — see environment.ts for the rationale.
-  max_id_token_iat_offset_seconds: Number(window["env"]["max_id_token_iat_offset_seconds"]) || 300
+  // Defaults to 120 (library default) when unset in the deploy env — see environment.ts.
+  max_id_token_iat_offset_seconds: Number(window["env"]["max_id_token_iat_offset_seconds"]) || 120
 };

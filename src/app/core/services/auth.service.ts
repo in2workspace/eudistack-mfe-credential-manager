@@ -322,11 +322,6 @@ export class AuthService{
     return true;
   }
 
-  /**
-   * Remembers a token-validation failure reported by the auth library so
-   * `checkAuth$()` can surface it. Benign results (see
-   * `BENIGN_VALIDATION_RESULTS`) are ignored.
-   */
   private recordTokenValidationError(result: ValidationResult | undefined): void {
     if (!result || AuthService.BENIGN_VALIDATION_RESULTS.includes(result)) {
       return;
@@ -334,13 +329,6 @@ export class AuthService{
     this.tokenValidationError = result;
   }
 
-  /**
-   * Opens the shared error dialog explaining why sign-in could not be
-   * completed. `MaxOffsetExpired` (the id_token `iat` is outside the allowed
-   * offset — almost always a device clock out of sync with the identity
-   * provider) gets a specific, actionable message; anything else falls back to
-   * a generic "could not validate your sign-in".
-   */
   private notifyTokenValidationFailure(result: ValidationResult): void {
     const messageKey = result === ValidationResult.MaxOffsetExpired
       ? 'error.auth.clockSkew'
