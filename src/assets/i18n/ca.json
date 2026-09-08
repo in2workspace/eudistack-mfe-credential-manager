@@ -373,6 +373,11 @@
         "title": "Accés Denegat",
         "message": "No tens els poders necessaris per accedir-hi."
     },
+    "auth": {
+        "title": "Error en iniciar la sessió",
+        "tokenRejected": "No hem pogut validar el teu inici de sessió. Torna-ho a provar. Si el problema persisteix, contacta amb suport.",
+        "clockSkew": "No hem pogut validar el teu inici de sessió perquè l'hora d'aquest dispositiu no està sincronitzada amb la del servidor. Revisa la data i hora del dispositiu (activa l'hora automàtica) i torna-ho a provar."
+    },
     "credentialOffer": {
       "invalid-url": "URL no vàlida. No es pot obtenir l'oferta de credencial.",
       "unexpected": "S'ha produït un error inesperat. Torna-ho a intentar més tard o posa't en contacte amb el Representant Legal de la teva empresa per obtenir una nova credencial.",
