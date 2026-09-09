@@ -787,6 +787,7 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('subscribeToAuthEvents', () => {
     let eventSubject: Subject<any>;
+    let dialog: { openErrorInfoDialog: jest.Mock };
 
     beforeEach(() => {
       eventSubject = new Subject();
@@ -794,6 +795,7 @@ describe('AuthService', () => {
       jest.spyOn(service, 'logout').mockImplementation(() => {});
       jest.spyOn(service, 'authorize').mockImplementation();
       mockPublicEventsService.registerForEvents.mockReturnValue(eventSubject.asObservable());
+      dialog = TestBed.inject(DialogWrapperService) as unknown as { openErrorInfoDialog: jest.Mock };
     });
 
     it('gestiona SilentRenewStarted', () => {
@@ -834,6 +836,9 @@ describe('AuthService', () => {
       capturedHandler!();
 
       expect(consoleError).toHaveBeenCalledWith('User still not authenticated after reconnect, logging out');
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
       expect(service.authorize).toHaveBeenCalled();
       expect(removeListenerSpy).toHaveBeenCalledWith('online', capturedHandler);
 
@@ -860,6 +865,9 @@ describe('AuthService', () => {
       capturedHandler!();
 
       expect(consoleError).toHaveBeenCalledWith('Error while reauthenticating after reconnect:', reconnectError);
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
       expect(service.authorize).toHaveBeenCalled();
 
       consoleError.mockRestore();
@@ -874,6 +882,9 @@ describe('AuthService', () => {
       eventSubject.next({ type: EventTypes.SilentRenewFailed });
 
       expect(consoleError).toHaveBeenCalledWith('Silent token refresh failed: online mode, proceeding to logout', expect.anything());
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
       expect(service.authorize).toHaveBeenCalled();
 
       consoleError.mockRestore();

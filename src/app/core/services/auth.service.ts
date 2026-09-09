@@ -174,11 +174,13 @@ export class AuthService{
                         // reauthenticated successfully after reconnect
                       } else {
                         console.error('User still not authenticated after reconnect, logging out');
+                        this.notifySessionExpired();
                         this.authorize();
                       }
                     },
                     error: (err) => {
                       console.error('Error while reauthenticating after reconnect:', err);
+                      this.notifySessionExpired();
                       this.authorize();
                     },
                     complete: () => {
@@ -192,6 +194,7 @@ export class AuthService{
 
             } else {
               console.error('Silent token refresh failed: online mode, proceeding to logout', event);
+              this.notifySessionExpired();
               this.authorize();
             }
             break;
@@ -335,6 +338,17 @@ export class AuthService{
       : 'error.auth.tokenRejected';
     const title = this.translate.instant('error.auth.title');
     const message = this.translate.instant(messageKey);
+    this.dialog.openErrorInfoDialog(DialogComponent, message, title);
+  }
+
+  /**
+   * Surfaces a dialog before every `authorize()` redirect triggered by
+   * SilentRenewFailed, so a dead session ends with an explanation instead of
+   * silently bouncing the user to the Verifier's login page.
+   */
+  private notifySessionExpired(): void {
+    const title = this.translate.instant('error.auth.title');
+    const message = this.translate.instant('error.auth.sessionExpired');
     this.dialog.openErrorInfoDialog(DialogComponent, message, title);
   }
 
