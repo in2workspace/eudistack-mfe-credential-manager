@@ -11,5 +11,6 @@ interface Window {
         credential_offer_url?: string;
         notification?: string;
         sign_credential_url?: string;
+        max_id_token_iat_offset_seconds?: string;
     };
 }
