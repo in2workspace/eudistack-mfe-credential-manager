@@ -890,6 +890,26 @@ describe('AuthService', () => {
       consoleError.mockRestore();
     });
 
+    it('SilentRenewFailed online: no llama a authorize() hasta que el usuario cierra el diáleg', () => {
+      jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const afterClosedSubject = new Subject<void>();
+      dialog.openErrorInfoDialog.mockReturnValueOnce({ afterClosed: () => afterClosedSubject.asObservable() });
+
+      service.subscribeToAuthEvents();
+      eventSubject.next({ type: EventTypes.SilentRenewFailed });
+
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalled();
+      expect(service.authorize).not.toHaveBeenCalled();
+
+      afterClosedSubject.next();
+      afterClosedSubject.complete();
+
+      expect(service.authorize).toHaveBeenCalled();
+
+      consoleError.mockRestore();
+    });
+
     it('gestiona IdTokenExpired', () => {
       const consoleError = jest.spyOn(console, 'error').mockImplementation();
       service.subscribeToAuthEvents();

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **The Issuer UI closed the session silently when the background token refresh failed**: `SilentRenewFailed` redirected straight to the Verifier's login page with no explanation. A dialog now tells the user their session expired before the redirect, in every branch that can reach it (online, and both outcomes of the offline-then-reconnect retry).
+  - That dialog used to be cut off almost instantly because the redirect to the Verifier fired right after opening it. The redirect now waits for the dialog to be dismissed.
 
 ### Changed
 
