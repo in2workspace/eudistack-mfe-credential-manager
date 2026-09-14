@@ -1,6 +1,6 @@
 import { computed } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { MeService } from './me.service';
@@ -91,7 +91,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockPublicEventsService: jest.Mocked<any>;
   let tenantServiceMock: { tenant: jest.Mock };
-  let routerMock: { navigate: jest.Mock, url: string };
+  let routerMock: { navigate: jest.Mock, url: string, navigated: boolean, events: Subject<unknown> };
   let meServiceMock: { fetchMe: jest.Mock };
 
   let oidcSecurityServiceMock: {
@@ -122,6 +122,7 @@ describe('AuthService', () => {
 
     const translateServiceMock = {
       instant: jest.fn((key: string) => key),
+      get: jest.fn((keys: string[]) => of(Object.fromEntries(keys.map((key) => [key, key])))),
     };
     const dialogWrapperServiceMock = {
       openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
@@ -135,7 +136,7 @@ describe('AuthService', () => {
       }))
     };
     tenantServiceMock = { tenant: jest.fn().mockReturnValue('localhost') };
-    routerMock = { navigate: jest.fn().mockResolvedValue(true), url: '/' };
+    routerMock = { navigate: jest.fn().mockResolvedValue(true), url: '/', navigated: true, events: new Subject() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -875,6 +876,73 @@ describe('AuthService', () => {
       service.checkAuth$().subscribe(() => {
         // Assert
         expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/home?foo=bar');
+        done();
+      });
+    });
+
+    it('with ?error=session_expired and the Router has not completed its initial navigation: defers stripping the param until NavigationEnd fires', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      routerMock.navigated = false;
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert: not stripped yet, the Router hasn't settled its initial navigation
+        expect(replaceStateSpy).not.toHaveBeenCalled();
+
+        routerMock.events.next(new NavigationEnd(1, '/home', '/home'));
+
+        expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/home');
+        done();
+      });
+    });
+
+    it('with ?error=session_expired and the Router has not completed its initial navigation: ignores non-NavigationEnd router events', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      routerMock.navigated = false;
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        routerMock.events.next({ id: 1 });
+
+        // Assert
+        expect(replaceStateSpy).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('with ?error=session_expired: waits for the i18n loader before opening the dialog, with translated text rather than raw keys', (done) => {
+      // Arrange
+      setLocation('/home', '?error=session_expired');
+      const translations$ = new Subject<Record<string, string>>();
+      const translateServiceMock = TestBed.inject(TranslateService) as unknown as { get: jest.Mock };
+      translateServiceMock.get.mockReturnValue(translations$);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: false, userData: null, accessToken: ''
+      }));
+
+      // Act
+      service.checkAuth$().subscribe(() => {
+        // Assert: still waiting on the i18n HTTP load
+        expect(dialogMock.openErrorInfoDialog).not.toHaveBeenCalled();
+
+        translations$.next({
+          'error.sessionExpired.title': 'Sesión Caducada',
+          'error.sessionExpired.message': 'Tu sesión ha caducado. Por favor, inicia sesión de nuevo.',
+        });
+
+        expect(dialogMock.openErrorInfoDialog).toHaveBeenCalledWith(
+          expect.anything(),
+          'Tu sesión ha caducado. Por favor, inicia sesión de nuevo.',
+          'Sesión Caducada'
+        );
         done();
       });
     });

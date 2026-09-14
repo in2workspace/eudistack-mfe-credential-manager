@@ -8,7 +8,7 @@ import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE, PUBLIC_ROUTE_PREFIXES } from '../constants/iam.constants';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { MeService } from './me.service';
@@ -518,13 +518,30 @@ export class AuthService{
     }
 
     this.resetLocalAuthState();
-    this.stripSessionExpiredParam();
-
-    const title = this.translate.instant('error.sessionExpired.title');
-    const message = this.translate.instant('error.sessionExpired.message');
-    this.dialog.openErrorInfoDialog(DialogComponent, message, title);
+    this.stripSessionExpiredParamAfterInitialNavigation();
+    this.showSessionExpiredDialog();
 
     return true;
+  }
+
+  /**
+   * Waits for the Router's first `NavigationEnd` before touching the URL bar. `app.routes.ts`
+   * redirects `''` to `home`, and Angular preserves query params across that redirect by
+   * default — so stripping `error=session_expired` before that initial navigation settles gets
+   * silently overwritten once it completes, and a page refresh lands right back on the same
+   * query param, re-showing the dialog. `router.navigated` is `false` until the very first
+   * navigation resolves; once it's `true`, nothing else will touch the URL on its own, so it's
+   * safe to strip immediately.
+   */
+  private stripSessionExpiredParamAfterInitialNavigation(): void {
+    if (this.router.navigated) {
+      this.stripSessionExpiredParam();
+      return;
+    }
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      take(1)
+    ).subscribe(() => this.stripSessionExpiredParam());
   }
 
   /**
@@ -537,6 +554,22 @@ export class AuthService{
     params.delete('error');
     const query = params.toString();
     globalThis.history.replaceState(null, '', globalThis.location.pathname + (query ? `?${query}` : ''));
+  }
+
+  /**
+   * `translate.instant()` returns the raw key instead of the translation until the i18n JSON
+   * (fetched over HTTP by `TranslateHttpLoader`) has finished loading — a race this call
+   * reliably loses, since it runs from `checkAuth$()` at bootstrap. `get()` waits for it.
+   */
+  private showSessionExpiredDialog(): void {
+    this.translate.get(['error.sessionExpired.title', 'error.sessionExpired.message'])
+      .subscribe((translations) => {
+        this.dialog.openErrorInfoDialog(
+          DialogComponent,
+          translations['error.sessionExpired.message'],
+          translations['error.sessionExpired.title']
+        );
+      });
   }
 
   /**

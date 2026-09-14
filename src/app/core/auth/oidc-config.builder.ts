@@ -25,6 +25,13 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     redirectUrl: IAM_REDIRECT_URI,
     postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
     clientId,
+    // angular-auth-oidc-client's logoff() never sends client_id on its own — RP-Initiated
+    // Logout's id_token_hint carries it implicitly via `aud`. But when id_token_hint itself
+    // fails validation (the case consumeSessionExpiredRedirect() in AuthService handles),
+    // the Verifier has no other way to know which client is logging out and falls back to
+    // its raw JSON error. Setting it here merges it into every end-session request
+    // automatically (UrlService reads customParamsEndSessionRequest off the config).
+    customParamsEndSessionRequest: { client_id: clientId },
     scope: IAM_PARAMS.SCOPE,
     responseType: IAM_PARAMS.GRANT_TYPE,
     silentRenew: true,
