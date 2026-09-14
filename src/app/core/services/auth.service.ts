@@ -448,9 +448,11 @@ export class AuthService{
       status: 'default',
       confirmationType: 'sync',
       confirmationLabel: this.translate.instant('error.auth.sessionWarningContinue'),
-      cancelLabel: this.translate.instant('error.auth.sessionWarningDismiss'),
+      hideCancelButton: true,
     };
-    this.sessionWarningDialog = this.dialog.openDialog(DialogComponent, dialogData);
+    // Force the user to actively choose "Continuar" — no backdrop/ESC dismissal,
+    // matching the same guarantee the Wallet gives via backdropDismiss:false.
+    this.sessionWarningDialog = this.dialog.openDialog(DialogComponent, dialogData, { disableClose: true });
 
     this.sessionWarningDialog.afterClosed().pipe(take(1)).subscribe((confirmed) => {
       this.sessionWarningDialog = null;

@@ -15,16 +15,18 @@ export class DialogWrapperService {
   private readonly dialog = inject(MatDialog);
   private readonly loader = inject(LoaderService);
 
-  public openDialog< 
+  public openDialog<
     D extends BaseDialogData,
     T extends AbstractDialogComponent<D>
   >(
     component: Type<T>,
-    dialogData: D
+    dialogData: D,
+    options?: { disableClose?: boolean }
   ): MatDialogRef<T, any> {
     return this.dialog.open(component, {
       data: { ...dialogData },
       autoFocus: false,
+      disableClose: options?.disableClose ?? false,
       panelClass: 'dialog-custom'
     });
   }

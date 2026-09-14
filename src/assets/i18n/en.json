@@ -406,8 +406,7 @@
       "sessionWarningTitle": "Session expiring soon",
       "sessionWarningMessage": "Your session is about to expire. Do you want to continue?",
       "sessionWarningRemaining": "{{seconds}} seconds remaining",
-      "sessionWarningContinue": "Continue",
-      "sessionWarningDismiss": "Dismiss"
+      "sessionWarningContinue": "Continue"
     },
     "credentialOffer": {
       "invalid-url": "Unexpected error: invalid URL, can't get credential offer.",

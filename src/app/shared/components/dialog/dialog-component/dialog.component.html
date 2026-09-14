@@ -27,7 +27,9 @@
   <div mat-dialog-actions>
     <!-- CONFIRMATION NEEDED: CANCEL AND CONFIRM BUTTONS -->
     @if(data.confirmationType !== 'none'){
-      <button mat-flat-button color="cancel" (click)="onCancel()">{{ data.cancelLabel ?? ("dialog.cancel" | translate) }}</button>
+      @if(!data.hideCancelButton){
+        <button mat-flat-button color="cancel" (click)="onCancel()">{{ data.cancelLabel ?? ("dialog.cancel" | translate) }}</button>
+      }
       <button mat-flat-button [color]="statusColor"
       (click)="onConfirm()">{{ data.confirmationLabel ?? ("dialog.accept" | translate) }}</button>
     }

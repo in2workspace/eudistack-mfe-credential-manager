@@ -381,8 +381,7 @@
         "sessionWarningTitle": "La sessió està a punt de caducar",
         "sessionWarningMessage": "La teva sessió està a punt de caducar. Vols continuar?",
         "sessionWarningRemaining": "{{seconds}} segons restants",
-        "sessionWarningContinue": "Continuar",
-        "sessionWarningDismiss": "Descartar"
+        "sessionWarningContinue": "Continuar"
     },
     "credentialOffer": {
       "invalid-url": "URL no vàlida. No es pot obtenir l'oferta de credencial.",

@@ -56,6 +56,32 @@ describe('DialogWrapperService', () => {
         ...dialogData
       },
       autoFocus: false,
+      disableClose: false,
+      panelClass: 'dialog-custom'
+    });
+
+    expect(result).toBe(mockDialogRef);
+  });
+
+  it('should open a dialog with disableClose:true when requested', () => {
+    const dialogData: DialogData = {
+      title: 'Sync Title',
+      message: 'Sync Message',
+      confirmationType: 'sync',
+      status: 'default'
+    };
+    const mockDialogRef = {} as MatDialogRef<DialogComponent, any>;
+
+    matDialogMock.open.mockReturnValue(mockDialogRef);
+
+    const result = service.openDialog(DialogComponent, dialogData, { disableClose: true });
+
+    expect(matDialogMock.open).toHaveBeenCalledWith(DialogComponent, {
+      data: {
+        ...dialogData
+      },
+      autoFocus: false,
+      disableClose: true,
       panelClass: 'dialog-custom'
     });
 

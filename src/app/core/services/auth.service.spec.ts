@@ -1088,8 +1088,8 @@ describe('AuthService', () => {
         template: expect.any(ComponentPortal),
         confirmationType: 'sync',
         confirmationLabel: 'error.auth.sessionWarningContinue',
-        cancelLabel: 'error.auth.sessionWarningDismiss',
-      }));
+        hideCancelButton: true,
+      }), { disableClose: true });
     });
 
     it('does nothing for a token without a decodable exp claim', () => {
