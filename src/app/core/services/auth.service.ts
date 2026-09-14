@@ -239,52 +239,12 @@ export class AuthService{
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
       tap(({ isAuthenticated, userData }) => {
-      if (isAuthenticated) {
-        this.userPowers.set(this.extractPowersFromClaims(userData));
-        if (!this.isAuthorizedForCurrentTenant()) {
-          console.error('Checking authentication: session scoped to a different tenant.');
-          this.rejectCrossTenantSession();
-          return;
-        }
-
-        this.isAuthenticatedSubject.next(true);
-        this.userDataSubject.next(userData);
-        this.handleUserAuthentication(userData);
-        this.refreshRoleFromBackend();
-
-        if (this.router.url === '/' || this.router.url.startsWith('/home')) {
-          this.router.navigate([IAM_POST_LOGIN_ROUTE]);
-        }
-      } else {
-        this.isAuthenticatedSubject.next(false);
-
-        const validationError = this.tokenValidationError;
-        this.tokenValidationError = null;
-
-        if (validationError) {
-          // The auth library rejected the token itself (commonly `iat` clock
-          // skew -> MaxOffsetExpired). A silent prompt=none retry would fail
-          // the same way, so land on /home and tell the user why instead of
-          // redirecting there in silence. Navigate first so the dialog is not
-          // painted over a protected view that is about to unmount (same
-          // reasoning as rejectCrossTenantSession).
-          console.error('Checking authentication: token rejected by the auth library:', validationError);
-          if (!this.isOnPublicRoute()) {
-            this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
-          }
+        if (isAuthenticated) {
+          this.handleAuthenticatedCheck(userData);
         } else {
-          console.error('Checking authentication: not authenticated.');
-          // consumeSessionExpiredRedirect() short-circuits trySilentSsoOnce() on
-          // purpose: the user just attempted an explicit logout and the Verifier
-          // rejected it (stale id_token_hint) — the Verifier's own SSO session may
-          // still be active, and an automatic prompt=none re-authentication here
-          // would silently undo the logout the user just asked for.
-          if (!this.consumeSessionExpiredRedirect() && !this.isOnPublicRoute()) {
-            silentSsoRedirectPending = this.trySilentSsoOnce();
-          }
+          silentSsoRedirectPending = this.handleUnauthenticatedCheck();
         }
-      }
-    }),
+      }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
@@ -294,6 +254,62 @@ export class AuthService{
         this.authCheckCompleteSubject.next(true);
       }
     }));
+  }
+
+  private handleAuthenticatedCheck(userData: UserDataAuthenticationResponse): void {
+    this.userPowers.set(this.extractPowersFromClaims(userData));
+    if (!this.isAuthorizedForCurrentTenant()) {
+      console.error('Checking authentication: session scoped to a different tenant.');
+      this.rejectCrossTenantSession();
+      return;
+    }
+
+    this.isAuthenticatedSubject.next(true);
+    this.userDataSubject.next(userData);
+    this.handleUserAuthentication(userData);
+    this.refreshRoleFromBackend();
+
+    if (this.router.url === '/' || this.router.url.startsWith('/home')) {
+      this.router.navigate([IAM_POST_LOGIN_ROUTE]);
+    }
+  }
+
+  /**
+   * Returns true when a silent-SSO redirect was actually launched, so checkAuth$()'s
+   * finalize() knows to keep authCheckComplete$ pending instead of flipping it before the
+   * async `prompt=none` navigation actually leaves the page (see the comment on
+   * `silentSsoRedirectPending` at the top of checkAuth$()).
+   */
+  private handleUnauthenticatedCheck(): boolean {
+    this.isAuthenticatedSubject.next(false);
+
+    const validationError = this.tokenValidationError;
+    this.tokenValidationError = null;
+
+    if (validationError) {
+      // The auth library rejected the token itself (commonly `iat` clock
+      // skew -> MaxOffsetExpired). A silent prompt=none retry would fail
+      // the same way, so land on /home and tell the user why instead of
+      // redirecting there in silence. Navigate first so the dialog is not
+      // painted over a protected view that is about to unmount (same
+      // reasoning as rejectCrossTenantSession).
+      console.error('Checking authentication: token rejected by the auth library:', validationError);
+      if (!this.isOnPublicRoute()) {
+        this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
+      }
+      return false;
+    }
+
+    console.error('Checking authentication: not authenticated.');
+    // consumeSessionExpiredRedirect() short-circuits trySilentSsoOnce() on
+    // purpose: the user just attempted an explicit logout and the Verifier
+    // rejected it (stale id_token_hint) — the Verifier's own SSO session may
+    // still be active, and an automatic prompt=none re-authentication here
+    // would silently undo the logout the user just asked for.
+    if (this.consumeSessionExpiredRedirect() || this.isOnPublicRoute()) {
+      return false;
+    }
+    return this.trySilentSsoOnce();
   }
 
   /**
