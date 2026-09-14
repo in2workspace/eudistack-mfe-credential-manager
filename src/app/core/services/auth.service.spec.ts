@@ -1129,7 +1129,10 @@ describe('AuthService', () => {
 
     it('clearSessionWarning closes a still-open dialog and stops the timer', () => {
       const closeSpy = jest.fn();
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => of(undefined), close: closeSpy });
+      // afterClosed() must not emit yet — an already-emitting of(undefined) would let the
+      // showSessionWarning() subscription null out sessionWarningDialog synchronously,
+      // making the dialog look already-closed before clearSessionWarning() runs.
+      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => new Subject<boolean | undefined>(), close: closeSpy });
 
       (service as any).scheduleSessionWarning(fakeJwt(180));
       jest.advanceTimersByTime(60_000); // warning shows, dialog left open (afterClosed() not yet emitted meaningfully)
@@ -1142,7 +1145,7 @@ describe('AuthService', () => {
 
     it('scheduling a new warning dismisses a previously pending one', () => {
       const closeSpy = jest.fn();
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => of(undefined), close: closeSpy });
+      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => new Subject<boolean | undefined>(), close: closeSpy });
 
       (service as any).scheduleSessionWarning(fakeJwt(180));
       jest.advanceTimersByTime(60_000);
