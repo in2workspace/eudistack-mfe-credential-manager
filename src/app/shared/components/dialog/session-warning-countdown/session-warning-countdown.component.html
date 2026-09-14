@@ -1,0 +1,14 @@
+<p>{{ 'error.auth.sessionWarningMessage' | translate }}</p>
+
+<div
+  class="countdown-section"
+  role="timer"
+  [attr.aria-label]="'error.auth.sessionWarningRemaining' | translate: { seconds: remainingSeconds }"
+>
+  <div class="countdown-bar-track">
+    <div class="countdown-bar-fill" [style.width.%]="countdownPercentage"></div>
+  </div>
+  <span class="countdown-text" aria-hidden="true">
+    {{ 'error.auth.sessionWarningRemaining' | translate: { seconds: remainingSeconds } }}
+  </span>
+</div>

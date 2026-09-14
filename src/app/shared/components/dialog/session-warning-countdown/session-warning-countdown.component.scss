@@ -1,0 +1,29 @@
+// Mirrors the countdown bar in eudistack-mfe-login's LoginComponent
+// (QR session expiry), adapted from light-on-dark to dark-on-light since this
+// renders inside a white Material dialog rather than the branded login page.
+.countdown-section {
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.countdown-bar-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.countdown-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary-color, #001e8c);
+  transition: width 1s linear;
+}
+
+.countdown-text {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
