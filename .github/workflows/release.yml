@@ -1,0 +1,35 @@
+name: Release SPA
+
+on:
+  push:
+    branches:
+      - 'release/v*.*.*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    uses: in2workspace/eudistack-devops-workflows/.github/workflows/spa-release.yml@5f949958c1932739d0763fd7d733b6b1a634eba2
+    with:
+      project_name: eudistack
+      region_code: ew1
+      spa_prefix: /issuer/
+      staging_environment: stg
+      production_environment: pro
+      staging_smoke_url: https://sandbox.stg.eudistack.net/issuer/
+      production_smoke_url: https://sandbox.eudistack.net/issuer/
+      build_command: >-
+        npm run build -- --configuration production --output-path=./dist/out
+        --base-href=/issuer/ --deploy-url=/issuer/
+      build_output: dist/out/browser
+      runtime_required_variables: CLIENT_ID_PREFIX,SERVER_URL,SHOW_WALLET_URL_TEST
+    secrets: inherit
