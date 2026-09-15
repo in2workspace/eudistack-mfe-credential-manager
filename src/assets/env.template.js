@@ -5,11 +5,11 @@
 
   // OIDC Client ID: tenant is resolved at runtime
   window["env"]["client_id_prefix"] = "${CLIENT_ID_PREFIX}";
-  // Allows to overwrite the client_id (use in case the client_id is by environment, not by tenant)
-  window["env"]["client_id"] = "${CLIENT_ID}";
+  // Empty by design: client_id_prefix selects the tenant-specific client.
+  window["env"]["client_id"] = "";
 
-  // IAM URL: OIDC authority (Verifier as IdP) — same origin + /verifier path
-  window["env"]["iam_url"] = "${IAM_URL}";
+  // Empty by design: TenantService resolves the same-origin or custom-domain verifier.
+  window["env"]["iam_url"] = "";
 
   // Issuer API: relative path (same origin, no CORS)
   window["env"]["server_url"] = "${SERVER_URL}";
