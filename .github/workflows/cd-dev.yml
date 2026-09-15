@@ -1,0 +1,38 @@
+name: Deploy DEV
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'config/trivy/**'
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  security-events: write
+
+jobs:
+  analyze:
+    uses: in2workspace/eudistack-devops-workflows/.github/workflows/common-codeql-javascript.yml@5f949958c1932739d0763fd7d733b6b1a634eba2
+
+  deploy:
+    uses: in2workspace/eudistack-devops-workflows/.github/workflows/spa-cd-dev.yml@5f949958c1932739d0763fd7d733b6b1a634eba2
+    with:
+      project_name: eudistack
+      region_code: ew1
+      environment: dev
+      spa_prefix: /issuer/
+      smoke_url: https://sandbox.dev.eudistack.net/issuer/
+      build_command: >-
+        npm run build -- --configuration production --output-path=./dist/out
+        --base-href=/issuer/ --deploy-url=/issuer/
+      build_output: dist/out/browser
+      runtime_required_variables: CLIENT_ID_PREFIX,SERVER_URL,SHOW_WALLET_URL_TEST
+    secrets: inherit
