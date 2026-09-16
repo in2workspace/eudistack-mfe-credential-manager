@@ -4,8 +4,6 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 import { MatDialogRef } from '@angular/material/dialog';
-import { ComponentPortal } from '@angular/cdk/portal';
-import { SessionWarningCountdownComponent } from 'src/app/shared/components/dialog/session-warning-countdown/session-warning-countdown.component';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
@@ -14,7 +12,6 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { MeService } from './me.service';
 import { MeResponse } from '../models/dto/me-response.dto';
 import { TenantService } from './tenant.service';
@@ -138,17 +135,6 @@ export class AuthService{
     ValidationResult.LoginRequired,
   ];
 
-  /**
-   * Timer for the "session about to expire, continue?" prompt (EUD follow-up
-   * to E-02), fired 2 minutes before the access token's own `exp` claim. The
-   * library's own silent renew (`PeriodicallyTokenCheckService`) has no early
-   * margin here (`renewTimeBeforeTokenExpiresInSeconds` is unset) — it only
-   * acts once the token has actually expired — so this timer is scheduled
-   * independently, from the token itself, not from any library event.
-   */
-  private warningTimer: ReturnType<typeof setTimeout> | null = null;
-  private sessionWarningDialog: MatDialogRef<DialogComponent> | null = null;
-
   public constructor() {
     this.subscribeToAuthEvents();
     this.checkAuth$().subscribe();
@@ -177,11 +163,6 @@ export class AuthService{
 
           // before this happens, the library cleans up the local auth data
           case EventTypes.SilentRenewFailed:
-            // A still-open "continue?" prompt is now asking about a session
-            // the library itself just gave up renewing — dismiss it before
-            // the dedicated session-expired notice below takes over.
-            this.clearSessionWarning();
-
             if (isOffline) {
               console.error('Silent token refresh failed: offline mode', event);
 
@@ -232,10 +213,6 @@ export class AuthService{
             } | undefined;
             if (result?.isAuthenticated === false && !result.isRenewProcess) {
               this.recordTokenValidationError(result.validationResult);
-            } else if (result?.isAuthenticated === true) {
-              // Covers the library's own silent renew landing a fresh token,
-              // not just the initial login (checkAuth$ already reschedules that).
-              this.rescheduleSessionWarningFromCurrentToken();
             }
             break;
           }
@@ -266,7 +243,6 @@ export class AuthService{
         this.userDataSubject.next(userData);
         this.handleUserAuthentication(userData);
         this.refreshRoleFromBackend();
-        this.rescheduleSessionWarningFromCurrentToken();
 
         if (this.router.url === '/' || this.router.url.startsWith('/home')) {
           this.router.navigate([IAM_POST_LOGIN_ROUTE]);
@@ -378,98 +354,6 @@ export class AuthService{
   }
 
   /**
-   * Reads the current access token and (re)schedules the 2-minutes-before-expiry
-   * warning from its `exp` claim. Called after every successful auth result —
-   * initial login, silent renew, and a manual "continue" — so the warning
-   * always reflects the token actually in use, whichever path renewed it.
-   */
-  private rescheduleSessionWarningFromCurrentToken(): void {
-    this.oidcSecurityService.getAccessToken().pipe(take(1)).subscribe((token) => {
-      if (token) {
-        this.scheduleSessionWarning(token);
-      }
-    });
-  }
-
-  private scheduleSessionWarning(accessToken: string): void {
-    this.clearSessionWarning();
-
-    const expiresInSeconds = this.getExpiresInSecondsFromToken(accessToken);
-    if (expiresInSeconds === null) {
-      return;
-    }
-
-    const warningInMs = Math.max((expiresInSeconds - 120) * 1000, 0);
-    this.warningTimer = setTimeout(() => this.showSessionWarning(), warningInMs);
-  }
-
-  private getExpiresInSecondsFromToken(accessToken: string): number | null {
-    try {
-      const payload = JSON.parse(atob(accessToken.split('.')[1]));
-      if (typeof payload.exp !== 'number') {
-        return null;
-      }
-      return payload.exp - Math.floor(Date.now() / 1000);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Dismisses the "continue?" prompt, if one is open, and stops its timer.
-   * Called whenever the session is renewed or torn down by any other path
-   * (the library's own silent renew, a manual "continue", SilentRenewFailed,
-   * logout), so the prompt never lingers asking about a session that either
-   * just got extended or no longer exists.
-   */
-  private clearSessionWarning(): void {
-    if (this.warningTimer) {
-      clearTimeout(this.warningTimer);
-      this.warningTimer = null;
-    }
-    if (this.sessionWarningDialog) {
-      this.sessionWarningDialog.close(false);
-      this.sessionWarningDialog = null;
-    }
-  }
-
-  /**
-   * Shows the 2-minute warning as a confirm dialog. "Continuar" forces an
-   * immediate refresh via the library's own `forceRefreshSession()`; leaving
-   * it unanswered (dismiss, backdrop, or simply doing nothing) changes
-   * nothing — the library's own silent renew at actual expiry, and the
-   * SilentRenewFailed handling already in place, still apply exactly as before.
-   */
-  private showSessionWarning(): void {
-    const dialogData: DialogData = {
-      title: this.translate.instant('error.auth.sessionWarningTitle'),
-      message: '',
-      template: new ComponentPortal(SessionWarningCountdownComponent),
-      status: 'default',
-      confirmationType: 'sync',
-      confirmationLabel: this.translate.instant('error.auth.sessionWarningContinue'),
-      hideCancelButton: true,
-    };
-    // Force the user to actively choose "Continuar" — no backdrop/ESC dismissal,
-    // matching the same guarantee the Wallet gives via backdropDismiss:false.
-    this.sessionWarningDialog = this.dialog.openDialog(DialogComponent, dialogData, { disableClose: true });
-
-    this.sessionWarningDialog.afterClosed().pipe(take(1)).subscribe((confirmed) => {
-      this.sessionWarningDialog = null;
-      if (!confirmed) {
-        return;
-      }
-
-      this.oidcSecurityService.forceRefreshSession().pipe(take(1)).subscribe({
-        next: () => this.rescheduleSessionWarningFromCurrentToken(),
-        error: () => {
-          this.notifySessionExpired().afterClosed().pipe(take(1)).subscribe(() => this.authorize());
-        }
-      });
-    });
-  }
-
-  /**
    * Fetches the authoritative role from the Issuer (`GET /api/v1/me`) and
    * resolves `resolvedRole`. The backend resolves TenantAdmin using
    * `tenant_config.admin_organization_id`, so this is the single source of
@@ -554,7 +438,6 @@ export class AuthService{
   private rejectCrossTenantSession(): void {
     if (this.crossTenantDialogOpen) return;
     this.crossTenantDialogOpen = true;
-    this.clearSessionWarning();
 
     this.isAuthenticatedSubject.next(false);
     this.userDataSubject.next(null);
@@ -587,7 +470,6 @@ export class AuthService{
    * would ever happen — the tab would look logged in until a manual reload.
    */
   public logout(): void {
-    this.clearSessionWarning();
     this.oidcSecurityService.logoff().subscribe({
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
@@ -802,7 +684,6 @@ export class AuthService{
           this.userDataSubject.next(userData);
           this.tokenSubject.next(accessToken);
           this.refreshRoleFromBackend();
-          this.scheduleSessionWarning(accessToken);
         }
       });
   }

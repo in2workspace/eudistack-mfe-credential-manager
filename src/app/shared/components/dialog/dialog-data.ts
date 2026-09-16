@@ -14,7 +14,6 @@ export interface BaseDialogData{
   loadingData?: LoadingData;
   confirmationLabel?: string;
   cancelLabel?: string;
-  hideCancelButton?: boolean;
   style?: string;
 }
 

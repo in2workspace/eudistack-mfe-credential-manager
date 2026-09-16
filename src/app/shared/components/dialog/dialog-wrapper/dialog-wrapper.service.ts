@@ -20,13 +20,11 @@ export class DialogWrapperService {
     T extends AbstractDialogComponent<D>
   >(
     component: Type<T>,
-    dialogData: D,
-    options?: { disableClose?: boolean }
+    dialogData: D
   ): MatDialogRef<T, any> {
     return this.dialog.open(component, {
       data: { ...dialogData },
       autoFocus: false,
-      disableClose: options?.disableClose ?? false,
       panelClass: 'dialog-custom'
     });
   }

@@ -10,7 +10,6 @@ import { UserDataAuthenticationResponse } from '../models/dto/user-data-authenti
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
-import { ComponentPortal } from '@angular/cdk/portal';
 
 const mockUserDataWithClaims: UserDataAuthenticationResponse = {
   id: 'id',
@@ -101,8 +100,6 @@ describe('AuthService', () => {
     authorize: jest.Mock,
     logoffAndRevokeTokens: jest.Mock,
     logoffLocal: jest.Mock,
-    getAccessToken: jest.Mock,
-    forceRefreshSession: jest.Mock,
   };
 
   beforeEach(() => {
@@ -118,8 +115,6 @@ describe('AuthService', () => {
       logoffAndRevokeTokens: jest.fn(),
       logoff: jest.fn().mockReturnValue(of()),
       logoffLocal: jest.fn(),
-      getAccessToken: jest.fn().mockReturnValue(of('')),
-      forceRefreshSession: jest.fn().mockReturnValue(of({ isAuthenticated: true, accessToken: '' })),
     };
     mockPublicEventsService = {
       registerForEvents: jest.fn().mockReturnValue(of())
@@ -130,7 +125,6 @@ describe('AuthService', () => {
     };
     const dialogWrapperServiceMock = {
       openErrorInfoDialog: jest.fn().mockReturnValue({ afterClosed: () => of(undefined) }),
-      openDialog: jest.fn().mockReturnValue({ afterClosed: () => of(false), close: jest.fn() }),
     };
     meServiceMock = {
       fetchMe: jest.fn().mockReturnValue(of({
@@ -1055,104 +1049,4 @@ describe('AuthService', () => {
     expect(result).toEqual([]);
   });
 
-  // --------------------------------------------------------------------------
-  // session-expiry warning (2 minutes before token expiry)
-  // --------------------------------------------------------------------------
-  describe('session expiry warning', () => {
-    let dialogWrapper: { openDialog: jest.Mock, openErrorInfoDialog: jest.Mock };
-
-    const fakeJwt = (expiresInSeconds: number): string => {
-      const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
-      const payload = btoa(JSON.stringify({ exp }));
-      return `header.${payload}.signature`;
-    };
-
-    beforeEach(() => {
-      jest.useFakeTimers();
-      dialogWrapper = TestBed.inject(DialogWrapperService) as unknown as { openDialog: jest.Mock, openErrorInfoDialog: jest.Mock };
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('schedules the warning dialog for 2 minutes before the token exp claim', () => {
-      (service as any).scheduleSessionWarning(fakeJwt(180));
-
-      jest.advanceTimersByTime(59_000);
-      expect(dialogWrapper.openDialog).not.toHaveBeenCalled();
-
-      jest.advanceTimersByTime(1_000);
-      expect(dialogWrapper.openDialog).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-        title: 'error.auth.sessionWarningTitle',
-        template: expect.any(ComponentPortal),
-        confirmationType: 'sync',
-        confirmationLabel: 'error.auth.sessionWarningContinue',
-        hideCancelButton: true,
-      }), { disableClose: true });
-    });
-
-    it('does nothing for a token without a decodable exp claim', () => {
-      (service as any).scheduleSessionWarning('not-a-jwt');
-      jest.advanceTimersByTime(10 * 60_000);
-      expect(dialogWrapper.openDialog).not.toHaveBeenCalled();
-    });
-
-    it('"Continuar" forces an immediate refresh via the library', () => {
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => of(true), close: jest.fn() });
-
-      (service as any).showSessionWarning();
-
-      expect(oidcSecurityServiceMock.forceRefreshSession).toHaveBeenCalled();
-    });
-
-    it('falls back to the session-expired notice and authorize() when the forced refresh fails', () => {
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => of(true), close: jest.fn() });
-      oidcSecurityServiceMock.forceRefreshSession.mockReturnValueOnce(throwError(() => new Error('refresh failed')));
-      const authorizeSpy = jest.spyOn(service, 'authorize').mockImplementation();
-
-      (service as any).showSessionWarning();
-
-      expect(dialogWrapper.openErrorInfoDialog).toHaveBeenCalledWith(
-        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
-      );
-      expect(authorizeSpy).toHaveBeenCalled();
-    });
-
-    it('dismissing (not confirming) does not trigger a refresh', () => {
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => of(false), close: jest.fn() });
-
-      (service as any).showSessionWarning();
-
-      expect(oidcSecurityServiceMock.forceRefreshSession).not.toHaveBeenCalled();
-    });
-
-    it('clearSessionWarning closes a still-open dialog and stops the timer', () => {
-      const closeSpy = jest.fn();
-      // afterClosed() must not emit yet — an already-emitting of(undefined) would let the
-      // showSessionWarning() subscription null out sessionWarningDialog synchronously,
-      // making the dialog look already-closed before clearSessionWarning() runs.
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => new Subject<boolean | undefined>(), close: closeSpy });
-
-      (service as any).scheduleSessionWarning(fakeJwt(180));
-      jest.advanceTimersByTime(60_000); // warning shows, dialog left open (afterClosed() not yet emitted meaningfully)
-
-      (service as any).clearSessionWarning();
-
-      expect(closeSpy).toHaveBeenCalledWith(false);
-      expect((service as any).warningTimer).toBeNull();
-    });
-
-    it('scheduling a new warning dismisses a previously pending one', () => {
-      const closeSpy = jest.fn();
-      dialogWrapper.openDialog.mockReturnValueOnce({ afterClosed: () => new Subject<boolean | undefined>(), close: closeSpy });
-
-      (service as any).scheduleSessionWarning(fakeJwt(180));
-      jest.advanceTimersByTime(60_000);
-
-      (service as any).scheduleSessionWarning(fakeJwt(900));
-
-      expect(closeSpy).toHaveBeenCalledWith(false);
-    });
-  });
 });
