@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -22,12 +22,12 @@ export class IssuanceRequestFactoryService {
       credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      delivery: IssuanceDelivery = 'email',
+      deliveryModes: readonly DeliveryModeToken[] = ['email'],
       grantType: IssuanceGrantType = 'authorization_code'
   ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType);
         const email = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, delivery, payload, email, grantType);
+        return this.buildRequestDto(configId, toDeliveryCsv(deliveryModes), payload, email, grantType);
       }
 
   public createCredentialRequestPayload(
@@ -203,7 +203,7 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, delivery: DeliveryCsv, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,
