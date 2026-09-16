@@ -24,7 +24,7 @@ import { CredentialCatalogService } from './credential-catalog.service';
  * CredentialCatalogComponent (EUD-72, US-02)
  *
  * Lets a tenant administrator pick which credential types their organization may issue.
- * Reads and writes `/admin/v1/credential-catalog` (replace-all semantics).
+ * Reads and writes `/api/v1/backoffice/credential-catalog` (replace-all semantics).
  *
  * Authorization is deliberately handled here and not left to `settingsGuard`: the guard
  * (`AuthService.canAccessSettings()`) also admits a caller whose only evidence of
