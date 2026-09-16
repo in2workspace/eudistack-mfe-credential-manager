@@ -43,6 +43,10 @@ const OPEN_CATALOG_SNAPSHOT: DeliveryEligibilitySnapshot = {
     ['learcredential.machine.w3c.3', ['direct', 'ui', 'email']],
     ['learcredential.machine.sd.1', ['direct', 'ui', 'email']],
     ['learcredential.machine', ['direct', 'ui', 'email']],
+    // Fixture-only configIds for the delivery-mode defaulting suite below: narrower offerable
+    // sets than the "everything open" ones above, never reused by any other describe block.
+    ['learcredential.employee.email-only.1', ['email']],
+    ['learcredential.employee.ui-only.1', ['ui']],
   ]),
 };
 
@@ -312,6 +316,82 @@ describe('CredentialIssuanceService', () => {
       service.selectedConfigClaims$();
 
       expect(mockMetadataService.getConfigurationById).toHaveBeenCalledWith('learcredential.employee.w3c.2');
+    });
+  });
+
+  // PO override 2026-09-16, supersedes EC-05's "no default" rule for the initial/reset state.
+  describe('delivery mode defaulting (PO override 2026-09-16, supersedes EC-05)', () => {
+    // The delivery-eligibility read is one of the three forkJoin sources gating construction
+    // (isLoadingCatalog$'s own describe block above); the policy load is a Promise, so it only
+    // settles on the microtask queue -- a real await, not fakeAsync/tick(). Without this,
+    // _deliveryEligibility$ stays at its constructor default ({status: 'unreadable'}), and
+    // offerableModes$ falls back to the schema-only, direct-less catalogue for every configId.
+    const settleDeliveryEligibility = async () => {
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    };
+
+    it("defaults to 'direct' when it is offerable", async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
+    });
+
+    it("defaults to 'email' when 'direct' is not offerable but 'email' is", async () => {
+      await settleDeliveryEligibility();
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it("leaves the selection empty when neither 'direct' nor 'email' is offerable -- never defaults to 'ui'", async () => {
+      await settleDeliveryEligibility();
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.ui-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+
+      expect(service.selectedDeliveryModes$().size).toBe(0);
+    });
+
+    it('does not clobber a deliberate operator selection that still contains a valid mode', async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
+
+      // The operator unmarks 'direct' and marks 'email' instead -- still one valid mode, so the
+      // defaulting effect must not step back in and re-add 'direct'.
+      service.toggleDeliveryMode('direct', false);
+      service.toggleDeliveryMode('email', true);
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it('re-defaults after a type change prunes the selection down to nothing valid', async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
+
+      // Switching to a configId that does not offer 'direct' prunes it away (EC-01); with nothing
+      // valid left, the defaulting rule fires again, landing on 'email'.
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedFormatOption$.set(null);
+      service.updateSelectedFormat({ configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json', labelKey: 'k' });
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
     });
   });
 

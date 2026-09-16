@@ -201,7 +201,7 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   // EUD-233 AD-4/AD-13: replaces the retired mat-radio-group delivery selector.
-  describe('delivery selector (AC-02.x, AC-06, EC-05, ES-01)', () => {
+  describe('delivery selector (AC-02.x, AC-06, PO override 2026-09-16 superseding EC-05, ES-01)', () => {
     const checkboxInputs = (): HTMLInputElement[] =>
       Array.from(fixture.nativeElement.querySelectorAll('mat-checkbox input[type="checkbox"]'));
     const submitButton = (): HTMLButtonElement =>
@@ -231,10 +231,16 @@ describe('CredentialIssuanceComponent', () => {
       expect(checkboxInputs().length).toBe(1);
     });
 
-    it('preselects nothing (EC-05)', () => {
-      for (const input of checkboxInputs()) {
-        expect(input.checked).toBe(false);
-      }
+    it("renders the service's default selection as checked (PO override 2026-09-16, supersedes EC-05)", () => {
+      // The component only renders whatever selectedDeliveryModes$ reports; the defaulting rule
+      // itself lives in, and is unit-tested against, CredentialIssuanceService. offerableModes$ is
+      // mocked in order [direct, ui, email], so index 0 is the 'direct' checkbox.
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['direct']));
+      fixture.detectChanges();
+
+      const inputs = checkboxInputs();
+      expect(inputs[0].checked).toBe(true);
+      expect(inputs.slice(1).every(input => !input.checked)).toBe(true);
     });
 
     it('toggling a checkbox calls service.toggleDeliveryMode with the mode and checked state', () => {

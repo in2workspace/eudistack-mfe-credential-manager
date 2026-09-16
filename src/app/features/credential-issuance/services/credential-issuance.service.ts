@@ -291,11 +291,28 @@ export class CredentialIssuanceService {
     // format change within the same type (a different configId, same type). An `effect`, not a
     // `computed`, because pruning writes to state; the visibility of each checkbox stays a `computed`
     // (`offerableModes$` itself).
+    //
+    // PO override 2026-09-16 (supersedes EC-05's "no default" rule for the initial/reset state):
+    // after pruning, if nothing valid remains, fill in a default -- 'direct' when offerable, else
+    // 'email' when offerable, never 'ui'. This only ever fires when the pruned selection is empty,
+    // so a deliberate operator choice that still contains a valid mode is never overwritten.
     effect(() => {
-      const offerable = new Set(this.offerableModes$().map(option => option.value));
+      const offerableOptions = this.offerableModes$();
+      const offerable = new Set(offerableOptions.map(option => option.value));
       const current = this.selectedDeliveryModes$();
       const pruned = new Set([...current].filter(mode => offerable.has(mode)));
-      if (pruned.size !== current.size) {
+
+      if (pruned.size === 0) {
+        const defaultMode: DeliveryModeToken | undefined = offerable.has('direct')
+          ? 'direct'
+          : offerable.has('email') ? 'email' : undefined;
+        if (defaultMode) {
+          pruned.add(defaultMode);
+        }
+      }
+
+      const unchanged = pruned.size === current.size && [...pruned].every(mode => current.has(mode));
+      if (!unchanged) {
         this.selectedDeliveryModes$.set(pruned);
       }
     });
