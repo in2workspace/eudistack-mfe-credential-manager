@@ -35,4 +35,13 @@ export class HolderPrivateKeySectionComponent {
 
   /** Fired once the key is copied -- the host's signal to drop 'privateKey' from `pendingArtifacts`. */
   @Output() public readonly copiedChange = new EventEmitter<void>();
+
+  /**
+   * Fired when the inner field's clipboard write rejects (ES-07.1, ES-07.2). The host renders this
+   * as its own perceptible, attributable notice -- "attributable to the key block, unambiguous
+   * with respect to the other block" (ES-07.1's literal wording) is only true if the host knows
+   * *which* block failed, which is exactly what forwarding this event (rather than swallowing it)
+   * makes possible.
+   */
+  @Output() public readonly copyFailedChange = new EventEmitter<void>();
 }

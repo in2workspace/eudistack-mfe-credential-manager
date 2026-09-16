@@ -4,7 +4,8 @@
     labelKey="credentialIssuance.holderPrivateKey.label"
     [value]="key"
     [clipboardTtlMs]="clipboardTtlMs"
-    (copied)="copiedChange.emit()">
+    (copied)="copiedChange.emit()"
+    (copyFailed)="copyFailedChange.emit()">
   </app-copyable-field>
 } @else {
   <p class="holder-private-key-section__notice" role="status" aria-live="polite">
