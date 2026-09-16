@@ -187,6 +187,43 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
   });
 
+  /**
+   * Post-release PO polish (2026-09-17): the credential (and the QR, when hybrid with `ui`) must
+   * live INSIDE their outcome box, not duplicated above it as well.
+   */
+  describe('embedded artifacts move into their outcome box, not duplicated (2026-09-17 polish)', () => {
+    it('renders the credential only once, inside the direct box, when hybrid with another channel', () => {
+      setup(baseData({ outcomes: outcomesOf([['direct', 'delivered'], ['email', 'delivered']]) }));
+
+      expect(copyableFields().length).toBe(1);
+      const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
+      expect(outcomeList.querySelector('app-copyable-field')).toBeTruthy();
+      // Nothing above the outcome list is a copyable-field standing on its own.
+      expect(fixture.nativeElement.querySelector('.direct-credential-result-dialog__content > app-copyable-field')).toBeNull();
+    });
+
+    it('renders the QR only once, inside the ui box, when hybrid direct+ui', () => {
+      setup(baseData({
+        outcomes: outcomesOf([['direct', 'delivered'], ['ui', 'delivered']]),
+        credentialOfferUri: 'openid-credential-offer://?credential_offer_uri=https%3A%2F%2Fexample.com%2Foffer',
+      }));
+
+      const qrElements = fixture.nativeElement.querySelectorAll('app-credential-offer-qr');
+      expect(qrElements.length).toBe(1);
+      const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
+      expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
+    });
+
+    it('enabling Done still works when the credential copy field lives inside the direct box', async () => {
+      setup(baseData({ outcomes: outcomesOf([['direct', 'delivered'], ['email', 'delivered']]) }));
+
+      await copyableFields()[0].copy();
+      fixture.detectChanges();
+
+      expect(doneButton().disabled).toBe(false);
+    });
+  });
+
   describe('ES-05 / ES-07.1: copy failures are perceptible and attributable per artifact', () => {
     it('ES-05: a failed credential copy announces itself and keeps Done disabled', async () => {
       setClipboard(() => Promise.reject(new Error('denied')));

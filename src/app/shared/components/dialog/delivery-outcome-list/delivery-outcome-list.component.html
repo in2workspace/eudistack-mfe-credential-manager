@@ -5,10 +5,21 @@
       [class.delivery-outcome-list__box--delivered]="isDelivered(entry.outcome)"
       [class.delivery-outcome-list__box--failed]="!isDelivered(entry.outcome)">
       <h3 class="delivery-outcome-list__title">{{ entry.labelKey | translate }}</h3>
-      <p class="delivery-outcome-list__body">
-        <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>
-        <span>{{ bodyKeyFor(entry) | translate }}</span>
-      </p>
+      @if (showsCredential(entry)) {
+        <app-copyable-field
+          labelKey="credentialIssuance.direct-result-dialog.credentialLabel"
+          [value]="signedCredential()!"
+          (copied)="credentialCopied.emit()"
+          (copyFailed)="credentialCopyFailed.emit()">
+        </app-copyable-field>
+      } @else if (showsOffer(entry)) {
+        <app-credential-offer-qr [credentialOfferUri]="credentialOfferUri()!"></app-credential-offer-qr>
+      } @else {
+        <p class="delivery-outcome-list__body">
+          <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ bodyKeyFor(entry) | translate }}</span>
+        </p>
+      }
     </section>
   }
 </div>

@@ -217,6 +217,28 @@ describe('CredentialOfferDialogComponent', () => {
     });
   });
 
+  /**
+   * Post-release PO polish (2026-09-17): once the outcome boxes render (showOutcomes true), the QR
+   * moves inside the `ui` box instead of also floating above it.
+   */
+  describe('embedded QR moves into the ui box, not duplicated (2026-09-17 polish)', () => {
+    it('renders the QR only once, inside the ui box, when hybrid ui+email', () => {
+      setup({ ...mockData, outcomes: new Map([['ui', 'delivered'], ['email', 'delivered']]) });
+
+      const qrElements = fixture.nativeElement.querySelectorAll('app-credential-offer-qr');
+      expect(qrElements.length).toBe(1);
+      const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
+      expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
+    });
+
+    it('keeps the QR standalone (no box) for the single-channel regression case (AC-05.1)', () => {
+      setup(mockData); // single 'ui' channel, delivered -- showOutcomes false
+
+      expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-credential-offer-qr')).toBeTruthy();
+    });
+  });
+
   describe('EC-11: mutual exclusivity is structural (this host never renders a credential block)', () => {
     it('has no signedCredential-shaped content regardless of data shape', () => {
       setup({ ...mockData, requiresHolderKeySection: true, privateKeyHex: 'a-private-key' });

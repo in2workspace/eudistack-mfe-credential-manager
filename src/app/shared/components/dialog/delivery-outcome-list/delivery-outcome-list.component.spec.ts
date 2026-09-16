@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
 import { DeliveryOutcomeListComponent } from './delivery-outcome-list.component';
 import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
+import { TenantService } from 'src/app/core/services/tenant.service';
+import { CopyableFieldComponent } from '../copyable-field/copyable-field.component';
 
 /**
  * Post-release PO polish (2026-09-16/17): one bordered box per requested mode, green on delivery
@@ -13,12 +16,25 @@ import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outc
 describe('DeliveryOutcomeListComponent', () => {
   let fixture: ComponentFixture<DeliveryOutcomeListComponent>;
 
-  function setup(outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>) {
+  function setup(
+    outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>,
+    extraInputs: { signedCredential?: string; credentialOfferUri?: string } = {}
+  ) {
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot(), DeliveryOutcomeListComponent],
+      providers: [
+        // Only instantiated when credentialOfferUri is set (CredentialOfferQrComponent).
+        { provide: TenantService, useValue: { walletUrl: jest.fn(() => 'https://wallet.example'), defaultWalletUrl: jest.fn(() => null) } },
+      ],
     });
     fixture = TestBed.createComponent(DeliveryOutcomeListComponent);
     fixture.componentRef.setInput('outcomes', outcomes);
+    if (extraInputs.signedCredential !== undefined) {
+      fixture.componentRef.setInput('signedCredential', extraInputs.signedCredential);
+    }
+    if (extraInputs.credentialOfferUri !== undefined) {
+      fixture.componentRef.setInput('credentialOfferUri', extraInputs.credentialOfferUri);
+    }
     fixture.detectChanges();
   }
 
@@ -78,5 +94,67 @@ describe('DeliveryOutcomeListComponent', () => {
         expect(boxes()[0].textContent).toContain(expectedKey);
       });
     }
+  });
+
+  /**
+   * Post-release PO polish (2026-09-17): the `direct`/`ui` boxes embed the real artifact instead of
+   * a generic "delivered" line, so it is not duplicated above this list by the host anymore.
+   */
+  describe('embedded artifacts (2026-09-17 polish)', () => {
+    it("embeds the signed credential in the 'direct' box when delivered and provided, instead of the generic text", () => {
+      setup(new Map([['direct', 'delivered']]), { signedCredential: 'signed-jwt-value' });
+
+      const [box] = boxes();
+      expect(box.querySelector('app-copyable-field')).toBeTruthy();
+      expect(box.textContent).not.toContain('credentialIssuance.deliveryOutcome.direct.delivered');
+    });
+
+    it("embeds the QR in the 'ui' box when delivered and provided, instead of the generic text", () => {
+      setup(new Map([['ui', 'delivered']]), { credentialOfferUri: 'openid-credential-offer://?credential_offer_uri=https%3A%2F%2Fexample.com%2Foffer' });
+
+      const [box] = boxes();
+      expect(box.querySelector('app-credential-offer-qr')).toBeTruthy();
+      expect(box.textContent).not.toContain('credentialIssuance.deliveryOutcome.ui.delivered');
+    });
+
+    it("falls back to the generic text when 'direct' is delivered but no signedCredential is provided", () => {
+      setup(new Map([['direct', 'delivered']]));
+
+      const [box] = boxes();
+      expect(box.querySelector('app-copyable-field')).toBeFalsy();
+      expect(box.textContent).toContain('credentialIssuance.deliveryOutcome.direct.delivered');
+    });
+
+    it("falls back to the generic text when 'ui' is delivered but no credentialOfferUri is provided", () => {
+      setup(new Map([['ui', 'delivered']]));
+
+      const [box] = boxes();
+      expect(box.querySelector('app-credential-offer-qr')).toBeFalsy();
+      expect(box.textContent).toContain('credentialIssuance.deliveryOutcome.ui.delivered');
+    });
+
+    it("never embeds the credential in a failed 'direct' box, even if somehow provided", () => {
+      setup(new Map([['direct', 'failed']]), { signedCredential: 'signed-jwt-value' });
+
+      const [box] = boxes();
+      expect(box.querySelector('app-copyable-field')).toBeFalsy();
+      expect(box.textContent).toContain('credentialIssuance.deliveryOutcome.direct.failed');
+    });
+
+    it("bubbles the embedded copyable-field's copied/copyFailed events", () => {
+      setup(new Map([['direct', 'delivered']]), { signedCredential: 'signed-jwt-value' });
+
+      const credentialCopied = jest.fn();
+      const credentialCopyFailed = jest.fn();
+      fixture.componentInstance.credentialCopied.subscribe(credentialCopied);
+      fixture.componentInstance.credentialCopyFailed.subscribe(credentialCopyFailed);
+
+      const copyableField = fixture.debugElement.query(By.directive(CopyableFieldComponent)).componentInstance as CopyableFieldComponent;
+      copyableField.copied.emit();
+      copyableField.copyFailed.emit();
+
+      expect(credentialCopied).toHaveBeenCalled();
+      expect(credentialCopyFailed).toHaveBeenCalled();
+    });
   });
 });

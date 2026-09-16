@@ -1,8 +1,10 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DELIVERY_MODE_OPTIONS, DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
+import { CopyableFieldComponent } from '../copyable-field/copyable-field.component';
+import { CredentialOfferQrComponent } from '../credential-offer-qr/credential-offer-qr.component';
 
 interface DeliveryOutcomeEntry {
   mode: DeliveryModeToken;
@@ -31,15 +33,33 @@ interface DeliveryOutcomeEntry {
  * as each host already had it (`DirectCredentialResultDialogComponent.showOutcomes` = more than one
  * requested channel, AC-04/EC-07; `CredentialOfferDialogComponent.showOutcomes` = more than one
  * channel OR any channel not delivered, AC-05.2/EC-09.1).
+ *
+ * Post-release polish (2026-09-17): the `direct` and `ui` boxes embed the actual artifact instead
+ * of a generic "delivered" line, so it is no longer duplicated above this list -- the signed
+ * credential (`signedCredential`) inside the `direct` box, the QR (`credentialOfferUri`) inside the
+ * `ui` box. Both inputs are optional and only ever consumed when the matching mode is present AND
+ * delivered; a host only passes them when it has ALSO stopped rendering its own standalone copy
+ * (i.e. only while its `showOutcomes` is true -- this component has no visibility of that flag
+ * itself, the host owns the gating). `email` never has an embeddable artifact, so it always falls
+ * back to the generic per-mode text, same as `direct`/`ui` do when their data is absent despite a
+ * `delivered` outcome (a defensive fallback, not an expected path).
  */
 @Component({
   selector: 'app-delivery-outcome-list',
-  imports: [MatIcon, TranslatePipe],
+  imports: [MatIcon, TranslatePipe, CopyableFieldComponent, CredentialOfferQrComponent],
   templateUrl: './delivery-outcome-list.component.html',
   styleUrl: './delivery-outcome-list.component.scss'
 })
 export class DeliveryOutcomeListComponent {
   public readonly outcomes = input.required<ReadonlyMap<DeliveryModeToken, ChannelOutcome>>();
+  /** The `direct` box's own artifact, in place of the generic "delivered" text. See class doc. */
+  public readonly signedCredential = input<string>();
+  /** The `ui` box's own artifact, in place of the generic "delivered" text. See class doc. */
+  public readonly credentialOfferUri = input<string>();
+
+  /** Bubbles the embedded `app-copyable-field`'s events -- the host still owns Done-gating (AD-16). */
+  public readonly credentialCopied = output<void>();
+  public readonly credentialCopyFailed = output<void>();
 
   protected readonly orderedEntries = computed<DeliveryOutcomeEntry[]>(() => {
     const outcomes = this.outcomes();
@@ -50,6 +70,16 @@ export class DeliveryOutcomeListComponent {
 
   protected isDelivered(outcome: ChannelOutcome): boolean {
     return outcome === 'delivered';
+  }
+
+  /** Whether the `direct` box embeds the signed credential instead of the generic text. */
+  protected showsCredential(entry: DeliveryOutcomeEntry): boolean {
+    return entry.mode === 'direct' && this.isDelivered(entry.outcome) && !!this.signedCredential();
+  }
+
+  /** Whether the `ui` box embeds the QR instead of the generic text. */
+  protected showsOffer(entry: DeliveryOutcomeEntry): boolean {
+    return entry.mode === 'ui' && this.isDelivered(entry.outcome) && !!this.credentialOfferUri();
   }
 
   /** The per-mode, per-outcome body copy -- distinct wording for each of the three channels. */
