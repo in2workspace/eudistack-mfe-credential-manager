@@ -37,12 +37,17 @@ describe('CredentialIssuanceComponent', () => {
       effectiveFormatOption$: signal(null) as Signal<any>,
       grantTypeOptions: [],
       selectedGrantType$: signal({ value: 'authorization_code', labelKey: 'key' }) as WritableSignal<any>,
-      deliveryOptions: signal([]) as Signal<any>,
-      selectedDelivery$: signal({ value: 'email', labelKey: 'key' }) as WritableSignal<any>,
+      offerableModes$: signal([
+        { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
+        { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+        { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+      ]) as WritableSignal<any>,
+      selectedDeliveryModes$: signal(new Set()) as WritableSignal<any>,
+      hasDeliveryCatalogReadFailed$: signal(false) as Signal<boolean>,
       // Methods
       updateSelectedType: jest.fn(),
       updateSelectedGrantType: jest.fn(),
-      updateSelectedDelivery: jest.fn(),
+      toggleDeliveryMode: jest.fn(),
       canLeave: jest.fn().mockReturnValue(true),
       canDeactivate: jest.fn().mockReturnValue('canDeactivateReturn'),
       openLeaveConfirm: jest.fn().mockReturnValue(true),
@@ -168,6 +173,9 @@ describe('CredentialIssuanceComponent', () => {
       ]);
       (mockService.selectedCredentialType$ as WritableSignal<any>).set('learcredential.employee');
       (mockService.isFormValid$ as WritableSignal<boolean>).set(form.valid);
+      // A delivery mode must be marked for the submit gate in isolation from ES-01's own gate --
+      // this suite is about the required-field validator, not the delivery selector.
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['email']));
       fixture.detectChanges();
     });
 
@@ -189,6 +197,115 @@ describe('CredentialIssuanceComponent', () => {
       fixture.detectChanges();
 
       expect(submitButton().disabled).toBe(false);
+    });
+  });
+
+  // EUD-233 AD-4/AD-13: replaces the retired mat-radio-group delivery selector.
+  describe('delivery selector (AC-02.x, AC-06, EC-05, ES-01)', () => {
+    const checkboxInputs = (): HTMLInputElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll('mat-checkbox input[type="checkbox"]'));
+    const submitButton = (): HTMLButtonElement =>
+      fixture.nativeElement.querySelector('button[type="submit"]');
+
+    beforeEach(() => {
+      // A submittable form + type, isolated from the required-field suite above -- this suite is
+      // about the delivery gate, not the schema's own validators.
+      const form = new FormGroup({});
+      (mockService.form$ as WritableSignal<any>).set(form);
+      (mockService.credentialFormSchema$ as WritableSignal<any>).set([]);
+      (mockService.selectedCredentialType$ as WritableSignal<any>).set('learcredential.employee');
+      (mockService.isFormValid$ as WritableSignal<boolean>).set(true);
+      fixture.detectChanges();
+    });
+
+    it('renders one checkbox per offerable mode, from offerableModes$ (AC-02.1, AC-02.2, AC-02.4)', () => {
+      expect(checkboxInputs().length).toBe(3);
+    });
+
+    it('renders no checkbox for a mode absent from offerableModes$ (AC-02.5 narrowing)', () => {
+      (mockService.offerableModes$ as WritableSignal<any>).set([
+        { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+      ]);
+      fixture.detectChanges();
+
+      expect(checkboxInputs().length).toBe(1);
+    });
+
+    it('preselects nothing (EC-05)', () => {
+      for (const input of checkboxInputs()) {
+        expect(input.checked).toBe(false);
+      }
+    });
+
+    it('toggling a checkbox calls service.toggleDeliveryMode with the mode and checked state', () => {
+      checkboxInputs()[0].click();
+      fixture.detectChanges();
+
+      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith('direct', true);
+    });
+
+    it('disables submit while no delivery mode is marked, even with a valid form (ES-01)', () => {
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('enables submit once a delivery mode is marked and the form is valid', () => {
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['email']));
+      fixture.detectChanges();
+
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it('refuses to submit and logs, rather than auto-marking a mode, when triggered with none marked (ES-01)', () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      component.onSubmit();
+
+      expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
+      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
+      expect(mockService.toggleDeliveryMode).not.toHaveBeenCalled();
+    });
+  });
+
+  // EUD-233 AD-12: state 4 only, never blocking the form beneath it.
+  describe('delivery catalogue unavailable banner (ES-08)', () => {
+    it('renders nothing when the read has not failed', () => {
+      expect(fixture.nativeElement.querySelector('app-alert-banner')).toBeNull();
+    });
+
+    it('renders the banner when hasDeliveryCatalogReadFailed$ is true', () => {
+      (mockService.hasDeliveryCatalogReadFailed$ as WritableSignal<boolean>).set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-alert-banner')).toBeTruthy();
+    });
+
+    it('does not prevent the type selector from rendering (non-blocking)', () => {
+      (mockService.hasDeliveryCatalogReadFailed$ as WritableSignal<boolean>).set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('mat-select')).toBeTruthy();
+    });
+  });
+
+  // EUD-233 AC-12.1/AC-12.2: the retired KeyGeneratorComponent leaves no trace. Regression only --
+  // the mocked schema below never included a `keys` group (real schemas do not either, post-Task 17).
+  describe('machine credential type has no key-generation surface (AC-12.1, AC-12.2)', () => {
+    it('renders no key-related control for the machine type', () => {
+      (mockService.selectedCredentialType$ as WritableSignal<any>).set('learcredential.machine');
+      (mockService.credentialFormSchema$ as WritableSignal<any>).set([
+        {
+          id: 1,
+          key: 'mandatee',
+          type: 'group',
+          display: 'main',
+          groupFields: [{ key: 'domain', type: 'control', controlType: 'text', validators: [] }]
+        }
+      ]);
+      (mockService.form$ as WritableSignal<any>).set(new FormGroup({}));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-key-generator')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('keys.title');
     });
   });
 
@@ -238,7 +355,7 @@ describe('CredentialIssuanceComponent', () => {
 
       component.onSubmit();
 
-      expect(console.error).toHaveBeenCalledWith('Invalid form: ');
+      expect(console.error).toHaveBeenCalledWith('Invalid form or no delivery mode selected: ');
       expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
       expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
@@ -258,6 +375,7 @@ describe('CredentialIssuanceComponent', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'learcredential.machine' as any;
+      (component as any).selectedDeliveryModes$ = () => new Set(['email']);
 
       component.onSubmit();
 
@@ -269,6 +387,7 @@ describe('CredentialIssuanceComponent', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'type1' as any;
+      (component as any).selectedDeliveryModes$ = () => new Set(['email']);
 
       component.onSubmit();
 
