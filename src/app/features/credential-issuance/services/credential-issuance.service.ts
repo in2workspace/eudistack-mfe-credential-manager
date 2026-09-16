@@ -2,7 +2,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
 import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
@@ -12,6 +12,7 @@ import { requiresRequestHolderKey } from 'src/app/core/helpers/holder-binding-ex
 import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
+import { resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -529,29 +530,44 @@ export class CredentialIssuanceService {
 
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const delivery = this.selectedDelivery$().value;
+      const deliveryModes = [...this.selectedDeliveryModes$()];
       const request = this.withHolderKey(
-        this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType),
+        this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType),
         configId);
 
       return this.sendCredentialRequest(request).pipe(
         timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
         switchMap((response) => {
-          // A 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6): it never reaches
-          // catchError, so a failed channel has to be read out of the body here, on the success
-          // path. Today the form only ever submits one delivery mode at a time, so this branch
-          // is not yet reachable in practice -- but a channel error must never render as success
-          // once a future Story submits more than one mode in the same request.
-          if (this.hasChannelError(response)) {
+          // AD-7: a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
+          // reaches catchError -- each requested channel's outcome is read out of the body here,
+          // on the success path. Replaces the AS-IS hasChannelError(), which treated ANY
+          // responses[].error as total failure and hid whatever had already been delivered
+          // (violated FR-14, AC-04, AC-09, EC-03).
+          const outcomes = resolveChannelOutcomes(response?.responses ?? [], deliveryModes);
+          const isTotalFailure = ![...outcomes.values()].includes('delivered');
+
+          if (isTotalFailure) {
             this.openFailedCreateDialog();
             return EMPTY;
           }
-          // Only flip hasSubmitted$/consume the holder key once the channel error above has been
-          // ruled out (code-review L449): a 207 with a failed channel is a failed attempt, and
-          // marking it as submitted would let canLeave() wave the Operator away from data that
+          // Only flip hasSubmitted$/consume the holder key once total failure has been ruled out
+          // (code-review L449): a 207 where every requested channel failed is a failed attempt,
+          // and marking it as submitted would let canLeave() wave the Operator away from data that
           // never actually issued, holder key included (code-review L508 -- see peek() above).
           this.hasSubmitted$.set(true);
           this.holderKeyStore.clear();
+
+          if (outcomes.get('direct') === 'delivered') {
+            // AD-7's single rule for the credential-success surface. TODO(Task 20): replace with
+            // DirectCredentialResultDialogComponent + HolderPrivateKeyStore.take() once Task 19
+            // builds the component and Task 12 wires the handoff -- this placeholder only
+            // guarantees a direct delivery (solo or hybrid) is never misrouted through the error
+            // dialog or silently dropped.
+            return this.openSuccessfulCreateDialog();
+          }
+          // direct not requested, or requested and failed/missing, but >=1 wallet channel
+          // delivered: unchanged AS-IS behavior (AC-05.1, AC-05.2, AC-09).
+          //
           // AD-3 correction: `credential_offer_uri` is only populated by the backend for
           // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
           // So this branch is already scoped to the QR delivery mode -- removing it (as an
@@ -569,11 +585,6 @@ export class CredentialIssuanceService {
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
-
-  /** EUD-167 D-5/D-6: true once any requested channel came back with an `error`. */
-  private hasChannelError(response: IssuanceResponseDto | undefined): boolean {
-    return !!response?.responses?.some(channel => !!channel.error);
-  }
 
   /**
    * The offer URI, wherever in `responses[]` it landed. Backend only builds one when the requested
@@ -623,10 +634,10 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
-    delivery: IssuanceDelivery,
+    deliveryModes: readonly DeliveryModeToken[],
     grantType: IssuanceGrantType,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, deliveryModes, grantType);
   }
 
 
