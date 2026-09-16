@@ -19,6 +19,7 @@ describe('CredentialOfferDialogComponent', () => {
 
   const mockData: CredentialOfferDialogData = {
     credentialOfferUri: 'openid-credential-offer://?credential_offer_uri=https%3A%2F%2Fexample.com%2Foffer%2F123',
+    outcomes: new Map([['ui', 'delivered']]),
   };
 
   beforeEach(() => {

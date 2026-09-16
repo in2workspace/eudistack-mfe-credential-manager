@@ -15,7 +15,7 @@ import { IssuanceHolderKeyService } from './issuance-holder-key.service';
 import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
-import { resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
+import { ChannelOutcome, resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
 import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
@@ -615,7 +615,7 @@ export class CredentialIssuanceService {
           // response never carries this URI.
           const credentialOfferUri = this.extractCredentialOfferUri(response);
           if (credentialOfferUri) {
-            return this.openCredentialOfferDialog(credentialOfferUri);
+            return this.openCredentialOfferDialog(credentialOfferUri, outcomes);
           }
           return this.openSuccessfulCreateDialog();
         }),
@@ -701,8 +701,14 @@ export class CredentialIssuanceService {
     return this.credentialProcedureService.createProcedure(credentialPayload);
   }
 
-  private openCredentialOfferDialog(credentialOfferUri: string): Observable<any> {
-    const dialogData: CredentialOfferDialogData = { credentialOfferUri };
+  private openCredentialOfferDialog(
+    credentialOfferUri: string,
+    outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>
+  ): Observable<any> {
+    // TODO(Task 25): requiresHolderKeySection/privateKeyHex are wired here once AD-8's full
+    // surface-selection switch lands -- until then this call site is the AS-IS regression path,
+    // which is exactly what leaving them undefined means (no key section rendered).
+    const dialogData: CredentialOfferDialogData = { credentialOfferUri, outcomes };
     const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
       data: dialogData,
       autoFocus: false,
