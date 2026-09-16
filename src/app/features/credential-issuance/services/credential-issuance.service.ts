@@ -163,9 +163,13 @@ export class CredentialIssuanceService {
   public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>> = signal(new Set());
 
   // ES-08: the single trigger for the "catalogue unreadable" banner. States 1/2/3 show nothing --
-  // only a fully failed read (state 4) does.
+  // only a fully failed read (state 4) does. Gated on `!isLoadingCatalog$`: `_deliveryEligibility$`
+  // starts as `{ status: 'unreadable' }` as its fail-closed placeholder before the initial load
+  // resolves (so `resolveOfferableModes` degrades safely if read mid-load), which otherwise made
+  // this signal lie -- true for the whole loading window, not just on a genuine failed read --
+  // flashing the banner on every normal page load.
   public readonly hasDeliveryCatalogReadFailed$ = computed<boolean>(
-    () => this._deliveryEligibility$().status === 'unreadable'
+    () => !this._isLoadingCatalog$() && this._deliveryEligibility$().status === 'unreadable'
   );
 
   // AD-2: claims come from the config that will actually be sent to the backend
