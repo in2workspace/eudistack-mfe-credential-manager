@@ -1,16 +1,18 @@
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
 import { requiresRequestHolderKey } from 'src/app/core/helpers/holder-binding-exemption';
 import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
+import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -127,21 +129,38 @@ export class CredentialIssuanceService {
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]> = GRANT_TYPE_OPTIONS;
   public selectedGrantType$ = signal<GrantTypeOption>(GRANT_TYPE_OPTIONS[0]);
 
-  // DELIVERY SELECTOR
+  // DELIVERY SELECTOR (EUD-233)
   //
-  // Derived from the selected configuration's published metadata rather than being a fixed list
-  // (EUD-168): a credential type bound to a holder key cannot be delivered without a wallet, and the
-  // form must not offer what issuance would reject. Reading the same field the issuer decides with
-  // (proof_types_supported) is what keeps the two from drifting apart.
-  //
-  // Today this narrows nothing: DELIVERY_OPTIONS holds only wallet modes, which are always eligible.
-  // The seam exists so that adding the direct mode (EUD-233) cannot silently offer it for every type.
-  public readonly deliveryOptions = computed<readonly DeliveryOption[]>(() => {
+  // The tenant's published delivery-eligibility snapshot governs all three modes in the nominal path
+  // (AD-1): a modes array for the current configId, read literally, no re-derivation (AC-02.3). The
+  // degraded states (2: pre-EUD-169 Issuer; 4: catalogue unreadable) fall back to the same schema-only
+  // rule EUD-168 already had -- a type bound to a holder key cannot be delivered without a wallet --
+  // scoped to WALLET_DELIVERY_MODE_OPTIONS, which never contains 'direct'.
+  private readonly _deliveryEligibility$ = signal<DeliveryEligibilitySnapshot>({ status: 'unreadable' });
+
+  public readonly offerableModes$ = computed<readonly DeliveryModeOption[]>(() => {
     const configId = this.effectiveFormatOption$()?.configId;
-    const config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
-    return resolveOfferableDeliveryOptions(config, DELIVERY_OPTIONS);
+    if (!configId) {
+      return [];
+    }
+
+    const snapshot = this._deliveryEligibility$();
+    const modes = snapshot.status === 'read' ? snapshot.modesByConfigId.get(configId) : undefined;
+
+    if (modes !== undefined) {
+      // States 1 and 3: literally what the tenant catalogue resolved. Filtering the fixed
+      // DELIVERY_MODE_OPTIONS catalogue by membership (rather than mapping over `modes` directly)
+      // keeps render order at direct -> ui -> email regardless of the wire array's own order.
+      return DELIVERY_MODE_OPTIONS.filter(option => modes.includes(option.value));
+    }
+
+    // States 2 (no entry for this configId) and 4 (whole read unreadable) share the exact same
+    // fallback per AD-9's table: the schema-derived, wallet-only catalogue.
+    const config = this.metadataService.getConfigurationById(configId);
+    return resolveOfferableDeliveryOptions(config, WALLET_DELIVERY_MODE_OPTIONS);
   });
-  public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
+
+  public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>> = signal(new Set());
 
   // AD-2: claims come from the config that will actually be sent to the backend
   // (effectiveFormatOption.configId), not from the type: two formats of the same
@@ -217,6 +236,7 @@ export class CredentialIssuanceService {
   private readonly metadataService = inject(CredentialIssuerMetadataService);
   private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+  private readonly credentialCatalogService = inject(CredentialCatalogService);
 
   constructor() {
     // Load credential configurations once so format options are available,
@@ -229,21 +249,42 @@ export class CredentialIssuanceService {
     // every other screen. Both are started at once rather than chained: neither needs the
     // other's result, and the selector reads them through signals that recompute on their own.
     //
-    // Until both settle the screen has nothing truthful to say about the catalogue, so it says
+    // Since EUD-233, a third source joins the same wait: the tenant's delivery-eligibility
+    // snapshot (AD-11). `loadDeliveryEligibility()` never fails the stream (Task 7) -- it degrades
+    // internally to catalogue state 4 -- so joining it here cannot leave `isLoadingCatalog$` stuck.
+    //
+    // Until all three settle the screen has nothing truthful to say about the catalogue, so it says
     // exactly that (isLoadingCatalog$) instead of letting the still-empty type list speak for it.
     forkJoin([
       defer(() => this.issuanceUiPolicy.load()),
       this.metadataService.loadMetadata(),
+      this.credentialCatalogService.loadDeliveryEligibility(),
     ])
       .pipe(
         takeUntilDestroyed(),
-        // `finalize` rather than the subscriber's `complete`: today neither source can fail the
-        // stream (loadMetadata() swallows its own error, load() never rejects), so the flag
-        // would fall either way — but if that ever changes, a spinner that never stops is a
-        // worse outcome than the empty state it replaces.
+        tap(([, , deliveryEligibility]) => this._deliveryEligibility$.set(deliveryEligibility)),
+        // `finalize` rather than the subscriber's `complete`: none of the three sources can fail
+        // the stream (loadMetadata() swallows its own error, load() never rejects,
+        // loadDeliveryEligibility() degrades instead of erroring), so the flag would fall either
+        // way — but if that ever changes, a spinner that never stops is a worse outcome than the
+        // empty state it replaces.
         finalize(() => this._isLoadingCatalog$.set(false))
       )
       .subscribe();
+
+    // EC-01: prune marked modes that the current offerable set no longer includes -- on any change
+    // that affects it, a type change (which resets the format, and therefore the configId) or a
+    // format change within the same type (a different configId, same type). An `effect`, not a
+    // `computed`, because pruning writes to state; the visibility of each checkbox stays a `computed`
+    // (`offerableModes$` itself).
+    effect(() => {
+      const offerable = new Set(this.offerableModes$().map(option => option.value));
+      const current = this.selectedDeliveryModes$();
+      const pruned = new Set([...current].filter(mode => offerable.has(mode)));
+      if (pruned.size !== current.size) {
+        this.selectedDeliveryModes$.set(pruned);
+      }
+    });
   }
 
   public updateSelectedType(selectedCredentialType: IssuanceCredentialType, select: MatSelect) {
@@ -270,8 +311,16 @@ export class CredentialIssuanceService {
     this.selectedGrantType$.set(option);
   }
 
-  public updateSelectedDelivery(option: DeliveryOption): void {
-    this.selectedDelivery$.set(option);
+  /** AD-4/AD-13: a checkbox toggle, never a value swap -- no path exists that unmarks another mode. */
+  public toggleDeliveryMode(token: DeliveryModeToken, checked: boolean): void {
+    const current = this.selectedDeliveryModes$();
+    const next = new Set(current);
+    if (checked) {
+      next.add(token);
+    } else {
+      next.delete(token);
+    }
+    this.selectedDeliveryModes$.set(next);
   }
 
   // if the message is new, add it; otherwise, delete it
