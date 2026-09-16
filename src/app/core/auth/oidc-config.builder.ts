@@ -25,6 +25,13 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     redirectUrl: IAM_REDIRECT_URI,
     postLogoutRedirectUri: IAM_POST_LOGOUT_URI,
     clientId,
+    // angular-auth-oidc-client's logoff() never sends client_id on its own — RP-Initiated
+    // Logout's id_token_hint carries it implicitly via `aud`. But when id_token_hint itself
+    // fails validation (the case consumeSessionExpiredRedirect() in AuthService handles),
+    // the Verifier has no other way to know which client is logging out and falls back to
+    // its raw JSON error. Setting it here merges it into every end-session request
+    // automatically (UrlService reads customParamsEndSessionRequest off the config).
+    customParamsEndSessionRequest: { client_id: clientId },
     scope: IAM_PARAMS.SCOPE,
     responseType: IAM_PARAMS.GRANT_TYPE,
     silentRenew: true,
@@ -33,6 +40,12 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     ignoreNonceAfterRefresh: true,
     triggerRefreshWhenIdTokenExpired: false,
     autoUserInfo: false,
+    // Clock-skew tolerance for the id_token `iat` check (library default 120s).
+    // Set from environment.max_id_token_iat_offset_seconds (300s) so a device or
+    // IdP clock a few minutes out doesn't get its token rejected on the login
+    // callback — which used to surface as a silent redirect to /home. The OIDC
+    // replay-window check stays ON: `disableIatOffsetValidation` is unset.
+    maxIdTokenIatOffsetAllowedInSeconds: environment.max_id_token_iat_offset_seconds,
     secureRoutes: [serverUrl || '/'].filter((r): r is string => !!r),
   };
 }
