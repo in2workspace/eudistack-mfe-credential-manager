@@ -5,8 +5,15 @@ import {
   IssuanceLEARCredentialMachinePayload
 } from '../../../core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
+import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
+
+/** EUD-233 AD-6: the did:key now travels as this typed parameter, never formData['keys']['didKey']. */
+const holderBindingWith = (didKey: string): HolderBinding => ({
+  didKey,
+  publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' }
+});
 
 describe('IssuanceRequestFactoryService', () => {
   let service: IssuanceRequestFactoryService;
@@ -91,12 +98,11 @@ describe('IssuanceRequestFactoryService', () => {
           organizationIdentifier: '246',
           serialNumber: 'S246'
         },
-        mandatee: { domain: 'example.com', ipAddress: '127.0.0.1' },
-        keys: { didKey: 'did:desmos:abc' }
+        mandatee: { domain: 'example.com', ipAddress: '127.0.0.1' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:desmos:abc'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     // Acceptem camps extra (p. ex. email: undefined) amb toMatchObject
@@ -137,12 +143,11 @@ describe('IssuanceRequestFactoryService', () => {
           organizationIdentifier: 'VATDE-555',
           serialNumber: 'SN555'
         },
-        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
-        keys: { didKey: 'did:test' }
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:test'));
     const mach = result.payload as IssuanceLEARCredentialMachinePayload;
 
     expect(mach.mandator.commonName).toBe('MachineCo');
@@ -192,12 +197,36 @@ describe('IssuanceRequestFactoryService', () => {
       formData: {
         power: { Onboarding: { Execute: true } },
         mandator: null,
-        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
-        keys: { didKey: 'did:test' }
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:test'));
     expect(console.error).toHaveBeenCalledWith('Error getting mandator.');
+    expect(result.payload).toEqual({});
+  });
+
+  // EUD-233 AD-6: the machine payload is inconstruible without a holder binding -- an absent one
+  // (upstream invariant broken) is treated exactly like an absent mandator, never silently defaulted.
+  it('should return empty payload and log error when no holder binding is provided for a machine type', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { Onboarding: { Execute: true } },
+        mandator: {
+          firstName: 'Eve',
+          lastName: 'Doe',
+          organization: 'Tech Corp',
+          country: 'ES',
+          organizationIdentifier: '246',
+          serialNumber: 'S246'
+        },
+        mandatee: { domain: 'example.com', ipAddress: '127.0.0.1' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+
+    expect(console.error).toHaveBeenCalledWith('Error building machine credential request: no holder binding provided.');
     expect(result.payload).toEqual({});
   });
 
@@ -216,12 +245,11 @@ describe('IssuanceRequestFactoryService', () => {
       },
       formData: {
         power: { Onboarding: { Execute: true } },
-        mandatee: { domain: 'machine.com', ipAddress: '10.0.0.1' },
-        keys: { didKey: 'did:key:abc' }
+        mandatee: { domain: 'machine.com', ipAddress: '10.0.0.1' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:key:abc'));
 
     expect(authServiceMock.getMandateeEmail).toHaveBeenCalled();
     expect(result.email).toBe('mandatee@example.com');
@@ -240,12 +268,11 @@ describe('IssuanceRequestFactoryService', () => {
       staticData: {},
       formData: {
         power: { Onboarding: { Execute: true } },
-        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' },
-        keys: { didKey: 'did:key:abc' }
+        mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
 
-    expect(() => service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg'))
+    expect(() => service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:key:abc')))
       .toThrow('Could not get valid mandator on behalf');
   });
 
@@ -289,12 +316,11 @@ describe('IssuanceRequestFactoryService', () => {
           organizationIdentifier: 'VATES-999',
           serialNumber: 'SN999'
         },
-        mandatee: { domain: 'machine.org', ipAddress: '10.0.0.2' },
-        keys: { didKey: 'did:key:xyz' }
+        mandatee: { domain: 'machine.org', ipAddress: '10.0.0.2' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:key:xyz'));
 
     expect(result.email).toBe('alice@example.com');
   });
@@ -313,12 +339,11 @@ describe('IssuanceRequestFactoryService', () => {
           serialNumber: 'SN111'
           // email intentionally omitted
         },
-        mandatee: { domain: 'nomail.org' },
-        keys: { didKey: 'did:key:nomail' }
+        mandatee: { domain: 'nomail.org' }
       }
     };
 
-    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg');
+    const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:key:nomail'));
 
     expect(result.email).toBe('');
   });
