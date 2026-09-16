@@ -18,7 +18,7 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { guardUnloadWhileUnsaved, UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
 import { CredentialCatalogEntry, CredentialCatalogRow, FORMAT_FAMILY_LABEL_KEYS } from './catalog.models';
-import { CredentialCatalogService } from './credential-catalog.service';
+import { CredentialCatalogAdminService } from './credential-catalog-admin.service';
 
 /**
  * CredentialCatalogComponent (EUD-72, US-02)
@@ -66,7 +66,7 @@ export class CredentialCatalogComponent implements OnInit, CanComponentDeactivat
   private readonly baseline = signal<CredentialCatalogEntry[]>([]);
 
   private readonly authService = inject(AuthService);
-  private readonly catalogService = inject(CredentialCatalogService);
+  private readonly catalogService = inject(CredentialCatalogAdminService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly tenantService = inject(TenantService);
   private readonly translate = inject(TranslateService);

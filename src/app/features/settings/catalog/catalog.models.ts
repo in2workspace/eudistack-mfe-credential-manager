@@ -1,16 +1,11 @@
 /**
- * One entry of the tenant credential catalog, as returned by
- * `GET /api/v1/backoffice/credential-catalog`. The backend returns *every* type of the global
- * registry, each with the `enabled` flag for the current tenant.
- *
- * `displayName` falls back to `credentialConfigurationId` when the credential profile
- * carries no display name — the backend does not localize it (EUD-72, D4).
+ * Re-exported from `core/models/dto/credential-catalog.dto.ts` (EUD-233 AD-2): the `GET` this shape
+ * describes now has one canonical adapter, `core/services/credential-catalog.service.ts`, consumed
+ * both by this screen and by the issuance form. Kept as a re-export rather than an import-and-use at
+ * every call site so this feature's own files do not need to change their import path.
  */
-export interface CredentialCatalogEntry {
-  credentialConfigurationId: string;
-  displayName: string;
-  enabled: boolean;
-}
+import type { CredentialCatalogEntry } from 'src/app/core/models/dto/credential-catalog.dto';
+export type { CredentialCatalogEntry };
 
 /**
  * One rendered row: a catalog entry plus the format and version read off its id.

@@ -4,11 +4,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { environment } from 'src/environments/environment';
 import { API_PATH } from 'src/app/core/constants/api-paths.constants';
 import { TenantService } from 'src/app/core/services/tenant.service';
-import { CredentialCatalogService } from './credential-catalog.service';
+import { CredentialCatalogAdminService } from './credential-catalog-admin.service';
 import { CredentialCatalogEntry } from './catalog.models';
 
-describe('CredentialCatalogService', () => {
-  let service: CredentialCatalogService;
+describe('CredentialCatalogAdminService', () => {
+  let service: CredentialCatalogAdminService;
   let httpMock: HttpTestingController;
 
   const url = `${environment.server_url}${API_PATH.CREDENTIAL_CATALOG}`;
@@ -21,13 +21,18 @@ describe('CredentialCatalogService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        CredentialCatalogService,
+        CredentialCatalogAdminService,
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TenantService, useValue: { serverUrl: environment.server_url } }
       ]
     });
-    service = TestBed.inject(CredentialCatalogService);
+    // CredentialCatalogAdminService.getCatalog() now delegates to the core CredentialCatalogService
+    // (EUD-233 AD-2). Left as a real instance (not mocked) rather than provided explicitly above: it
+    // is providedIn: 'root', shares the same HttpClient testing providers, so the GET this spec
+    // asserts on is still the single call HttpTestingController intercepts -- delegation adds a hop
+    // in the source, not a second HTTP round-trip.
+    service = TestBed.inject(CredentialCatalogAdminService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
