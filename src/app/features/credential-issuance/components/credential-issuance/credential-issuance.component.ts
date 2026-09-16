@@ -16,6 +16,8 @@ import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/c
 import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { AlertBannerComponent } from 'src/app/shared/components/alert-banner/alert-banner.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
+import { KeyGeneratorService } from '../../services/key-generator.service';
+import { IssuanceHolderKeyService } from '../../services/issuance-holder-key.service';
 import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, DeliveryModeOption, DeliveryModeToken, GrantTypeOption, IssuanceCredentialType, IssuanceStaticViewModel } from 'src/app/core/models/entity/lear-credential-issuance';
 
 /**
@@ -25,7 +27,11 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
  */
 @Component({
     selector: 'app-credential-issuance',
-    providers: [CredentialIssuanceService],
+    // EUD-233 AD-6: KeyGeneratorService and IssuanceHolderKeyService live at this level, never
+    // root -- the narrowest injector shared by the form and its application service, so the
+    // private key material they handle cannot outlive the form. Inherited from the deleted
+    // KeyGeneratorComponent, which used to be the (wrong, component-local) home for the first one.
+    providers: [CredentialIssuanceService, KeyGeneratorService, IssuanceHolderKeyService],
     imports: [AlertBannerComponent, CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'

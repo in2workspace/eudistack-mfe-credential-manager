@@ -4,7 +4,6 @@ import { AuthService } from "src/app/core/services/auth.service";
 import { CountryService } from "src/app/shared/services/country.service";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
 import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
-import { KeyGeneratorComponent } from "../../components/key-generator/key-generator.component";
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 
 @Injectable({ providedIn: 'root' })
@@ -42,23 +41,10 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
       type: 'learcredential.machine',
       schema:
       [
-      // KEYS
-      {
-        key: 'keys',
-        type: 'group',
-        display: 'main',
-        custom: {
-          component: KeyGeneratorComponent
-        },
-        groupFields: [
-          {
-            key: 'didKey',
-            type: 'control',
-            controlType: 'text',
-            validators: [{name: 'required'}]
-          }
-        ]
-      },
+      // EUD-233 AC-12.1: no `keys` group here -- the holder key pair is generated invisibly in
+      // the submit command (IssuanceHolderKeyService, AD-6), never as a form step. The schema is
+      // structurally identical to any other type's: no group, no control, no validator to retire
+      // later -- there is nothing to hide, only nothing to declare.
       // MANDATEE
       {
         key: 'mandatee',

@@ -1,7 +1,6 @@
 {
   "next": "Següent",
   "back": "Tornar",
-  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
@@ -429,7 +428,6 @@
         "top_level_domain_part_min": "La part entre l'últim punt i el final ha de tenir almenys 2 caràcters."
       },
       "org_id_startsWithVAT": "Introdueix l'ID sense el prefix VAT- ni el de país",
-      "no_key": "Cal generar una clau privada.",
       "no_power": "Afegeix almenys un poder",
       "no_function": "Cada poder ha de tenir almenys una funció"
     }
@@ -442,12 +440,6 @@
     "delete" : "Eliminar",
     "save" : "Desar",
     "loading-default-title": "Esperi mentre es completa el procés..."
-  },
-  "keys": {
-    "title": "Clau privada",
-    "buttonText": "Generar clau",
-    "alert": "Asseguri's de guardar aquesta clau.",
-    "tooltip": "La clau privada és un secret que et permet signar i demostrar la propietat de la credencial. Sense ella, no pots usar la credencial. Guarda-la de manera segura i no la comparteixis."
   },
   "countries": {
     "spain": "Espanya",

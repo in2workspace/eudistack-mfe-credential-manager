@@ -1,7 +1,6 @@
 {
   "next": "Siguiente",
   "back": "Volver",
-  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
@@ -454,7 +453,6 @@
         "top_level_domain_part_min": "La parte entre el último punto y el final debe tener un mínimo de 2 caracteres."
       },
       "org_id_startsWithVAT": "Introduzca el ID sin el prefijo VAT- ni el de país",
-      "no_key": "Tiene que generar una llave privada.",
       "no_power": "Añade por lo menos un poder",
       "no_function": "Cada poder debe tener por lo menos una acción"
     }
@@ -467,12 +465,6 @@
     "delete": "Eliminar",
     "save": "Guardar",
     "loading-default-title": "Espere mientras se completa el proceso..."
-  },
-  "keys": {
-    "title": "Llave privada",
-    "buttonText": "Generar llave",
-    "alert": "Asegúrese de guardar esa llave.",
-    "tooltip": "La clave privada es un secreto que te permite firmar y demostrar la propiedad de la credencial. Sin ella, no puedes usar la credencial. Guárdala de manera segura y no la compartas."
   },
   "countries": {
     "spain": "España",

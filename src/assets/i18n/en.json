@@ -1,7 +1,6 @@
 {
   "next": "Next",
   "back": "Back",
-  "copy": "Copy",
   "verifiable-credential": "Verifiable Credential",
   "digital-wallet": "Digital Wallet",
   "home": {
@@ -454,7 +453,6 @@
         "top_level_domain_part_min": "The portion of the domain after the last '.' must be at least 2 characters long."
       },
       "org_id_startsWithVAT": "Enter the id without VAT nor the country prefix",
-      "no_key": "You need to generate a key to submit.",
       "no_power": "You need to add at least one power",
       "no_function": "Each power must have at least one selected function"
     }
@@ -467,12 +465,6 @@
     "delete": "Delete",
     "save": "Save",
     "loading-default-title": "Please wait while the process is completed..."
-  },
-  "keys": {
-    "title": "Private Key",
-    "buttonText": "Generate Key",
-    "alert": "Make sure to copy this key.",
-    "tooltip": "Your private key is a secret that lets you sign and prove ownership of your credential. Without it you can’t use your credential. Store it safely, back it up and never share it."
   },
   "countries": {
     "spain": "Spain",
