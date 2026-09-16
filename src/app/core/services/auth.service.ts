@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, Signal, WritableSignal, signal, DestroyRef } from '@angular/core';
-import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
+import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService, ValidationResult } from 'angular-auth-oidc-client';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
@@ -8,7 +8,7 @@ import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { IAM_POST_LOGIN_ROUTE, PUBLIC_ROUTE_PREFIXES } from '../constants/iam.constants';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { MeService } from './me.service';
@@ -109,6 +109,39 @@ export class AuthService{
    */
   private static readonly SSO_SILENT_ATTEMPT_KEY = 'sso_silent_attempted';
 
+  /**
+   * Value of the `error` query param the Verifier redirects to
+   * (`<loginPageUri>?error=session_expired`) when RP-Initiated Logout rejects
+   * the request (e.g. a stale `id_token_hint`) instead of exposing its raw
+   * error response. See `consumeSessionExpiredRedirect()`.
+   */
+  private static readonly SESSION_EXPIRED_ERROR = 'session_expired';
+
+  /**
+   * Set by the `NewAuthenticationResult` handler when the auth library itself
+   * rejects a token on the login callback: bad signature / audience / nonce,
+   * or — the common one — an id_token whose `iat` is further from now than
+   * `maxIdTokenIatOffsetAllowedInSeconds` allows (a device or IdP clock out of
+   * sync). `checkAuth$()` reads it in the same synchronous turn to (a) show the
+   * user *why* sign-in failed instead of a silent bounce to /home, and (b) skip
+   * the one-shot `prompt=none` retry, which would only mint another token that
+   * fails the very same check.
+   */
+  private tokenValidationError: ValidationResult | null = null;
+
+  /**
+   * `NewAuthenticationResult` values that are not real failures and must never
+   * raise feedback: `Ok` (valid), `NotSet` (nothing was evaluated) and
+   * `LoginRequired` — the expected reply to the one-shot silent SSO probe
+   * (see `trySilentSsoOnce`), which `checkAuth$()` already treats as a normal
+   * "not authenticated" state.
+   */
+  private static readonly BENIGN_VALIDATION_RESULTS: readonly ValidationResult[] = [
+    ValidationResult.Ok,
+    ValidationResult.NotSet,
+    ValidationResult.LoginRequired,
+  ];
+
   public constructor() {
     this.subscribeToAuthEvents();
     this.checkAuth$().subscribe();
@@ -123,7 +156,8 @@ export class AuthService{
             EventTypes.SilentRenewStarted,
             EventTypes.SilentRenewFailed,
             EventTypes.IdTokenExpired,
-            EventTypes.TokenExpired
+            EventTypes.TokenExpired,
+            EventTypes.NewAuthenticationResult
           ].includes(e.type)
         )
       )
@@ -174,6 +208,22 @@ export class AuthService{
           case EventTypes.TokenExpired:
             console.error('Session expired at: ' + Date.now(), event);
             break;
+
+          case EventTypes.NewAuthenticationResult: {
+            // Fired both on success and on failure. We only care about a failed,
+            // non-silent result here — a rejected token from the login callback
+            // (e.g. `iat` clock skew -> MaxOffsetExpired). Silent-renew failures
+            // already route through SilentRenewFailed -> authorize().
+            const result = event.value as {
+              isAuthenticated?: boolean;
+              validationResult?: ValidationResult;
+              isRenewProcess?: boolean;
+            } | undefined;
+            if (result?.isAuthenticated === false && !result.isRenewProcess) {
+              this.recordTokenValidationError(result.validationResult);
+            }
+            break;
+          }
         }
       });
   }
@@ -189,30 +239,12 @@ export class AuthService{
     return this.oidcSecurityService.checkAuth().pipe(
       take(1),
       tap(({ isAuthenticated, userData }) => {
-      if (isAuthenticated) {
-        this.userPowers.set(this.extractPowersFromClaims(userData));
-        if (!this.isAuthorizedForCurrentTenant()) {
-          console.error('Checking authentication: session scoped to a different tenant.');
-          this.rejectCrossTenantSession();
-          return;
+        if (isAuthenticated) {
+          this.handleAuthenticatedCheck(userData);
+        } else {
+          silentSsoRedirectPending = this.handleUnauthenticatedCheck();
         }
-
-        this.isAuthenticatedSubject.next(true);
-        this.userDataSubject.next(userData);
-        this.handleUserAuthentication(userData);
-        this.refreshRoleFromBackend();
-
-        if (this.router.url === '/' || this.router.url.startsWith('/home')) {
-          this.router.navigate([IAM_POST_LOGIN_ROUTE]);
-        }
-      } else {
-        this.isAuthenticatedSubject.next(false);
-        console.error('Checking authentication: not authenticated.');
-        if (!this.isOnPublicRoute()) {
-          silentSsoRedirectPending = this.trySilentSsoOnce();
-        }
-      }
-    }),
+      }),
     catchError((err:Error)=>{
       console.error('Checking authentication: error in initial authentication.');
       return throwError(()=>err);
@@ -222,6 +254,62 @@ export class AuthService{
         this.authCheckCompleteSubject.next(true);
       }
     }));
+  }
+
+  private handleAuthenticatedCheck(userData: UserDataAuthenticationResponse): void {
+    this.userPowers.set(this.extractPowersFromClaims(userData));
+    if (!this.isAuthorizedForCurrentTenant()) {
+      console.error('Checking authentication: session scoped to a different tenant.');
+      this.rejectCrossTenantSession();
+      return;
+    }
+
+    this.isAuthenticatedSubject.next(true);
+    this.userDataSubject.next(userData);
+    this.handleUserAuthentication(userData);
+    this.refreshRoleFromBackend();
+
+    if (this.router.url === '/' || this.router.url.startsWith('/home')) {
+      this.router.navigate([IAM_POST_LOGIN_ROUTE]);
+    }
+  }
+
+  /**
+   * Returns true when a silent-SSO redirect was actually launched, so checkAuth$()'s
+   * finalize() knows to keep authCheckComplete$ pending instead of flipping it before the
+   * async `prompt=none` navigation actually leaves the page (see the comment on
+   * `silentSsoRedirectPending` at the top of checkAuth$()).
+   */
+  private handleUnauthenticatedCheck(): boolean {
+    this.isAuthenticatedSubject.next(false);
+
+    const validationError = this.tokenValidationError;
+    this.tokenValidationError = null;
+
+    if (validationError) {
+      // The auth library rejected the token itself (commonly `iat` clock
+      // skew -> MaxOffsetExpired). A silent prompt=none retry would fail
+      // the same way, so land on /home and tell the user why instead of
+      // redirecting there in silence. Navigate first so the dialog is not
+      // painted over a protected view that is about to unmount (same
+      // reasoning as rejectCrossTenantSession).
+      console.error('Checking authentication: token rejected by the auth library:', validationError);
+      if (!this.isOnPublicRoute()) {
+        this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
+      }
+      return false;
+    }
+
+    console.error('Checking authentication: not authenticated.');
+    // consumeSessionExpiredRedirect() short-circuits trySilentSsoOnce() on
+    // purpose: the user just attempted an explicit logout and the Verifier
+    // rejected it (stale id_token_hint) — the Verifier's own SSO session may
+    // still be active, and an automatic prompt=none re-authentication here
+    // would silently undo the logout the user just asked for.
+    if (this.consumeSessionExpiredRedirect() || this.isOnPublicRoute()) {
+      return false;
+    }
+    return this.trySilentSsoOnce();
   }
 
   /**
@@ -261,6 +349,22 @@ export class AuthService{
     sessionStorage.setItem(AuthService.SSO_SILENT_ATTEMPT_KEY, 'true');
     this.oidcSecurityService.authorize(undefined, { customParams: { prompt: 'none' } });
     return true;
+  }
+
+  private recordTokenValidationError(result: ValidationResult | undefined): void {
+    if (!result || AuthService.BENIGN_VALIDATION_RESULTS.includes(result)) {
+      return;
+    }
+    this.tokenValidationError = result;
+  }
+
+  private notifyTokenValidationFailure(result: ValidationResult): void {
+    const messageKey = result === ValidationResult.MaxOffsetExpired
+      ? 'error.auth.clockSkew'
+      : 'error.auth.tokenRejected';
+    const title = this.translate.instant('error.auth.title');
+    const message = this.translate.instant(messageKey);
+    this.dialog.openErrorInfoDialog(DialogComponent, message, title);
   }
 
   /**
@@ -383,18 +487,105 @@ export class AuthService{
     this.oidcSecurityService.logoff().subscribe({
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
-        this.isAuthenticatedSubject.next(false);
-        this.userDataSubject.next(null);
-        this.tokenSubject.next('');
-        this.mandatorSubject.next(null);
-        this.mandateeEmailSubject.next('');
-        this.nameSubject.next('');
-        this.userPowers.set([]);
-        this.resetSessionRoleState();
-        sessionStorage.clear();
+        this.resetLocalAuthState();
         this.router.navigate(['/home']);
       }
     });
+  }
+
+  /**
+   * Tears down every piece of local session state: the auth subjects, the
+   * role/tenant state and `sessionStorage` (where angular-auth-oidc-client
+   * keeps its own PKCE/token artifacts). Shared by the two paths that reach
+   * this point without a working RP-Initiated Logout round trip: logout()'s
+   * local-library-failure fallback, and consumeSessionExpiredRedirect() below
+   * (the Verifier rejected the logout request itself).
+   */
+  private resetLocalAuthState(): void {
+    this.isAuthenticatedSubject.next(false);
+    this.userDataSubject.next(null);
+    this.tokenSubject.next('');
+    this.mandatorSubject.next(null);
+    this.mandateeEmailSubject.next('');
+    this.nameSubject.next('');
+    this.userPowers.set([]);
+    this.resetSessionRoleState();
+    sessionStorage.clear();
+  }
+
+  /**
+   * Detects a landing from the Verifier's OIDC logout failure redirect
+   * (`<loginPageUri>?error=session_expired`, added when `id_token_hint` was
+   * stale/expired instead of exposing the raw OAuth2 error response) and, if
+   * present, clears any leftover local session state and surfaces a guiding
+   * message instead of leaving the user on an inconsistent screen.
+   *
+   * Reads `location.search` directly rather than `ActivatedRoute`/`router.url`,
+   * for the same reason as `isOnPublicRoute()`: this runs from checkAuth$() at
+   * bootstrap, before the Angular router has resolved the initial navigation.
+   *
+   * Returns true when it handled such a redirect, so the caller can skip the
+   * silent-SSO retry (see the comment at its call site).
+   */
+  private consumeSessionExpiredRedirect(): boolean {
+    const params = new URLSearchParams(globalThis.location.search);
+    if (params.get('error') !== AuthService.SESSION_EXPIRED_ERROR) {
+      return false;
+    }
+
+    this.resetLocalAuthState();
+    this.stripSessionExpiredParamAfterInitialNavigation();
+    this.showSessionExpiredDialog();
+
+    return true;
+  }
+
+  /**
+   * Waits for the Router's first `NavigationEnd` before touching the URL bar. `app.routes.ts`
+   * redirects `''` to `home`, and Angular preserves query params across that redirect by
+   * default — so stripping `error=session_expired` before that initial navigation settles gets
+   * silently overwritten once it completes, and a page refresh lands right back on the same
+   * query param, re-showing the dialog. `router.navigated` is `false` until the very first
+   * navigation resolves; once it's `true`, nothing else will touch the URL on its own, so it's
+   * safe to strip immediately.
+   */
+  private stripSessionExpiredParamAfterInitialNavigation(): void {
+    if (this.router.navigated) {
+      this.stripSessionExpiredParam();
+      return;
+    }
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      take(1)
+    ).subscribe(() => this.stripSessionExpiredParam());
+  }
+
+  /**
+   * Removes `error=session_expired` from the URL bar after handling it, so a
+   * page refresh does not re-clear the (by then legitimate) session or
+   * re-show the dialog.
+   */
+  private stripSessionExpiredParam(): void {
+    const params = new URLSearchParams(globalThis.location.search);
+    params.delete('error');
+    const query = params.toString();
+    globalThis.history.replaceState(null, '', globalThis.location.pathname + (query ? `?${query}` : ''));
+  }
+
+  /**
+   * `translate.instant()` returns the raw key instead of the translation until the i18n JSON
+   * (fetched over HTTP by `TranslateHttpLoader`) has finished loading — a race this call
+   * reliably loses, since it runs from `checkAuth$()` at bootstrap. `get()` waits for it.
+   */
+  private showSessionExpiredDialog(): void {
+    this.translate.get(['error.sessionExpired.title', 'error.sessionExpired.message'])
+      .subscribe((translations) => {
+        this.dialog.openErrorInfoDialog(
+          DialogComponent,
+          translations['error.sessionExpired.message'],
+          translations['error.sessionExpired.title']
+        );
+      });
   }
 
   /**

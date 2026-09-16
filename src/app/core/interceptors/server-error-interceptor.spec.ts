@@ -7,6 +7,7 @@ import { ServeErrorInterceptor } from "./server-error-interceptor";
 import { DialogComponent } from "src/app/shared/components/dialog/dialog-component/dialog.component";
 import { TenantService } from "../services/tenant.service";
 import { signal } from "@angular/core";
+import { API_PATH } from '../constants/api-paths.constants';
 
 const TEST_IAM_URL = 'https://verifier.test.example.org';
 
@@ -240,6 +241,47 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
       ['/api/v1/issuances', 'an API path'],
       ['/admin/v1/credential-assets', 'a path ending in the word'],
     ])('should still show the dialog for %s (%s)', url => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 404, statusText: 'Not Found', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+      translateServiceSpy.instant.mockReturnValue('error.not_found');
+
+      interceptor.intercept({ ...httpRequest, url } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: () => undefined,
+      });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.not_found');
+    });
+  });
+
+  // The credential catalog screen (EUD-72) owns its own error states, retry action
+  // included, for every failure shape — so a blocking dialog on top of it must never fire.
+  describe('credential catalog endpoint', () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it.each([
+      ['a path relative to the base href', `issuer${API_PATH.CREDENTIAL_CATALOG}`],
+      ['an absolute path', API_PATH.CREDENTIAL_CATALOG],
+      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_CATALOG}`],
+    ])('should rethrow without a dialog for %s (any status, e.g. an unexpected 200-with-HTML)', (_label, url) => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 200, statusText: 'OK', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ ...httpRequest, url } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen?.status).toBe(200);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    // Segment boundary: a path that merely ends with a similar suffix must not match.
+    it('should still show the dialog for an unrelated path', () => {
+      const url = '/issuer/api/v1/not-credential-catalog';
       const httpErrorResponse = new HttpErrorResponse({ status: 404, statusText: 'Not Found', url });
       httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
       translateServiceSpy.instant.mockReturnValue('error.not_found');
