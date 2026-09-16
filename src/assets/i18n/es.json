@@ -387,6 +387,14 @@
       "label": "Clave privada",
       "unavailable": "La clave privada generada para esta emisión ya no está disponible en este dispositivo. No es posible recuperarla ni volver a generarla: si la necesitas, emite la credencial de nuevo."
     },
+    "discardArtifactsConfirm": {
+      "title": "¿Cerrar sin copiar?",
+      "credential": "Todavía no has copiado la credencial. Si cierras ahora, no podrás recuperarla.",
+      "privateKey": "Todavía no has copiado la clave privada. Si cierras ahora, no podrás recuperarla.",
+      "both": "Todavía no has copiado la credencial ni la clave privada. Si cierras ahora, no podrás recuperarlas.",
+      "confirmationLabel": "Cerrar de todos modos",
+      "cancelLabel": "Seguir aquí"
+    },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",
