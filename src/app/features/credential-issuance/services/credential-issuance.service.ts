@@ -82,6 +82,14 @@ export class CredentialIssuanceService {
     () => this.metadataService.getIssuableCredentialTypes()
   );
 
+  // AD-11: a second, narrower narrowing of credentialTypesArr$ -- a type is retired only when
+  // EVERY configuration the form would offer for it (the latest version per format) has an empty
+  // tenant-resolved delivery set (catalogue state 3). Surviving one config is enough to keep the
+  // type listed; only the dead format option disappears from availableFormats$.
+  public readonly offerableCredentialTypes$ = computed<IssuanceCredentialType[]>(() =>
+    this.credentialTypesArr$().filter(type => this.hasOfferableConfiguration(type))
+  );
+
   // EC-04 vs EC-01: same empty list, different message. Resolved by the template (T3).
   //
   // Two sources can leave the selector empty for a reason the Operator cannot act on: the
@@ -107,12 +115,17 @@ export class CredentialIssuanceService {
     if (configs.length === 0) {
       return [{ configId: type, format: 'jwt_vc_json', labelKey: FORMAT_LABEL_MAP['jwt_vc_json']! }];
     }
-    return oneOptionPerFormat(configs).map(({ configId, format }) => ({
-      configId,
-      format: format as CredentialFormatOption['format'],
-      labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
-      disabled: format === 'mso_mdoc'
-    }));
+    // AD-11: a format option survives only if its own configId is offerable. This is the same
+    // predicate offerableCredentialTypes$ aggregates over the whole lineage -- one place decides
+    // "is this configId offerable", so the two lists cannot disagree about the same configId.
+    return oneOptionPerFormat(configs)
+      .filter(({ configId }) => this.isOfferableConfiguration(configId))
+      .map(({ configId, format }) => ({
+        configId,
+        format: format as CredentialFormatOption['format'],
+        labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
+        disabled: format === 'mso_mdoc'
+      }));
   });
 
   // Explicitly selected format option; auto-selects first non-disabled when null
@@ -140,27 +153,16 @@ export class CredentialIssuanceService {
 
   public readonly offerableModes$ = computed<readonly DeliveryModeOption[]>(() => {
     const configId = this.effectiveFormatOption$()?.configId;
-    if (!configId) {
-      return [];
-    }
-
-    const snapshot = this._deliveryEligibility$();
-    const modes = snapshot.status === 'read' ? snapshot.modesByConfigId.get(configId) : undefined;
-
-    if (modes !== undefined) {
-      // States 1 and 3: literally what the tenant catalogue resolved. Filtering the fixed
-      // DELIVERY_MODE_OPTIONS catalogue by membership (rather than mapping over `modes` directly)
-      // keeps render order at direct -> ui -> email regardless of the wire array's own order.
-      return DELIVERY_MODE_OPTIONS.filter(option => modes.includes(option.value));
-    }
-
-    // States 2 (no entry for this configId) and 4 (whole read unreadable) share the exact same
-    // fallback per AD-9's table: the schema-derived, wallet-only catalogue.
-    const config = this.metadataService.getConfigurationById(configId);
-    return resolveOfferableDeliveryOptions(config, WALLET_DELIVERY_MODE_OPTIONS);
+    return configId ? this.resolveOfferableModes(configId) : [];
   });
 
   public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>> = signal(new Set());
+
+  // ES-08: the single trigger for the "catalogue unreadable" banner. States 1/2/3 show nothing --
+  // only a fully failed read (state 4) does.
+  public readonly hasDeliveryCatalogReadFailed$ = computed<boolean>(
+    () => this._deliveryEligibility$().status === 'unreadable'
+  );
 
   // AD-2: claims come from the config that will actually be sent to the backend
   // (effectiveFormatOption.configId), not from the type: two formats of the same
@@ -435,6 +437,52 @@ export class CredentialIssuanceService {
 
   return new FormGroup(controls);
 }
+
+  /**
+   * The one place that resolves "which delivery modes does this configId offer" (EUD-233 AD-9),
+   * shared by offerableModes$ (the current selection) and isOfferableConfiguration (any configId
+   * in the type/format lists) -- a second implementation of the same branching would risk the two
+   * disagreeing about the same configId, which AC-02.3 forbids.
+   */
+  private resolveOfferableModes(configId: string): readonly DeliveryModeOption[] {
+    const snapshot = this._deliveryEligibility$();
+    const modes = snapshot.status === 'read' ? snapshot.modesByConfigId.get(configId) : undefined;
+
+    if (modes !== undefined) {
+      // States 1 and 3: literally what the tenant catalogue resolved. Filtering the fixed
+      // DELIVERY_MODE_OPTIONS catalogue by membership (rather than mapping over `modes` directly)
+      // keeps render order at direct -> ui -> email regardless of the wire array's own order.
+      return DELIVERY_MODE_OPTIONS.filter(option => modes.includes(option.value));
+    }
+
+    // States 2 (no entry for this configId) and 4 (whole read unreadable) share the exact same
+    // fallback per AD-9's table: the schema-derived, wallet-only catalogue.
+    const config = this.metadataService.getConfigurationById(configId);
+    return resolveOfferableDeliveryOptions(config, WALLET_DELIVERY_MODE_OPTIONS);
+  }
+
+  /**
+   * AD-11's single predicate: a configId is offerable unless the tenant catalogue resolved it to
+   * an explicit empty set (state 3) -- states 1/2/4 are never empty (the degraded fallback,
+   * WALLET_DELIVERY_MODE_OPTIONS, always has two entries).
+   */
+  private isOfferableConfiguration(configId: string): boolean {
+    return this.resolveOfferableModes(configId).length > 0;
+  }
+
+  /**
+   * AD-11 aggregation rule: true if at least one configuration the form would offer for this type
+   * (the latest version per format -- the same set availableFormats$ shows) is offerable. A type
+   * with no declared configs at all (the synthetic jwt_vc_json fallback, predates AD-11) is never
+   * filtered by this: there is no real configId to check a delivery snapshot against.
+   */
+  private hasOfferableConfiguration(type: IssuanceCredentialType): boolean {
+    const configs = this.metadataService.findConfigurationsForType(type);
+    if (configs.length === 0) {
+      return true;
+    }
+    return oneOptionPerFormat(configs).some(({ configId }) => this.isOfferableConfiguration(configId));
+  }
 
   private readonly submitAsCallback = (): Observable<any> => {
       return this.submitCredentialPayload();
