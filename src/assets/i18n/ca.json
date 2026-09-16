@@ -373,6 +373,10 @@
         "title": "Accés Denegat",
         "message": "No tens els poders necessaris per accedir-hi."
     },
+    "sessionExpired": {
+        "title": "Sessió Caducada",
+        "message": "La teva sessió ha caducat. Si us plau, torna a iniciar sessió."
+    },
     "auth": {
         "title": "Error en iniciar la sessió",
         "tokenRejected": "No hem pogut validar el teu inici de sessió. Torna-ho a provar. Si el problema persisteix, contacta amb suport.",
