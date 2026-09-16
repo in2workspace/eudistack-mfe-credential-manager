@@ -379,6 +379,10 @@
     "deliveryCatalogUnavailable": {
       "message": "No se ha podido leer la configuración de entrega de tu organización. Es posible que se ofrezcan menos opciones de entrega de las disponibles. Vuelve a cargar la página para reintentarlo; si el problema persiste, contacta con el equipo de soporte."
     },
+    "deliveryOutcome": {
+      "delivered": "Entregado",
+      "failed": "No se ha podido entregar"
+    },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",

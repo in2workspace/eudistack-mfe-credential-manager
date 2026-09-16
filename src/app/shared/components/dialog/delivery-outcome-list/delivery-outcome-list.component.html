@@ -1,0 +1,11 @@
+<ul class="delivery-outcome-list">
+  @for (entry of orderedEntries(); track entry.mode) {
+    <li class="delivery-outcome-list__item" [class.delivery-outcome-list__item--delivered]="isDelivered(entry.outcome)">
+      <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>
+      <span class="delivery-outcome-list__mode">{{ entry.labelKey | translate }}</span>
+      <span class="delivery-outcome-list__status">
+        {{ (isDelivered(entry.outcome) ? 'credentialIssuance.deliveryOutcome.delivered' : 'credentialIssuance.deliveryOutcome.failed') | translate }}
+      </span>
+    </li>
+  }
+</ul>

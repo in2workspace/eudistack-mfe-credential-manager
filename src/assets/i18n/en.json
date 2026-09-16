@@ -379,6 +379,10 @@
     "deliveryCatalogUnavailable": {
       "message": "Your organization's delivery configuration could not be read. Fewer delivery options than are actually available may be shown. Reload the page to try again; if the problem persists, contact support."
     },
+    "deliveryOutcome": {
+      "delivered": "Delivered",
+      "failed": "Could not be delivered"
+    },
     "credential-offer-dialog": {
       "title": "Credential created",
       "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",

@@ -354,6 +354,10 @@
     "deliveryCatalogUnavailable": {
       "message": "No s'ha pogut llegir la configuració de lliurament de la teva organització. És possible que es mostrin menys opcions de lliurament de les disponibles. Torna a carregar la pàgina per reintentar-ho; si el problema persisteix, contacta amb l'equip de suport."
     },
+    "deliveryOutcome": {
+      "delivered": "Lliurat",
+      "failed": "No s'ha pogut lliurar"
+    },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",

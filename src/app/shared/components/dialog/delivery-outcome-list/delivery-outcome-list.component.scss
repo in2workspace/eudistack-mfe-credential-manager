@@ -1,0 +1,31 @@
+.delivery-outcome-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--status-error, #B91C1C);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__item--delivered {
+    color: var(--status-success, #059669);
+  }
+
+  &__mode {
+    font-weight: 600;
+  }
+}
