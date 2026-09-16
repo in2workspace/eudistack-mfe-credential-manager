@@ -460,6 +460,7 @@
   "dialog": {
     "ok": "Ok",
     "close": "Close",
+    "copy": "Copy",
     "cancel": "Cancel",
     "accept": "Accept",
     "delete": "Delete",

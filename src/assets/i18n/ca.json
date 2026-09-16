@@ -435,6 +435,7 @@
   "dialog": {
     "ok": "D'acord",
     "close": "Tancar",
+    "copy": "Copiar",
     "cancel": "Cancel·lar",
     "accept": "Acceptar",
     "delete" : "Eliminar",
