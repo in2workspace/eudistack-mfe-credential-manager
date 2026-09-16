@@ -373,8 +373,12 @@
     },
     "delivery": {
       "label": "Método de entrega",
+      "direct": "Entrega directa",
       "email": "Correo electrónico",
       "qrCode": "Código QR"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "No se ha podido leer la configuración de entrega de tu organización. Es posible que se ofrezcan menos opciones de entrega de las disponibles. Vuelve a cargar la página para reintentarlo; si el problema persiste, contacta con el equipo de soporte."
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",

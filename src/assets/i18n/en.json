@@ -373,8 +373,12 @@
     },
     "delivery": {
       "label": "Delivery method",
+      "direct": "Direct delivery",
       "email": "Email",
       "qrCode": "QR Code"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "Your organization's delivery configuration could not be read. Fewer delivery options than are actually available may be shown. Reload the page to try again; if the problem persists, contact support."
     },
     "credential-offer-dialog": {
       "title": "Credential created",

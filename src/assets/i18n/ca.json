@@ -348,8 +348,12 @@
     },
     "delivery": {
       "label": "Mètode de lliurament",
+      "direct": "Lliurament directe",
       "email": "Correu electrònic",
       "qrCode": "Codi QR"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "No s'ha pogut llegir la configuració de lliurament de la teva organització. És possible que es mostrin menys opcions de lliurament de les disponibles. Torna a carregar la pàgina per reintentar-ho; si el problema persisteix, contacta amb l'equip de suport."
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",
