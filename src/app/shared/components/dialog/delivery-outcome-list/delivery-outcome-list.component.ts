@@ -24,6 +24,13 @@ interface DeliveryOutcomeEntry {
  * mode, so there is nothing to filter here beyond restoring the fixed order (AC-03.1, AC-03.2,
  * AC-04, AC-09). `'missing'` renders the same as `'failed'`: both mean "nothing arrived on this
  * channel", and the Operator has no use for the distinction between the two absence causes.
+ *
+ * Rendered as one bordered box per mode (post-release PO polish, 2026-09-16/17): green border and
+ * copy on delivery, red on failure, never the neutral/grey default. Only this component's own
+ * per-mode presentation changed -- the gating that decides WHETHER it renders at all stays exactly
+ * as each host already had it (`DirectCredentialResultDialogComponent.showOutcomes` = more than one
+ * requested channel, AC-04/EC-07; `CredentialOfferDialogComponent.showOutcomes` = more than one
+ * channel OR any channel not delivered, AC-05.2/EC-09.1).
  */
 @Component({
   selector: 'app-delivery-outcome-list',
@@ -43,5 +50,10 @@ export class DeliveryOutcomeListComponent {
 
   protected isDelivered(outcome: ChannelOutcome): boolean {
     return outcome === 'delivered';
+  }
+
+  /** The per-mode, per-outcome body copy -- distinct wording for each of the three channels. */
+  protected bodyKeyFor(entry: DeliveryOutcomeEntry): string {
+    return `credentialIssuance.deliveryOutcome.${entry.mode}.${this.isDelivered(entry.outcome) ? 'delivered' : 'failed'}`;
   }
 }

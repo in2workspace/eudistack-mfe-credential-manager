@@ -205,7 +205,7 @@ describe('CredentialOfferDialogComponent', () => {
 
     it('renders the key section and the failed-channel outcome below it, no credential block anywhere', () => {
       expect(keySectionEl()).toBeTruthy();
-      expect(fixture.nativeElement.querySelector('.delivery-outcome-list__item')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.delivery-outcome-list__box')).toBeTruthy();
       expect(fixture.nativeElement.textContent).not.toContain('direct-result-dialog.credentialLabel');
     });
 

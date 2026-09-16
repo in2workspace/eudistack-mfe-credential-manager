@@ -177,8 +177,8 @@ describe('DirectCredentialResultDialogComponent', () => {
     it('shows the outcomes list, direct -> ui -> email, when more than one channel was requested', () => {
       setup(baseData({ outcomes: outcomesOf([['direct', 'delivered'], ['ui', 'failed'], ['email', 'delivered']]) }));
 
-      const items = fixture.nativeElement.querySelectorAll('.delivery-outcome-list__item');
-      expect(items.length).toBe(3);
+      const boxes = fixture.nativeElement.querySelectorAll('.delivery-outcome-list__box');
+      expect(boxes.length).toBe(3);
     });
 
     it('shows nothing when only direct was requested (AC-01, no redundant single-row list)', () => {

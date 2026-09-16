@@ -378,8 +378,18 @@
       "message": "No se ha podido leer la configuración de entrega de tu organización. Es posible que se ofrezcan menos opciones de entrega de las disponibles. Vuelve a cargar la página para reintentarlo; si el problema persiste, contacta con el equipo de soporte."
     },
     "deliveryOutcome": {
-      "delivered": "Entregado",
-      "failed": "No se ha podido entregar"
+      "direct": {
+        "delivered": "Credencial entregada.",
+        "failed": "No se ha podido emitir la credencial, así que no se devuelve aquí."
+      },
+      "ui": {
+        "delivered": "Código QR generado.",
+        "failed": "No se ha podido generar el código QR."
+      },
+      "email": {
+        "delivered": "La oferta de credencial se ha enviado por correo electrónico.",
+        "failed": "No se ha podido enviar el correo electrónico."
+      }
     },
     "holderPrivateKey": {
       "label": "Clave privada",

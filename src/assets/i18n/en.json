@@ -378,8 +378,18 @@
       "message": "Your organization's delivery configuration could not be read. Fewer delivery options than are actually available may be shown. Reload the page to try again; if the problem persists, contact support."
     },
     "deliveryOutcome": {
-      "delivered": "Delivered",
-      "failed": "Could not be delivered"
+      "direct": {
+        "delivered": "Credential delivered.",
+        "failed": "The credential could not be issued, so it is not returned here."
+      },
+      "ui": {
+        "delivered": "QR code generated.",
+        "failed": "The QR code could not be generated."
+      },
+      "email": {
+        "delivered": "The credential offer has been sent by email.",
+        "failed": "The email could not be sent."
+      }
     },
     "holderPrivateKey": {
       "label": "Private key",

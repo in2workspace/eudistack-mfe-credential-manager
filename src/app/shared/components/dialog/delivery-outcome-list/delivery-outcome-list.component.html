@@ -1,11 +1,14 @@
-<ul class="delivery-outcome-list">
+<div class="delivery-outcome-list">
   @for (entry of orderedEntries(); track entry.mode) {
-    <li class="delivery-outcome-list__item" [class.delivery-outcome-list__item--delivered]="isDelivered(entry.outcome)">
-      <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>
-      <span class="delivery-outcome-list__mode">{{ entry.labelKey | translate }}</span>
-      <span class="delivery-outcome-list__status">
-        {{ (isDelivered(entry.outcome) ? 'credentialIssuance.deliveryOutcome.delivered' : 'credentialIssuance.deliveryOutcome.failed') | translate }}
-      </span>
-    </li>
+    <section
+      class="delivery-outcome-list__box"
+      [class.delivery-outcome-list__box--delivered]="isDelivered(entry.outcome)"
+      [class.delivery-outcome-list__box--failed]="!isDelivered(entry.outcome)">
+      <h3 class="delivery-outcome-list__title">{{ entry.labelKey | translate }}</h3>
+      <p class="delivery-outcome-list__body">
+        <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>
+        <span>{{ bodyKeyFor(entry) | translate }}</span>
+      </p>
+    </section>
   }
-</ul>
+</div>
