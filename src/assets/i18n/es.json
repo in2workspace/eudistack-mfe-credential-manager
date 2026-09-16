@@ -401,6 +401,16 @@
       "copy": "Copiar enlace",
       "copied": "¡Copiado!"
     },
+    "direct-result-dialog": {
+      "title": "Credencial creada",
+      "message": "Copia la credencial firmada antes de cerrar esta ventana: no podrás volver a verla.",
+      "credentialLabel": "Credencial firmada",
+      "done": "Hecho",
+      "copyFailed": {
+        "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
+        "privateKey": "No se ha podido copiar la clave privada al portapapeles. Inténtalo de nuevo."
+      }
+    },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."
   },

@@ -376,6 +376,16 @@
       "copy": "Copiar enllaç",
       "copied": "Copiat!"
     },
+    "direct-result-dialog": {
+      "title": "Credencial creada",
+      "message": "Copia la credencial signada abans de tancar aquesta finestra: no la podràs tornar a veure.",
+      "credentialLabel": "Credencial signada",
+      "done": "Fet",
+      "copyFailed": {
+        "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
+        "privateKey": "No s'ha pogut copiar la clau privada al porta-retalls. Torna-ho a intentar."
+      }
+    },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",
     "unloadAlert": "Segur que vols sortir? Perdràs el progrés fet."
   },
