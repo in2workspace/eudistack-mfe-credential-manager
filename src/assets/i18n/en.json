@@ -383,6 +383,10 @@
       "delivered": "Delivered",
       "failed": "Could not be delivered"
     },
+    "holderPrivateKey": {
+      "label": "Private key",
+      "unavailable": "The private key generated for this issuance is no longer available on this device. It cannot be recovered or regenerated: issue the credential again if you need it."
+    },
     "credential-offer-dialog": {
       "title": "Credential created",
       "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",

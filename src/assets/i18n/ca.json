@@ -358,6 +358,10 @@
       "delivered": "Lliurat",
       "failed": "No s'ha pogut lliurar"
     },
+    "holderPrivateKey": {
+      "label": "Clau privada",
+      "unavailable": "La clau privada generada per a aquesta emissió ja no està disponible en aquest dispositiu. No es pot recuperar ni tornar a generar: si la necessites, emet la credencial de nou."
+    },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",

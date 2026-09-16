@@ -383,6 +383,10 @@
       "delivered": "Entregado",
       "failed": "No se ha podido entregar"
     },
+    "holderPrivateKey": {
+      "label": "Clave privada",
+      "unavailable": "La clave privada generada para esta emisión ya no está disponible en este dispositivo. No es posible recuperarla ni volver a generarla: si la necesitas, emite la credencial de nuevo."
+    },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",
