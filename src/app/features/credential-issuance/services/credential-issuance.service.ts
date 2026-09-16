@@ -1,5 +1,5 @@
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
@@ -10,6 +10,9 @@ import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-
 import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
 import { requiresRequestHolderKey } from 'src/app/core/helpers/holder-binding-exemption';
 import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
+import { HolderPrivateKeyStore } from 'src/app/core/services/holder-private-key-store.service';
+import { IssuanceHolderKeyService } from './issuance-holder-key.service';
+import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
 import { resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
@@ -230,6 +233,8 @@ export class CredentialIssuanceService {
 
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
   private readonly holderKeyStore = inject(HolderKeyStoreService);
+  private readonly holderPrivateKeyStore = inject(HolderPrivateKeyStore);
+  private readonly issuanceHolderKeyService = inject(IssuanceHolderKeyService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly matDialog = inject(MatDialog);
@@ -242,6 +247,11 @@ export class CredentialIssuanceService {
   private readonly credentialCatalogService = inject(CredentialCatalogService);
 
   constructor() {
+    // AD-6 cleanup point 6: substitutes for the deleted KeyGeneratorComponent's ngOnDestroy --
+    // belt-and-suspenders alongside the per-attempt clears already threaded through the submit
+    // flow below, for whatever a submission left behind if this service is torn down mid-flight.
+    inject(DestroyRef).onDestroy(() => this.issuanceHolderKeyService.clear());
+
     // Load credential configurations once so format options are available,
     // and, since EUD-71, also the list of issuable types (AD-1).
     //
@@ -531,12 +541,23 @@ export class CredentialIssuanceService {
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
       const deliveryModes = [...this.selectedDeliveryModes$()];
-      const request = this.withHolderKey(
-        this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType),
-        configId);
+      // AD-6: one submission, one crypto.randomUUID() -- correlates the private-key handoff's seal
+      // (HolderPrivateKeyStore) with this exact attempt, never with a prior or later one. Not the
+      // same value as X-Idempotency-Key, which CredentialProcedureService mints on its own, per
+      // HTTP call (R-13, §3.4 carrera nº 5).
+      const submissionId = globalThis.crypto.randomUUID();
+      const holderBinding$: Observable<HolderBinding | undefined> = requiresRequestHolderKey(configId)
+        ? from(this.issuanceHolderKeyService.generateForSubmission(configId, submissionId))
+        : of(undefined);
 
-      return this.sendCredentialRequest(request).pipe(
-        timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
+      return holderBinding$.pipe(
+        map(holderBinding => this.attachHolderKey(
+          this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType, holderBinding),
+          configId
+        )),
+        switchMap(request => this.sendCredentialRequest(request).pipe(
+          timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS)
+        )),
         switchMap((response) => {
           // AD-7: a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
           // reaches catchError -- each requested channel's outcome is read out of the body here,
@@ -547,24 +568,41 @@ export class CredentialIssuanceService {
           const isTotalFailure = ![...outcomes.values()].includes('delivered');
 
           if (isTotalFailure) {
+            // AC-08/AC-09: nothing was delivered on any channel, so nothing survives on any
+            // surface either -- drains whatever this attempt may have sealed (AD-6).
+            this.holderPrivateKeyStore.clear();
             this.openFailedCreateDialog();
             return EMPTY;
           }
-          // Only flip hasSubmitted$/consume the holder key once total failure has been ruled out
-          // (code-review L449): a 207 where every requested channel failed is a failed attempt,
-          // and marking it as submitted would let canLeave() wave the Operator away from data that
-          // never actually issued, holder key included (code-review L508 -- see peek() above).
+          // hasSubmitted$ is now fixed on the envelope being present, not on "some channel
+          // delivered" (AD-8): a 207 where direct was not requested but a wallet channel failed
+          // still means a credential exists in server, and canLeave() must stay true so the
+          // Operator's own canDeactivateGuard does not fight the close-guard AC-14 puts on the
+          // post-emission surface (carrera nº 6, §3.4). Replaces the prior "only after ruling out
+          // total failure" framing (former code-review L449/L508 notes), which predates EC-09.1
+          // and is no longer correct now that a wallet-only failure with a machine credential must
+          // still hand over the key (EC-09.1).
           this.hasSubmitted$.set(true);
           this.holderKeyStore.clear();
 
           if (outcomes.get('direct') === 'delivered') {
-            // AD-7's single rule for the credential-success surface. TODO(Task 20): replace with
-            // DirectCredentialResultDialogComponent + HolderPrivateKeyStore.take() once Task 19
-            // builds the component and Task 12 wires the handoff -- this placeholder only
-            // guarantees a direct delivery (solo or hybrid) is never misrouted through the error
-            // dialog or silently dropped.
+            // TODO(Task 22/25): route this attempt's outcomes + the drained private key through
+            // DirectCredentialResultDialogComponent once it exists and AD-8's surface-selection
+            // switch is wired -- this placeholder only guarantees a direct delivery (solo or
+            // hybrid) is never misrouted through the error dialog or silently dropped. Drains and
+            // seal-verifies the private-key handoff now (AD-6), rather than leaving it in the
+            // store for whatever the next submission attempt turns out to be.
+            this.takeSealedPrivateKey(configId, submissionId);
             return this.openSuccessfulCreateDialog();
           }
+          if (deliveryModes.includes('direct')) {
+            // AC-08/AC-09: direct was requested but failed/missing -- no key on any surface.
+            this.holderPrivateKeyStore.clear();
+          }
+          // direct not requested at all: any sealed entry stays in the store for Task 25's
+          // wallet-only surface (AC-13/EC-09.1) to take() once it exists -- clearing here would
+          // strand that surface's only source of the key.
+          //
           // direct not requested, or requested and failed/missing, but >=1 wallet channel
           // delivered: unchanged AS-IS behavior (AC-05.1, AC-05.2, AC-09).
           //
@@ -602,19 +640,15 @@ export class CredentialIssuanceService {
    * (EUD-168 AD-8), and for no others.
    *
    * Not gated on the delivery mode: a type with no `proof_types_supported` gets no wallet key proof
-   * either, so even an email or QR issuance binds to the key the Operator generated on the form.
+   * either, so even an email or QR issuance binds to the key generated for this attempt.
    *
-   * A missing key is left to the Issuer to reject. It answers with a 400 naming the field, which is
-   * a better outcome than issuing without one and binding the credential to nothing — and the form
-   * already requires the generated `didKey`, so reaching here empty means the store was cleared, not
-   * that the Operator skipped a step.
-   *
-   * Reads with `peek()`, not `take()` (code-review L508): draining the store here, before the POST
-   * even runs, would strand a retry after an HTTP failure without its holder_key even though the
-   * form still shows the same generated key. The key is only consumed once a real success is
-   * confirmed, inside submitCredentialPayload()'s success branch.
+   * Reads `HolderKeyStoreService` with `peek()`, not destructively: it is a plain carrier for
+   * whatever `IssuanceHolderKeyService.generateForSubmission()` wrote moments earlier in this same
+   * attempt (AD-6), not a queue to drain. A missing key is left to the Issuer to reject, which
+   * answers with a 400 naming the field -- a better outcome than issuing without one and binding
+   * the credential to nothing.
    */
-  private withHolderKey(
+  private attachHolderKey(
     request: IssuanceLEARCredentialRequestDto,
     configId: string
   ): IssuanceLEARCredentialRequestDto {
@@ -624,6 +658,22 @@ export class CredentialIssuanceService {
     }
     const publicJwk = this.holderKeyStore.peek();
     return publicJwk ? { ...request, holder_key: { jwk: publicJwk } } : request;
+  }
+
+  /**
+   * Destructive read of the private-key handoff, verified against this exact attempt (AC-10.1): a
+   * seal mismatch -- or an empty store, e.g. a reload between submit and response destroying the
+   * root store -- degrades exactly like absence, never surfaces a key that belongs to another
+   * attempt.
+   */
+  private takeSealedPrivateKey(credentialConfigurationId: string, submissionId: string): string | undefined {
+    const entry = this.holderPrivateKeyStore.take();
+    if (!entry) {
+      return undefined;
+    }
+    const sealMatches = entry.credentialConfigurationId === credentialConfigurationId
+      && entry.submissionId === submissionId;
+    return sealMatches ? entry.privateKeyHex : undefined;
   }
 
   private navigateToCredentials(): Promise<boolean> {
@@ -636,8 +686,9 @@ export class CredentialIssuanceService {
     configId: string,
     deliveryModes: readonly DeliveryModeToken[],
     grantType: IssuanceGrantType,
+    holderBinding: HolderBinding | undefined,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, deliveryModes, grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, holderBinding, deliveryModes, grantType);
   }
 
 
@@ -687,6 +738,9 @@ export class CredentialIssuanceService {
    */
   private handleIssuanceFailure(error: unknown): Observable<any> {
     console.error('POST /api/v1/issuances failed', error);
+    // AD-6 cleanup point 2: a transport failure (incl. ES-09's HolderKeyGenerationError, which
+    // reaches this same catchError) leaves nothing to hand over on any surface.
+    this.holderPrivateKeyStore.clear();
     this.openFailedCreateDialog();
     return EMPTY;
   }
