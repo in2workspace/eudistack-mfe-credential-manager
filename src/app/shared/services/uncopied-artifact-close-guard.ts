@@ -108,6 +108,10 @@ export class UncopiedArtifactCloseGuard {
       status: 'default',
       confirmationLabel: this.translate.instant('credentialIssuance.discardArtifactsConfirm.confirmationLabel'),
       cancelLabel: this.translate.instant('credentialIssuance.discardArtifactsConfirm.cancelLabel'),
+      // EUD-233 fix 2026-09-16: "stay here" (cancel) is the safe choice on a destructive prompt --
+      // it should carry the primary color, not "close anyway" (confirm). Opt-in on DialogData,
+      // so every other DialogComponent consumer keeps today's default colors untouched.
+      emphasizeCancel: true,
     };
     return this.dialogWrapper.openDialog(DialogComponent, dialogData).afterClosed().pipe(
       map(result => result === true)

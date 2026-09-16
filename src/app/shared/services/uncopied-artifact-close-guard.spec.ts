@@ -155,6 +155,16 @@ describe('UncopiedArtifactCloseGuard', () => {
       expect(dialogData.cancelLabel).toBe('credentialIssuance.discardArtifactsConfirm.cancelLabel');
     });
 
+    // EUD-233 fix 2026-09-16: "stay here" must read as the safe/primary choice on this
+    // destructive-by-default prompt, not "close anyway".
+    it('emphasizes the cancel ("stay here") action over the confirm ("close anyway") one', () => {
+      protectWith(['credential']);
+      backdropSubject.next({} as MouseEvent);
+
+      const [, dialogData] = dialogWrapperMock.openDialog.mock.calls[0];
+      expect(dialogData.emphasizeCancel).toBe(true);
+    });
+
     it('browser back re-arms the sentinel and opens the confirmation, without closing unconfirmed', () => {
       protectWith(['credential']);
       pushStateSpy.mockClear();
