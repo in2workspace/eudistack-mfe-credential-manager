@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **EUD-233 — post-release PO polish: el selector de entrega arranca con una casilla marcada.** `CredentialIssuanceService`'s pruning `effect()` gana una regla de defecto (PO 2026-09-16, supersede el "ninguna marcada por defecto" de EC-05): cuando la poda deja la selección vacía, marca `direct` si el conjunto ofrecible lo incluye, si no `email` si lo incluye, y si ninguno de los dos es ofrecible la deja vacía — nunca `ui`. Solo actúa cuando no queda nada válido, así que una elección deliberada del operador que aún contenga un modo válido nunca se sobrescribe.
+- **EUD-233 — post-release PO polish: el botón de envío de `learcredential.machine` abre el mismo diálogo de confirmación que cualquier otro tipo.** Desde que la clave privada dejó de mostrarse al operador antes de la emisión (AC-12, generación invisible), la casilla "confirmo que he copiado la clave privada" del diálogo de confirmación específico de máquina ya no tenía sentido: la clave solo aparece, si aplica, en el diálogo posterior a la emisión (AC-07/AC-13). `CredentialIssuanceComponent.onSubmit()` deja de bifurcar por tipo; `CredentialIssuanceService.openLEARCredentialMachineSubmitDialog()`, `ConditionalConfirmDialogComponent` (y su spec) y la interfaz `ConditionalConfirmDialogData` se retiran por completo — sin otro consumidor en el repositorio.
 
 ## [3.8.0] - 2026-09-16
 

@@ -23,8 +23,7 @@ import { MatSelect } from '@angular/material/select';
 import { TranslateService } from '@ngx-translate/core';
 import { CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
-import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
+import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
 import { DirectCredentialResultDialogComponent, DirectCredentialResultDialogData } from 'src/app/shared/components/dialog/direct-credential-result-dialog/direct-credential-result-dialog.component';
@@ -399,25 +398,6 @@ export class CredentialIssuanceService {
     };
 
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, this.submitAsCallback);
-  }
-
-  // LEARCredentialMachine needs a dialog with a checkbox to confirm
-  public openLEARCredentialMachineSubmitDialog(){
-    const dialogData: ConditionalConfirmDialogData = {
-          title: this.translate.instant("credentialIssuance.create-confirm-dialog.title"),
-          message: this.translate.instant("credentialIssuance.create-confirm-dialog.message"),
-          checkboxLabel: this.translate.instant("credentialIssuance.create-confirm-dialog.checkboxLabel"),
-          belowText: this.translate.instant("credentialIssuance.create-confirm-dialog.belowText"),
-          status: 'default',
-          confirmationType: 'async',
-          loadingData: {
-            title: this.translate.instant("credentialIssuance.creating-credential"),
-            message: ''
-          }
-        };
-
-
-    this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
   }
 
   private issuanceViewModelsBuilder(

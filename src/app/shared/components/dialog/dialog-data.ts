@@ -17,11 +17,6 @@ export interface BaseDialogData{
   style?: string;
 }
 
-export interface DialogData extends BaseDialogData{ 
+export interface DialogData extends BaseDialogData{
   template?: ComponentPortal<any> | TemplatePortal | DomPortal;
-}
-
-export interface ConditionalConfirmDialogData extends BaseDialogData{
-  checkboxLabel: string;
-  belowText?: string;
 }

@@ -53,7 +53,6 @@ describe('CredentialIssuanceComponent', () => {
       openLeaveConfirm: jest.fn().mockReturnValue(true),
       updateSelectedFormat: jest.fn(),
       openSubmitDialog: jest.fn(),
-      openLEARCredentialMachineSubmitDialog: jest.fn(),
     };
 
     routeMock = {
@@ -187,7 +186,6 @@ describe('CredentialIssuanceComponent', () => {
       component.onSubmit();
 
       expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
-      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
 
     it('should enable the submit control once every required field is filled in', () => {
@@ -267,7 +265,6 @@ describe('CredentialIssuanceComponent', () => {
       component.onSubmit();
 
       expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
-      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
       expect(mockService.toggleDeliveryMode).not.toHaveBeenCalled();
     });
   });
@@ -363,7 +360,6 @@ describe('CredentialIssuanceComponent', () => {
 
       expect(console.error).toHaveBeenCalledWith('Invalid form or no delivery mode selected: ');
       expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
-      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
 
     it('EUD-73 §12 Threat 3: does not dump the form values (PII) to the console when blocking', () => {
@@ -377,7 +373,10 @@ describe('CredentialIssuanceComponent', () => {
       expect(console.error).toHaveBeenCalledTimes(1);
     });
 
-    it('should open LEARCredentialMachine dialog when selected type is LEARCredentialMachine', () => {
+    // EUD-233 PO fix 2026-09-16: the machine-only checkbox confirmation dialog is gone -- the
+    // private key is never shown before emission anymore (AC-12), so every credential type opens
+    // the same submit confirmation.
+    it('opens the same submit dialog for LEARCredentialMachine as for any other type', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'learcredential.machine' as any;
@@ -385,11 +384,10 @@ describe('CredentialIssuanceComponent', () => {
 
       component.onSubmit();
 
-      expect(mockService.openLEARCredentialMachineSubmitDialog).toHaveBeenCalled();
-      expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
+      expect(mockService.openSubmitDialog).toHaveBeenCalled();
     });
 
-    it('should open default submit dialog for other credential types', () => {
+    it('opens the default submit dialog for other credential types', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'type1' as any;
@@ -398,7 +396,6 @@ describe('CredentialIssuanceComponent', () => {
       component.onSubmit();
 
       expect(mockService.openSubmitDialog).toHaveBeenCalled();
-      expect(mockService.openLEARCredentialMachineSubmitDialog).not.toHaveBeenCalled();
     });
   });
 
