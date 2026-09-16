@@ -398,6 +398,10 @@
         "title": "Acceso Denegado",
         "message": "No tienes los poderes necesarios para acceder."
     },
+    "sessionExpired": {
+        "title": "Sesión Caducada",
+        "message": "Tu sesión ha caducado. Por favor, inicia sesión de nuevo."
+    },
     "auth": {
         "title": "Error al iniciar sesión",
         "tokenRejected": "No hemos podido validar tu inicio de sesión. Vuelve a intentarlo. Si el problema persiste, contacta con soporte.",

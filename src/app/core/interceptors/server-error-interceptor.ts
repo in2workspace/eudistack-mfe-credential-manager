@@ -5,6 +5,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { TenantService } from '../services/tenant.service';
+import { API_PATH } from '../constants/api-paths.constants';
 
 @Injectable()
 export class ServeErrorInterceptor implements HttpInterceptor {
@@ -35,6 +36,17 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }
+
+        // The credential catalog screen (EUD-72) renders its own error states —
+        // forbidden/not-configured/generic-with-retry — for every failure shape this
+        // endpoint can return, deliberately (see CredentialCatalogComponent). A blocking
+        // modal here would sit on top of that screen and hide its "Reintentar" action,
+        // which is exactly the failure this bug report describes: a dead-end dialog with
+        // only "Cerrar" instead of a recoverable, in-context error.
+        if (this.isCredentialCatalogEndpoint(request.url)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
         let errorMessage: string;
         if (error.error instanceof ErrorEvent) {
           errorMessage = `Error: ${error.error.message}`;
@@ -60,6 +72,11 @@ export class ServeErrorInterceptor implements HttpInterceptor {
   private isStaticAsset(url: string): boolean {
     const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
     return /(^|\/)assets\//.test(path);
+  }
+
+  private isCredentialCatalogEndpoint(url: string): boolean {
+    const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
+    return path.endsWith(API_PATH.CREDENTIAL_CATALOG);
   }
 
   private getServerErrorMessage(error: HttpErrorResponse): string {
