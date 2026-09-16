@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **"Session expiring soon" prompt, 2 minutes before the access token's own expiry**: the library's own silent renew only acts once the token has actually expired, so this is scheduled independently from the token's `exp` claim. Confirming forces an immediate refresh (`forceRefreshSession()`) and reschedules the prompt for the new token; leaving it unanswered changes nothing — the library's own silent renew, and the existing session-expired handling on its failure, still run exactly as before. A still-open prompt is dismissed automatically if the session ends up renewed by another path first (the library's own silent renew, or a `SilentRenewFailed`).
+  - The prompt shows a shrinking progress bar for the 2 minutes, matching the countdown already used on the Verifier's own login page (`eudistack-mfe-login`) for QR session expiry. New `SessionWarningCountdownComponent`, embedded in the existing confirmation dialog via its portal slot.
+
+### Fixed
+
+- **The Issuer UI closed the session silently when the background token refresh failed**: `SilentRenewFailed` redirected straight to the Verifier's login page with no explanation. A dialog now tells the user their session expired before the redirect, in every branch that can reach it (online, and both outcomes of the offline-then-reconnect retry).
+  - That dialog used to be cut off almost instantly because the redirect to the Verifier fired right after opening it. The redirect now waits for the dialog to be dismissed.
+
 ### Changed
 
 - **EUD-38 — allowlist de licencias unificada**: `.github/license-policy.json` es ahora la transcripción íntegra de `conv-quality-security-gates.md` §16.1, idéntica en los trece repositorios con gate. Añade `LGPL-2.1-only`, la grafía SPDX vigente del mismo permiso que `LGPL-2.1`, que ya estaba admitido: `logback` 1.5.34 la declara así y el gate la bloqueaba por la grafía, no por la licencia.

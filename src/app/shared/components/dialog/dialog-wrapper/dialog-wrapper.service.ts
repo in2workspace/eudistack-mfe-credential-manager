@@ -15,7 +15,7 @@ export class DialogWrapperService {
   private readonly dialog = inject(MatDialog);
   private readonly loader = inject(LoaderService);
 
-  public openDialog< 
+  public openDialog<
     D extends BaseDialogData,
     T extends AbstractDialogComponent<D>
   >(

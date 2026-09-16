@@ -3,6 +3,7 @@ import { EventTypes, LoginResponse, OidcSecurityService, PublicEventsService, Va
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, filter, finalize, take, tap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
+import { MatDialogRef } from '@angular/material/dialog';
 import { UserDataAuthenticationResponse } from "../models/dto/user-data-authentication-response.dto";
 import { Power, EmployeeMandator } from "../models/entity/lear-credential";
 import { RoleType } from '../models/enums/auth-rol-type.enum';
@@ -170,7 +171,6 @@ export class AuthService{
 
           // before this happens, the library cleans up the local auth data
           case EventTypes.SilentRenewFailed:
-
             if (isOffline) {
               console.error('Silent token refresh failed: offline mode', event);
 
@@ -182,12 +182,12 @@ export class AuthService{
                         // reauthenticated successfully after reconnect
                       } else {
                         console.error('User still not authenticated after reconnect, logging out');
-                        this.authorize();
+                        this.notifySessionExpired().afterClosed().pipe(take(1)).subscribe(() => this.authorize());
                       }
                     },
                     error: (err) => {
                       console.error('Error while reauthenticating after reconnect:', err);
-                      this.authorize();
+                      this.notifySessionExpired().afterClosed().pipe(take(1)).subscribe(() => this.authorize());
                     },
                     complete: () => {
                       globalThis.removeEventListener('online', onlineHandler);
@@ -200,7 +200,7 @@ export class AuthService{
 
             } else {
               console.error('Silent token refresh failed: online mode, proceeding to logout', event);
-              this.authorize();
+              this.notifySessionExpired().afterClosed().pipe(take(1)).subscribe(() => this.authorize());
             }
             break;
 
@@ -365,6 +365,21 @@ export class AuthService{
     const title = this.translate.instant('error.auth.title');
     const message = this.translate.instant(messageKey);
     this.dialog.openErrorInfoDialog(DialogComponent, message, title);
+  }
+
+  /**
+   * Surfaces a dialog before every `authorize()` redirect triggered by
+   * SilentRenewFailed, so a dead session ends with an explanation instead of
+   * silently bouncing the user to the Verifier's login page. Returns the
+   * dialog ref so callers can defer `authorize()` until the user has actually
+   * seen it — `authorize()` navigates the whole page, which would otherwise
+   * cut the dialog off before it's readable (same reasoning as
+   * `rejectCrossTenantSession`).
+   */
+  private notifySessionExpired(): MatDialogRef<DialogComponent> {
+    const title = this.translate.instant('error.auth.title');
+    const message = this.translate.instant('error.auth.sessionExpired');
+    return this.dialog.openErrorInfoDialog(DialogComponent, message, title);
   }
 
   /**

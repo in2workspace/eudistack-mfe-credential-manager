@@ -405,7 +405,8 @@
     "auth": {
         "title": "Error al iniciar sesión",
         "tokenRejected": "No hemos podido validar tu inicio de sesión. Vuelve a intentarlo. Si el problema persiste, contacta con soporte.",
-        "clockSkew": "No hemos podido validar tu inicio de sesión porque la hora de este dispositivo no está sincronizada con la del servidor. Revisa la fecha y hora del dispositivo (activa la hora automática) e inténtalo de nuevo."
+        "clockSkew": "No hemos podido validar tu inicio de sesión porque la hora de este dispositivo no está sincronizada con la del servidor. Revisa la fecha y hora del dispositivo (activa la hora automática) e inténtalo de nuevo.",
+        "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión."
     },
     "credentialOffer": {
       "invalid-url": "URL no válida. No se puede obtener la oferta de credencial.",
