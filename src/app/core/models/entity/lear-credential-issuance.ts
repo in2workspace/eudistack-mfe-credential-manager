@@ -59,17 +59,72 @@ export interface HolderKeyMaterial {
   publicJwk: HolderPublicJwk;
 }
 
-export type DeliveryMode = 'email' | 'ui';
+/**
+ * The three delivery modes an issuance can fan out to (EUD-233 AD-13). Deliberately a single
+ * vocabulary aligned with `IssuanceChannel` (the response DTO, `lear-credential-issuance-request.dto.ts`)
+ * and with `DeliveryMode.java` in the Issuer: before this Story the form spoke a narrower
+ * `DeliveryMode` (`'email' | 'ui'`) than the wire did, which made `'direct'` a second vocabulary for
+ * the same concept -- exactly what `naming-ubiquitous-language.md` prohibits.
+ */
+export type DeliveryModeToken = 'direct' | 'email' | 'ui';
 
-export interface DeliveryOption {
-  value: DeliveryMode;
+export interface DeliveryModeOption {
+  value: DeliveryModeToken;
   labelKey: string;
 }
 
-export const DELIVERY_OPTIONS: DeliveryOption[] = [
-  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+/**
+ * Descriptors for the nominal path: one checkbox per mode, rendered only for the modes the resolved
+ * delivery-eligibility snapshot actually offers for (tenant, credential type) (EUD-233 AD-1/AD-4).
+ * This catalogue is the full universe `offerableModes$` narrows from -- it is never filtered by hand
+ * to represent "what this tenant allows", that narrowing happens against the snapshot, not here.
+ */
+export const DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
+  { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
   { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
 ];
+
+/**
+ * Descriptors for the degraded catalogue states only -- state 2 (pre-EUD-169 Issuer) and state 4
+ * (unreadable tenant catalogue), EUD-233 AD-9. `resolveOfferableDeliveryOptions` narrows from this
+ * catalogue in both states, never from `DELIVERY_MODE_OPTIONS`: `'direct'` is absent by construction,
+ * not by a runtime check that a future edit could drop.
+ */
+export const WALLET_DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
+  { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+];
+
+/**
+ * Fixed presentation order for per-channel results, independent of which channels delivered or failed
+ * (EUD-233 AC-03.2, EC-07, AD-10): the result view iterates this array, never the keys of an outcomes
+ * map, so a channel's position never depends on its outcome.
+ */
+export const DELIVERY_RESULT_ORDER: readonly DeliveryModeToken[] = ['direct', 'ui', 'email'];
+
+declare const deliveryCsvBrand: unique symbol;
+
+/**
+ * The `delivery` field of `POST /api/v1/issuances`, in the only shape the Issuer accepts: a
+ * deduplicated, canonically ordered CSV of {@link DeliveryModeToken}s (EUD-233 AD-3). Branded so the
+ * compiler refuses a hand-built string -- the only way to obtain one is {@link toDeliveryCsv}.
+ */
+export type DeliveryCsv = string & { readonly [deliveryCsvBrand]: true };
+
+/**
+ * Builds the wire-ready CSV for `delivery`: deduplicates and orders tokens to match
+ * {@link DELIVERY_RESULT_ORDER}, the same canonical order the Issuer's `DeliveryMode.toCanonicalCsv`
+ * normalizes to (EUD-233 AD-3). Throws on an empty iterable -- an empty CSV is not a legal request
+ * (ES-01); the client-side submit guard belongs upstream of this factory (the form), not inside it.
+ */
+export function toDeliveryCsv(modes: Iterable<DeliveryModeToken>): DeliveryCsv {
+  const requested = new Set(modes);
+  if (requested.size === 0) {
+    throw new Error('toDeliveryCsv requires at least one delivery mode');
+  }
+  return DELIVERY_RESULT_ORDER.filter(mode => requested.has(mode)).join(',') as DeliveryCsv;
+}
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
