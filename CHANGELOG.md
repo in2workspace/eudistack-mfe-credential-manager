@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-09-16
+
 ### Added
 - **EUD-233 — entrega directa: tres modos de entrega combinables (`direct`, `ui`, `email`) en la misma solicitud de emisión.** El selector del formulario pasa de radio-button excluyente a tres checkboxes independientes (`selectedDeliveryModes$: ReadonlySet<DeliveryModeToken>`), podados automáticamente cuando el tipo seleccionado deja de ofrecerlos (AD-1/AD-4/AD-13). `resolveChannelOutcomes(responses, requestedModes)` sustituye a `hasChannelError()`: cada modo solicitado se resuelve a `'delivered' | 'failed' | 'missing'` de forma explícita, en vez de un booleano agregado — la base que hace posible mostrar qué canal concreto falló cuando se piden varios a la vez.
 - **EUD-233 — generación invisible del par de claves del holder para los dos tipos de máquina exentos (AC-12).** El widget `KeyGeneratorComponent` que el operador manejaba a mano en el formulario (EUD-168) se retira: `IssuanceHolderKeyService` genera el par P-256 dentro del propio comando de envío, sellado por `(credentialConfigurationId, submissionId)`, y lo reparte a sus tres consumidores en un solo paso — el `did:key` al campo `mandatee.id` de la petición, la mitad pública a `HolderKeyStoreService` (la petición HTTP) y la mitad privada a `HolderPrivateKeyStore`, de la que solo se recupera tras confirmar una entrega real. Un fallo de generación se registra con un rastro de diagnóstico de cuatro campos cerrados (`event`, `credentialConfigurationId`, `submissionId`, `cause` — `HolderKeyGenerationError`, ES-09) y nunca deja un componente destruido escribiendo en un store que ya no debería tocar.
