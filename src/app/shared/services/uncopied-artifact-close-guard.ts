@@ -28,6 +28,15 @@ export interface UncopiedArtifactCloseGuardHandle {
  * cleanup -- which consumes the history sentinel below -- has to run before the host's own
  * post-close navigation, or the operator is left with a dead "atrás" pointing at the same URL
  * they just closed (R-15/R-16).
+ *
+ * **`history.back()` is reserved for a real interrupted browser back-navigation (fix 2026-09-17).**
+ * Every OTHER terminal close (Done, backdrop, Esc, the secondary close control) never made the
+ * browser navigate anywhere, so there is nothing to "complete" by calling `history.back()` for
+ * them -- and calling it anyway raced the host's own post-close `router.navigate(...)`: `back()`
+ * resolves asynchronously (a real browser history traversal), so it could settle AFTER the
+ * router had already pushed the new URL, undoing that push and stranding the operator back on
+ * the sentinel entry (the same, now-reset form). `back()` now only fires when the close came from
+ * a confirmed discard of a genuine popstate the guard had neutralized.
  */
 @Injectable({ providedIn: 'root' })
 export class UncopiedArtifactCloseGuard {
@@ -42,6 +51,10 @@ export class UncopiedArtifactCloseGuard {
     dialogRef.disableClose = true;
 
     let sentinelPushed = false;
+    // True only while the currently-pushed sentinel exists to neutralize a real browser back
+    // navigation the operator is mid-way through -- the one case where completing that
+    // navigation with history.back() is correct instead of racing a forward navigation elsewhere.
+    let sentinelGuardsRealBackNavigation = false;
     const pushSentinel = (): void => {
       globalThis.history.pushState({ uncopiedArtifactGuard: true }, '', globalThis.location.href);
       sentinelPushed = true;
@@ -72,9 +85,14 @@ export class UncopiedArtifactCloseGuard {
         return;
       }
       pushSentinel(); // neutralize this "atrás", stay in place, then ask
+      sentinelGuardsRealBackNavigation = true;
       this.confirmDiscard(pending).subscribe(confirmed => {
         if (confirmed) {
           dialogRef.close();
+        } else {
+          // The operator chose to stay: the re-pushed sentinel is back to guarding nothing more
+          // than a future close attempt, not a browser navigation still waiting to complete.
+          sentinelGuardsRealBackNavigation = false;
         }
         // else: nothing further -- already re-pushed, still guarded for a second "atrás".
       });
@@ -92,7 +110,7 @@ export class UncopiedArtifactCloseGuard {
       backdropSub.unsubscribe();
       keydownSub.unsubscribe();
       globalThis.removeEventListener('popstate', popstateHandler);
-      if (sentinelPushed) {
+      if (sentinelPushed && sentinelGuardsRealBackNavigation) {
         globalThis.history.back();
       }
     });

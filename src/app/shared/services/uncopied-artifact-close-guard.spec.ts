@@ -236,12 +236,52 @@ describe('UncopiedArtifactCloseGuard', () => {
   });
 
   describe('sentinel hygiene (R-15)', () => {
-    it('consumes the sentinel with history.back() on a terminal close it never got to pop itself', () => {
+    // EUD-233 fix 2026-09-17: history.back() on every terminal close raced the host's own
+    // post-close router.navigate() -- back() is a real, asynchronous browser navigation, so it
+    // could resolve AFTER the router had already pushed the new URL, undoing that push and
+    // stranding the operator back on the sentinel entry (the same, now-reset form). It must now
+    // fire ONLY when completing a real interrupted back-navigation, never on a "normal" close.
+    it('does NOT call history.back() on a plain terminal close (Done) -- nothing to complete, avoids racing a forward navigation', () => {
       protectWith(['credential']);
 
       dialogRefMock.close();
 
+      expect(backSpy).not.toHaveBeenCalled();
+    });
+
+    it('does NOT call history.back() when the secondary close control closes directly (nothing pending)', () => {
+      const { handle } = protectWith([]);
+      handle.requestClose();
+
+      expect(backSpy).not.toHaveBeenCalled();
+    });
+
+    it('does NOT call history.back() when a backdrop discard is confirmed -- no real navigation was ever in flight', () => {
+      protectWith(['credential']);
+      backdropSubject.next({} as MouseEvent);
+      confirmDialogAfterClosed.next(true);
+
+      expect(backSpy).not.toHaveBeenCalled();
+    });
+
+    it('DOES call history.back() to complete a real browser back-navigation the operator confirmed discarding through', () => {
+      protectWith(['credential']);
+
+      globalThis.dispatchEvent(new PopStateEvent('popstate'));
+      confirmDialogAfterClosed.next(true);
+
       expect(backSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT call history.back() when the operator cancels the real-back discard and later closes normally (Done)', () => {
+      protectWith(['credential']);
+
+      globalThis.dispatchEvent(new PopStateEvent('popstate'));
+      confirmDialogAfterClosed.next(false); // stays on the surface, sentinel remains but guards nothing in flight anymore
+
+      dialogRefMock.close(); // e.g. "Done", once everything gets copied afterwards
+
+      expect(backSpy).not.toHaveBeenCalled();
     });
 
     it('does not call history.back() again when the sentinel was already consumed by a real back with nothing pending', () => {
