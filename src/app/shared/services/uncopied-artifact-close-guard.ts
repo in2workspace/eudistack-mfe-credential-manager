@@ -45,8 +45,23 @@ export class UncopiedArtifactCloseGuard {
 
   public protect<T>(
     dialogRef: MatDialogRef<T>,
-    pendingArtifacts: Signal<readonly ArtifactKind[]>
+    pendingArtifacts: Signal<readonly ArtifactKind[]>,
+    options: { closeOnNavigationDisabled: boolean }
   ): UncopiedArtifactCloseGuardHandle {
+    // R-15, fail loudly: MatDialogRef does not expose the config it was opened with (its `_ref`/
+    // `config` are private), so this guard cannot verify `closeOnNavigation` itself the way it
+    // can `disableClose` below -- it can only make the caller attest to it explicitly. Without
+    // `closeOnNavigation: false` at MatDialog.open() time, the overlay's own navigation-dispose
+    // listener wins the race against this guard's `popstate` listener and silently drops the
+    // browser-back interception -- exactly the silent-per-component failure mode AD-14 exists to
+    // rule out structurally, not just for the two hosts that exist today.
+    if (!options.closeOnNavigationDisabled) {
+      throw new Error(
+        'UncopiedArtifactCloseGuard.protect() requires the dialog to have been opened with ' +
+        'closeOnNavigation: false (R-15) -- otherwise Material disposes it on browser back ' +
+        "navigation before this guard's popstate listener ever runs."
+      );
+    }
     // AD-14: without this, Material closes the dialog on backdrop/Esc before anyone gets to ask.
     dialogRef.disableClose = true;
 

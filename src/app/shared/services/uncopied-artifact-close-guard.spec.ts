@@ -70,9 +70,25 @@ describe('UncopiedArtifactCloseGuard', () => {
 
   function protectWith(pending: ArtifactKind[]) {
     const pendingArtifacts = signal<readonly ArtifactKind[]>(pending);
-    const handle = guard.protect(dialogRefMock as unknown as MatDialogRef<unknown>, pendingArtifacts);
+    const handle = guard.protect(
+      dialogRefMock as unknown as MatDialogRef<unknown>,
+      pendingArtifacts,
+      { closeOnNavigationDisabled: true }
+    );
     return { handle, pendingArtifacts };
   }
+
+  // TD-4: protect() cannot read whether the caller actually opened the dialog with
+  // closeOnNavigation: false (MatDialogRef exposes neither `_ref` nor `config`), so it fails
+  // loudly instead when the caller admits it didn't.
+  it('throws when the caller has not opened the dialog with closeOnNavigation: false (R-15)', () => {
+    const pendingArtifacts = signal<readonly ArtifactKind[]>(['credential']);
+    expect(() => guard.protect(
+      dialogRefMock as unknown as MatDialogRef<unknown>,
+      pendingArtifacts,
+      { closeOnNavigationDisabled: false }
+    )).toThrow(/closeOnNavigation: false/);
+  });
 
   it("sets disableClose immediately (belt-and-suspenders with the host's own MatDialogConfig)", () => {
     protectWith(['credential']);
