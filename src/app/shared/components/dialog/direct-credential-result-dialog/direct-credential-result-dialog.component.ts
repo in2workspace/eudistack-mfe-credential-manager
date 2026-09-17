@@ -98,18 +98,17 @@ export class DirectCredentialResultDialogComponent {
   });
 
   /**
-   * The top instructional line, derived from `pendingArtifacts` (AD-16) instead of hardcoded to
-   * the credential: once the credential is copied first (EC-08, order-independent), the remaining
-   * warning must name the private key, not repeat "signed credential" for an artifact that is no
-   * longer at risk.
+   * The top instructional line -- names which artifacts THIS surface holds, not which are still
+   * uncopied. Deliberately static: derived from `hasKeyArtifact` (fixed at open time), never from
+   * `pendingArtifacts`, so copying the credential first does not make the warning drop it and
+   * start talking only about the key (that would be misleading -- both were still shown, both
+   * still need to have been taken). The credential itself is always present in this dialog's data
+   * (`signedCredential` is non-optional), so the only two reachable cases here are
+   * credential-only and credential+key.
    */
   protected readonly copyInstructionKey = computed<string>(() => {
-    const pending = this.pendingArtifacts();
-    if (pending.length === 2) {
+    if (this.hasKeyArtifact) {
       return 'credentialIssuance.direct-result-dialog.messageCredentialAndKey';
-    }
-    if (pending[0] === 'privateKey') {
-      return 'credentialIssuance.direct-result-dialog.messageKeyOnly';
     }
     return 'credentialIssuance.direct-result-dialog.message';
   });

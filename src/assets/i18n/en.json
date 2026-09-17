@@ -413,7 +413,6 @@
       "title": "Credential created",
       "message": "Copy the signed credential before closing this window: you won't be able to see it again.",
       "messageCredentialAndKey": "Copy the private key and the signed credential before closing this window: you won't be able to see them again.",
-      "messageKeyOnly": "Copy the private key before closing this window: you won't be able to see it again.",
       "credentialLabel": "Signed credential",
       "done": "Done",
       "copyFailed": {

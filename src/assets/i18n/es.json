@@ -413,7 +413,6 @@
       "title": "Credencial creada",
       "message": "Copia la credencial firmada antes de cerrar esta ventana: no podrás volver a verla.",
       "messageCredentialAndKey": "Copia la clave privada y la credencial firmada antes de cerrar esta ventana: no podrás volver a verlas.",
-      "messageKeyOnly": "Copia la clave privada antes de cerrar esta ventana: no podrás volver a verla.",
       "credentialLabel": "Credencial firmada",
       "done": "Hecho",
       "copyFailed": {
