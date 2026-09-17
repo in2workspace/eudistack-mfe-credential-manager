@@ -2,7 +2,8 @@
   <span class="field-label">{{ labelKey() | translate }}</span>
 
   <div class="field-row">
-    <input class="field-value" type="text" readonly [value]="value()" [attr.aria-label]="labelKey() | translate" />
+    <input class="field-value" type="text" readonly [value]="value()" [attr.aria-label]="labelKey() | translate"
+      spellcheck="false" autocomplete="off" data-lpignore="true" />
 
     <button type="button" class="copy-button" [attr.aria-label]="'dialog.copy' | translate" (click)="copy()">
       <mat-icon aria-hidden="true">content_copy</mat-icon>
