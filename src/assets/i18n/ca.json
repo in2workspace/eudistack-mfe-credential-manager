@@ -387,6 +387,8 @@
     "direct-result-dialog": {
       "title": "Credencial creada",
       "message": "Copia la credencial signada abans de tancar aquesta finestra: no la podràs tornar a veure.",
+      "messageCredentialAndKey": "Copia la clau privada i la credencial signada abans de tancar aquesta finestra: no les podràs tornar a veure.",
+      "messageKeyOnly": "Copia la clau privada abans de tancar aquesta finestra: no la podràs tornar a veure.",
       "credentialLabel": "Credencial signada",
       "done": "Fet",
       "copyFailed": {

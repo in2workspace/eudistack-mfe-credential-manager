@@ -97,6 +97,23 @@ export class DirectCredentialResultDialogComponent {
     return pending;
   });
 
+  /**
+   * The top instructional line, derived from `pendingArtifacts` (AD-16) instead of hardcoded to
+   * the credential: once the credential is copied first (EC-08, order-independent), the remaining
+   * warning must name the private key, not repeat "signed credential" for an artifact that is no
+   * longer at risk.
+   */
+  protected readonly copyInstructionKey = computed<string>(() => {
+    const pending = this.pendingArtifacts();
+    if (pending.length === 2) {
+      return 'credentialIssuance.direct-result-dialog.messageCredentialAndKey';
+    }
+    if (pending[0] === 'privateKey') {
+      return 'credentialIssuance.direct-result-dialog.messageKeyOnly';
+    }
+    return 'credentialIssuance.direct-result-dialog.message';
+  });
+
   // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false
   // (opener contract, see class doc above).
   private readonly guardHandle = this.closeGuard.protect(this.dialogRef, this.pendingArtifacts, { closeOnNavigationDisabled: true });
