@@ -59,7 +59,10 @@ export class CredentialCatalogService {
     }
     for (const [configId, modes] of snapshot.modesByConfigId) {
       if (modes.length === 0) {
-        console.warn(`Credential configuration "${configId}" has no eligible delivery modes; excluded from the issuance type list.`);
+        // configId is server-controlled (tenant catalogue) -- kept as its own argument rather than
+        // interpolated into the template string so it can't inject newlines/control characters
+        // into the log line.
+        console.warn('Credential configuration has no eligible delivery modes; excluded from the issuance type list.', configId);
       }
     }
   }

@@ -110,7 +110,9 @@ describe('CredentialCatalogService', () => {
         modesByConfigId: new Map([['learcredential.employee.w3c.4', []]])
       });
       expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy.mock.calls[0][0]).toContain('learcredential.employee.w3c.4');
+      // configId is passed as its own argument (log-injection hardening, TD-5), not interpolated
+      // into the message string.
+      expect(warnSpy.mock.calls[0][1]).toBe('learcredential.employee.w3c.4');
     });
 
     it('a disabled entry with an empty deliveryModes array does not warn (AC-11)', () => {
