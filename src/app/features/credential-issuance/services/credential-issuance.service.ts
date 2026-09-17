@@ -587,7 +587,21 @@ export class CredentialIssuanceService {
             return this.openDirectCredentialResultDialog(response, requiresRequestHolderKey(configId), privateKeyHex, outcomes);
           }
           if (directDeclared) {
-            // direct was declared but failed/missing
+            // direct was declared but failed/missing (the delivered case above already returned).
+            // EUD-233 AD-8's second exception (AC-09's exception clause, added 2026-09-17): a
+            // hybrid emission whose direct channel failed still owes the key when at least one
+            // Wallet channel delivered and the type is one of the two AD-8 machine types -- the
+            // credential exists (its cnf already binds to this attempt's key) and discarding it
+            // would leave it permanently unusable. `anyDelivered` can only be reflecting a Wallet
+            // channel here, since direct's own outcome is not 'delivered' in this branch --
+            // derived from the same resolveChannelOutcomes() projection already computed above,
+            // never a second inspection of responses[] (AD-7). Any other type, or no Wallet
+            // channel delivered, keeps the AC-08 behavior: clear() with no key section.
+            const hasAnyWalletDelivered = anyDelivered;
+            if (hasAnyWalletDelivered && requiresRequestHolderKey(configId)) {
+              const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
+              return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
+            }
             this.holderPrivateKeyStore.clear();
             return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
           }

@@ -815,6 +815,106 @@ describe('CredentialIssuanceService', () => {
       });
     });
 
+    describe('AC-09 exception clause: direct fails, wallet delivers (tasks 38/39, 2026-09-17)', () => {
+      it('AD-8 machine type, direct fails and a wallet channel delivers, key still in the store -- reaches the extended CredentialOfferDialogComponent with the key, no credential/JWT block', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+        const router = TestBed.inject(Router);
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data).toEqual(expect.objectContaining({
+          requiresHolderKeySection: true,
+          privateKeyHex: 'mock-private-key-hex',
+          credentialOfferUri: 'openid-credential-offer://abc'
+        }));
+        expect(config.data.outcomes.get('direct')).toBe('failed');
+        expect(config.data.outcomes.get('ui')).toBe('delivered');
+        expect(service.hasSubmitted$()).toBe(true);
+        expect(router.navigate).toHaveBeenCalled();
+      });
+
+      it('same precondition, but the key is no longer available in the client -- degrades to AC-10.2 (non-blocking notice, no gating), never falls back to the AC-08 clear()', async () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        markDeliveryModes('direct', 'email');
+        // Simulates a reload between submit and response, same pattern as the wallet-only
+        // describe block above: generation resolves, but nothing survives in the store.
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => Promise.resolve<HolderBinding>({
+          didKey: 'did:key:zMock',
+          publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+        }));
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'email', status: 200 }
+          ]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.requiresHolderKeySection).toBe(true);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('negative -- AC-08 stays scoped to "no wallet delivery", never generalized to the type: a non-exempt type reads and passes no key in this branch even with a wallet channel delivered', async () => {
+        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not one of the two AD-8 machine types
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data.requiresHolderKeySection).toBe(false);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('EC-11 negative: this branch never opens DirectCredentialResultDialogComponent', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalledWith(DirectCredentialResultDialogComponent, expect.anything());
+      });
+
+      it('ES-04/EC-09.2 delta fixture: a solo-Wallet emission with total failure (no envelope) still clears the private-key store -- generic error dialog, no result-by-mode surface, this branch untouched by the task 38 fix', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('email');
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        expect(TestBed.inject(HolderPrivateKeyStore).take()).toBeUndefined();
+      });
+    });
+
     describe('ES-09: holder-key generation failure', () => {
       beforeEach(() => {
         givenASubmittableMachineForm('learcredential.machine.w3c.3');
