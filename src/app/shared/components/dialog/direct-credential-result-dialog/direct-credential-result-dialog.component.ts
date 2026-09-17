@@ -63,10 +63,22 @@ export class DirectCredentialResultDialogComponent {
 
   /** Whether the key section renders at all -- distinct from whether it *has* a key (AC-10.1). */
   protected readonly hasKeySection = this.data.requiresHolderKeySection;
-  /** Whether there is a key artifact for `pendingArtifacts`/Done to gate on. */
-  private readonly hasKeyArtifact = this.data.requiresHolderKeySection && this.data.privateKeyHex !== undefined;
+  /**
+   * Whether there is a key artifact for `pendingArtifacts`/Done to gate on. Truthiness, not
+   * `!== undefined`: matches `HolderPrivateKeySectionComponent`'s own `@if (privateKeyHex(); ...)`
+   * render check, so the two can never disagree about an empty-string edge case.
+   */
+  private readonly hasKeyArtifact = this.data.requiresHolderKeySection && !!this.data.privateKeyHex;
   /** More than one requested channel: only then is the per-channel breakdown shown (AC-04/EC-07). */
   protected readonly showOutcomes = this.data.outcomes.size > 1;
+
+  /**
+   * Clipboard-clear TTL for the signed credential (F4, 2026-09-17 hardening) -- same duration and
+   * mechanism as the private key's (`HolderPrivateKeySectionComponent`), closing the asymmetry:
+   * the VC carries mandator PII and had no auto-clear at all before this.
+   */
+  private static readonly CREDENTIAL_CLIPBOARD_TTL_MS = 60_000;
+  protected readonly credentialClipboardTtlMs = DirectCredentialResultDialogComponent.CREDENTIAL_CLIPBOARD_TTL_MS;
 
   /**
    * AD-16: the single source both `Done`'s gating and the close guard read. The credential is
@@ -85,7 +97,9 @@ export class DirectCredentialResultDialogComponent {
     return pending;
   });
 
-  private readonly guardHandle = this.closeGuard.protect(this.dialogRef, this.pendingArtifacts);
+  // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false
+  // (opener contract, see class doc above).
+  private readonly guardHandle = this.closeGuard.protect(this.dialogRef, this.pendingArtifacts, { closeOnNavigationDisabled: true });
 
   protected onCredentialCopied(): void {
     this.credentialCopied.set(true);

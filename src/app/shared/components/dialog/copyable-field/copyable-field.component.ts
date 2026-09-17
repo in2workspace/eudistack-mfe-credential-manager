@@ -29,8 +29,11 @@ export class CopyableFieldComponent implements OnDestroy {
   public readonly value = input.required<string>();
   /**
    * Milliseconds before this field overwrites the clipboard with an empty string after a copy.
-   * Omitted: no clipboard-clear timer at all (fine for a non-sensitive artifact like the
-   * credential). See the class doc for when it must be supplied.
+   * Omitted: no clipboard-clear timer at all. Both the private key
+   * (`HolderPrivateKeySectionComponent`) and the signed credential (`DirectCredentialResultDialogComponent`,
+   * `DeliveryOutcomeListComponent`) supply 60s as of the 2026-09-17 hardening -- the credential
+   * carries mandator PII and is no longer treated as exempt from clipboard exposure just because
+   * it isn't the key itself. See the class doc for when it must be supplied.
    */
   public readonly clipboardTtlMs = input<number>();
 

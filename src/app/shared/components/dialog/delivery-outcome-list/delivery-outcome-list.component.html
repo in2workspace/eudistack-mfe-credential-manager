@@ -9,6 +9,7 @@
         <app-copyable-field
           labelKey="credentialIssuance.direct-result-dialog.credentialLabel"
           [value]="signedCredential()!"
+          [clipboardTtlMs]="credentialClipboardTtlMs"
           (copied)="credentialCopied.emit()"
           (copyFailed)="credentialCopyFailed.emit()">
         </app-copyable-field>

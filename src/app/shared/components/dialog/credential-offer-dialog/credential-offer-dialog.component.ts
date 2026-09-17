@@ -51,7 +51,10 @@ export class CredentialOfferDialogComponent {
 
   /** Structural: whether this surface has a key section at all, not whether a key is present now. */
   protected readonly hasKeySection = !!this.data.requiresHolderKeySection;
-  private readonly hasKeyArtifact = this.hasKeySection && this.data.privateKeyHex !== undefined;
+  // Truthiness, not `!== undefined`: matches HolderPrivateKeySectionComponent's own
+  // `@if (privateKeyHex(); ...)` render check, so the two can never disagree about an
+  // empty-string edge case.
+  private readonly hasKeyArtifact = this.hasKeySection && !!this.data.privateKeyHex;
 
   protected readonly privateKeyCopied = signal(false);
   protected readonly privateKeyCopyFailed = signal(false);
@@ -81,8 +84,11 @@ export class CredentialOfferDialogComponent {
    * empty -- is what keeps the regression path's `disableClose`/backdrop/Esc behavior identical to
    * before this Story ("conserva su Close único AS-IS").
    */
+  // closeOnNavigationDisabled: true -- this branch only runs when hasKeySection is true, which is
+  // exactly when the host opens this dialog with closeOnNavigation: false (the two flags share
+  // the same requiresHolderKeySection source, see openCredentialOfferDialog()).
   private readonly guardHandle: UncopiedArtifactCloseGuardHandle | undefined = this.hasKeySection
-    ? this.closeGuard.protect(this.dialogRef, this.pendingArtifacts)
+    ? this.closeGuard.protect(this.dialogRef, this.pendingArtifacts, { closeOnNavigationDisabled: true })
     : undefined;
 
   protected onPrivateKeyCopied(): void {

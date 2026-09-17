@@ -61,6 +61,17 @@ export class DeliveryOutcomeListComponent {
   public readonly credentialCopied = output<void>();
   public readonly credentialCopyFailed = output<void>();
 
+  /**
+   * Clipboard-clear TTL for the embedded credential (F4, 2026-09-17 hardening): the signed VC
+   * carries mandator PII (`commonName`, `email`, `serialNumber`, `organizationIdentifier` for
+   * `learcredential.machine`) and is holder-bound, not a bearer secret, but leaving it on a shared
+   * clipboard indefinitely is the same exposure class NFR-S-EUD168-04(b) already closes for the
+   * private key. Same duration, same mechanism (`CopyableFieldComponent`), reused rather than
+   * treating the credential as exempt because it happens to render in a different component.
+   */
+  private static readonly CREDENTIAL_CLIPBOARD_TTL_MS = 60_000;
+  protected readonly credentialClipboardTtlMs = DeliveryOutcomeListComponent.CREDENTIAL_CLIPBOARD_TTL_MS;
+
   protected readonly orderedEntries = computed<DeliveryOutcomeEntry[]>(() => {
     const outcomes = this.outcomes();
     return DELIVERY_MODE_OPTIONS
