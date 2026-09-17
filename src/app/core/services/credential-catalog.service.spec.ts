@@ -8,11 +8,6 @@ import { CredentialCatalogService } from './credential-catalog.service';
 import { CredentialCatalogEntry } from '../models/dto/credential-catalog.dto';
 import { DeliveryEligibilitySnapshot } from '../models/entity/delivery-eligibility-snapshot';
 
-/**
- * EUD-233 Task 28: the real hole this closes is that Task 7's implementation shipped with no
- * dedicated spec of its own. Covers AC-02.3 (one adapter, one GET, two projections), the four
- * catalogue states (EC-06/EC-10/AC-11/ES-08), and the AC-11 console.warn cardinality (R-10).
- */
 describe('CredentialCatalogService', () => {
   let service: CredentialCatalogService;
   let httpMock: HttpTestingController;
@@ -42,7 +37,7 @@ describe('CredentialCatalogService', () => {
   });
 
   describe('fetchCatalog()', () => {
-    it('should GET the catalogue endpoint and return the raw array (AC-02.3)', () => {
+    it('should GET the catalogue endpoint and return the raw array', () => {
       const catalog: CredentialCatalogEntry[] = [
         { credentialConfigurationId: 'learcredential.employee.w3c.4', displayName: 'LEAR Credential Employee', enabled: true, deliveryModes: ['direct', 'ui'] }
       ];
@@ -58,7 +53,7 @@ describe('CredentialCatalogService', () => {
   });
 
   describe('loadDeliveryEligibility()', () => {
-    it('is a second projection of the same GET, not a second request (AC-02.3)', () => {
+    it('is a second projection of the same GET, not a second request', () => {
       let snapshot: DeliveryEligibilitySnapshot | undefined;
       service.loadDeliveryEligibility().subscribe(result => { snapshot = result; });
 
@@ -96,7 +91,7 @@ describe('CredentialCatalogService', () => {
       expect(warnSpy).not.toHaveBeenCalled();
     });
 
-    it('state 3: an empty deliveryModes array warns exactly once, naming the configId (AC-11, R-10)', () => {
+    it('state 3: an empty deliveryModes array warns exactly once, naming the configId', () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       let snapshot: DeliveryEligibilitySnapshot | undefined;
       service.loadDeliveryEligibility().subscribe(result => { snapshot = result; });
@@ -115,7 +110,7 @@ describe('CredentialCatalogService', () => {
       expect(warnSpy.mock.calls[0][1]).toBe('learcredential.employee.w3c.4');
     });
 
-    it('a disabled entry with an empty deliveryModes array does not warn (AC-11)', () => {
+    it('a disabled entry with an empty deliveryModes array does not warn', () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       let snapshot: DeliveryEligibilitySnapshot | undefined;
       service.loadDeliveryEligibility().subscribe(result => { snapshot = result; });

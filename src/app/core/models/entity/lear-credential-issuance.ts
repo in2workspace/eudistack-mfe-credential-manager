@@ -58,13 +58,6 @@ export interface HolderKeyMaterial {
   publicJwk: HolderPublicJwk;
 }
 
-/**
- * The three delivery modes an issuance can fan out to (EUD-233 AD-13). Deliberately a single
- * vocabulary aligned with `IssuanceChannel` (the response DTO, `lear-credential-issuance-request.dto.ts`)
- * and with `DeliveryMode.java` in the Issuer: before this Story the form spoke a narrower
- * `DeliveryMode` (`'email' | 'ui'`) than the wire did, which made `'direct'` a second vocabulary for
- * the same concept -- exactly what `naming-ubiquitous-language.md` prohibits.
- */
 export type DeliveryModeToken = 'direct' | 'email' | 'ui';
 
 export interface DeliveryModeOption {
@@ -95,11 +88,6 @@ export const WALLET_DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
   { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
 ];
 
-/**
- * Fixed presentation order for per-channel results, independent of which channels delivered or failed
- * (EUD-233 AC-03.2, EC-07, AD-10): the result view iterates this array, never the keys of an outcomes
- * map, so a channel's position never depends on its outcome.
- */
 export const DELIVERY_RESULT_ORDER: readonly DeliveryModeToken[] = ['direct', 'ui', 'email'];
 
 declare const deliveryCsvBrand: unique symbol;
@@ -111,12 +99,6 @@ declare const deliveryCsvBrand: unique symbol;
  */
 export type DeliveryCsv = string & { readonly [deliveryCsvBrand]: true };
 
-/**
- * Builds the wire-ready CSV for `delivery`: deduplicates and orders tokens to match
- * {@link DELIVERY_RESULT_ORDER}, the same canonical order the Issuer's `DeliveryMode.toCanonicalCsv`
- * normalizes to (EUD-233 AD-3). Throws on an empty iterable -- an empty CSV is not a legal request
- * (ES-01); the client-side submit guard belongs upstream of this factory (the form), not inside it.
- */
 export function toDeliveryCsv(modes: Iterable<DeliveryModeToken>): DeliveryCsv {
   const requested = new Set(modes);
   if (requested.size === 0) {

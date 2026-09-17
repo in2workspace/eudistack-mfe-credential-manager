@@ -1,9 +1,5 @@
 import { CredentialCatalogEntry } from './credential-catalog.dto';
 
-// EUD-233 task 2: CredentialCatalogEntry is a pure data shape (no runtime logic), so these are
-// shape/fixture checks over the AD-9 catalogue states this DTO must be able to represent, not
-// behavior tests. The behavior that reads these shapes is `resolveDeliveryEligibility` (task 3),
-// where the meaningful assertions live.
 describe('CredentialCatalogEntry', () => {
 
   it('represents state 1 (deliveryModes present and non-empty)', () => {

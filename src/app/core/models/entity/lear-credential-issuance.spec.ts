@@ -6,8 +6,6 @@ import {
   toDeliveryCsv,
 } from './lear-credential-issuance';
 
-// EUD-233 task 1: the delivery vocabulary is domain-only (no Angular, no HTTP), so these are plain
-// unit tests over constants and a pure function.
 describe('lear-credential-issuance — delivery vocabulary', () => {
 
   describe('DELIVERY_MODE_OPTIONS', () => {
@@ -24,8 +22,6 @@ describe('lear-credential-issuance — delivery vocabulary', () => {
     });
 
     it('never includes direct', () => {
-      // Not a runtime guard anything else relies on -- the guarantee is that this catalogue, consumed
-      // as-is by the degraded paths (EUD-233 AD-9 states 2 and 4), has no 'direct' entry to offer.
       expect(WALLET_DELIVERY_MODE_OPTIONS.some(option => option.value === 'direct')).toBe(false);
     });
   });
@@ -44,11 +40,11 @@ describe('lear-credential-issuance — delivery vocabulary', () => {
       expect(toDeliveryCsv(['ui', 'ui', 'email'])).toBe('ui,email');
     });
 
-    it('emits exactly the three tokens when all three are marked (AC-03.2)', () => {
+    it('emits exactly the three tokens when all three are marked', () => {
       expect(toDeliveryCsv(['ui', 'email', 'direct'])).toBe('direct,ui,email');
     });
 
-    it('declares exactly what was marked, no more and no less (AC-03.3)', () => {
+    it('declares exactly what was marked, no more and no less', () => {
       expect(toDeliveryCsv(['direct', 'email'])).toBe('direct,email');
     });
 

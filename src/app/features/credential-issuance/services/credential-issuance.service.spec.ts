@@ -141,7 +141,7 @@ describe('CredentialIssuanceService', () => {
         { provide: CredentialCatalogService, useValue: mockCatalogService },
         { provide: IssuanceHolderKeyService, useValue: mockHolderKeyService },
         // HolderPrivateKeyStore / HolderKeyStoreService: real instances (root, simple signal
-        // stores) rather than mocks, so seal verification (AC-10.1) and clear() semantics are
+        // stores) rather than mocks, so seal verification and clear() semantics are
         // exercised for real, not merely assumed.
         HolderPrivateKeyStore,
         HolderKeyStoreService,
@@ -318,9 +318,7 @@ describe('CredentialIssuanceService', () => {
       expect(mockMetadataService.getConfigurationById).toHaveBeenCalledWith('learcredential.employee.w3c.2');
     });
   });
-
-  // PO override 2026-09-16, supersedes EC-05's "no default" rule for the initial/reset state.
-  describe('delivery mode defaulting (PO override 2026-09-16, supersedes EC-05)', () => {
+  describe('delivery mode defaulting', () => {
     // The delivery-eligibility read is one of the three forkJoin sources gating construction
     // (isLoadingCatalog$'s own describe block above); the policy load is a Promise, so it only
     // settles on the microtask queue -- a real await, not fakeAsync/tick(). Without this,
@@ -461,8 +459,8 @@ describe('CredentialIssuanceService', () => {
     };
 
     /**
-     * Same shape as givenASubmittableForm, but for an AD-8 exempt machine configId. No `keys`
-     * schema group (Task 17 retired it, AC-12.1): the machine form is structurally identical to
+     * Same shape as givenASubmittableForm, but for an AD-8 (EUD-233) exempt machine configId. No `keys`
+     * schema group: the machine form is structurally identical to
      * any other type's.
      */
     const givenASubmittableMachineForm = (configId: string) => {
@@ -508,8 +506,8 @@ describe('CredentialIssuanceService', () => {
       jest.restoreAllMocks();
     });
 
-    describe('base outcome matrix (AC-01, AC-03.x, AC-04, AC-08, AC-09, EC-02, EC-03, EC-07)', () => {
-      it('AC-01/EC-05: direct solo (non-machine) opens DirectCredentialResultDialogComponent with the credential only', () => {
+    describe('base outcome matrix', () => {
+      it('Direct solo (non-machine) opens DirectCredentialResultDialogComponent with the credential only', () => {
         markDeliveryModes('direct');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
@@ -532,7 +530,7 @@ describe('CredentialIssuanceService', () => {
         expect(service.hasSubmitted$()).toBe(true);
       });
 
-      it('AC-03.1/AC-04: hybrid direct+ui, direct delivered, wallet failed -- credential surfaces, outcomes show both', () => {
+      it('Hybrid direct+ui, direct delivered, wallet failed -- credential surfaces, outcomes show both', () => {
         markDeliveryModes('direct', 'ui');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [
@@ -549,7 +547,7 @@ describe('CredentialIssuanceService', () => {
         expect(config.data.outcomes.get('ui')).toBe('failed');
       });
 
-      it('AC-03.2/EC-07: all three modes, direct+ui delivered, email failed, fixed order preserved in the outcomes map', () => {
+      it('All three modes, direct+ui delivered, email failed, fixed order preserved in the outcomes map', () => {
         markDeliveryModes('direct', 'ui', 'email');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [
@@ -567,7 +565,7 @@ describe('CredentialIssuanceService', () => {
         expect([...config.data.outcomes.keys()]).toEqual(['direct', 'ui', 'email']);
       });
 
-      it('AC-08: direct solo, direct fails -- no result dialog, generic failure surfaces (ES-04-shaped)', () => {
+      it('Direct solo, direct fails -- no result dialog, generic failure surfaces (ES-04-shaped)', () => {
         markDeliveryModes('direct');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }]
@@ -582,7 +580,7 @@ describe('CredentialIssuanceService', () => {
         expect(service.hasSubmitted$()).toBe(false);
       });
 
-      it('AC-09: hybrid direct+ui, direct fails, wallet delivers -- no result dialog, wallet outcome still shown', () => {
+      it('Hybrid direct+ui, direct fails, wallet delivers -- no result dialog, wallet outcome still shown', () => {
         markDeliveryModes('direct', 'ui');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [
@@ -605,7 +603,7 @@ describe('CredentialIssuanceService', () => {
         expect(router.navigate).toHaveBeenCalled();
       });
 
-      it('EC-02/AC-05.2: ui+email, no direct, both delivered -- extended CredentialOfferDialogComponent, no key section', () => {
+      it('ui+email, no direct, both delivered -- extended CredentialOfferDialogComponent, no key section', () => {
         markDeliveryModes('ui', 'email');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [
@@ -623,7 +621,7 @@ describe('CredentialIssuanceService', () => {
         expect(config.closeOnNavigation).not.toBe(false);
       });
 
-      it('AC-05.1 regression: single ui channel, no artifact to gate -- unchanged AS-IS dialog options', () => {
+      it('EUD-233 regression: single ui channel, no artifact to gate -- unchanged AS-IS dialog options', () => {
         markDeliveryModes('ui');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
@@ -651,13 +649,13 @@ describe('CredentialIssuanceService', () => {
       });
     });
 
-    describe('AC-07/AC-10.1/AC-12.1/AC-12.2: holder-key provisioning for the two AD-8 exempt machine types', () => {
+    describe('Holder-key provisioning for the two AD-8 exempt machine types', () => {
       beforeEach(() => {
         givenASubmittableMachineForm('learcredential.machine.w3c.3');
         markDeliveryModes('direct');
       });
 
-      it('AC-12.1: invokes IssuanceHolderKeyService.generateForSubmission() before building the request', async () => {
+      it('Invokes IssuanceHolderKeyService.generateForSubmission() before building the request', async () => {
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
         }));
@@ -673,7 +671,7 @@ describe('CredentialIssuanceService', () => {
         expect(request.payload.mandatee.id).toBe('did:key:zMock');
       });
 
-      it('AC-07: direct delivered -- the sealed private key reaches DirectCredentialResultDialogComponent', async () => {
+      it('direct delivered -- the sealed private key reaches DirectCredentialResultDialogComponent', async () => {
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
         }));
@@ -686,7 +684,7 @@ describe('CredentialIssuanceService', () => {
         expect(config.data.privateKeyHex).toBe('mock-private-key-hex');
       });
 
-      it('AC-10.1: the key is unavailable in the store when the response arrives -- degrades to credential-only, no throw', async () => {
+      it('the key is unavailable in the store when the response arrives -- degrades to credential-only, no throw', async () => {
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
         }));
@@ -733,7 +731,7 @@ describe('CredentialIssuanceService', () => {
         expect(request.holder_key).toBeUndefined();
       });
 
-      it('AC-12.2: a non-exempt type never calls generateForSubmission and never carries holder_key', () => {
+      it('a non-exempt type never calls generateForSubmission and never carries holder_key', () => {
         givenASubmittableForm(); // learcredential.employee.w3c.2 -- not exempt
         markDeliveryModes('direct');
         mockHolderKeyService.generateForSubmission.mockClear();
@@ -749,12 +747,12 @@ describe('CredentialIssuanceService', () => {
       });
     });
 
-    describe('AC-13/AC-10.2/EC-09.1/EC-09.2: wallet-only path for the two AD-8 exempt machine types', () => {
+    describe('wallet-only path for the two AD-8 exempt machine types', () => {
       beforeEach(() => {
         givenASubmittableMachineForm('learcredential.machine.sd.1');
       });
 
-      it('AC-13: direct not declared, wallet delivers -- extended dialog gets the key section', async () => {
+      it('direct not declared, wallet delivers -- extended dialog gets the key section', async () => {
         markDeliveryModes('ui');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
@@ -798,9 +796,8 @@ describe('CredentialIssuanceService', () => {
         expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
       });
 
-      it('AC-10.2: key unavailable in the wallet-only path -- Done ungated, i.e. no dialog reconfiguration needed from this service', async () => {
+      it('key unavailable in the wallet-only path -- Done ungated, i.e. no dialog reconfiguration needed from this service', async () => {
         markDeliveryModes('email');
-        // Simulates the same "reload wiped the store" scenario as AC-10.1, on the wallet-only path.
         mockHolderKeyService.generateForSubmission.mockImplementation(() => Promise.resolve<HolderBinding>({
           didKey: 'did:key:zMock',
           publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
@@ -993,7 +990,7 @@ describe('CredentialIssuanceService', () => {
       expect(service.isFormValid$()).toBe(false);
     }));
 
-    it('AC-02: an empty required field blocks isFormValid$ and the request is not sent', fakeAsync(() => {
+    it('n empty required field blocks isFormValid$ and the request is not sent', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       TestBed.flushEffects();
@@ -1005,7 +1002,7 @@ describe('CredentialIssuanceService', () => {
       expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
     }));
 
-    it('AC-04 / ES-03: correcting the field re-validates the current FormGroup state (not a cached flag)', fakeAsync(() => {
+    it('correcting the field re-validates the current FormGroup state (not a cached flag)', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       expect(service.isFormValid$()).toBe(false);

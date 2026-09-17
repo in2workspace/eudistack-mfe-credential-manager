@@ -11,10 +11,6 @@ import { DeliveryEligibilitySnapshot, resolveDeliveryEligibility } from '../mode
  * whole app (EUD-233 AD-2). The write side (`PUT`) stays in
  * `features/settings/catalog/credential-catalog-admin.service.ts`, the only screen that mutates the
  * catalogue -- this service never writes.
- *
- * The URL is built from `TenantService.serverUrl`, not `environment.server_url`: the OIDC config
- * declares `secureRoutes: [serverUrl]`, and `AuthInterceptor` only attaches the Bearer token to URLs
- * matching it (see the settings service this was extracted from).
  */
 @Injectable({ providedIn: 'root' })
 export class CredentialCatalogService {

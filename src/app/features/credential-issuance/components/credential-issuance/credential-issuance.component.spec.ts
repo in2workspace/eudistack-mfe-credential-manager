@@ -198,8 +198,7 @@ describe('CredentialIssuanceComponent', () => {
     });
   });
 
-  // EUD-233 AD-4/AD-13: replaces the retired mat-radio-group delivery selector.
-  describe('delivery selector (AC-02.x, AC-06, PO override 2026-09-16 superseding EC-05, ES-01)', () => {
+  describe('delivery selector', () => {
     const checkboxInputs = (): HTMLInputElement[] =>
       Array.from(fixture.nativeElement.querySelectorAll('mat-checkbox input[type="checkbox"]'));
     const submitButton = (): HTMLButtonElement =>
@@ -216,11 +215,11 @@ describe('CredentialIssuanceComponent', () => {
       fixture.detectChanges();
     });
 
-    it('renders one checkbox per offerable mode, from offerableModes$ (AC-02.1, AC-02.2, AC-02.4)', () => {
+    it('renders one checkbox per offerable mode, from offerableModes$', () => {
       expect(checkboxInputs().length).toBe(3);
     });
 
-    it('renders no checkbox for a mode absent from offerableModes$ (AC-02.5 narrowing)', () => {
+    it('renders no checkbox for a mode absent from offerableModes$', () => {
       (mockService.offerableModes$ as WritableSignal<any>).set([
         { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
       ]);
@@ -229,7 +228,7 @@ describe('CredentialIssuanceComponent', () => {
       expect(checkboxInputs().length).toBe(1);
     });
 
-    it("renders the service's default selection as checked (PO override 2026-09-16, supersedes EC-05)", () => {
+    it("renders the service's default selection as checked", () => {
       // The component only renders whatever selectedDeliveryModes$ reports; the defaulting rule
       // itself lives in, and is unit-tested against, CredentialIssuanceService. offerableModes$ is
       // mocked in order [direct, ui, email], so index 0 is the 'direct' checkbox.
@@ -269,8 +268,8 @@ describe('CredentialIssuanceComponent', () => {
     });
   });
 
-  // EUD-233 AD-12: state 4 only, never blocking the form beneath it.
-  describe('delivery catalogue unavailable banner (ES-08)', () => {
+  // State 4 only, never blocking the form beneath it.
+  describe('delivery catalogue unavailable banner', () => {
     it('renders nothing when the read has not failed', () => {
       expect(fixture.nativeElement.querySelector('app-alert-banner')).toBeNull();
     });
@@ -292,7 +291,7 @@ describe('CredentialIssuanceComponent', () => {
 
   // EUD-233 AC-12.1/AC-12.2: the retired KeyGeneratorComponent leaves no trace. Regression only --
   // the mocked schema below never included a `keys` group (real schemas do not either, post-Task 17).
-  describe('machine credential type has no key-generation surface (AC-12.1, AC-12.2)', () => {
+  describe('machine credential type has no key-generation surface', () => {
     it('renders no key-related control for the machine type', () => {
       (mockService.selectedCredentialType$ as WritableSignal<any>).set('learcredential.machine');
       (mockService.credentialFormSchema$ as WritableSignal<any>).set([
@@ -373,9 +372,6 @@ describe('CredentialIssuanceComponent', () => {
       expect(console.error).toHaveBeenCalledTimes(1);
     });
 
-    // EUD-233 PO fix 2026-09-16: the machine-only checkbox confirmation dialog is gone -- the
-    // private key is never shown before emission anymore (AC-12), so every credential type opens
-    // the same submit confirmation.
     it('opens the same submit dialog for LEARCredentialMachine as for any other type', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });

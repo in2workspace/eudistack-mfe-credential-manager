@@ -8,7 +8,7 @@ import { TenantService } from 'src/app/core/services/tenant.service';
 import { CopyableFieldComponent } from '../copyable-field/copyable-field.component';
 
 /**
- * Post-release PO polish (2026-09-16/17): one bordered box per requested mode, green on delivery
+ * One bordered box per requested mode, green on delivery
  * and red on failure, with mode-specific body copy -- replaces the previous flat `<ul>` list.
  * Ordering (EC-07) and the "only render what was requested" behavior are unchanged, so this spec
  * covers just what changed: markup, per-mode styling class, and per-mode/per-outcome text.
@@ -97,7 +97,7 @@ describe('DeliveryOutcomeListComponent', () => {
   });
 
   /**
-   * Post-release PO polish (2026-09-17): the `direct`/`ui` boxes embed the real artifact instead of
+   * The `direct`/`ui` boxes embed the real artifact instead of
    * a generic "delivered" line, so it is not duplicated above this list by the host anymore.
    */
   describe('embedded artifacts (2026-09-17 polish)', () => {

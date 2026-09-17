@@ -17,24 +17,23 @@ interface DeliveryOutcomeEntry {
  * `DELIVERY_RESULT_ORDER`), never the iteration order of an outcomes map -- a channel's position
  * must not depend on which one happened to fail (EC-07).
  *
- * One component, two hosts (AD-8): `DirectCredentialResultDialogComponent` (Task 22) and the
- * extended `CredentialOfferDialogComponent` (Task 24) both render this instead of each keeping
+ * One component, two hosts (AD-8): `DirectCredentialResultDialogComponent` and the
+ * extended `CredentialOfferDialogComponent` both render this instead of each keeping
  * its own copy of the ordering and the delivered/failed presentation.
  *
  * Renders only the modes the caller actually requested -- `outcomes` already comes from
  * `resolveChannelOutcomes(responses, requestedModes)`, which has exactly one entry per requested
- * mode, so there is nothing to filter here beyond restoring the fixed order (AC-03.1, AC-03.2,
- * AC-04, AC-09). `'missing'` renders the same as `'failed'`: both mean "nothing arrived on this
+ * mode, so there is nothing to filter here beyond restoring the fixed order. `'missing'` renders the same as `'failed'`: both mean "nothing arrived on this
  * channel", and the Operator has no use for the distinction between the two absence causes.
  *
- * Rendered as one bordered box per mode (post-release PO polish, 2026-09-16/17): green border and
+ * Rendered as one bordered box per mode: green border and
  * copy on delivery, red on failure, never the neutral/grey default. Only this component's own
  * per-mode presentation changed -- the gating that decides WHETHER it renders at all stays exactly
  * as each host already had it (`DirectCredentialResultDialogComponent.showOutcomes` = more than one
- * requested channel, AC-04/EC-07; `CredentialOfferDialogComponent.showOutcomes` = more than one
- * channel OR any channel not delivered, AC-05.2/EC-09.1).
+ * requested channel; `CredentialOfferDialogComponent.showOutcomes` = more than one
+ * channel OR any channel not delivered).
  *
- * Post-release polish (2026-09-17): the `direct` and `ui` boxes embed the actual artifact instead
+ * The `direct` and `ui` boxes embed the actual artifact instead
  * of a generic "delivered" line, so it is no longer duplicated above this list -- the signed
  * credential (`signedCredential`) inside the `direct` box, the QR (`credentialOfferUri`) inside the
  * `ui` box. Both inputs are optional and only ever consumed when the matching mode is present AND

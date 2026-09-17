@@ -11,11 +11,11 @@ import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-is
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface CredentialOfferDialogData {
-  /** Absent means email-only: no QR to show, generic acknowledgement copy instead (AD-8). */
+  /** Absent means email-only: no QR to show, generic acknowledgement copy instead. */
   credentialOfferUri?: string;
-  /** Host's `requiresRequestHolderKey(configId)` -- true only for the two AD-8 exempt machine types. */
+  /** Host's `requiresRequestHolderKey(configId)` -- true only for the two EUD-233  AD-8 exempt machine types. */
   requiresHolderKeySection?: boolean;
-  /** Present only when `requiresHolderKeySection` and the store still had it (AC-13); absent under `requiresHolderKeySection` is AC-10.2. */
+  /** Present only when `requiresHolderKeySection` and the store still had it (EUD-233 AC-13); absent under `requiresHolderKeySection` is AC-10.2. */
   privateKeyHex?: string;
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
 }

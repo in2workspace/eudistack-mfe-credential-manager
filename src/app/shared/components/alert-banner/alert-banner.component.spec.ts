@@ -29,14 +29,14 @@ describe('AlertBannerComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('is visible on render, announced via role="status" + aria-live="polite" (AC-06, ES-08)', () => {
+  it('is visible on render, announced via role="status" + aria-live="polite"', () => {
     const el = banner();
     expect(el).toBeTruthy();
     expect(el?.getAttribute('role')).toBe('status');
     expect(el?.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('exposes a dismiss control with an accessible name (AC-06)', () => {
+  it('exposes a dismiss control with an accessible name', () => {
     const button = dismissButton();
     expect(button).toBeTruthy();
     expect(button?.getAttribute('aria-label')).toBeTruthy();

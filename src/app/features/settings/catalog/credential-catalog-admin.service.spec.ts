@@ -45,7 +45,7 @@ describe('CredentialCatalogAdminService', () => {
   });
 
   describe('getCatalog()', () => {
-    it('should GET the admin catalog endpoint built from TenantService.serverUrl (AC-01)', () => {
+    it('should GET the admin catalog endpoint built from TenantService.serverUrl', () => {
       let received: CredentialCatalogEntry[] | undefined;
       service.getCatalog().subscribe(entries => { received = entries; });
 
@@ -56,7 +56,7 @@ describe('CredentialCatalogAdminService', () => {
       expect(received).toEqual(catalog);
     });
 
-    it('should propagate a 403 so the component can render the forbidden state (AC-03)', () => {
+    it('should propagate a 403 so the component can render the forbidden state', () => {
       let status: number | undefined;
       service.getCatalog().subscribe({ error: (err) => { status = err.status; } });
 
@@ -78,7 +78,7 @@ describe('CredentialCatalogAdminService', () => {
   });
 
   describe('updateCatalog()', () => {
-    it('should PUT the enabled ids as replace-all payload (AC-02)', () => {
+    it('should PUT the enabled ids as replace-all payload', () => {
       service.updateCatalog(['A', 'B']).subscribe();
 
       const req = httpMock.expectOne(url);

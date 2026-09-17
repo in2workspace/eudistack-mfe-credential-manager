@@ -10,14 +10,7 @@ import { CopyableFieldComponent } from '../copyable-field/copyable-field.compone
 import { DialogWrapperService } from '../dialog-wrapper/dialog-wrapper.service';
 import { TenantService } from 'src/app/core/services/tenant.service';
 
-/**
- * EUD-233 Task 19: the wallet-link derivation and copy-to-clipboard behavior this spec used to
- * assert directly now live in CredentialOfferQrComponent (own regression spec, Task 33).
- *
- * Task 37 extends this file rather than duplicating a new spec: this component IS the solo-Wallet
- * post-emission surface AD-8/AC-13 describes, extended in place (Task 24) -- the canonical asset
- * for AC-13, AC-10.2, EC-09.x, EC-11, EC-12, ES-07.2 and part of AC-14, per `acceptance-criteria.md`.
- */
+
 describe('CredentialOfferDialogComponent', () => {
   let fixture: ComponentFixture<CredentialOfferDialogComponent>;
   let component: CredentialOfferDialogComponent;
@@ -92,7 +85,7 @@ describe('CredentialOfferDialogComponent', () => {
     jest.restoreAllMocks();
   });
 
-  describe('regression: no key section (AC-05.1/AC-05.2, AS-IS)', () => {
+  describe('regression: no key section', () => {
     beforeEach(() => setup(mockData));
 
     it('should create the component', () => expect(component).toBeTruthy());
@@ -121,20 +114,20 @@ describe('CredentialOfferDialogComponent', () => {
     });
   });
 
-  describe('AC-13/EC-12: key section for the two AD-8 exempt types, wallet-only path', () => {
+  describe('EUD-233 AC-13/EC-12: key section for the two AD-8 exempt types, wallet-only path', () => {
     beforeEach(() => setup({
       ...mockData,
       requiresHolderKeySection: true,
       privateKeyHex: 'a-private-key',
     }));
 
-    it('renders the key section above the AS-IS Wallet content, in one view (focus order, AC-06)', () => {
+    it('renders the key section above the AS-IS Wallet content, in one view (focus order)', () => {
       const keySection = keySectionEl();
       const qr = fixture.nativeElement.querySelector('app-credential-offer-qr');
       expect(keySection).toBeTruthy();
       expect(qr).toBeTruthy();
       // DOM order = focus order: the key section must precede the Wallet content, never a step
-      // before it (AC-13's explicit "not a separate screen").
+      // before it.
       const position = keySection!.compareDocumentPosition(qr!);
       // eslint-disable-next-line no-bitwise
       expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -167,7 +160,7 @@ describe('CredentialOfferDialogComponent', () => {
     });
   });
 
-  describe('AC-10.2: key unavailable in the wallet-only path -- no gating, no guard at all', () => {
+  describe('key unavailable in the wallet-only path -- no gating, no guard at all', () => {
     beforeEach(() => setup({
       ...mockData,
       requiresHolderKeySection: true,
@@ -190,7 +183,6 @@ describe('CredentialOfferDialogComponent', () => {
       globalThis.dispatchEvent(new PopStateEvent('popstate'));
 
       expect(dialogWrapperMock.openDialog).not.toHaveBeenCalled();
-      // Every one of those closed the dialog directly instead (AC-14.3 negative).
       expect(mockDialogRef.close).toHaveBeenCalled();
     });
   });
@@ -217,10 +209,6 @@ describe('CredentialOfferDialogComponent', () => {
     });
   });
 
-  /**
-   * Post-release PO polish (2026-09-17): once the outcome boxes render (showOutcomes true), the QR
-   * moves inside the `ui` box instead of also floating above it.
-   */
   describe('embedded QR moves into the ui box, not duplicated (2026-09-17 polish)', () => {
     it('renders the QR only once, inside the ui box, when hybrid ui+email', () => {
       setup({ ...mockData, outcomes: new Map([['ui', 'delivered'], ['email', 'delivered']]) });
@@ -231,7 +219,7 @@ describe('CredentialOfferDialogComponent', () => {
       expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
     });
 
-    it('keeps the QR standalone (no box) for the single-channel regression case (AC-05.1)', () => {
+    it('keeps the QR standalone (no box) for the single-channel regression case (EUD-233 AC-05.1)', () => {
       setup(mockData); // single 'ui' channel, delivered -- showOutcomes false
 
       expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeNull();
@@ -250,20 +238,20 @@ describe('CredentialOfferDialogComponent', () => {
     });
   });
 
-  describe('AC-14 over this host (key section present)', () => {
+  describe('EUD-233 AC-14 over this host (key section present)', () => {
     beforeEach(() => setup({
       ...mockData,
       requiresHolderKeySection: true,
       privateKeyHex: 'a-private-key',
     }));
 
-    it('AC-14.1: backdrop opens the confirmation instead of closing', () => {
+    it('backdrop opens the confirmation instead of closing', () => {
       backdropSubject.next({} as MouseEvent);
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
       expect(mockDialogRef.close).not.toHaveBeenCalled();
     });
 
-    it('AC-14.2: cancelling leaves the surface open with the key still copyable', () => {
+    it('cancelling leaves the surface open with the key still copyable', () => {
       backdropSubject.next({} as MouseEvent);
       confirmAfterClosed.next(false);
 
@@ -271,7 +259,7 @@ describe('CredentialOfferDialogComponent', () => {
       expect(keySectionEl()).toBeTruthy();
     });
 
-    it('EC-04: the header "X" goes through the guard', () => {
+    it('the header "X" goes through the guard', () => {
       closeButton()!.click();
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
     });
@@ -281,7 +269,7 @@ describe('CredentialOfferDialogComponent', () => {
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
     });
 
-    it('AC-14.3 negative: once the key is copied, discarding closes directly', async () => {
+    it('negative: once the key is copied, discarding closes directly', async () => {
       const field = fixture.debugElement.query(By.directive(CopyableFieldComponent)).componentInstance as CopyableFieldComponent;
       await field.copy();
       fixture.detectChanges();

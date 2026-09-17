@@ -95,8 +95,7 @@ export class UncopiedArtifactCloseGuard {
       const pending = pendingArtifacts();
       sentinelPushed = false; // the back navigation that just fired popstate already consumed it
       if (pending.length === 0) {
-        // AC-10.2 / AD-16: nothing to protect -- let the back navigation stand, no confirmation.
-        dialogRef.close();
+         dialogRef.close();
         return;
       }
       pushSentinel(); // neutralize this "atrás", stay in place, then ask

@@ -25,7 +25,7 @@ function isDeliveryModeToken(value: string): value is DeliveryModeToken {
  *   absent from the array, or it is disabled). Callers fall back to the schema-derived,
  *   wallet-only catalogue (`resolveOfferableDeliveryOptions` over `WALLET_DELIVERY_MODE_OPTIONS`).
  * - `[]` -- **state 3**: the tenant restricted this type to zero modes. Callers retire the type
- *   from the offerable list (AC-11); this snapshot only carries the data, it does not warn or filter.
+ *   from the offerable list; this snapshot only carries the data, it does not warn or filter.
  * - a non-empty array -- **state 1**: the modes to offer, literally, no further derivation.
  *
  * **State 4** (the whole catalogue is unreadable) is not a per-type case: it is `status: 'unreadable'`,

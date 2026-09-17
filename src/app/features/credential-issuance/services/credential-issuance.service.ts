@@ -290,16 +290,6 @@ export class CredentialIssuanceService {
       )
       .subscribe();
 
-    // EC-01: prune marked modes that the current offerable set no longer includes -- on any change
-    // that affects it, a type change (which resets the format, and therefore the configId) or a
-    // format change within the same type (a different configId, same type). An `effect`, not a
-    // `computed`, because pruning writes to state; the visibility of each checkbox stays a `computed`
-    // (`offerableModes$` itself).
-    //
-    // PO override 2026-09-16 (supersedes EC-05's "no default" rule for the initial/reset state):
-    // after pruning, if nothing valid remains, fill in a default -- 'direct' when offerable, else
-    // 'email' when offerable, never 'ui'. This only ever fires when the pruned selection is empty,
-    // so a deliberate operator choice that still contains a valid mode is never overwritten.
     effect(() => {
       const offerableOptions = this.offerableModes$();
       const offerable = new Set(offerableOptions.map(option => option.value));
@@ -566,36 +556,29 @@ export class CredentialIssuanceService {
           timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS)
         )),
         switchMap((response) => {
-          // AD-7: a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
+          // AD-7 (EUD-233): a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
           // reaches catchError -- each requested channel's outcome is read out of the body here,
-          // on the success path. Replaces the AS-IS hasChannelError(), which treated ANY
-          // responses[].error as total failure and hid whatever had already been delivered
-          // (violated FR-14, AC-04, AC-09, EC-03).
+          // on the success path.
           const outcomes = resolveChannelOutcomes(response?.responses ?? [], deliveryModes);
           const anyDelivered = [...outcomes.values()].includes('delivered');
           const directDeclared = deliveryModes.includes('direct');
           const needsHolderKeySection = !directDeclared && requiresRequestHolderKey(configId);
 
-          // AD-8's one exception to "nothing delivered => total failure": a machine type's
+          // EUD-233 AD-8's one exception to "nothing delivered => total failure": a machine type's
           // wallet-only emission that produced a credential (envelope present -- guaranteed by
           // reaching this success branch at all) still owes the key even if the one Wallet channel
-          // it declared failed to trigger (EC-09.1).
+          // it declared failed to trigger.
           const isTotalFailure = !anyDelivered && !needsHolderKeySection;
           if (isTotalFailure) {
-            // AC-08/AC-09: nothing was delivered on any channel, so nothing survives on any
-            // surface either -- drains whatever this attempt may have sealed (AD-6).
             this.holderPrivateKeyStore.clear();
             this.openFailedCreateDialog();
             return EMPTY;
           }
-          // hasSubmitted$ is now fixed on the envelope being present, not on "some channel
+          // EUD-233: hasSubmitted$ is now fixed on the envelope being present, not on "some channel
           // delivered" (AD-8): a 207 where direct was not requested but a wallet channel failed
           // still means a credential exists in server, and canLeave() must stay true so the
           // Operator's own canDeactivateGuard does not fight the close-guard AC-14 puts on the
-          // post-emission surface (carrera nº 6, §3.4). Replaces the prior "only after ruling out
-          // total failure" framing (former code-review L449/L508 notes), which predates EC-09.1
-          // and is no longer correct now that a wallet-only failure with a machine credential must
-          // still hand over the key (EC-09.1).
+          // post-emission surface (carrera nº 6, §3.4).
           this.hasSubmitted$.set(true);
           this.holderKeyStore.clear();
 
@@ -604,26 +587,20 @@ export class CredentialIssuanceService {
             return this.openDirectCredentialResultDialog(response, requiresRequestHolderKey(configId), privateKeyHex, outcomes);
           }
           if (directDeclared) {
-            // AC-08/AC-09: direct was declared but failed/missing -- no key section on ANY type,
-            // ever, per AD-8's table (a declared-and-failed direct excludes the key regardless of
-            // credential type). Still the extended CredentialOfferDialogComponent, not the plain
-            // generic dialog: outcomes must show direct's failure (AC-09's "detalle accionable").
+            // direct was declared but failed/missing
             this.holderPrivateKeyStore.clear();
             return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
           }
-          // direct not declared at all (AC-05.x / AC-13 / EC-09.1 / EC-09.2).
+          // direct not declared at all
           if (needsHolderKeySection) {
             const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
             return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
           }
-          // AD-3: `credential_offer_uri` is only populated by the backend for DeliveryMode.UI
-          // ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
+  
           const credentialOfferUri = this.extractCredentialOfferUri(response);
           if (credentialOfferUri) {
             return this.openCredentialOfferDialog(credentialOfferUri, false, undefined, outcomes);
           }
-          // AD-8 Option C: the plain generic dialog survives for exactly this case -- no QR, no key
-          // section, no failed channel worth surfacing (AC-05.1, literally the AS-IS).
           return this.openSuccessfulCreateDialog();
         }),
         switchMap(() => from(this.navigateToCredentials())),
@@ -675,7 +652,7 @@ export class CredentialIssuanceService {
   }
 
   /**
-   * Destructive read of the private-key handoff, verified against this exact attempt (AC-10.1): a
+   * Destructive read of the private-key handoff, verified against this exact attempt: a
    * seal mismatch -- or an empty store, e.g. a reload between submit and response destroying the
    * root store -- degrades exactly like absence, never surfaces a key that belongs to another
    * attempt.
@@ -715,11 +692,6 @@ export class CredentialIssuanceService {
     return this.credentialProcedureService.createProcedure(credentialPayload);
   }
 
-  /**
-   * The solo-Wallet post-emission surface (AD-8): `requiresHolderKeySection` gates everything this
-   * Story added -- when `false` (the regression path, AC-05.1/AC-05.2), `disableClose` and
-   * `closeOnNavigation` keep their AS-IS defaults, unchanged since before this Story.
-   */
   private openCredentialOfferDialog(
     credentialOfferUri: string | undefined,
     requiresHolderKeySection: boolean,
@@ -732,20 +704,17 @@ export class CredentialIssuanceService {
       autoFocus: false,
       width: '420px',
       panelClass: 'dialog-custom',
-      // R-15: closeOnNavigation must be false whenever UncopiedArtifactCloseGuard is active, or
+      // closeOnNavigation must be false whenever UncopiedArtifactCloseGuard is active, or
       // Material closes the dialog on NavigationStart before the guard's popstate listener ever
       // gets a chance to react to the browser's back button.
       disableClose: requiresHolderKeySection,
       closeOnNavigation: !requiresHolderKeySection
     });
-    // AD-6 cleanup point 4: belt-and-suspenders alongside the take() that already drained this
-    // attempt's entry before the dialog opened -- guards a future code path that reaches this
-    // dialog without having taken it first.
     return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
   }
 
   /**
-   * The direct-delivery success surface (AD-6/AD-7/AD-8/AD-14): always opened with
+   * The direct-delivery success surface: always opened with
    * `disableClose: true` + `closeOnNavigation: false`, per the contract documented on
    * `DirectCredentialResultDialogComponent` -- `UncopiedArtifactCloseGuard` is unconditionally
    * active here, since the signed credential is always at least one artifact to protect.

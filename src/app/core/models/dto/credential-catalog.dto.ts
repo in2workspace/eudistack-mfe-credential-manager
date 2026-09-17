@@ -16,7 +16,7 @@
  * - **State 2** (Issuer predates EUD-169): `deliveryModes` `undefined` -- absent from the response,
  *   not an empty array. Degrades to the wallet-only, schema-derived catalogue (EC-10).
  * - **State 3** (tenant restricted this type to zero modes): `deliveryModes` present and `[]`, only
- *   meaningful when `enabled: true` (AC-11).
+ *   meaningful when `enabled: true`.
  * - **State 4** (the whole `GET` is unreadable): not representable by a single entry -- it is a
  *   property of the read itself, resolved by `DeliveryEligibilitySnapshot` (EUD-233 task 3), not by
  *   this DTO.

@@ -55,7 +55,7 @@ describe('CopyableFieldComponent', () => {
       expect(emitted).toHaveBeenCalledTimes(1);
     });
 
-    it('shows the "Copied!" confirmation and resets it after 2s, independent of any TTL (AC-01)', async () => {
+    it('shows the "Copied!" confirmation and resets it after 2s, independent of any TTL', async () => {
       jest.useFakeTimers();
       await component.copy();
       fixture.detectChanges();

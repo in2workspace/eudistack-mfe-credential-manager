@@ -106,7 +106,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     jest.restoreAllMocks();
   });
 
-  describe('AC-01: single artifact (credential only)', () => {
+  describe('single artifact (credential only)', () => {
     beforeEach(() => setup(baseData()));
 
     it('renders exactly one copyable field, no key section', () => {
@@ -124,7 +124,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
   });
 
-  describe('AC-07: two blocks + Done gated on both (EC-08: order-independent)', () => {
+  describe('two blocks + Done gated on both (EC-08: order-independent)', () => {
     beforeEach(() => setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' })));
 
     it('renders both the credential and the key blocks', () => {
@@ -157,7 +157,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
   });
 
-  describe('AC-10.1: key unavailable -- non-blocking notice, Done gated on the credential only', () => {
+  describe('key unavailable -- non-blocking notice, Done gated on the credential only', () => {
     beforeEach(() => setup(baseData({ requiresHolderKeySection: true, privateKeyHex: undefined })));
 
     it('renders the notice instead of a copyable key field', () => {
@@ -181,14 +181,14 @@ describe('DirectCredentialResultDialogComponent', () => {
       expect(boxes.length).toBe(3);
     });
 
-    it('shows nothing when only direct was requested (AC-01, no redundant single-row list)', () => {
+    it('shows nothing when only direct was requested (no redundant single-row list)', () => {
       setup(baseData());
       expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeNull();
     });
   });
 
   /**
-   * Post-release PO polish (2026-09-17): the credential (and the QR, when hybrid with `ui`) must
+   * The credential (and the QR, when hybrid with `ui`) must
    * live INSIDE their outcome box, not duplicated above it as well.
    */
   describe('embedded artifacts move into their outcome box, not duplicated (2026-09-17 polish)', () => {
@@ -256,7 +256,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
   });
 
-  describe('AC-06 / NFR-S-233-01: accessibility', () => {
+  describe('accessibility', () => {
     beforeEach(() => setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' })));
 
     it('gives the close control an accessible name', () => {
@@ -269,16 +269,16 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
   });
 
-  describe('AC-14: close guard over the four discard paths (uncopied credential pending)', () => {
+  describe('close guard over the four discard paths (uncopied credential pending)', () => {
     beforeEach(() => setup(baseData()));
 
-    it('AC-14.1: backdrop click opens the confirmation instead of closing', () => {
+    it('backdrop click opens the confirmation instead of closing', () => {
       backdropSubject.next({} as MouseEvent);
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
       expect(dialogRefMock.close).not.toHaveBeenCalled();
     });
 
-    it('AC-14.2: cancelling returns to the surface with the credential still intact and copyable', () => {
+    it('cancelling returns to the surface with the credential still intact and copyable', () => {
       backdropSubject.next({} as MouseEvent);
       confirmAfterClosed.next(false);
 
@@ -286,26 +286,26 @@ describe('DirectCredentialResultDialogComponent', () => {
       expect(copyableFields().length).toBe(1);
     });
 
-    it('AC-14.1: Esc opens the confirmation; confirming closes the dialog', () => {
+    it('Esc opens the confirmation; confirming closes the dialog', () => {
       keydownSubject.next({ key: 'Escape' } as KeyboardEvent);
       confirmAfterClosed.next(true);
 
       expect(dialogRefMock.close).toHaveBeenCalledTimes(1);
     });
 
-    it('EC-04: the secondary close control ("X") goes through the guard, not a direct close', () => {
+    it('the secondary close control ("X") goes through the guard, not a direct close', () => {
       closeButton().click();
 
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
       expect(dialogRefMock.close).not.toHaveBeenCalled();
     });
 
-    it('EC-04/R-15: the browser back button opens the confirmation too', () => {
+    it('the browser back button opens the confirmation too', () => {
       globalThis.dispatchEvent(new PopStateEvent('popstate'));
       expect(dialogWrapperMock.openDialog).toHaveBeenCalledTimes(1);
     });
 
-    it('AC-14.3 negative: once the credential is copied, any discard path closes directly, no confirmation', async () => {
+    it('negative: once the credential is copied, any discard path closes directly, no confirmation', async () => {
       await copyableFields()[0].copy();
       fixture.detectChanges();
 

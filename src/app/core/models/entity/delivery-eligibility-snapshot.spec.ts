@@ -36,7 +36,7 @@ describe('resolveDeliveryEligibility', () => {
     expect(snapshot.status === 'read' && snapshot.modesByConfigId.get(CONFIG_ID)).toBeUndefined();
   });
 
-  it('state 3 -- an enabled entry with an empty deliveryModes maps to [] (AC-11)', () => {
+  it('state 3 -- an enabled entry with an empty deliveryModes maps to []', () => {
     const snapshot = resolveDeliveryEligibility([entry({ deliveryModes: [] })]);
 
     expect(snapshot.status).toBe('read');

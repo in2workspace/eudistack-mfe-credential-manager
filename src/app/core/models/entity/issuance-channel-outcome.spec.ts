@@ -7,7 +7,7 @@ describe('resolveChannelOutcomes', () => {
     return { channel: 'direct', status: 200, ...overrides };
   }
 
-  it('resolves a direct-only delivery as delivered (AC-01)', () => {
+  it('resolves a direct-only delivery as delivered', () => {
     const outcomes = resolveChannelOutcomes(
       [response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } })],
       ['direct']
@@ -16,7 +16,7 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('direct')).toBe('delivered');
   });
 
-  it('resolves a hybrid direct + ui as both delivered (AC-03.1, EC-02)', () => {
+  it('resolves a hybrid direct + ui as both delivered', () => {
     const outcomes = resolveChannelOutcomes(
       [
         response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
@@ -29,7 +29,7 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('ui')).toBe('delivered');
   });
 
-  it('resolves a hybrid direct + email as both delivered (AC-03.1, EC-02)', () => {
+  it('resolves a hybrid direct + email as both delivered', () => {
     const outcomes = resolveChannelOutcomes(
       [
         response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
@@ -42,7 +42,7 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('email')).toBe('delivered');
   });
 
-  it('resolves all three modes as delivered when all three succeed (AC-03.2)', () => {
+  it('resolves all three modes as delivered when all three succeed', () => {
     const outcomes = resolveChannelOutcomes(
       [
         response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
@@ -57,7 +57,7 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('email')).toBe('delivered');
   });
 
-  it('resolves direct delivered + wallet failed independently, without hiding direct (AC-04)', () => {
+  it('resolves direct delivered + wallet failed independently, without hiding direct', () => {
     const outcomes = resolveChannelOutcomes(
       [
         response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
@@ -70,7 +70,7 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('ui')).toBe('failed');
   });
 
-  it('resolves direct failed + wallet delivered independently (AC-09)', () => {
+  it('resolves direct failed + wallet delivered independently', () => {
     const outcomes = resolveChannelOutcomes(
       [
         response({ channel: 'direct', status: 503, error: { type: 'about:blank', title: 'Service Unavailable', status: 503, detail: 'signer down' } }),

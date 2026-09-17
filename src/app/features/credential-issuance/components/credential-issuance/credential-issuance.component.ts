@@ -140,10 +140,6 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
       return;
     }
 
-    // EUD-233 PO fix 2026-09-16: the private key is never handed to the operator before
-    // emission anymore (AC-12) -- it is only surfaced in the post-emission dialog, if at all
-    // (AC-07/AC-13). The machine-only checkbox confirmation this used to gate is obsolete, so
-    // every credential type now opens the same submit confirmation.
     this.issuanceService.openSubmitDialog();
   }
 
