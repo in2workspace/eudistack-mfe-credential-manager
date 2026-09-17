@@ -1,7 +1,6 @@
 import { ValidatorEntryUnion } from "src/app/shared/validators/credential-issuance/all-validators";
 import { TmfAction, TmfFunction } from "./lear-credential";
 import { ComponentType } from "@angular/cdk/portal";
-import { FormControl } from "@angular/forms";
 import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details/components/base-issuance-custom-form-child";
 import { ClaimDefinitionDto } from "../dto/credential-issuer-metadata.dto";
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['learcredential.employee', 'learcredential.machine'] as const;
@@ -210,20 +209,6 @@ export interface IssuanceFormPowerSchema{
 export interface KeyState {
   desmosPrivateKeyValue: string,
   desmosDidKeyValue: string,
-  /**
-   * The public half, for `holder_key.jwk` (EUD-168 AD-8). Deliberately absent from
-   * `displayedKeys$`: it is wire material, not something the Operator needs to read or copy.
-   */
+  /** The public half, for `holder_key.jwk` (EUD-168 AD-8). */
   desmosPublicJwk?: HolderPublicJwk
-}
-
-/**
- * What `displayedKeys$` shows as copyable text -- deliberately narrower than {@link KeyState} so a
- * structured field like `desmosPublicJwk` can never end up typed as a string in the template
- * (EUD-168 B4/F1's `strictTemplates` requires `key.value` to stay a plain string).
- */
-export type DisplayedKeyState = Partial<Pick<KeyState, 'desmosPrivateKeyValue' | 'desmosDidKeyValue'>>;
-
-export interface KeyForm{
-  didKey: FormControl<string>,
 }
