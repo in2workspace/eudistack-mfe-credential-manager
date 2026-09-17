@@ -1,6 +1,9 @@
 @if (!isDismissed()) {
-  <div class="alert-banner" role="status" aria-live="polite">
-    <span class="alert-banner__message">{{ messageKey | translate }}</span>
+  <div class="alert-banner">
+    <output class="alert-banner__message">
+      {{ messageKey | translate }}
+    </output>
+
     <button
       type="button"
       mat-icon-button

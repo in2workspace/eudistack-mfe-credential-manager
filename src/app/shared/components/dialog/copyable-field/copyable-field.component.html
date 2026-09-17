@@ -2,19 +2,32 @@
   <span class="field-label">{{ labelKey() | translate }}</span>
 
   <div class="field-row">
-    <input class="field-value" type="text" readonly [value]="value()" [attr.aria-label]="labelKey() | translate"
-      spellcheck="false" autocomplete="off" data-lpignore="true" />
+    <input
+      class="field-value"
+      type="text"
+      readonly
+      [value]="value()"
+      [attr.aria-label]="labelKey() | translate"
+      spellcheck="false"
+      autocomplete="off"
+      data-lpignore="true"
+    />
 
-    <button type="button" class="copy-button" [attr.aria-label]="'dialog.copy' | translate" (click)="copy()">
+    <button
+      type="button"
+      class="copy-button"
+      [attr.aria-label]="'dialog.copy' | translate"
+      (click)="copy()"
+    >
       <mat-icon aria-hidden="true">content_copy</mat-icon>
       <span>{{ "dialog.copy" | translate }}</span>
     </button>
   </div>
 
   @if (hasCopied()) {
-    <p class="copied-confirmation" role="status" aria-live="polite">
+    <output class="copied-confirmation">
       <mat-icon aria-hidden="true">check</mat-icon>
       <span>{{ copiedLabelKey() | translate }}</span>
-    </p>
+    </output>
   }
 </div>

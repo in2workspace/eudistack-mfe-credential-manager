@@ -216,7 +216,7 @@ describe('CredentialIssuanceComponent', () => {
     });
 
     it('renders one checkbox per offerable mode, from offerableModes$', () => {
-      expect(checkboxInputs().length).toBe(3);
+      expect(checkboxInputs()).toHaveLength(3);
     });
 
     it('renders no checkbox for a mode absent from offerableModes$', () => {
@@ -225,7 +225,7 @@ describe('CredentialIssuanceComponent', () => {
       ]);
       fixture.detectChanges();
 
-      expect(checkboxInputs().length).toBe(1);
+      expect(checkboxInputs()).toHaveLength(1);
     });
 
     it("renders the service's default selection as checked", () => {

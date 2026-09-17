@@ -155,7 +155,7 @@ describe('CredentialOfferDialogComponent', () => {
       await field.copy();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelectorAll('[role="alert"]').length).toBe(1);
+      expect(fixture.nativeElement.querySelectorAll('[role="alert"]')).toHaveLength(1);
       expect(actionButton().disabled).toBe(true);
     });
   });
@@ -214,7 +214,7 @@ describe('CredentialOfferDialogComponent', () => {
       setup({ ...mockData, outcomes: new Map([['ui', 'delivered'], ['email', 'delivered']]) });
 
       const qrElements = fixture.nativeElement.querySelectorAll('app-credential-offer-qr');
-      expect(qrElements.length).toBe(1);
+      expect(qrElements).toHaveLength(1);
       const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
       expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
     });

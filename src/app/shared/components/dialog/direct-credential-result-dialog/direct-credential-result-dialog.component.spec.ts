@@ -110,7 +110,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     beforeEach(() => setup(baseData()));
 
     it('renders exactly one copyable field, no key section', () => {
-      expect(copyableFields().length).toBe(1);
+      expect(copyableFields()).toHaveLength(1);
       expect(fixture.nativeElement.querySelector('app-holder-private-key-section')).toBeNull();
     });
 
@@ -128,7 +128,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     beforeEach(() => setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' })));
 
     it('renders both the credential and the key blocks', () => {
-      expect(copyableFields().length).toBe(2);
+      expect(copyableFields()).toHaveLength(2);
     });
 
     it('stays disabled after only one artifact is copied, in either order', async () => {
@@ -161,7 +161,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     beforeEach(() => setup(baseData({ requiresHolderKeySection: true, privateKeyHex: undefined })));
 
     it('renders the notice instead of a copyable key field', () => {
-      expect(copyableFields().length).toBe(1); // credential only
+      expect(copyableFields()).toHaveLength(1); // credential only
       expect(fixture.nativeElement.querySelector('.holder-private-key-section__notice')).toBeTruthy();
     });
 
@@ -178,7 +178,7 @@ describe('DirectCredentialResultDialogComponent', () => {
       setup(baseData({ outcomes: outcomesOf([['direct', 'delivered'], ['ui', 'failed'], ['email', 'delivered']]) }));
 
       const boxes = fixture.nativeElement.querySelectorAll('.delivery-outcome-list__box');
-      expect(boxes.length).toBe(3);
+      expect(boxes).toHaveLength(3);
     });
 
     it('shows nothing when only direct was requested (no redundant single-row list)', () => {
@@ -195,7 +195,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     it('renders the credential only once, inside the direct box, when hybrid with another channel', () => {
       setup(baseData({ outcomes: outcomesOf([['direct', 'delivered'], ['email', 'delivered']]) }));
 
-      expect(copyableFields().length).toBe(1);
+      expect(copyableFields()).toHaveLength(1);
       const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
       expect(outcomeList.querySelector('app-copyable-field')).toBeTruthy();
       // Nothing above the outcome list is a copyable-field standing on its own.
@@ -209,7 +209,7 @@ describe('DirectCredentialResultDialogComponent', () => {
       }));
 
       const qrElements = fixture.nativeElement.querySelectorAll('app-credential-offer-qr');
-      expect(qrElements.length).toBe(1);
+      expect(qrElements).toHaveLength(1);
       const outcomeList = fixture.nativeElement.querySelector('app-delivery-outcome-list');
       expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
     });
@@ -233,7 +233,7 @@ describe('DirectCredentialResultDialogComponent', () => {
       fixture.detectChanges();
 
       const alerts = fixture.nativeElement.querySelectorAll('[role="alert"]');
-      expect(alerts.length).toBe(1);
+      expect(alerts).toHaveLength(1);
       expect(doneButton().disabled).toBe(true);
     });
 
@@ -250,7 +250,7 @@ describe('DirectCredentialResultDialogComponent', () => {
       fixture.detectChanges();
 
       expect(doneButton().disabled).toBe(true);
-      expect(fixture.nativeElement.querySelectorAll('[role="alert"]').length).toBe(1);
+      expect(fixture.nativeElement.querySelectorAll('[role="alert"]')).toHaveLength(1);
       // The credential's own confirmation must still be visible -- ES-07.1's "does not revert".
       expect(fixture.nativeElement.textContent).toContain('credentialIssuance.direct-result-dialog.copyFailed.privateKey');
     });
@@ -283,7 +283,7 @@ describe('DirectCredentialResultDialogComponent', () => {
       confirmAfterClosed.next(false);
 
       expect(dialogRefMock.close).not.toHaveBeenCalled();
-      expect(copyableFields().length).toBe(1);
+      expect(copyableFields()).toHaveLength(1);
     });
 
     it('Esc opens the confirmation; confirming closes the dialog', () => {

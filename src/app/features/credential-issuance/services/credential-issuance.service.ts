@@ -297,9 +297,14 @@ export class CredentialIssuanceService {
       const pruned = new Set([...current].filter(mode => offerable.has(mode)));
 
       if (pruned.size === 0) {
-        const defaultMode: DeliveryModeToken | undefined = offerable.has('direct')
-          ? 'direct'
-          : offerable.has('email') ? 'email' : undefined;
+        let defaultMode: DeliveryModeToken | undefined;
+
+        if (offerable.has('direct')) {
+          defaultMode = 'direct';
+        } else if (offerable.has('email')) {
+          defaultMode = 'email';
+        }
+
         if (defaultMode) {
           pruned.add(defaultMode);
         }

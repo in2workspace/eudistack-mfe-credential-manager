@@ -56,7 +56,7 @@ describe('DeliveryOutcomeListComponent', () => {
   it('renders only the modes present in outcomes, nothing else', () => {
     setup(new Map([['ui', 'delivered']]));
 
-    expect(boxes().length).toBe(1);
+    expect(boxes()).toHaveLength(1);
   });
 
   it('marks a delivered box green and a failed one red via BEM modifier classes', () => {

@@ -13,12 +13,19 @@ describe('AlertBannerComponent', () => {
 
     fixture = TestBed.createComponent(AlertBannerComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('messageKey', 'credentialIssuance.deliveryCatalogUnavailable.message');
+    fixture.componentRef.setInput(
+      'messageKey',
+      'credentialIssuance.deliveryCatalogUnavailable.message',
+    );
     fixture.detectChanges();
   });
 
   function banner(): HTMLElement | null {
     return fixture.nativeElement.querySelector('.alert-banner');
+  }
+
+  function statusMessage(): HTMLOutputElement | null {
+    return fixture.nativeElement.querySelector('.alert-banner__message');
   }
 
   function dismissButton(): HTMLButtonElement | null {
@@ -29,11 +36,12 @@ describe('AlertBannerComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('is visible on render, announced via role="status" + aria-live="polite"', () => {
-    const el = banner();
-    expect(el).toBeTruthy();
-    expect(el?.getAttribute('role')).toBe('status');
-    expect(el?.getAttribute('aria-live')).toBe('polite');
+  it('is visible on render and exposes the message as an output', () => {
+    expect(banner()).toBeTruthy();
+
+    const message = statusMessage();
+    expect(message).toBeTruthy();
+    expect(message?.tagName.toLowerCase()).toBe('output');
   });
 
   it('exposes a dismiss control with an accessible name', () => {
@@ -50,11 +58,9 @@ describe('AlertBannerComponent', () => {
   });
 
   it('is dismissible with the keyboard: a native button click() covers Enter/Space activation', () => {
-    // No custom keydown handling exists (or should exist) on this button -- a plain <button> already
-    // responds to both keys natively. dispatching click() is the faithful way to assert that without
-    // reimplementing the browser's own key-to-click mapping inside the test.
     const button = dismissButton()!;
     expect(button.tagName.toLowerCase()).toBe('button');
+
     button.click();
     fixture.detectChanges();
 
@@ -79,8 +85,6 @@ describe('AlertBannerComponent', () => {
   });
 
   it('meets the >= 44x44 dismiss target via mat-icon-button (NFR-S-233-01)', () => {
-    // mat-icon-button's own CSS sets a 48x48 touch target; asserting the host class is what this
-    // component controls -- Material's own styling is out of scope to re-assert here.
     const button = dismissButton();
     expect(button?.hasAttribute('mat-icon-button')).toBe(true);
   });
