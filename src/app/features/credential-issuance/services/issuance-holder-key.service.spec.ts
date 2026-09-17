@@ -56,12 +56,16 @@ describe('IssuanceHolderKeyService', () => {
       expect(binding).toEqual({ didKey: mockDidKey, publicJwk: mockPublicJwk });
     });
 
-    it('writes the public JWK to HolderKeyStoreService (holder_key.jwk consumer)', async () => {
+    it('writes the public JWK to HolderKeyStoreService, sealed to this exact attempt (holder_key.jwk consumer)', async () => {
       stubSuccessfulGeneration();
 
       await service.generateForSubmission(CONFIG_ID, SUBMISSION_ID);
 
-      expect(holderKeyStore.peek()).toEqual(mockPublicJwk);
+      expect(holderKeyStore.peek()).toEqual({
+        publicJwk: mockPublicJwk,
+        credentialConfigurationId: CONFIG_ID,
+        submissionId: SUBMISSION_ID,
+      });
     });
 
     it('seals the private hex into HolderPrivateKeyStore, sealed to this exact attempt (store consumer)', async () => {

@@ -13,6 +13,7 @@ import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.se
 import { HolderPrivateKeyStore } from 'src/app/core/services/holder-private-key-store.service';
 import { IssuanceHolderKeyService } from './issuance-holder-key.service';
 import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
+import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-generation-error';
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
 import { ChannelOutcome, resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
@@ -548,6 +549,9 @@ export class CredentialIssuanceService {
       // same value as X-Idempotency-Key, which CredentialProcedureService mints on its own, per
       // HTTP call (R-13, §3.4 carrera nº 5).
       const submissionId = globalThis.crypto.randomUUID();
+      // AD-6 cleanup point 1: clear-then-set -- a fresh attempt never inherits a private key an
+      // earlier, abandoned attempt generated but never completed.
+      this.holderPrivateKeyStore.clear();
       const holderBinding$: Observable<HolderBinding | undefined> = requiresRequestHolderKey(configId)
         ? from(this.issuanceHolderKeyService.generateForSubmission(configId, submissionId))
         : of(undefined);
@@ -555,7 +559,8 @@ export class CredentialIssuanceService {
       return holderBinding$.pipe(
         map(holderBinding => this.attachHolderKey(
           this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType, holderBinding),
-          configId
+          configId,
+          submissionId
         )),
         switchMap(request => this.sendCredentialRequest(request).pipe(
           timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS)
@@ -646,20 +651,27 @@ export class CredentialIssuanceService {
    *
    * Reads `HolderKeyStoreService` with `peek()`, not destructively: it is a plain carrier for
    * whatever `IssuanceHolderKeyService.generateForSubmission()` wrote moments earlier in this same
-   * attempt (AD-6), not a queue to drain. A missing key is left to the Issuer to reject, which
-   * answers with a 400 naming the field -- a better outcome than issuing without one and binding
-   * the credential to nothing.
+   * attempt (AD-6), not a queue to drain. Verifies the entry's seal against this exact attempt
+   * (`configId` + `submissionId`, hardened 2026-09-17 to match `takeSealedPrivateKey`'s own check)
+   * before trusting it -- a missing or mismatched entry is treated the same as no key at all and
+   * left to the Issuer to reject, which answers with a 400 naming the field -- a better outcome
+   * than issuing without one, or with one that belongs to a different attempt.
    */
   private attachHolderKey(
     request: IssuanceLEARCredentialRequestDto,
-    configId: string
+    configId: string,
+    submissionId: string
   ): IssuanceLEARCredentialRequestDto {
     if (!requiresRequestHolderKey(configId)) {
       this.holderKeyStore.clear();
       return request;
     }
-    const publicJwk = this.holderKeyStore.peek();
-    return publicJwk ? { ...request, holder_key: { jwk: publicJwk } } : request;
+    const entry = this.holderKeyStore.peek();
+    if (!entry) {
+      return request;
+    }
+    const sealMatches = entry.credentialConfigurationId === configId && entry.submissionId === submissionId;
+    return sealMatches ? { ...request, holder_key: { jwk: entry.publicJwk } } : request;
   }
 
   /**
@@ -726,7 +738,10 @@ export class CredentialIssuanceService {
       disableClose: requiresHolderKeySection,
       closeOnNavigation: !requiresHolderKeySection
     });
-    return dialogRef.afterClosed();
+    // AD-6 cleanup point 4: belt-and-suspenders alongside the take() that already drained this
+    // attempt's entry before the dialog opened -- guards a future code path that reaches this
+    // dialog without having taken it first.
+    return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
   }
 
   /**
@@ -764,7 +779,10 @@ export class CredentialIssuanceService {
       closeOnNavigation: false,
       panelClass: 'dialog-custom'
     });
-    return dialogRef.afterClosed();
+    // AD-6 cleanup point 4: belt-and-suspenders alongside the take() that already drained this
+    // attempt's entry before the dialog opened -- guards a future code path that reaches this
+    // dialog without having taken it first.
+    return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
   }
 
   private openSuccessfulCreateDialog(): Observable<any>{
@@ -792,7 +810,15 @@ export class CredentialIssuanceService {
    * path's `tap`, so the canLeave() guard keeps protecting what was written.
    */
   private handleIssuanceFailure(error: unknown): Observable<any> {
-    console.error('POST /api/v1/issuances failed', error);
+    // AD-15: ES-09 already left its own closed-allowlist trace in IssuanceHolderKeyService --
+    // logging the raw error here too would print its `cause`/stack, which that allowlist exists
+    // to keep out of the console. No POST was sent for this case either, so the generic message
+    // below would also be factually wrong for it.
+    if (error instanceof HolderKeyGenerationError) {
+      console.error({ event: 'issuance_submit_aborted', reason: 'holder_key_generation_failed' });
+    } else {
+      console.error('POST /api/v1/issuances failed', error);
+    }
     // AD-6 cleanup point 2: a transport failure (incl. ES-09's HolderKeyGenerationError, which
     // reaches this same catchError) leaves nothing to hand over on any surface.
     this.holderPrivateKeyStore.clear();

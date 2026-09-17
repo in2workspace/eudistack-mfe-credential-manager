@@ -167,7 +167,7 @@ describe('CredentialIssuanceService', () => {
       (credentialConfigurationId: string, submissionId: string) => {
         const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
         privateKeyStore.set({ privateKeyHex: 'mock-private-key-hex', credentialConfigurationId, submissionId });
-        holderKeyStore.set(publicJwk);
+        holderKeyStore.set({ publicJwk, credentialConfigurationId, submissionId });
         return Promise.resolve<HolderBinding>({ didKey: 'did:key:zMock', publicJwk });
       }
     );
@@ -703,6 +703,34 @@ describe('CredentialIssuanceService', () => {
         const [, config] = mockMatDialog.open.mock.calls[0];
         expect(config.data.requiresHolderKeySection).toBe(true);
         expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('2026-09-17 hardening: a public-key entry sealed to a different submission is not attached (holder_key omitted, never a stale cnf)', async () => {
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+        // Simulates a stale/foreign entry surviving in the root HolderKeyStoreService under a
+        // different (configId, submissionId) than this attempt's own -- generateForSubmission()
+        // itself always writes a correctly-sealed entry, so this can only happen via a bug
+        // elsewhere; attachHolderKey() must still refuse to trust it.
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => {
+          const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+          holderKeyStore.set({
+            publicJwk: { kty: 'EC', crv: 'P-256', x: 'stale-x', y: 'stale-y' },
+            credentialConfigurationId: 'some-other-config',
+            submissionId: 'some-other-submission',
+          });
+          return Promise.resolve<HolderBinding>({
+            didKey: 'did:key:zMock',
+            publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+          });
+        });
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toBeUndefined();
       });
 
       it('AC-12.2: a non-exempt type never calls generateForSubmission and never carries holder_key', () => {

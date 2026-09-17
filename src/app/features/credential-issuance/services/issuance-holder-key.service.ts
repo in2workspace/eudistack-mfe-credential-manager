@@ -49,7 +49,10 @@ export class IssuanceHolderKeyService {
         credentialConfigurationId,
         submissionId,
       });
-      this.holderKeyStore.set(binding.publicJwk);
+      // Sealed the same way as the private half (2026-09-17 hardening) -- attachHolderKey() must
+      // verify this entry belongs to the exact attempt asking for it, not just peek whatever is
+      // currently in the shared root store.
+      this.holderKeyStore.set({ publicJwk: binding.publicJwk, credentialConfigurationId, submissionId });
       return binding;
     } catch (cause) {
       // AD-15: exactly these four closed fields, never the key material, the form, or the stack.
