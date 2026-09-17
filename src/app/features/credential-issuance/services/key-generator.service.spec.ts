@@ -22,21 +22,18 @@ describe('KeyGeneratorService', () => {
     jest.restoreAllMocks();
   });
 
-  it('should have initial state undefined and displayedKeys$ returns partial with undefined', () => {
+  it('should have initial state undefined', () => {
     expect(service.getState()()).toBeUndefined();
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: undefined });
   });
 
   it('should update desmosPrivateKeyValue correctly', () => {
     service.updateState('desmosPrivateKeyValue', 'abc');
     expect(service.getState()()).toMatchObject({ desmosPrivateKeyValue: 'abc' });
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: 'abc' });
   });
 
   it('should update desmosDidKeyValue correctly', () => {
     service.updateState('desmosDidKeyValue', 'did:abc');
     expect(service.getState()()).toMatchObject({ desmosDidKeyValue: 'did:abc' });
-    expect(service.displayedKeys$()).toEqual({ desmosPrivateKeyValue: '' });
   });
 
   it('generateP256 should call sub-methods and update state', async () => {

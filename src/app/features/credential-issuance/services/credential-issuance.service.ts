@@ -1,26 +1,33 @@
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
-import { IssuanceDelivery, IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuanceGrantType, IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
-import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, timeout } from 'rxjs';
+import { catchError, defer, EMPTY, finalize, forkJoin, from, map, Observable, of, startWith, switchMap, tap, timeout } from 'rxjs';
 import { IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
 import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
 import { resolveOfferableDeliveryOptions } from 'src/app/core/helpers/delivery-eligibility';
 import { requiresRequestHolderKey } from 'src/app/core/helpers/holder-binding-exemption';
 import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_OPTIONS, DeliveryOption, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple } from 'src/app/core/models/entity/lear-credential-issuance';
+import { HolderPrivateKeyStore } from 'src/app/core/services/holder-private-key-store.service';
+import { IssuanceHolderKeyService } from './issuance-holder-key.service';
+import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
+import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-generation-error';
+import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
+import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
+import { ChannelOutcome, resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
+import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
 import { TranslateService } from '@ngx-translate/core';
 import { CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { ConditionalConfirmDialogData, DialogData } from 'src/app/shared/components/dialog/dialog-data';
-import { ConditionalConfirmDialogComponent } from 'src/app/shared/components/dialog/conditional-confirm-dialog/conditional-confirm-dialog.component';
+import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialOfferDialogComponent, CredentialOfferDialogData } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
+import { DirectCredentialResultDialogComponent, DirectCredentialResultDialogData } from 'src/app/shared/components/dialog/direct-credential-result-dialog/direct-credential-result-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
@@ -80,6 +87,14 @@ export class CredentialIssuanceService {
     () => this.metadataService.getIssuableCredentialTypes()
   );
 
+  // AD-11: a second, narrower narrowing of credentialTypesArr$ -- a type is retired only when
+  // EVERY configuration the form would offer for it (the latest version per format) has an empty
+  // tenant-resolved delivery set (catalogue state 3). Surviving one config is enough to keep the
+  // type listed; only the dead format option disappears from availableFormats$.
+  public readonly offerableCredentialTypes$ = computed<IssuanceCredentialType[]>(() =>
+    this.credentialTypesArr$().filter(type => this.hasOfferableConfiguration(type))
+  );
+
   // EC-04 vs EC-01: same empty list, different message. Resolved by the template (T3).
   //
   // Two sources can leave the selector empty for a reason the Operator cannot act on: the
@@ -105,12 +120,17 @@ export class CredentialIssuanceService {
     if (configs.length === 0) {
       return [{ configId: type, format: 'jwt_vc_json', labelKey: FORMAT_LABEL_MAP['jwt_vc_json']! }];
     }
-    return oneOptionPerFormat(configs).map(({ configId, format }) => ({
-      configId,
-      format: format as CredentialFormatOption['format'],
-      labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
-      disabled: format === 'mso_mdoc'
-    }));
+    // AD-11: a format option survives only if its own configId is offerable. This is the same
+    // predicate offerableCredentialTypes$ aggregates over the whole lineage -- one place decides
+    // "is this configId offerable", so the two lists cannot disagree about the same configId.
+    return oneOptionPerFormat(configs)
+      .filter(({ configId }) => this.isOfferableConfiguration(configId))
+      .map(({ configId, format }) => ({
+        configId,
+        format: format as CredentialFormatOption['format'],
+        labelKey: FORMAT_LABEL_MAP[format as CredentialFormatOption['format']] ?? format,
+        disabled: format === 'mso_mdoc'
+      }));
   });
 
   // Explicitly selected format option; auto-selects first non-disabled when null
@@ -127,21 +147,31 @@ export class CredentialIssuanceService {
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]> = GRANT_TYPE_OPTIONS;
   public selectedGrantType$ = signal<GrantTypeOption>(GRANT_TYPE_OPTIONS[0]);
 
-  // DELIVERY SELECTOR
+  // DELIVERY SELECTOR (EUD-233)
   //
-  // Derived from the selected configuration's published metadata rather than being a fixed list
-  // (EUD-168): a credential type bound to a holder key cannot be delivered without a wallet, and the
-  // form must not offer what issuance would reject. Reading the same field the issuer decides with
-  // (proof_types_supported) is what keeps the two from drifting apart.
-  //
-  // Today this narrows nothing: DELIVERY_OPTIONS holds only wallet modes, which are always eligible.
-  // The seam exists so that adding the direct mode (EUD-233) cannot silently offer it for every type.
-  public readonly deliveryOptions = computed<readonly DeliveryOption[]>(() => {
+  // The tenant's published delivery-eligibility snapshot governs all three modes in the nominal path
+  // (AD-1): a modes array for the current configId, read literally, no re-derivation (AC-02.3). The
+  // degraded states (2: pre-EUD-169 Issuer; 4: catalogue unreadable) fall back to the same schema-only
+  // rule EUD-168 already had -- a type bound to a holder key cannot be delivered without a wallet --
+  // scoped to WALLET_DELIVERY_MODE_OPTIONS, which never contains 'direct'.
+  private readonly _deliveryEligibility$ = signal<DeliveryEligibilitySnapshot>({ status: 'unreadable' });
+
+  public readonly offerableModes$ = computed<readonly DeliveryModeOption[]>(() => {
     const configId = this.effectiveFormatOption$()?.configId;
-    const config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
-    return resolveOfferableDeliveryOptions(config, DELIVERY_OPTIONS);
+    return configId ? this.resolveOfferableModes(configId) : [];
   });
-  public selectedDelivery$ = signal<DeliveryOption>(DELIVERY_OPTIONS[0]);
+
+  public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>> = signal(new Set());
+
+  // ES-08: the single trigger for the "catalogue unreadable" banner. States 1/2/3 show nothing --
+  // only a fully failed read (state 4) does. Gated on `!isLoadingCatalog$`: `_deliveryEligibility$`
+  // starts as `{ status: 'unreadable' }` as its fail-closed placeholder before the initial load
+  // resolves (so `resolveOfferableModes` degrades safely if read mid-load), which otherwise made
+  // this signal lie -- true for the whole loading window, not just on a genuine failed read --
+  // flashing the banner on every normal page load.
+  public readonly hasDeliveryCatalogReadFailed$ = computed<boolean>(
+    () => !this._isLoadingCatalog$() && this._deliveryEligibility$().status === 'unreadable'
+  );
 
   // AD-2: claims come from the config that will actually be sent to the backend
   // (effectiveFormatOption.configId), not from the type: two formats of the same
@@ -208,6 +238,8 @@ export class CredentialIssuanceService {
 
   private readonly credentialRequestFactory = inject(IssuanceRequestFactoryService);
   private readonly holderKeyStore = inject(HolderKeyStoreService);
+  private readonly holderPrivateKeyStore = inject(HolderPrivateKeyStore);
+  private readonly issuanceHolderKeyService = inject(IssuanceHolderKeyService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly matDialog = inject(MatDialog);
@@ -217,8 +249,14 @@ export class CredentialIssuanceService {
   private readonly metadataService = inject(CredentialIssuerMetadataService);
   private readonly issuanceUiPolicy = inject(IssuanceUiPolicyService);
   private readonly unsavedChanges = inject(UnsavedChangesService);
+  private readonly credentialCatalogService = inject(CredentialCatalogService);
 
   constructor() {
+    // AD-6 cleanup point 6: substitutes for the deleted KeyGeneratorComponent's ngOnDestroy --
+    // belt-and-suspenders alongside the per-attempt clears already threaded through the submit
+    // flow below, for whatever a submission left behind if this service is torn down mid-flight.
+    inject(DestroyRef).onDestroy(() => this.issuanceHolderKeyService.clear());
+
     // Load credential configurations once so format options are available,
     // and, since EUD-71, also the list of issuable types (AD-1).
     //
@@ -229,21 +267,54 @@ export class CredentialIssuanceService {
     // every other screen. Both are started at once rather than chained: neither needs the
     // other's result, and the selector reads them through signals that recompute on their own.
     //
-    // Until both settle the screen has nothing truthful to say about the catalogue, so it says
+    // Since EUD-233, a third source joins the same wait: the tenant's delivery-eligibility
+    // snapshot (AD-11). `loadDeliveryEligibility()` never fails the stream (Task 7) -- it degrades
+    // internally to catalogue state 4 -- so joining it here cannot leave `isLoadingCatalog$` stuck.
+    //
+    // Until all three settle the screen has nothing truthful to say about the catalogue, so it says
     // exactly that (isLoadingCatalog$) instead of letting the still-empty type list speak for it.
     forkJoin([
       defer(() => this.issuanceUiPolicy.load()),
       this.metadataService.loadMetadata(),
+      this.credentialCatalogService.loadDeliveryEligibility(),
     ])
       .pipe(
         takeUntilDestroyed(),
-        // `finalize` rather than the subscriber's `complete`: today neither source can fail the
-        // stream (loadMetadata() swallows its own error, load() never rejects), so the flag
-        // would fall either way — but if that ever changes, a spinner that never stops is a
-        // worse outcome than the empty state it replaces.
+        tap(([, , deliveryEligibility]) => this._deliveryEligibility$.set(deliveryEligibility)),
+        // `finalize` rather than the subscriber's `complete`: none of the three sources can fail
+        // the stream (loadMetadata() swallows its own error, load() never rejects,
+        // loadDeliveryEligibility() degrades instead of erroring), so the flag would fall either
+        // way — but if that ever changes, a spinner that never stops is a worse outcome than the
+        // empty state it replaces.
         finalize(() => this._isLoadingCatalog$.set(false))
       )
       .subscribe();
+
+    effect(() => {
+      const offerableOptions = this.offerableModes$();
+      const offerable = new Set(offerableOptions.map(option => option.value));
+      const current = this.selectedDeliveryModes$();
+      const pruned = new Set([...current].filter(mode => offerable.has(mode)));
+
+      if (pruned.size === 0) {
+        let defaultMode: DeliveryModeToken | undefined;
+
+        if (offerable.has('direct')) {
+          defaultMode = 'direct';
+        } else if (offerable.has('email')) {
+          defaultMode = 'email';
+        }
+
+        if (defaultMode) {
+          pruned.add(defaultMode);
+        }
+      }
+
+      const unchanged = pruned.size === current.size && [...pruned].every(mode => current.has(mode));
+      if (!unchanged) {
+        this.selectedDeliveryModes$.set(pruned);
+      }
+    });
   }
 
   public updateSelectedType(selectedCredentialType: IssuanceCredentialType, select: MatSelect) {
@@ -270,8 +341,16 @@ export class CredentialIssuanceService {
     this.selectedGrantType$.set(option);
   }
 
-  public updateSelectedDelivery(option: DeliveryOption): void {
-    this.selectedDelivery$.set(option);
+  /** AD-4/AD-13: a checkbox toggle, never a value swap -- no path exists that unmarks another mode. */
+  public toggleDeliveryMode(token: DeliveryModeToken, checked: boolean): void {
+    const current = this.selectedDeliveryModes$();
+    const next = new Set(current);
+    if (checked) {
+      next.add(token);
+    } else {
+      next.delete(token);
+    }
+    this.selectedDeliveryModes$.set(next);
   }
 
   // if the message is new, add it; otherwise, delete it
@@ -321,25 +400,6 @@ export class CredentialIssuanceService {
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, this.submitAsCallback);
   }
 
-  // LEARCredentialMachine needs a dialog with a checkbox to confirm
-  public openLEARCredentialMachineSubmitDialog(){
-    const dialogData: ConditionalConfirmDialogData = {
-          title: this.translate.instant("credentialIssuance.create-confirm-dialog.title"),
-          message: this.translate.instant("credentialIssuance.create-confirm-dialog.message"),
-          checkboxLabel: this.translate.instant("credentialIssuance.create-confirm-dialog.checkboxLabel"),
-          belowText: this.translate.instant("credentialIssuance.create-confirm-dialog.belowText"),
-          status: 'default',
-          confirmationType: 'async',
-          loadingData: {
-            title: this.translate.instant("credentialIssuance.creating-credential"),
-            message: ''
-          }
-        };
-
-
-    this.dialog.openDialogWithCallback(ConditionalConfirmDialogComponent, dialogData, this.submitAsCallback);
-  }
-
   private issuanceViewModelsBuilder(
     credType: "learcredential.employee" | "learcredential.machine",
     onBehalf: boolean,
@@ -387,6 +447,52 @@ export class CredentialIssuanceService {
   return new FormGroup(controls);
 }
 
+  /**
+   * The one place that resolves "which delivery modes does this configId offer" (EUD-233 AD-9),
+   * shared by offerableModes$ (the current selection) and isOfferableConfiguration (any configId
+   * in the type/format lists) -- a second implementation of the same branching would risk the two
+   * disagreeing about the same configId, which AC-02.3 forbids.
+   */
+  private resolveOfferableModes(configId: string): readonly DeliveryModeOption[] {
+    const snapshot = this._deliveryEligibility$();
+    const modes = snapshot.status === 'read' ? snapshot.modesByConfigId.get(configId) : undefined;
+
+    if (modes !== undefined) {
+      // States 1 and 3: literally what the tenant catalogue resolved. Filtering the fixed
+      // DELIVERY_MODE_OPTIONS catalogue by membership (rather than mapping over `modes` directly)
+      // keeps render order at direct -> ui -> email regardless of the wire array's own order.
+      return DELIVERY_MODE_OPTIONS.filter(option => modes.includes(option.value));
+    }
+
+    // States 2 (no entry for this configId) and 4 (whole read unreadable) share the exact same
+    // fallback per AD-9's table: the schema-derived, wallet-only catalogue.
+    const config = this.metadataService.getConfigurationById(configId);
+    return resolveOfferableDeliveryOptions(config, WALLET_DELIVERY_MODE_OPTIONS);
+  }
+
+  /**
+   * AD-11's single predicate: a configId is offerable unless the tenant catalogue resolved it to
+   * an explicit empty set (state 3) -- states 1/2/4 are never empty (the degraded fallback,
+   * WALLET_DELIVERY_MODE_OPTIONS, always has two entries).
+   */
+  private isOfferableConfiguration(configId: string): boolean {
+    return this.resolveOfferableModes(configId).length > 0;
+  }
+
+  /**
+   * AD-11 aggregation rule: true if at least one configuration the form would offer for this type
+   * (the latest version per format -- the same set availableFormats$ shows) is offerable. A type
+   * with no declared configs at all (the synthetic jwt_vc_json fallback, predates AD-11) is never
+   * filtered by this: there is no real configId to check a delivery snapshot against.
+   */
+  private hasOfferableConfiguration(type: IssuanceCredentialType): boolean {
+    const configs = this.metadataService.findConfigurationsForType(type);
+    if (configs.length === 0) {
+      return true;
+    }
+    return oneOptionPerFormat(configs).some(({ configId }) => this.isOfferableConfiguration(configId));
+  }
+
   private readonly submitAsCallback = (): Observable<any> => {
       return this.submitCredentialPayload();
   };
@@ -432,39 +538,87 @@ export class CredentialIssuanceService {
 
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const delivery = this.selectedDelivery$().value;
-      const request = this.withHolderKey(
-        this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, delivery, grantType),
-        configId);
+      const deliveryModes = [...this.selectedDeliveryModes$()];
+      // AD-6: one submission, one crypto.randomUUID() -- correlates the private-key handoff's seal
+      // (HolderPrivateKeyStore) with this exact attempt, never with a prior or later one. Not the
+      // same value as X-Idempotency-Key, which CredentialProcedureService mints on its own, per
+      // HTTP call (R-13, §3.4 carrera nº 5).
+      const submissionId = globalThis.crypto.randomUUID();
+      // AD-6 cleanup point 1: clear-then-set -- a fresh attempt never inherits a private key an
+      // earlier, abandoned attempt generated but never completed.
+      this.holderPrivateKeyStore.clear();
+      const holderBinding$: Observable<HolderBinding | undefined> = requiresRequestHolderKey(configId)
+        ? from(this.issuanceHolderKeyService.generateForSubmission(configId, submissionId))
+        : of(undefined);
 
-      return this.sendCredentialRequest(request).pipe(
-        timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS),
+      return holderBinding$.pipe(
+        map(holderBinding => this.attachHolderKey(
+          this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType, holderBinding),
+          configId,
+          submissionId
+        )),
+        switchMap(request => this.sendCredentialRequest(request).pipe(
+          timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS)
+        )),
         switchMap((response) => {
-          // A 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6): it never reaches
-          // catchError, so a failed channel has to be read out of the body here, on the success
-          // path. Today the form only ever submits one delivery mode at a time, so this branch
-          // is not yet reachable in practice -- but a channel error must never render as success
-          // once a future Story submits more than one mode in the same request.
-          if (this.hasChannelError(response)) {
+          // AD-7 (EUD-233): a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
+          // reaches catchError -- each requested channel's outcome is read out of the body here,
+          // on the success path.
+          const outcomes = resolveChannelOutcomes(response?.responses ?? [], deliveryModes);
+          const anyDelivered = [...outcomes.values()].includes('delivered');
+          const directDeclared = deliveryModes.includes('direct');
+          const needsHolderKeySection = !directDeclared && requiresRequestHolderKey(configId);
+
+          // EUD-233 AD-8's one exception to "nothing delivered => total failure": a machine type's
+          // wallet-only emission that produced a credential (envelope present -- guaranteed by
+          // reaching this success branch at all) still owes the key even if the one Wallet channel
+          // it declared failed to trigger.
+          const isTotalFailure = !anyDelivered && !needsHolderKeySection;
+          if (isTotalFailure) {
+            this.holderPrivateKeyStore.clear();
             this.openFailedCreateDialog();
             return EMPTY;
           }
-          // Only flip hasSubmitted$/consume the holder key once the channel error above has been
-          // ruled out (code-review L449): a 207 with a failed channel is a failed attempt, and
-          // marking it as submitted would let canLeave() wave the Operator away from data that
-          // never actually issued, holder key included (code-review L508 -- see peek() above).
+          // EUD-233: hasSubmitted$ is now fixed on the envelope being present, not on "some channel
+          // delivered" (AD-8): a 207 where direct was not requested but a wallet channel failed
+          // still means a credential exists in server, and canLeave() must stay true so the
+          // Operator's own canDeactivateGuard does not fight the close-guard AC-14 puts on the
+          // post-emission surface (carrera nº 6, §3.4).
           this.hasSubmitted$.set(true);
           this.holderKeyStore.clear();
-          // AD-3 correction: `credential_offer_uri` is only populated by the backend for
-          // DeliveryMode.UI ("Código QR"; `returnsUri=true`), never for EMAIL (`returnsUri=false`).
-          // So this branch is already scoped to the QR delivery mode -- removing it (as an
-          // earlier version of this Story did) broke the "Código QR" option's only purpose:
-          // showing the wallet-scannable QR (CredentialOfferDialogComponent, angularx-qrcode).
-          // AC-05's "no offer artifacts" is still honored for email/direct delivery, where the
-          // response never carries this URI.
+
+          if (directDeclared && outcomes.get('direct') === 'delivered') {
+            const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
+            return this.openDirectCredentialResultDialog(response, requiresRequestHolderKey(configId), privateKeyHex, outcomes);
+          }
+          if (directDeclared) {
+            // direct was declared but failed/missing (the delivered case above already returned).
+            // EUD-233 AD-8's second exception (AC-09's exception clause, added 2026-09-17): a
+            // hybrid emission whose direct channel failed still owes the key when at least one
+            // Wallet channel delivered and the type is one of the two AD-8 machine types -- the
+            // credential exists (its cnf already binds to this attempt's key) and discarding it
+            // would leave it permanently unusable. `anyDelivered` can only be reflecting a Wallet
+            // channel here, since direct's own outcome is not 'delivered' in this branch --
+            // derived from the same resolveChannelOutcomes() projection already computed above,
+            // never a second inspection of responses[] (AD-7). Any other type, or no Wallet
+            // channel delivered, keeps the AC-08 behavior: clear() with no key section.
+            const hasAnyWalletDelivered = anyDelivered;
+            if (hasAnyWalletDelivered && requiresRequestHolderKey(configId)) {
+              const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
+              return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
+            }
+            this.holderPrivateKeyStore.clear();
+            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
+          }
+          // direct not declared at all
+          if (needsHolderKeySection) {
+            const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
+            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
+          }
+  
           const credentialOfferUri = this.extractCredentialOfferUri(response);
           if (credentialOfferUri) {
-            return this.openCredentialOfferDialog(credentialOfferUri);
+            return this.openCredentialOfferDialog(credentialOfferUri, false, undefined, outcomes);
           }
           return this.openSuccessfulCreateDialog();
         }),
@@ -472,11 +626,6 @@ export class CredentialIssuanceService {
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
-
-  /** EUD-167 D-5/D-6: true once any requested channel came back with an `error`. */
-  private hasChannelError(response: IssuanceResponseDto | undefined): boolean {
-    return !!response?.responses?.some(channel => !!channel.error);
-  }
 
   /**
    * The offer URI, wherever in `responses[]` it landed. Backend only builds one when the requested
@@ -494,28 +643,47 @@ export class CredentialIssuanceService {
    * (EUD-168 AD-8), and for no others.
    *
    * Not gated on the delivery mode: a type with no `proof_types_supported` gets no wallet key proof
-   * either, so even an email or QR issuance binds to the key the Operator generated on the form.
+   * either, so even an email or QR issuance binds to the key generated for this attempt.
    *
-   * A missing key is left to the Issuer to reject. It answers with a 400 naming the field, which is
-   * a better outcome than issuing without one and binding the credential to nothing — and the form
-   * already requires the generated `didKey`, so reaching here empty means the store was cleared, not
-   * that the Operator skipped a step.
-   *
-   * Reads with `peek()`, not `take()` (code-review L508): draining the store here, before the POST
-   * even runs, would strand a retry after an HTTP failure without its holder_key even though the
-   * form still shows the same generated key. The key is only consumed once a real success is
-   * confirmed, inside submitCredentialPayload()'s success branch.
+   * Reads `HolderKeyStoreService` with `peek()`, not destructively: it is a plain carrier for
+   * whatever `IssuanceHolderKeyService.generateForSubmission()` wrote moments earlier in this same
+   * attempt (AD-6), not a queue to drain. Verifies the entry's seal against this exact attempt
+   * (`configId` + `submissionId`, hardened 2026-09-17 to match `takeSealedPrivateKey`'s own check)
+   * before trusting it -- a missing or mismatched entry is treated the same as no key at all and
+   * left to the Issuer to reject, which answers with a 400 naming the field -- a better outcome
+   * than issuing without one, or with one that belongs to a different attempt.
    */
-  private withHolderKey(
+  private attachHolderKey(
     request: IssuanceLEARCredentialRequestDto,
-    configId: string
+    configId: string,
+    submissionId: string
   ): IssuanceLEARCredentialRequestDto {
     if (!requiresRequestHolderKey(configId)) {
       this.holderKeyStore.clear();
       return request;
     }
-    const publicJwk = this.holderKeyStore.peek();
-    return publicJwk ? { ...request, holder_key: { jwk: publicJwk } } : request;
+    const entry = this.holderKeyStore.peek();
+    if (!entry) {
+      return request;
+    }
+    const sealMatches = entry.credentialConfigurationId === configId && entry.submissionId === submissionId;
+    return sealMatches ? { ...request, holder_key: { jwk: entry.publicJwk } } : request;
+  }
+
+  /**
+   * Destructive read of the private-key handoff, verified against this exact attempt: a
+   * seal mismatch -- or an empty store, e.g. a reload between submit and response destroying the
+   * root store -- degrades exactly like absence, never surfaces a key that belongs to another
+   * attempt.
+   */
+  private takeSealedPrivateKey(credentialConfigurationId: string, submissionId: string): string | undefined {
+    const entry = this.holderPrivateKeyStore.take();
+    if (!entry) {
+      return undefined;
+    }
+    const sealMatches = entry.credentialConfigurationId === credentialConfigurationId
+      && entry.submissionId === submissionId;
+    return sealMatches ? entry.privateKeyHex : undefined;
   }
 
   private navigateToCredentials(): Promise<boolean> {
@@ -526,10 +694,11 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
-    delivery: IssuanceDelivery,
+    deliveryModes: readonly DeliveryModeToken[],
     grantType: IssuanceGrantType,
+    holderBinding: HolderBinding | undefined,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, delivery, grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, holderBinding, deliveryModes, grantType);
   }
 
 
@@ -542,15 +711,66 @@ export class CredentialIssuanceService {
     return this.credentialProcedureService.createProcedure(credentialPayload);
   }
 
-  private openCredentialOfferDialog(credentialOfferUri: string): Observable<any> {
-    const dialogData: CredentialOfferDialogData = { credentialOfferUri };
+  private openCredentialOfferDialog(
+    credentialOfferUri: string | undefined,
+    requiresHolderKeySection: boolean,
+    privateKeyHex: string | undefined,
+    outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>
+  ): Observable<any> {
+    const dialogData: CredentialOfferDialogData = { credentialOfferUri, requiresHolderKeySection, privateKeyHex, outcomes };
     const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
       data: dialogData,
       autoFocus: false,
       width: '420px',
+      panelClass: 'dialog-custom',
+      // closeOnNavigation must be false whenever UncopiedArtifactCloseGuard is active, or
+      // Material closes the dialog on NavigationStart before the guard's popstate listener ever
+      // gets a chance to react to the browser's back button.
+      disableClose: requiresHolderKeySection,
+      closeOnNavigation: !requiresHolderKeySection
+    });
+    return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
+  }
+
+  /**
+   * The direct-delivery success surface: always opened with
+   * `disableClose: true` + `closeOnNavigation: false`, per the contract documented on
+   * `DirectCredentialResultDialogComponent` -- `UncopiedArtifactCloseGuard` is unconditionally
+   * active here, since the signed credential is always at least one artifact to protect.
+   */
+  private openDirectCredentialResultDialog(
+    response: IssuanceResponseDto,
+    requiresHolderKeySection: boolean,
+    privateKeyHex: string | undefined,
+    outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>
+  ): Observable<any> {
+    const signedCredential = response.responses?.find(channel => channel.channel === 'direct')?.body?.signed_credential;
+    if (!signedCredential) {
+      // Defensive, should be unreachable: resolveChannelOutcomes() already treats a body-less
+      // direct 2xx as 'missing', never 'delivered' (ES-02), so this branch is never selected for
+      // a response that lacks the artifact this dialog exists to present.
+      console.error('Direct channel resolved as delivered without a signed_credential body.');
+      this.openFailedCreateDialog();
+      return EMPTY;
+    }
+    const dialogData: DirectCredentialResultDialogData = {
+      signedCredential,
+      requiresHolderKeySection,
+      privateKeyHex,
+      outcomes,
+      credentialOfferUri: this.extractCredentialOfferUri(response)
+    };
+    const dialogRef = this.matDialog.open(DirectCredentialResultDialogComponent, {
+      data: dialogData,
+      autoFocus: false,
+      disableClose: true,
+      closeOnNavigation: false,
       panelClass: 'dialog-custom'
     });
-    return dialogRef.afterClosed();
+    // AD-6 cleanup point 4: belt-and-suspenders alongside the take() that already drained this
+    // attempt's entry before the dialog opened -- guards a future code path that reaches this
+    // dialog without having taken it first.
+    return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
   }
 
   private openSuccessfulCreateDialog(): Observable<any>{
@@ -578,7 +798,18 @@ export class CredentialIssuanceService {
    * path's `tap`, so the canLeave() guard keeps protecting what was written.
    */
   private handleIssuanceFailure(error: unknown): Observable<any> {
-    console.error('POST /api/v1/issuances failed', error);
+    // AD-15: ES-09 already left its own closed-allowlist trace in IssuanceHolderKeyService --
+    // logging the raw error here too would print its `cause`/stack, which that allowlist exists
+    // to keep out of the console. No POST was sent for this case either, so the generic message
+    // below would also be factually wrong for it.
+    if (error instanceof HolderKeyGenerationError) {
+      console.error({ event: 'issuance_submit_aborted', reason: 'holder_key_generation_failed' });
+    } else {
+      console.error('POST /api/v1/issuances failed', error);
+    }
+    // AD-6 cleanup point 2: a transport failure (incl. ES-09's HolderKeyGenerationError, which
+    // reaches this same catchError) leaves nothing to hand over on any surface.
+    this.holderPrivateKeyStore.clear();
     this.openFailedCreateDialog();
     return EMPTY;
   }

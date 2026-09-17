@@ -1,7 +1,6 @@
 import { ValidatorEntryUnion } from "src/app/shared/validators/credential-issuance/all-validators";
 import { TmfAction, TmfFunction } from "./lear-credential";
 import { ComponentType } from "@angular/cdk/portal";
-import { FormControl } from "@angular/forms";
 import { BaseIssuanceCustomFormChild } from "src/app/features/credential-details/components/base-issuance-custom-form-child";
 import { ClaimDefinitionDto } from "../dto/credential-issuer-metadata.dto";
 export const ISSUANCE_CREDENTIAL_TYPES_ARRAY = ['learcredential.employee', 'learcredential.machine'] as const;
@@ -59,17 +58,54 @@ export interface HolderKeyMaterial {
   publicJwk: HolderPublicJwk;
 }
 
-export type DeliveryMode = 'email' | 'ui';
+export type DeliveryModeToken = 'direct' | 'email' | 'ui';
 
-export interface DeliveryOption {
-  value: DeliveryMode;
+export interface DeliveryModeOption {
+  value: DeliveryModeToken;
   labelKey: string;
 }
 
-export const DELIVERY_OPTIONS: DeliveryOption[] = [
-  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+/**
+ * Descriptors for the nominal path: one checkbox per mode, rendered only for the modes the resolved
+ * delivery-eligibility snapshot actually offers for (tenant, credential type) (EUD-233 AD-1/AD-4).
+ * This catalogue is the full universe `offerableModes$` narrows from -- it is never filtered by hand
+ * to represent "what this tenant allows", that narrowing happens against the snapshot, not here.
+ */
+export const DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
+  { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
   { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
 ];
+
+/**
+ * Descriptors for the degraded catalogue states only -- state 2 (pre-EUD-169 Issuer) and state 4
+ * (unreadable tenant catalogue), EUD-233 AD-9. `resolveOfferableDeliveryOptions` narrows from this
+ * catalogue in both states, never from `DELIVERY_MODE_OPTIONS`: `'direct'` is absent by construction,
+ * not by a runtime check that a future edit could drop.
+ */
+export const WALLET_DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
+  { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
+  { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
+];
+
+export const DELIVERY_RESULT_ORDER: readonly DeliveryModeToken[] = ['direct', 'ui', 'email'];
+
+declare const deliveryCsvBrand: unique symbol;
+
+/**
+ * The `delivery` field of `POST /api/v1/issuances`, in the only shape the Issuer accepts: a
+ * deduplicated, canonically ordered CSV of {@link DeliveryModeToken}s (EUD-233 AD-3). Branded so the
+ * compiler refuses a hand-built string -- the only way to obtain one is {@link toDeliveryCsv}.
+ */
+export type DeliveryCsv = string & { readonly [deliveryCsvBrand]: true };
+
+export function toDeliveryCsv(modes: Iterable<DeliveryModeToken>): DeliveryCsv {
+  const requested = new Set(modes);
+  if (requested.size === 0) {
+    throw new Error('toDeliveryCsv requires at least one delivery mode');
+  }
+  return DELIVERY_RESULT_ORDER.filter(mode => requested.has(mode)).join(',') as DeliveryCsv;
+}
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
@@ -155,20 +191,6 @@ export interface IssuanceFormPowerSchema{
 export interface KeyState {
   desmosPrivateKeyValue: string,
   desmosDidKeyValue: string,
-  /**
-   * The public half, for `holder_key.jwk` (EUD-168 AD-8). Deliberately absent from
-   * `displayedKeys$`: it is wire material, not something the Operator needs to read or copy.
-   */
+  /** The public half, for `holder_key.jwk` (EUD-168 AD-8). */
   desmosPublicJwk?: HolderPublicJwk
-}
-
-/**
- * What `displayedKeys$` shows as copyable text -- deliberately narrower than {@link KeyState} so a
- * structured field like `desmosPublicJwk` can never end up typed as a string in the template
- * (EUD-168 B4/F1's `strictTemplates` requires `key.value` to stay a plain string).
- */
-export type DisplayedKeyState = Partial<Pick<KeyState, 'desmosPrivateKeyValue' | 'desmosDidKeyValue'>>;
-
-export interface KeyForm{
-  didKey: FormControl<string>,
 }

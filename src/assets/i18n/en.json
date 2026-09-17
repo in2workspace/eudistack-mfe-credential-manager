@@ -1,7 +1,6 @@
 {
   "next": "Next",
   "back": "Back",
-  "copy": "Copy",
   "verifiable-credential": "Verifiable Credential",
   "digital-wallet": "Digital Wallet",
   "home": {
@@ -320,8 +319,6 @@
     "create-confirm-dialog": {
       "title": "Create credential",
       "message": "Are you sure you want to create this credential?",
-      "checkboxLabel": "I confirm that I have copied and safely stored the private key.",
-      "belowText": "Without the private key, you will not be able to use this credential later.",
       "defaultLoadingTitle": "Please wait while the process is completed..."
     },
     "create-success-dialog": {
@@ -373,14 +370,55 @@
     },
     "delivery": {
       "label": "Delivery method",
+      "direct": "Direct delivery",
       "email": "Email",
       "qrCode": "QR Code"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "Your organization's delivery configuration could not be read. Fewer delivery options than are actually available may be shown. Reload the page to try again; if the problem persists, contact support."
+    },
+    "deliveryOutcome": {
+      "direct": {
+        "delivered": "Credential delivered.",
+        "failed": "The credential could not be issued, so it is not returned here."
+      },
+      "ui": {
+        "delivered": "QR code generated.",
+        "failed": "The QR code could not be generated."
+      },
+      "email": {
+        "delivered": "The credential offer has been sent by email.",
+        "failed": "The email could not be sent."
+      }
+    },
+    "holderPrivateKey": {
+      "label": "Private key",
+      "unavailable": "The private key generated for this issuance is no longer available on this device. It cannot be recovered or regenerated: issue the credential again if you need it."
+    },
+    "discardArtifactsConfirm": {
+      "title": "Close without copying?",
+      "credential": "You haven't copied the credential yet. If you close now, you won't be able to recover it.",
+      "privateKey": "You haven't copied the private key yet. If you close now, you won't be able to recover it.",
+      "both": "You haven't copied the credential or the private key yet. If you close now, you won't be able to recover them.",
+      "confirmationLabel": "Close anyway",
+      "cancelLabel": "Stay here"
     },
     "credential-offer-dialog": {
       "title": "Credential created",
       "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",
       "copy": "Copy link",
       "copied": "Copied!"
+    },
+    "direct-result-dialog": {
+      "title": "Credential created",
+      "message": "Copy the signed credential before closing this window: you won't be able to see it again.",
+      "messageCredentialAndKey": "Copy the private key and the signed credential before closing this window: you won't be able to see them again.",
+      "credentialLabel": "Signed credential",
+      "done": "Done",
+      "copyFailed": {
+        "credential": "The credential could not be copied to the clipboard. Try again.",
+        "privateKey": "The private key could not be copied to the clipboard. Try again."
+      }
     },
     "changeCredentialAlert": "Are you sure you want to change the type of credential? Your progress will be lost.",
     "unloadAlert": "Are you sure you want to leave? Your progress will be lost."
@@ -450,7 +488,6 @@
         "top_level_domain_part_min": "The portion of the domain after the last '.' must be at least 2 characters long."
       },
       "org_id_startsWithVAT": "Enter the id without VAT nor the country prefix",
-      "no_key": "You need to generate a key to submit.",
       "no_power": "You need to add at least one power",
       "no_function": "Each power must have at least one selected function"
     }
@@ -458,17 +495,12 @@
   "dialog": {
     "ok": "Ok",
     "close": "Close",
+    "copy": "Copy",
     "cancel": "Cancel",
     "accept": "Accept",
     "delete": "Delete",
     "save": "Save",
     "loading-default-title": "Please wait while the process is completed..."
-  },
-  "keys": {
-    "title": "Private Key",
-    "buttonText": "Generate Key",
-    "alert": "Make sure to copy this key.",
-    "tooltip": "Your private key is a secret that lets you sign and prove ownership of your credential. Without it you can’t use your credential. Store it safely, back it up and never share it."
   },
   "countries": {
     "spain": "Spain",

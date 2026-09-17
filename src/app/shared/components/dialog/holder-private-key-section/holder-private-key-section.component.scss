@@ -1,0 +1,12 @@
+.holder-private-key-section {
+  &__field {
+    display: block;
+    width: 100%;
+  }
+
+  &__notice {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #6B7280);
+  }
+}

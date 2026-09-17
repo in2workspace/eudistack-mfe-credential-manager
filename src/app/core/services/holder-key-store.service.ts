@@ -2,38 +2,60 @@ import { Injectable, signal } from '@angular/core';
 import { HolderPublicJwk } from '../models/entity/lear-credential-issuance';
 
 /**
- * Carries the public half of the holder key from the key-generator widget to the issuance request
+ * The public half of a holder key, sealed to the submission it was generated for (EUD-233 AD-6,
+ * hardened post-review 2026-09-17 to close the asymmetry with `HolderPrivateKeyStore`, which was
+ * sealed from the start): `credentialConfigurationId` and `submissionId` let the consumer verify
+ * this entry belongs to the emission it is about to bind, not to an earlier or concurrent attempt.
+ */
+export interface HolderPublicKeyEntry {
+  publicJwk: HolderPublicJwk;
+  credentialConfigurationId: string;
+  submissionId: string;
+}
+
+/**
+ * Carries the public half of the holder key from its generation to the issuance request
  * (EUD-168 AD-8).
  *
- * The two need to meet and cannot inject each other. `KeyGeneratorService` is deliberately scoped to
- * `KeyGeneratorComponent` — «not provided in root but in key generator component» — so its state
- * dies with the form, which is the right lifecycle for a private key. And `KeyGeneratorComponent`
- * cannot reach for `CredentialIssuanceService`, because the machine issuance schema already imports
- * the component and that would close an import cycle.
+ * Written by `IssuanceHolderKeyService.generateForSubmission()` (EUD-233 AD-6) -- once per
+ * submission attempt, invisibly, inside the submit command -- and read by
+ * `CredentialIssuanceService.attachHolderKey()` moments later, in the same attempt. The two are
+ * component-scoped siblings (`CredentialIssuanceComponent`'s `providers`) and could inject each
+ * other directly, but this root-provided, deliberately tiny store is kept as the seam between them
+ * regardless: it is also what `CredentialIssuanceService.credentialRequestFactory`'s callers read
+ * without needing a reference to the key-generation service itself.
  *
- * Hence this: root-provided, deliberately tiny, holding only the half that is safe to move around.
- * The private key never passes through here.
+ * Root-provided, holding only the half that is safe to move around. The private key never passes
+ * through here -- see `HolderPrivateKeyStore` for that, which is sealed and read destructively.
+ *
+ * Deliberately dumb, mirroring `HolderPrivateKeyStore`: it hands back whatever sealed entry is
+ * present, but does not decide whether the seal matches the caller's current attempt -- that
+ * comparison belongs to the consumer (`CredentialIssuanceService.attachHolderKey()`), the only
+ * place that knows what "the current submission" is.
  */
 @Injectable({ providedIn: 'root' })
 export class HolderKeyStoreService {
 
-  private readonly publicJwk = signal<HolderPublicJwk | undefined>(undefined);
+  private readonly entry = signal<HolderPublicKeyEntry | undefined>(undefined);
 
-  public set(publicJwk: HolderPublicJwk): void {
-    this.publicJwk.set(publicJwk);
+  public set(entry: HolderPublicKeyEntry): void {
+    this.entry.set(entry);
   }
 
   /**
-   * Reads the stored key without consuming it (code-review L508): the caller does not yet know
-   * whether the request it is about to build will actually succeed, and clearing here would strand
-   * a retry after an HTTP failure or a channel error without its holder_key. The caller is
-   * responsible for calling `clear()` once — and only once — real success is confirmed.
+   * Reads the stored entry without consuming it. Non-destructive by convention, not because a
+   * retry needs to find the same key twice: since AD-6, each submission attempt calls
+   * `generateForSubmission()` again, which overwrites this store with a freshly generated (and
+   * freshly sealed) pair before `attachHolderKey()` ever peeks it -- there is no "same key
+   * survives a retry" case left to preserve. `clear()` is still called once real success is
+   * confirmed, or when a type that does not require a holder key is submitted, to avoid leaking a
+   * stale entry across types.
    */
-  public peek(): HolderPublicJwk | undefined {
-    return this.publicJwk();
+  public peek(): HolderPublicKeyEntry | undefined {
+    return this.entry();
   }
 
   public clear(): void {
-    this.publicJwk.set(undefined);
+    this.entry.set(undefined);
   }
 }

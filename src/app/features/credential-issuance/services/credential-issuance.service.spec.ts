@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialIssuanceService } from './credential-issuance.service';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
+import { IssuanceHolderKeyService } from './issuance-holder-key.service';
 import { CountryService } from 'src/app/shared/services/country.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CREDENTIAL_SCHEMA_PROVIDERS, IssuanceSchemaBuilder } from './issuance-schema-builders/issuance-schema-builder';
@@ -15,6 +16,13 @@ import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-polic
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HolderKeyStoreService } from 'src/app/core/services/holder-key-store.service';
+import { HolderPrivateKeyStore } from 'src/app/core/services/holder-private-key-store.service';
+import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
+import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
+import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
+import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-generation-error';
+import { DirectCredentialResultDialogComponent } from 'src/app/shared/components/dialog/direct-credential-result-dialog/direct-credential-result-dialog.component';
+import { CredentialOfferDialogComponent } from 'src/app/shared/components/dialog/credential-offer-dialog/credential-offer-dialog.component';
 
 class MockDialogWrapperService {
   // The real DialogWrapperService internally subscribes to the observable returned by the
@@ -25,6 +33,23 @@ class MockDialogWrapperService {
   openDialog = jest.fn(() => ({ afterClosed: () => of(true) }));
 }
 
+/** EUD-233 AD-9: state 1, offering all three modes for every configId this file exercises. */
+const OPEN_CATALOG_SNAPSHOT: DeliveryEligibilitySnapshot = {
+  status: 'read',
+  modesByConfigId: new Map([
+    ['learcredential.employee.w3c.2', ['direct', 'ui', 'email']],
+    ['learcredential.employee.sd.1', ['direct', 'ui', 'email']],
+    ['learcredential.employee', ['direct', 'ui', 'email']],
+    ['learcredential.machine.w3c.3', ['direct', 'ui', 'email']],
+    ['learcredential.machine.sd.1', ['direct', 'ui', 'email']],
+    ['learcredential.machine', ['direct', 'ui', 'email']],
+    // Fixture-only configIds for the delivery-mode defaulting suite below: narrower offerable
+    // sets than the "everything open" ones above, never reused by any other describe block.
+    ['learcredential.employee.email-only.1', ['email']],
+    ['learcredential.employee.ui-only.1', ['ui']],
+  ]),
+};
+
 describe('CredentialIssuanceService', () => {
   let service: CredentialIssuanceService;
   let mockProcedureService: { createProcedure: jest.Mock };
@@ -34,6 +59,8 @@ describe('CredentialIssuanceService', () => {
   let mockAuthService: {
     getMandateeEmail: jest.Mock
   };
+  let mockCatalogService: { fetchCatalog: jest.Mock; loadDeliveryEligibility: jest.Mock };
+  let mockHolderKeyService: { generateForSubmission: jest.Mock; clear: jest.Mock };
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
   let policyLoadFailed: ReturnType<typeof signal<boolean>>;
@@ -52,16 +79,34 @@ describe('CredentialIssuanceService', () => {
 
 
   beforeEach(() => {
+    // jsdom's `crypto` does not implement randomUUID() in this test environment (unlike
+    // crypto.subtle, which key-generator.service.spec.ts already has to stub separately) --
+    // submitCredentialPayload() mints one per attempt (AD-6).
+    if (typeof globalThis.crypto.randomUUID !== 'function') {
+      (globalThis.crypto as any).randomUUID = jest.fn(() => '11111111-1111-1111-1111-111111111111');
+    }
     dialogService = new MockDialogWrapperService();
-    // openCredentialOfferDialog() uses the real MatDialog directly (not the DialogWrapperService
-    // mock above), because CredentialOfferDialogComponent needs a wider dialog width than the
-    // wrapper's default. Without this mock, .open() would try to instantiate the real component
-    // (which injects TenantService) and throw, which the pipe's catchError would silently turn
-    // into a failure-dialog false positive.
+    // openCredentialOfferDialog() / openDirectCredentialResultDialog() use the real MatDialog
+    // directly (not the DialogWrapperService mock above), because those components need dialog
+    // options (width, disableClose, closeOnNavigation) the wrapper's defaults don't offer.
+    // Without this mock, .open() would try to instantiate the real component (which injects
+    // TenantService/UncopiedArtifactCloseGuard) and throw, which the pipe's catchError would
+    // silently turn into a failure-dialog false positive.
     mockMatDialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
     mockProcedureService = { createProcedure: jest.fn() }
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
     mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
+    mockCatalogService = {
+      fetchCatalog: jest.fn(() => of([])),
+      loadDeliveryEligibility: jest.fn(() => of(OPEN_CATALOG_SNAPSHOT)),
+    };
+    // Real crypto generation is out of scope here (covered by issuance-holder-key.service.spec.ts,
+    // Task 35) -- this file is about what the SERVICE does with the HolderBinding it gets back.
+    // Default implementation wired below, once HolderPrivateKeyStore is injected.
+    mockHolderKeyService = {
+      generateForSubmission: jest.fn(),
+      clear: jest.fn(),
+    };
     // Backed by real signals: if these were fixed values, the service's computed
     // signals would memoize and we couldn't test the recompute after loadMetadata().
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);
@@ -93,6 +138,13 @@ describe('CredentialIssuanceService', () => {
         CountryService,
         { provide: CredentialProcedureService, useValue: mockProcedureService },
         { provide: CredentialIssuerMetadataService, useValue: mockMetadataService },
+        { provide: CredentialCatalogService, useValue: mockCatalogService },
+        { provide: IssuanceHolderKeyService, useValue: mockHolderKeyService },
+        // HolderPrivateKeyStore / HolderKeyStoreService: real instances (root, simple signal
+        // stores) rather than mocks, so seal verification and clear() semantics are
+        // exercised for real, not merely assumed.
+        HolderPrivateKeyStore,
+        HolderKeyStoreService,
         // The published per-tenant policy is fail-closed: an unusable document is a second
         // reason the selector can be empty for a cause the Operator cannot act on.
         { provide: IssuanceUiPolicyService, useValue: { load: jest.fn(() => policyLoadPromise), loadFailed: () => policyLoadFailed() } },
@@ -103,6 +155,22 @@ describe('CredentialIssuanceService', () => {
       ]
     });
     service = TestBed.inject(CredentialIssuanceService);
+
+    // The real IssuanceHolderKeyService.generateForSubmission() seals the private hex into
+    // HolderPrivateKeyStore AND writes the public JWK into HolderKeyStoreService, as two of its
+    // three consumer writes (AD-6) -- mocking the service away must not also lose those side
+    // effects, or takeSealedPrivateKey()/attachHolderKey() would never find anything, regardless
+    // of what this file is trying to test.
+    const privateKeyStore = TestBed.inject(HolderPrivateKeyStore);
+    const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+    mockHolderKeyService.generateForSubmission.mockImplementation(
+      (credentialConfigurationId: string, submissionId: string) => {
+        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
+        privateKeyStore.set({ privateKeyHex: 'mock-private-key-hex', credentialConfigurationId, submissionId });
+        holderKeyStore.set({ publicJwk, credentialConfigurationId, submissionId });
+        return Promise.resolve<HolderBinding>({ didKey: 'did:key:zMock', publicJwk });
+      }
+    );
   });
 
   it('should be created', () => {
@@ -250,55 +318,82 @@ describe('CredentialIssuanceService', () => {
       expect(mockMetadataService.getConfigurationById).toHaveBeenCalledWith('learcredential.employee.w3c.2');
     });
   });
-
-  describe('deliveryOptions (EUD-168)', () => {
-
-    const selectType = (configId: string) => {
-      mockMetadataService.findConfigurationsForType.mockReturnValue([
-        { configId, format: 'jwt_vc_json' }
-      ]);
-      service.selectedCredentialType$.set('learcredential.employee');
+  describe('delivery mode defaulting', () => {
+    // The delivery-eligibility read is one of the three forkJoin sources gating construction
+    // (isLoadingCatalog$'s own describe block above); the policy load is a Promise, so it only
+    // settles on the microtask queue -- a real await, not fakeAsync/tick(). Without this,
+    // _deliveryEligibility$ stays at its constructor default ({status: 'unreadable'}), and
+    // offerableModes$ falls back to the schema-only, direct-less catalogue for every configId.
+    const settleDeliveryEligibility = async () => {
+      resolvePolicyLoad();
+      await new Promise(resolve => setTimeout(resolve, 0));
     };
 
-    it('derives the offered modes from the selected configuration, not from a fixed list', () => {
-      selectType('learcredential.employee.w3c.4');
-      mockMetadataService.getConfigurationById.mockReturnValue({
-        format: 'jwt_vc_json',
-        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
-      });
+    it("defaults to 'direct' when it is offerable", async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
 
-      service.deliveryOptions();
-
-      expect(mockMetadataService.getConfigurationById)
-        .toHaveBeenCalledWith('learcredential.employee.w3c.4');
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
     });
 
-    it('offers the wallet modes for a holder-bound type', () => {
-      // Today this narrows nothing -- the catalogue holds only wallet modes, which are always
-      // eligible. The assertion pins the behaviour so adding the direct mode (EUD-233) cannot
-      // silently start offering it for bound types.
-      selectType('learcredential.employee.w3c.4');
-      mockMetadataService.getConfigurationById.mockReturnValue({
-        format: 'jwt_vc_json',
-        proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['ES256'] } },
-      });
+    it("defaults to 'email' when 'direct' is not offerable but 'email' is", async () => {
+      await settleDeliveryEligibility();
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
 
-      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
     });
 
-    it('offers the wallet modes for an unbound type too', () => {
-      selectType('learcredential.machine.w3c.3');
-      mockMetadataService.getConfigurationById.mockReturnValue({ format: 'jwt_vc_json' });
+    it("leaves the selection empty when neither 'direct' nor 'email' is offerable -- never defaults to 'ui'", async () => {
+      await settleDeliveryEligibility();
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.ui-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
 
-      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+      expect(service.selectedDeliveryModes$().size).toBe(0);
     });
 
-    it('falls back to the full catalogue when no type is selected', () => {
-      expect(service.deliveryOptions().map(o => o.value)).toEqual(['email', 'ui']);
+    it('does not clobber a deliberate operator selection that still contains a valid mode', async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
+
+      // The operator unmarks 'direct' and marks 'email' instead -- still one valid mode, so the
+      // defaulting effect must not step back in and re-add 'direct'.
+      service.toggleDeliveryMode('direct', false);
+      service.toggleDeliveryMode('email', true);
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
+    });
+
+    it('re-defaults after a type change prunes the selection down to nothing valid', async () => {
+      await settleDeliveryEligibility();
+      service.selectedCredentialType$.set('learcredential.employee');
+      TestBed.flushEffects();
+      expect([...service.selectedDeliveryModes$()]).toEqual(['direct']);
+
+      // Switching to a configId that does not offer 'direct' prunes it away (EC-01); with nothing
+      // valid left, the defaulting rule fires again, landing on 'email'.
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json' }
+      ]);
+      service.selectedFormatOption$.set(null);
+      service.updateSelectedFormat({ configId: 'learcredential.employee.email-only.1', format: 'jwt_vc_json', labelKey: 'k' });
+      TestBed.flushEffects();
+
+      expect([...service.selectedDeliveryModes$()]).toEqual(['email']);
     });
   });
 
-  describe('submitCredentialPayload (Slice C)', () => {
+  describe('submitCredentialPayload', () => {
     const successDialogData = expect.objectContaining({
       title: 'credentialIssuance.create-success-dialog.title',
       status: 'default'
@@ -307,6 +402,24 @@ describe('CredentialIssuanceService', () => {
       title: 'credentialIssuance.create-error-dialog.title',
       status: 'error'
     });
+
+    /**
+     * AD-13: the checkbox model -- replaces the whole selection with exactly these modes (never
+     * additive across fixtures: a type change's EC-01 pruning effect only removes modes that
+     * became non-offerable, so a mode marked by an earlier `givenASubmittable*Form()` call in the
+     * same test would otherwise survive into a later, unrelated fixture).
+     */
+    const markDeliveryModes = (...modes: Array<'direct' | 'ui' | 'email'>) => {
+      service.selectedDeliveryModes$.set(new Set(modes));
+    };
+
+    /**
+     * `IssuanceHolderKeyService.generateForSubmission()` is Promise-based even when mocked to
+     * resolve immediately, so the AD-8 exempt machine types' submit path always crosses a real
+     * microtask boundary before reaching the HTTP call -- unlike the synchronous `of(undefined)`
+     * path non-exempt types take. Every test that submits a machine-type form must await this.
+     */
+    const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve, 0));
 
     const givenASubmittableForm = () => {
       // Set before the type is selected: availableFormats$ is a lazy computed keyed on the
@@ -342,9 +455,14 @@ describe('CredentialIssuanceService', () => {
       // internal effect() scheduled as a microtask: without this, formValue$() would keep
       // returning the initial value (the empty FormGroup from construction) for the rest of the test.
       TestBed.flushEffects();
+      markDeliveryModes('email');
     };
 
-    /** Same shape as givenASubmittableForm, but for an AD-8 exempt machine configId. */
+    /**
+     * Same shape as givenASubmittableForm, but for an AD-8 (EUD-233) exempt machine configId. No `keys`
+     * schema group: the machine form is structurally identical to
+     * any other type's.
+     */
     const givenASubmittableMachineForm = (configId: string) => {
       mockMetadataService.findConfigurationsForType.mockReturnValue([
         { configId, format: 'jwt_vc_json' }
@@ -352,11 +470,7 @@ describe('CredentialIssuanceService', () => {
       mockSchemaBuilder.formSchemasBuilder.mockReturnValue([
         [
           { id: 1, key: 'mandatee', type: 'group', display: 'main', groupFields: [] },
-          { id: 2, key: 'power', type: 'group', display: 'main', groupFields: [] },
-          // createLearCredentialMachineRequest reads formData['keys']['didKey'] directly.
-          { id: 3, key: 'keys', type: 'group', display: 'main', groupFields: [
-            { key: 'didKey', type: 'control', controlType: 'text', validators: [] }
-          ] }
+          { id: 2, key: 'power', type: 'group', display: 'main', groupFields: [] }
         ],
         {
           mandator: [
@@ -392,202 +506,516 @@ describe('CredentialIssuanceService', () => {
       jest.restoreAllMocks();
     });
 
-    it('should show the success dialog when the response carries no offer URI (AC-05, e.g. email delivery)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-      service.openSubmitDialog();
-
-      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
-      expect(mockMatDialog.open).not.toHaveBeenCalled();
-      expect(service.hasSubmitted$()).toBe(true);
-    });
-
-    it('should show the scannable QR dialog when the response carries an offer URI (AC-05, "Código QR" delivery)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({
-        responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
-      }));
-
-      service.openSubmitDialog();
-
-      // The backend only sets credential_offer_uri for DeliveryMode.UI (returnsUri=true) --
-      // never for EMAIL -- so this is already scoped to the "Código QR" delivery option.
-      expect(mockMatDialog.open).toHaveBeenCalledTimes(1);
-      expect(mockMatDialog.open.mock.calls[0][1].data).toEqual({ credentialOfferUri: 'openid-credential-offer://abc' });
-      expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(service.hasSubmitted$()).toBe(true);
-    });
-
-    /**
-     * EUD-167 D-5/D-6: a 207 Multi-Status is still a 2xx to HttpClient, so a failed channel must
-     * be read out of the body on the success path, not assumed away because the HTTP call itself
-     * did not error. Not yet reachable from the form (single delivery mode per request today),
-     * but the mapping must already be correct for when a future Story submits more than one.
-     */
-    it('should show the failure dialog when a channel in the (2xx) response carries an error (D-6)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({
-        responses: [{
-          channel: 'email',
-          status: 503,
-          error: { type: 'delivery_failed', title: 'Delivery failed', status: 503, detail: "Delivery failed for channel 'email'" }
-        }]
-      }));
-      const router = TestBed.inject(Router);
-
-      service.openSubmitDialog();
-
-      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
-      expect(mockMatDialog.open).not.toHaveBeenCalled();
-      // Same contract as a real HTTP error: no navigation, so the operator can see the failure.
-      expect(router.navigate).not.toHaveBeenCalled();
-      // code-review L449: a failed channel must not flip the "already submitted" guard either.
-      expect(service.hasSubmitted$()).toBe(false);
-    });
-
-    it('should submit the newest version of the selected format, not the bare type', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-      service.openSubmitDialog();
-
-      const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
-      expect(request.credential_configuration_id).toBe('learcredential.employee.w3c.2');
-    });
-
-    it('should navigate to the credential list after a successful issuance (AC-03)', () => {
-      const router = TestBed.inject(Router);
-      mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-      service.openSubmitDialog();
-
-      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials']);
-    });
-
-    it.each([
-      ['400 invalid payload (ES-01)', { status: 400 }],
-      ['403 configuration not allowed for the tenant (ES-02)', { status: 403 }],
-      ['500 issuer failure (ES-04)', { status: 500 }]
-    ])('should show an observable failure on %s', (_label, httpError) => {
-      mockProcedureService.createProcedure.mockReturnValue(throwError(() => httpError));
-
-      service.openSubmitDialog();
-
-      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
-    });
-
-    it('should keep the form data and let the operator retry after a failure (AC-06)', () => {
-      const router = TestBed.inject(Router);
-      mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
-
-      service.openSubmitDialog();
-
-      // no reset and no navigation: the entered data survives
-      expect(service.hasSubmitted$()).toBe(false);
-      expect(router.navigate).not.toHaveBeenCalled();
-      expect(service.form$().pristine).toBe(true);
-    });
-
-    it('should not leak technical detail into the failure message (ES-02)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(
-        throwError(() => ({ status: 403, error: { detail: 'credential_configuration_id not allowed for tenant acme' } }))
-      );
-
-      service.openSubmitDialog();
-
-      const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
-      expect(JSON.stringify(dialogData)).not.toContain('acme');
-      expect(JSON.stringify(dialogData)).not.toContain('403');
-    });
-
-    it('should release the loading state and report a failure when the issuer does not answer (ES-05)', () => {
-      jest.useFakeTimers();
-      mockProcedureService.createProcedure.mockReturnValue(NEVER);
-
-      service.openSubmitDialog();
-      jest.advanceTimersByTime(30_000);
-
-      expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
-      jest.useRealTimers();
-    });
-
-    it('should guard the double submit through hasSubmitted$ and the async dialog (ES-03)', () => {
-      mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-      service.openSubmitDialog();
-
-      // after success the screen navigates away and canLeave() stops blocking: the Operator
-      // must never end up with two contradictory success confirmations on screen.
-      expect(service.hasSubmitted$()).toBe(true);
-      expect(service.canLeave()).toBe(true);
-      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-    });
-
-    describe('withHolderKey (AD-12, AC-17/AC-18)', () => {
-      it('attaches holder_key for an AD-8 exempt type when the store holds a key', () => {
-        givenASubmittableMachineForm('learcredential.machine.w3c.3');
-        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
-        TestBed.inject(HolderKeyStoreService).set(publicJwk);
-        mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-        service.openSubmitDialog();
-
-        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
-        expect(request.holder_key).toEqual({ jwk: publicJwk });
-      });
-
-      it('never attaches holder_key for a non-exempt type, and clears a stale key from the store', () => {
-        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not in the AD-8 exempt list
-        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
-        // A key left over from a previous machine-credential form interaction must not leak
-        // into an unrelated type's request.
-        holderKeyStore.set({ kty: 'EC', crv: 'P-256', x: 'stale-x', y: 'stale-y' });
-        mockProcedureService.createProcedure.mockReturnValue(of({}));
-
-        service.openSubmitDialog();
-
-        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
-        expect(request.holder_key).toBeUndefined();
-        expect(holderKeyStore.peek()).toBeUndefined();
-      });
-
-      /** code-review L508: a drained-on-read store would send the retry with no holder_key at all. */
-      it('keeps the key in the store after an HTTP failure, so a retry still attaches it (AC-06)', () => {
-        givenASubmittableMachineForm('learcredential.machine.w3c.3');
-        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
-        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
-        holderKeyStore.set(publicJwk);
-        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
-
-        service.openSubmitDialog();
-
-        expect(holderKeyStore.peek()).toEqual(publicJwk);
-
-        // Retry: same key attaches again, unlike the pre-fix take()-before-POST that would have
-        // left this second request with no holder_key.
-        mockProcedureService.createProcedure.mockReturnValue(of({}));
-        service.openSubmitDialog();
-
-        const [secondRequest] = mockProcedureService.createProcedure.mock.calls[1] as any[];
-        expect(secondRequest.holder_key).toEqual({ jwk: publicJwk });
-      });
-
-      /** code-review L449: a 207 channel error is a failed attempt, not a submitted one. */
-      it('keeps the key in the store after a 207 channel error, so a retry still attaches it (D-6)', () => {
-        givenASubmittableMachineForm('learcredential.machine.w3c.3');
-        const publicJwk = { kty: 'EC' as const, crv: 'P-256' as const, x: 'x-coord', y: 'y-coord' };
-        const holderKeyStore = TestBed.inject(HolderKeyStoreService);
-        holderKeyStore.set(publicJwk);
+    describe('base outcome matrix', () => {
+      it('Direct solo (non-machine) opens DirectCredentialResultDialogComponent with the credential only', () => {
+        markDeliveryModes('direct');
         mockProcedureService.createProcedure.mockReturnValue(of({
-          responses: [{
-            channel: 'email',
-            status: 503,
-            error: { type: 'delivery_failed', title: 'Delivery failed', status: 503, detail: "Delivery failed for channel 'email'" }
-          }]
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
         }));
 
         service.openSubmitDialog();
 
-        expect(holderKeyStore.peek()).toEqual(publicJwk);
+        expect(mockMatDialog.open).toHaveBeenCalledWith(
+          DirectCredentialResultDialogComponent,
+          expect.objectContaining({
+            disableClose: true,
+            closeOnNavigation: false,
+            data: expect.objectContaining({
+              signedCredential: 'signed-jwt',
+              requiresHolderKeySection: false,
+              privateKeyHex: undefined,
+            })
+          })
+        );
+        expect(service.hasSubmitted$()).toBe(true);
+      });
+
+      it('Hybrid direct+ui, direct delivered, wallet failed -- credential surfaces, outcomes show both', () => {
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } },
+            { channel: 'ui', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.signedCredential).toBe('signed-jwt');
+        expect(config.data.outcomes.get('direct')).toBe('delivered');
+        expect(config.data.outcomes.get('ui')).toBe('failed');
+      });
+
+      it('All three modes, direct+ui delivered, email failed, fixed order preserved in the outcomes map', () => {
+        markDeliveryModes('direct', 'ui', 'email');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } },
+            { channel: 'email', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(DirectCredentialResultDialogComponent);
+        expect(config.data.credentialOfferUri).toBe('openid-credential-offer://abc');
+        expect([...config.data.outcomes.keys()]).toEqual(['direct', 'ui', 'email']);
+      });
+
+      it('Direct solo, direct fails -- no result dialog, generic failure surfaces (ES-04-shaped)', () => {
+        markDeliveryModes('direct');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }]
+        }));
+        const router = TestBed.inject(Router);
+
+        service.openSubmitDialog();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        expect(router.navigate).not.toHaveBeenCalled();
         expect(service.hasSubmitted$()).toBe(false);
+      });
+
+      it('Hybrid direct+ui, direct fails, wallet delivers -- no result dialog, wallet outcome still shown', () => {
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+        const router = TestBed.inject(Router);
+
+        service.openSubmitDialog();
+
+        expect(mockMatDialog.open).toHaveBeenCalledWith(
+          CredentialOfferDialogComponent,
+          expect.objectContaining({
+            data: expect.objectContaining({ requiresHolderKeySection: false, credentialOfferUri: 'openid-credential-offer://abc' })
+          })
+        );
+        expect(mockMatDialog.open.mock.calls[0][1].data.outcomes.get('direct')).toBe('failed');
+        expect(service.hasSubmitted$()).toBe(true); // envelope present (AD-8)
+        expect(router.navigate).toHaveBeenCalled();
+      });
+
+      it('ui+email, no direct, both delivered -- extended CredentialOfferDialogComponent, no key section', () => {
+        markDeliveryModes('ui', 'email');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } },
+            { channel: 'email', status: 200 }
+          ]
+        }));
+
+        service.openSubmitDialog();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data.requiresHolderKeySection).toBe(false);
+        expect(config.disableClose).toBeFalsy();
+        expect(config.closeOnNavigation).not.toBe(false);
+      });
+
+      it('EUD-233 regression: single ui channel, no artifact to gate -- unchanged AS-IS dialog options', () => {
+        markDeliveryModes('ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
+        }));
+
+        service.openSubmitDialog();
+
+        expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
+          width: '420px',
+          disableClose: false,
+          closeOnNavigation: true,
+        }));
+      });
+
+      it('EC-03: email-only 207 with no error at all behaves like a plain 200 (no total failure)', () => {
+        markDeliveryModes('email');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'email', status: 200 }]
+        }));
+
+        service.openSubmitDialog();
+
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
+        expect(service.hasSubmitted$()).toBe(true);
+      });
+    });
+
+    describe('Holder-key provisioning for the two AD-8 exempt machine types', () => {
+      beforeEach(() => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        markDeliveryModes('direct');
+      });
+
+      it('Invokes IssuanceHolderKeyService.generateForSubmission() before building the request', async () => {
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockHolderKeyService.generateForSubmission).toHaveBeenCalledWith(
+          'learcredential.machine.w3c.3', expect.any(String)
+        );
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' } });
+        expect(request.payload.mandatee.id).toBe('did:key:zMock');
+      });
+
+      it('direct delivered -- the sealed private key reaches DirectCredentialResultDialogComponent', async () => {
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.requiresHolderKeySection).toBe(true);
+        expect(config.data.privateKeyHex).toBe('mock-private-key-hex');
+      });
+
+      it('the key is unavailable in the store when the response arrives -- degrades to credential-only, no throw', async () => {
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+        // Simulates a reload between submit and response: generation succeeds (the request still
+        // carries holder_key), but the private half never makes it into (or survives in) the store.
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => Promise.resolve<HolderBinding>({
+          didKey: 'did:key:zMock',
+          publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.requiresHolderKeySection).toBe(true);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('2026-09-17 hardening: a public-key entry sealed to a different submission is not attached (holder_key omitted, never a stale cnf)', async () => {
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+        // Simulates a stale/foreign entry surviving in the root HolderKeyStoreService under a
+        // different (configId, submissionId) than this attempt's own -- generateForSubmission()
+        // itself always writes a correctly-sealed entry, so this can only happen via a bug
+        // elsewhere; attachHolderKey() must still refuse to trust it.
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => {
+          const holderKeyStore = TestBed.inject(HolderKeyStoreService);
+          holderKeyStore.set({
+            publicJwk: { kty: 'EC', crv: 'P-256', x: 'stale-x', y: 'stale-y' },
+            credentialConfigurationId: 'some-other-config',
+            submissionId: 'some-other-submission',
+          });
+          return Promise.resolve<HolderBinding>({
+            didKey: 'did:key:zMock',
+            publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+          });
+        });
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toBeUndefined();
+      });
+
+      it('a non-exempt type never calls generateForSubmission and never carries holder_key', () => {
+        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not exempt
+        markDeliveryModes('direct');
+        mockHolderKeyService.generateForSubmission.mockClear();
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+
+        service.openSubmitDialog();
+
+        expect(mockHolderKeyService.generateForSubmission).not.toHaveBeenCalled();
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.holder_key).toBeUndefined();
+      });
+    });
+
+    describe('wallet-only path for the two AD-8 exempt machine types', () => {
+      beforeEach(() => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+      });
+
+      it('direct not declared, wallet delivers -- extended dialog gets the key section', async () => {
+        markDeliveryModes('ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
+          data: expect.objectContaining({ requiresHolderKeySection: true, privateKeyHex: 'mock-private-key-hex' })
+        }));
+      });
+
+      it('EC-09.1: the one declared Wallet channel fails, but the envelope is present -- key section still shown, not total failure', async () => {
+        markDeliveryModes('email');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'email', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }]
+        }));
+        const router = TestBed.inject(Router);
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(dialogService.openDialog).not.toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
+          data: expect.objectContaining({ requiresHolderKeySection: true, privateKeyHex: 'mock-private-key-hex' })
+        }));
+        expect(mockMatDialog.open.mock.calls[0][1].data.outcomes.get('email')).toBe('failed');
+        expect(service.hasSubmitted$()).toBe(true);
+        expect(router.navigate).toHaveBeenCalled();
+      });
+
+      it('EC-09.2: the emission fails outright (no envelope) -- generic error, no key section anywhere', async () => {
+        markDeliveryModes('email');
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+      });
+
+      it('key unavailable in the wallet-only path -- Done ungated, i.e. no dialog reconfiguration needed from this service', async () => {
+        markDeliveryModes('email');
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => Promise.resolve<HolderBinding>({
+          didKey: 'did:key:zMock',
+          publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+        }));
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'email', status: 200 }]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.requiresHolderKeySection).toBe(true);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+    });
+
+    describe('AC-09 exception clause: direct fails, wallet delivers (tasks 38/39, 2026-09-17)', () => {
+      it('AD-8 machine type, direct fails and a wallet channel delivers, key still in the store -- reaches the extended CredentialOfferDialogComponent with the key, no credential/JWT block', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+        const router = TestBed.inject(Router);
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data).toEqual(expect.objectContaining({
+          requiresHolderKeySection: true,
+          privateKeyHex: 'mock-private-key-hex',
+          credentialOfferUri: 'openid-credential-offer://abc'
+        }));
+        expect(config.data.outcomes.get('direct')).toBe('failed');
+        expect(config.data.outcomes.get('ui')).toBe('delivered');
+        expect(service.hasSubmitted$()).toBe(true);
+        expect(router.navigate).toHaveBeenCalled();
+      });
+
+      it('same precondition, but the key is no longer available in the client -- degrades to AC-10.2 (non-blocking notice, no gating), never falls back to the AC-08 clear()', async () => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        markDeliveryModes('direct', 'email');
+        // Simulates a reload between submit and response, same pattern as the wallet-only
+        // describe block above: generation resolves, but nothing survives in the store.
+        mockHolderKeyService.generateForSubmission.mockImplementation(() => Promise.resolve<HolderBinding>({
+          didKey: 'did:key:zMock',
+          publicJwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' },
+        }));
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'email', status: 200 }
+          ]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        const [, config] = mockMatDialog.open.mock.calls[0];
+        expect(config.data.requiresHolderKeySection).toBe(true);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('negative -- AC-08 stays scoped to "no wallet delivery", never generalized to the type: a non-exempt type reads and passes no key in this branch even with a wallet channel delivered', async () => {
+        givenASubmittableForm(); // learcredential.employee.w3c.2 -- not one of the two AD-8 machine types
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data.requiresHolderKeySection).toBe(false);
+        expect(config.data.privateKeyHex).toBeUndefined();
+      });
+
+      it('EC-11 negative: this branch never opens DirectCredentialResultDialogComponent', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('direct', 'ui');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [
+            { channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } },
+            { channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://abc' } }
+          ]
+        }));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalledWith(DirectCredentialResultDialogComponent, expect.anything());
+      });
+
+      it('ES-04/EC-09.2 delta fixture: a solo-Wallet emission with total failure (no envelope) still clears the private-key store -- generic error dialog, no result-by-mode surface, this branch untouched by the task 38 fix', async () => {
+        givenASubmittableMachineForm('learcredential.machine.sd.1');
+        markDeliveryModes('email');
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        expect(TestBed.inject(HolderPrivateKeyStore).take()).toBeUndefined();
+      });
+    });
+
+    describe('ES-09: holder-key generation failure', () => {
+      beforeEach(() => {
+        givenASubmittableMachineForm('learcredential.machine.w3c.3');
+        markDeliveryModes('direct');
+      });
+
+      it('never sends the request, and surfaces the same generic failure as any other error (ES-04)', async () => {
+        mockHolderKeyService.generateForSubmission.mockReturnValue(
+          Promise.reject(new HolderKeyGenerationError('boom'))
+        );
+
+        service.openSubmitDialog();
+        await flushMicrotasks();
+
+        expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+      });
+    });
+
+    describe('general error handling (ES-02, ES-03, ES-04, ES-05)', () => {
+      // givenASubmittableForm() marks 'email' by default -- a bare `{}` response (no responses[]
+      // at all) resolves every requested channel to 'missing' under AD-7's outcome projection, so
+      // it no longer represents a success fixture the way it did before that rework.
+      const emailDeliveredResponse = { responses: [{ channel: 'email', status: 200 }] };
+
+      it('should navigate to the credential list after a successful issuance', () => {
+        const router = TestBed.inject(Router);
+        mockProcedureService.createProcedure.mockReturnValue(of(emailDeliveredResponse));
+
+        service.openSubmitDialog();
+
+        expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials']);
+      });
+
+      it('should submit the newest version of the selected format, not the bare type', () => {
+        mockProcedureService.createProcedure.mockReturnValue(of(emailDeliveredResponse));
+
+        service.openSubmitDialog();
+
+        const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
+        expect(request.credential_configuration_id).toBe('learcredential.employee.w3c.2');
+      });
+
+      it.each([
+        ['400 invalid payload (ES-01)', { status: 400 }],
+        ['403 configuration not allowed for the tenant (ES-02)', { status: 403 }],
+        ['409 stale eligibility read (ES-03)', { status: 409 }],
+        ['500 issuer failure (ES-04)', { status: 500 }]
+      ])('should show an observable failure on %s', (_label, httpError) => {
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => httpError));
+
+        service.openSubmitDialog();
+
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+      });
+
+      it('should keep the form data and let the operator retry after a failure', () => {
+        const router = TestBed.inject(Router);
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status: 500 })));
+
+        service.openSubmitDialog();
+
+        // no reset and no navigation: the entered data survives
+        expect(service.hasSubmitted$()).toBe(false);
+        expect(router.navigate).not.toHaveBeenCalled();
+        expect(service.form$().pristine).toBe(true);
+      });
+
+      it('should not leak technical detail into the failure message (ES-02)', () => {
+        mockProcedureService.createProcedure.mockReturnValue(
+          throwError(() => ({ status: 403, error: { detail: 'credential_configuration_id not allowed for tenant acme' } }))
+        );
+
+        service.openSubmitDialog();
+
+        const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
+        expect(JSON.stringify(dialogData)).not.toContain('acme');
+        expect(JSON.stringify(dialogData)).not.toContain('403');
+      });
+
+      it('should release the loading state and report a failure when the issuer does not answer (ES-05)', () => {
+        jest.useFakeTimers();
+        mockProcedureService.createProcedure.mockReturnValue(NEVER);
+
+        service.openSubmitDialog();
+        jest.advanceTimersByTime(30_000);
+
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        jest.useRealTimers();
+      });
+
+      it('should guard the double submit through hasSubmitted$ and the async dialog', () => {
+        mockProcedureService.createProcedure.mockReturnValue(of(emailDeliveredResponse));
+
+        service.openSubmitDialog();
+
+        // after success the screen navigates away and canLeave() stops blocking: the Operator
+        // must never end up with two contradictory success confirmations on screen.
+        expect(service.hasSubmitted$()).toBe(true);
+        expect(service.canLeave()).toBe(true);
+        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
       });
     });
   });
@@ -662,7 +1090,7 @@ describe('CredentialIssuanceService', () => {
       expect(service.isFormValid$()).toBe(false);
     }));
 
-    it('AC-02: an empty required field blocks isFormValid$ and the request is not sent', fakeAsync(() => {
+    it('n empty required field blocks isFormValid$ and the request is not sent', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       TestBed.flushEffects();
@@ -674,7 +1102,7 @@ describe('CredentialIssuanceService', () => {
       expect(mockProcedureService.createProcedure).not.toHaveBeenCalled();
     }));
 
-    it('AC-04 / ES-03: correcting the field re-validates the current FormGroup state (not a cached flag)', fakeAsync(() => {
+    it('correcting the field re-validates the current FormGroup state (not a cached flag)', fakeAsync(() => {
       selectTypeWithSchema(REQUIRED_FIELD_SCHEMA);
       tick();
       expect(service.isFormValid$()).toBe(false);

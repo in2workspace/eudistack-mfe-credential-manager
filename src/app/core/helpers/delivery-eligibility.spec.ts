@@ -1,6 +1,6 @@
 import { requiresHolderBinding, resolveOfferableDeliveryOptions } from './delivery-eligibility';
 import { CredentialConfigurationDto } from '../models/dto/credential-issuer-metadata.dto';
-import { DeliveryOption } from '../models/entity/lear-credential-issuance';
+import { DeliveryModeOption } from '../models/entity/lear-credential-issuance';
 
 describe('delivery-eligibility', () => {
 
@@ -11,16 +11,16 @@ describe('delivery-eligibility', () => {
 
   const unbound: CredentialConfigurationDto = { format: 'jwt_vc_json' };
 
-  // The catalogue as it stands on main. 'direct' is deliberately absent from the DeliveryMode union
-  // (EUD-233 owns it), so it is cast in only where a test needs to prove the filter would catch it.
-  const walletOnlyCatalogue: DeliveryOption[] = [
+  // WALLET_DELIVERY_MODE_OPTIONS as used by the two degraded-catalogue states (EUD-233 AD-9); a
+  // caller only ever passes this or a superset that includes 'direct' explicitly, never a bespoke one.
+  const walletOnlyCatalogue: DeliveryModeOption[] = [
     { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
     { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
   ];
 
-  const catalogueWithDirect: DeliveryOption[] = [
+  const catalogueWithDirect: DeliveryModeOption[] = [
     ...walletOnlyCatalogue,
-    { value: 'direct' as DeliveryOption['value'], labelKey: 'credentialIssuance.delivery.direct' },
+    { value: 'direct', labelKey: 'credentialIssuance.delivery.direct' },
   ];
 
   describe('requiresHolderBinding', () => {

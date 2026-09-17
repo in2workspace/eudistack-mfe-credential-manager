@@ -1,5 +1,5 @@
 import { CredentialConfigurationDto } from '../models/dto/credential-issuer-metadata.dto';
-import { DeliveryOption } from '../models/entity/lear-credential-issuance';
+import { DeliveryModeOption } from '../models/entity/lear-credential-issuance';
 
 /**
  * Whether a credential type is cryptographically bound to a holder key.
@@ -22,10 +22,11 @@ export function requiresHolderBinding(config: CredentialConfigurationDto | undef
  * Delivery modes that cannot carry a holder binding, because they involve no wallet and therefore no
  * OID4VCI proof-of-possession.
  *
- * Typed as `string[]` rather than `DeliveryMode[]` on purpose: `'direct'` is not part of the
- * `DeliveryMode` union yet — the form cannot offer it and the response DTO cannot render its result
- * (EUD-233 owns that). Widening the union here would have the type claim a capability the UI does
- * not have. This keeps the rule correct in advance without pretending the mode already exists.
+ * Typed as `string[]` rather than `DeliveryModeToken[]`: this set is only ever compared against
+ * catalogues that already exclude `'direct'` by construction (`WALLET_DELIVERY_MODE_OPTIONS`, EUD-233
+ * AD-9) -- the two callers left after EUD-233 (states 2 and 4 of the tenant delivery catalogue) never
+ * pass a catalogue this set would need to narrow further. It stays here, unwidened, as the rule this
+ * function would still apply correctly if a caller ever did.
  */
 const BOUND_INCOMPATIBLE_MODES: ReadonlySet<string> = new Set(['direct']);
 
@@ -40,8 +41,8 @@ const BOUND_INCOMPATIBLE_MODES: ReadonlySet<string> = new Set(['direct']);
  */
 export function resolveOfferableDeliveryOptions(
   config: CredentialConfigurationDto | undefined,
-  catalogue: readonly DeliveryOption[]
-): DeliveryOption[] {
+  catalogue: readonly DeliveryModeOption[]
+): DeliveryModeOption[] {
   if (!config || !requiresHolderBinding(config)) {
     return [...catalogue];
   }

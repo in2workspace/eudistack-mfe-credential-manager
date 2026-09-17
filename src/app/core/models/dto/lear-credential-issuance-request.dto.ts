@@ -1,14 +1,13 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-import { HolderPublicJwk } from "../entity/lear-credential-issuance";
-
-export type IssuanceDelivery = 'email' | 'ui';
+import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    delivery: IssuanceDelivery;
+    /** Built exclusively by {@link toDeliveryCsv} -- never a hand-written string (EUD-233 AD-3). */
+    delivery: DeliveryCsv;
     email: string;
     grant_type: IssuanceGrantType;
     /**
