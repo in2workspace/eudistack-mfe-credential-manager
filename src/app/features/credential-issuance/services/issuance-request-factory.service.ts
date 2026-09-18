@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceDelivery, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
+import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
+import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -13,29 +14,34 @@ export class IssuanceRequestFactoryService {
   private readonly authService = inject(AuthService);
   private readonly themeService = inject(ThemeService);
 
-  private readonly credentialRequestFactoryMap: Record<IssuanceCredentialType, (credData: IssuanceRawCredentialPayload) => IssuanceLEARCredentialPayload> = {
+  private readonly credentialRequestFactoryMap: Record<
+    IssuanceCredentialType,
+    (credData: IssuanceRawCredentialPayload, holderBinding: HolderBinding | undefined) => IssuanceLEARCredentialPayload
+  > = {
     'learcredential.employee': (data) => this.createLearCredentialEmployeeRequest(data),
-    'learcredential.machine': (data) => this.createLearCredentialMachineRequest(data)
+    'learcredential.machine': (data, holderBinding) => this.createLearCredentialMachineRequest(data, holderBinding)
   }
 
   public createCredentialRequest(
       credentialData: IssuanceRawCredentialPayload,
       credentialType: IssuanceCredentialType,
       configId: string,
-      delivery: IssuanceDelivery = 'email',
+      holderBinding?: HolderBinding,
+      deliveryModes: readonly DeliveryModeToken[] = ['email'],
       grantType: IssuanceGrantType = 'authorization_code'
   ): IssuanceLEARCredentialRequestDto {
-        const payload = this.createCredentialRequestPayload(credentialData, credentialType);
+        const payload = this.createCredentialRequestPayload(credentialData, credentialType, holderBinding);
         const email = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, delivery, payload, email, grantType);
+        return this.buildRequestDto(configId, toDeliveryCsv(deliveryModes), payload, email, grantType);
       }
 
   public createCredentialRequestPayload(
-      credentialData: IssuanceRawCredentialPayload, 
-      credentialType: IssuanceCredentialType
+      credentialData: IssuanceRawCredentialPayload,
+      credentialType: IssuanceCredentialType,
+      holderBinding?: HolderBinding
     ): IssuanceLEARCredentialPayload{
 
-     return this.credentialRequestFactoryMap[credentialType](credentialData);
+     return this.credentialRequestFactoryMap[credentialType](credentialData, holderBinding);
     }
 
   private createLearCredentialEmployeeRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialEmployeePayload{
@@ -77,7 +83,10 @@ export class IssuanceRequestFactoryService {
       return payload;
   }
 
-  private createLearCredentialMachineRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialMachinePayload{
+  private createLearCredentialMachineRequest(
+    credentialData: IssuanceRawCredentialPayload,
+    holderBinding?: HolderBinding
+  ): IssuanceLEARCredentialMachinePayload{
     // Power
     const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
@@ -97,22 +106,29 @@ export class IssuanceRequestFactoryService {
     const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
     const mandatorEmail = mandator['email'];
 
-    const didKey = credentialData.formData['keys']['didKey'];
-    
+    // EUD-233 AD-6: the did:key travels as a typed parameter, no longer read out of
+    // formData['keys']['didKey'] -- IssuanceHolderKeyService.generateForSubmission() always
+    // resolves before this factory is called for a type that requires a holder key, so an absent
+    // binding here means that invariant broke upstream, not that the Operator skipped a step.
+    if (!holderBinding) {
+      console.error('Error building machine credential request: no holder binding provided.');
+      return {} as IssuanceLEARCredentialMachinePayload;
+    }
+
     // Payload
-    const payload: IssuanceLEARCredentialMachinePayload =    
+    const payload: IssuanceLEARCredentialMachinePayload =
       {
       mandator: {
         commonName:  mandatorCommonName,
         serialNumber:  mandator['serialNumber'],
-        email: mandatorEmail, 
+        email: mandatorEmail,
         organization: mandator['organization'],
         id: mandatorId,
         organizationIdentifier: orgId,
         country:  mandator['country'],
       },
       mandatee: {
-          id:  didKey,
+          id: holderBinding.didKey,
           domain:  mandatee['domain'],
           ipAddress:  mandatee["ipAddress"]
       },
@@ -203,7 +219,7 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: IssuanceDelivery, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, delivery: DeliveryCsv, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,

@@ -1,0 +1,16 @@
+@if (privateKeyHex(); as key) {
+  <app-copyable-field
+    class="holder-private-key-section__field"
+    labelKey="credentialIssuance.holderPrivateKey.label"
+    [value]="key"
+    [clipboardTtlMs]="clipboardTtlMs"
+    (copied)="copiedChange.emit()"
+    (copyFailed)="copyFailedChange.emit()">
+  </app-copyable-field>
+} @else {
+  <output
+    class="holder-private-key-section__notice"
+    aria-live="polite">
+    {{ "credentialIssuance.holderPrivateKey.unavailable" | translate }}
+  </output>
+}
