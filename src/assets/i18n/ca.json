@@ -1,7 +1,6 @@
 {
   "next": "Següent",
   "back": "Tornar",
-  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
@@ -295,8 +294,6 @@
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "Segur que vols crear aquesta credencial?",
-      "checkboxLabel": "Confirmo que he copiat i desat de manera segura la clau privada.",
-      "belowText": "Sense la clau privada no podràs utilitzar aquesta credencial més endavant.",
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {
@@ -348,14 +345,55 @@
     },
     "delivery": {
       "label": "Mètode de lliurament",
+      "direct": "Lliurament directe",
       "email": "Correu electrònic",
       "qrCode": "Codi QR"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "No s'ha pogut llegir la configuració de lliurament de la teva organització. És possible que es mostrin menys opcions de lliurament de les disponibles. Torna a carregar la pàgina per reintentar-ho; si el problema persisteix, contacta amb l'equip de suport."
+    },
+    "deliveryOutcome": {
+      "direct": {
+        "delivered": "Credencial entregada.",
+        "failed": "No s'ha pogut emetre la credencial, per això no es retorna aquí."
+      },
+      "ui": {
+        "delivered": "Codi QR generat.",
+        "failed": "No s'ha pogut generar el codi QR."
+      },
+      "email": {
+        "delivered": "L'oferta de credencial s'ha enviat per correu electrònic.",
+        "failed": "No s'ha pogut enviar el correu electrònic."
+      }
+    },
+    "holderPrivateKey": {
+      "label": "Clau privada",
+      "unavailable": "La clau privada generada per a aquesta emissió ja no està disponible en aquest dispositiu. No es pot recuperar ni tornar a generar: si la necessites, emet la credencial de nou."
+    },
+    "discardArtifactsConfirm": {
+      "title": "Tancar sense copiar?",
+      "credential": "Encara no has copiat la credencial. Si tanques ara, no la podràs recuperar.",
+      "privateKey": "Encara no has copiat la clau privada. Si tanques ara, no la podràs recuperar.",
+      "both": "Encara no has copiat la credencial ni la clau privada. Si tanques ara, no les podràs recuperar.",
+      "confirmationLabel": "Tancar igualment",
+      "cancelLabel": "Continuar aquí"
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",
       "copy": "Copiar enllaç",
       "copied": "Copiat!"
+    },
+    "direct-result-dialog": {
+      "title": "Credencial creada",
+      "message": "Copia la credencial signada abans de tancar aquesta finestra: no la podràs tornar a veure.",
+      "messageCredentialAndKey": "Copia la clau privada i la credencial signada abans de tancar aquesta finestra: no les podràs tornar a veure.",
+      "credentialLabel": "Credencial signada",
+      "done": "Fet",
+      "copyFailed": {
+        "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
+        "privateKey": "No s'ha pogut copiar la clau privada al porta-retalls. Torna-ho a intentar."
+      }
     },
     "changeCredentialAlert": "Segur que vols canviar el tipus de credencial? Perdràs el progrés fet.",
     "unloadAlert": "Segur que vols sortir? Perdràs el progrés fet."
@@ -426,7 +464,6 @@
         "top_level_domain_part_min": "La part entre l'últim punt i el final ha de tenir almenys 2 caràcters."
       },
       "org_id_startsWithVAT": "Introdueix l'ID sense el prefix VAT- ni el de país",
-      "no_key": "Cal generar una clau privada.",
       "no_power": "Afegeix almenys un poder",
       "no_function": "Cada poder ha de tenir almenys una funció"
     }
@@ -434,17 +471,12 @@
   "dialog": {
     "ok": "D'acord",
     "close": "Tancar",
+    "copy": "Copiar",
     "cancel": "Cancel·lar",
     "accept": "Acceptar",
     "delete" : "Eliminar",
     "save" : "Desar",
     "loading-default-title": "Esperi mentre es completa el procés..."
-  },
-  "keys": {
-    "title": "Clau privada",
-    "buttonText": "Generar clau",
-    "alert": "Asseguri's de guardar aquesta clau.",
-    "tooltip": "La clau privada és un secret que et permet signar i demostrar la propietat de la credencial. Sense ella, no pots usar la credencial. Guarda-la de manera segura i no la comparteixis."
   },
   "countries": {
     "spain": "Espanya",

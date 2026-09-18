@@ -27,8 +27,10 @@
   <div mat-dialog-actions>
     <!-- CONFIRMATION NEEDED: CANCEL AND CONFIRM BUTTONS -->
     @if(data.confirmationType !== 'none'){
-      <button mat-flat-button color="cancel" (click)="onCancel()">{{ data.cancelLabel ?? ("dialog.cancel" | translate) }}</button>
-      <button mat-flat-button [color]="statusColor"
+      <!-- emphasizeCancel (opt-in, EUD-233 fix): swaps which button gets statusColor -- click
+           handlers stay bound to their original actions, only the visual weight moves. -->
+      <button mat-flat-button [color]="data.emphasizeCancel ? statusColor : 'cancel'" (click)="onCancel()">{{ data.cancelLabel ?? ("dialog.cancel" | translate) }}</button>
+      <button mat-flat-button [color]="data.emphasizeCancel ? 'cancel' : statusColor"
       (click)="onConfirm()">{{ data.confirmationLabel ?? ("dialog.accept" | translate) }}</button>
     }
     @else{

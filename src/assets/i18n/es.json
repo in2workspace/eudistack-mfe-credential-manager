@@ -1,7 +1,6 @@
 {
   "next": "Siguiente",
   "back": "Volver",
-  "copy": "Copiar",
   "verifiable-credential": "Credencial Verificable",
   "digital-wallet": "Wallet Digital",
   "home": {
@@ -320,8 +319,6 @@
     "create-confirm-dialog": {
       "title": "Crear credencial",
       "message": "¿Estás seguro de que quieres crear esta credencial?",
-      "checkboxLabel": "Confirmo que he copiado y guardado de forma segura la clave privada.",
-      "belowText": "Sin la clave privada, no podrás usar esta credencial más adelante.",
       "defaultLoadingTitle": "Espere mientras se completa el proceso..."
     },
     "create-success-dialog": {
@@ -373,14 +370,55 @@
     },
     "delivery": {
       "label": "Método de entrega",
+      "direct": "Entrega directa",
       "email": "Correo electrónico",
       "qrCode": "Código QR"
+    },
+    "deliveryCatalogUnavailable": {
+      "message": "No se ha podido leer la configuración de entrega de tu organización. Es posible que se ofrezcan menos opciones de entrega de las disponibles. Vuelve a cargar la página para reintentarlo; si el problema persiste, contacta con el equipo de soporte."
+    },
+    "deliveryOutcome": {
+      "direct": {
+        "delivered": "Credencial entregada.",
+        "failed": "No se ha podido emitir la credencial, así que no se devuelve aquí."
+      },
+      "ui": {
+        "delivered": "Código QR generado.",
+        "failed": "No se ha podido generar el código QR."
+      },
+      "email": {
+        "delivered": "La oferta de credencial se ha enviado por correo electrónico.",
+        "failed": "No se ha podido enviar el correo electrónico."
+      }
+    },
+    "holderPrivateKey": {
+      "label": "Clave privada",
+      "unavailable": "La clave privada generada para esta emisión ya no está disponible en este dispositivo. No es posible recuperarla ni volver a generarla: si la necesitas, emite la credencial de nuevo."
+    },
+    "discardArtifactsConfirm": {
+      "title": "¿Cerrar sin copiar?",
+      "credential": "Todavía no has copiado la credencial. Si cierras ahora, no podrás recuperarla.",
+      "privateKey": "Todavía no has copiado la clave privada. Si cierras ahora, no podrás recuperarla.",
+      "both": "Todavía no has copiado la credencial ni la clave privada. Si cierras ahora, no podrás recuperarlas.",
+      "confirmationLabel": "Cerrar de todos modos",
+      "cancelLabel": "Seguir aquí"
     },
     "credential-offer-dialog": {
       "title": "Credencial creada",
       "message": "Escanea este código QR con tu wallet para recibir la credencial. También puedes copiar el enlace si no tienes cámara disponible.",
       "copy": "Copiar enlace",
       "copied": "¡Copiado!"
+    },
+    "direct-result-dialog": {
+      "title": "Credencial creada",
+      "message": "Copia la credencial firmada antes de cerrar esta ventana: no podrás volver a verla.",
+      "messageCredentialAndKey": "Copia la clave privada y la credencial firmada antes de cerrar esta ventana: no podrás volver a verlas.",
+      "credentialLabel": "Credencial firmada",
+      "done": "Hecho",
+      "copyFailed": {
+        "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
+        "privateKey": "No se ha podido copiar la clave privada al portapapeles. Inténtalo de nuevo."
+      }
     },
     "changeCredentialAlert": "¿Estás seguro de que quieres cambiar el tipo de credencial? Se perderá el progreso.",
     "unloadAlert": "¿Estás seguro de que deseas salir? Se perderá el progreso."
@@ -451,7 +489,6 @@
         "top_level_domain_part_min": "La parte entre el último punto y el final debe tener un mínimo de 2 caracteres."
       },
       "org_id_startsWithVAT": "Introduzca el ID sin el prefijo VAT- ni el de país",
-      "no_key": "Tiene que generar una llave privada.",
       "no_power": "Añade por lo menos un poder",
       "no_function": "Cada poder debe tener por lo menos una acción"
     }
@@ -459,17 +496,12 @@
   "dialog": {
     "ok": "De acuerdo",
     "close": "Cerrar",
+    "copy": "Copiar",
     "cancel": "Cancelar",
     "accept": "Aceptar",
     "delete": "Eliminar",
     "save": "Guardar",
     "loading-default-title": "Espere mientras se completa el proceso..."
-  },
-  "keys": {
-    "title": "Llave privada",
-    "buttonText": "Generar llave",
-    "alert": "Asegúrese de guardar esa llave.",
-    "tooltip": "La clave privada es un secreto que te permite firmar y demostrar la propiedad de la credencial. Sin ella, no puedes usar la credencial. Guárdala de manera segura y no la compartas."
   },
   "countries": {
     "spain": "España",

@@ -1,0 +1,16 @@
+@if (!isDismissed()) {
+  <div class="alert-banner">
+    <output class="alert-banner__message">
+      {{ messageKey | translate }}
+    </output>
+
+    <button
+      type="button"
+      mat-icon-button
+      class="alert-banner__dismiss"
+      [attr.aria-label]="dismissLabelKey | translate"
+      (click)="dismiss()">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </div>
+}

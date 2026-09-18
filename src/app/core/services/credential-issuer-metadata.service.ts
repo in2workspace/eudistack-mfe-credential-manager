@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_PATH } from '../constants/api-paths.constants';
 import { keepLatestCredentialConfigurations } from '../helpers/credential-configuration-id';
+import { requiresHolderBinding as isHolderBound } from '../helpers/delivery-eligibility';
 import { CredentialConfigurationDto, CredentialIssuerMetadataDto } from '../models/dto/credential-issuer-metadata.dto';
 import { ISSUANCE_CREDENTIAL_TYPES_ARRAY, IssuanceCredentialType } from '../models/entity/lear-credential-issuance';
 import { IssuanceUiPolicyService } from './issuance-ui-policy.service';
@@ -163,5 +164,18 @@ export class CredentialIssuerMetadataService {
 
   getAllConfigurations(): Record<string, CredentialConfigurationDto> | null {
     return this.configurations();
+  }
+
+  /**
+   * Whether this credential type is cryptographically bound to a holder key, and therefore cannot be
+   * delivered without a wallet (ADR-110, EUD-168).
+   *
+   * Answered from the published metadata rather than from a local table, so the form and the issuer
+   * reach the same conclusion from the same field with no extra contract between them. An unknown
+   * configuration answers `false`: absence of evidence is not evidence of binding, and issuance
+   * enforces the rule server-side regardless.
+   */
+  requiresHolderBinding(configId: string): boolean {
+    return isHolderBound(this.getConfigurationById(configId));
   }
 }

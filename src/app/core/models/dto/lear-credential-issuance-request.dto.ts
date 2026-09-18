@@ -1,15 +1,22 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-
-export type IssuanceDelivery = 'email' | 'ui';
+import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    delivery: IssuanceDelivery;
+    /** Built exclusively by {@link toDeliveryCsv} -- never a hand-written string (EUD-233 AD-3). */
+    delivery: DeliveryCsv;
     email: string;
     grant_type: IssuanceGrantType;
+    /**
+     * The holder's public key, for the credential types whose schema declares no
+     * `proof_types_supported` yet still bind to a holder key (EUD-168 AD-8). No wallet key proof
+     * will ever arrive for those, so the request is the only source of one — in every delivery mode,
+     * not just `direct`. Omitted for every other type, where the Issuer ignores it.
+     */
+    holder_key?: { jwk: HolderPublicJwk };
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
@@ -45,6 +52,32 @@ export interface IssuanceLEARCredentialEmployeePayload {
       power: IssuancePayloadPower[];
 }
 
-export interface IssuanceResponseDto {
+export type IssuanceChannel = 'direct' | 'ui' | 'email';
+
+export interface IssuanceChannelBody {
+    signed_credential?: string;
     credential_offer_uri?: string;
+}
+
+/** RFC 9457 Problem Details, scoped to one channel (EUD-167 D-6). */
+export interface IssuanceChannelError {
+    type: string;
+    title: string;
+    status: number;
+    detail: string;
+}
+
+/**
+ * One item of `responses[]` (EUD-167 D-5/D-6): `body` on success (`status: 200`) or `error` on
+ * failure (`status: 503`, or `504` for a timed-out wallet leg) -- never both.
+ */
+export interface IssuanceChannelResponse {
+    channel: IssuanceChannel;
+    status: number;
+    body?: IssuanceChannelBody;
+    error?: IssuanceChannelError;
+}
+
+export interface IssuanceResponseDto {
+    responses?: IssuanceChannelResponse[];
 }
