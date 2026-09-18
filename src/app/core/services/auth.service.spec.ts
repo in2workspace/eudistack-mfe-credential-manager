@@ -99,7 +99,7 @@ describe('AuthService', () => {
     logoff: jest.Mock,
     authorize: jest.Mock,
     logoffAndRevokeTokens: jest.Mock,
-    logoffLocal: jest.Mock
+    logoffLocal: jest.Mock,
   };
 
   beforeEach(() => {
@@ -997,6 +997,7 @@ describe('AuthService', () => {
   // --------------------------------------------------------------------------
   describe('subscribeToAuthEvents', () => {
     let eventSubject: Subject<any>;
+    let dialog: { openErrorInfoDialog: jest.Mock };
 
     beforeEach(() => {
       eventSubject = new Subject();
@@ -1004,6 +1005,7 @@ describe('AuthService', () => {
       jest.spyOn(service, 'logout').mockImplementation(() => {});
       jest.spyOn(service, 'authorize').mockImplementation();
       mockPublicEventsService.registerForEvents.mockReturnValue(eventSubject.asObservable());
+      dialog = TestBed.inject(DialogWrapperService) as unknown as { openErrorInfoDialog: jest.Mock };
     });
 
     it('gestiona SilentRenewStarted', () => {
@@ -1044,6 +1046,9 @@ describe('AuthService', () => {
       capturedHandler!();
 
       expect(consoleError).toHaveBeenCalledWith('User still not authenticated after reconnect, logging out');
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
       expect(service.authorize).toHaveBeenCalled();
       expect(removeListenerSpy).toHaveBeenCalledWith('online', capturedHandler);
 
@@ -1070,6 +1075,9 @@ describe('AuthService', () => {
       capturedHandler!();
 
       expect(consoleError).toHaveBeenCalledWith('Error while reauthenticating after reconnect:', reconnectError);
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
       expect(service.authorize).toHaveBeenCalled();
 
       consoleError.mockRestore();
@@ -1084,6 +1092,29 @@ describe('AuthService', () => {
       eventSubject.next({ type: EventTypes.SilentRenewFailed });
 
       expect(consoleError).toHaveBeenCalledWith('Silent token refresh failed: online mode, proceeding to logout', expect.anything());
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalledWith(
+        expect.anything(), 'error.auth.sessionExpired', 'error.auth.title'
+      );
+      expect(service.authorize).toHaveBeenCalled();
+
+      consoleError.mockRestore();
+    });
+
+    it('SilentRenewFailed online: no llama a authorize() hasta que el usuario cierra el diáleg', () => {
+      jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const afterClosedSubject = new Subject<void>();
+      dialog.openErrorInfoDialog.mockReturnValueOnce({ afterClosed: () => afterClosedSubject.asObservable() });
+
+      service.subscribeToAuthEvents();
+      eventSubject.next({ type: EventTypes.SilentRenewFailed });
+
+      expect(dialog.openErrorInfoDialog).toHaveBeenCalled();
+      expect(service.authorize).not.toHaveBeenCalled();
+
+      afterClosedSubject.next();
+      afterClosedSubject.complete();
+
       expect(service.authorize).toHaveBeenCalled();
 
       consoleError.mockRestore();
@@ -1227,4 +1258,5 @@ describe('AuthService', () => {
     const result = (service as any).extractPowersFromClaims(mockUserDataNoVCNoCert);
     expect(result).toEqual([]);
   });
+
 });
