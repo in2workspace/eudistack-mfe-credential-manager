@@ -345,7 +345,7 @@
     },
     "delivery": {
       "label": "Mètode de lliurament",
-      "direct": "Lliurament directe",
+      "direct": "Directe",
       "email": "Correu electrònic",
       "qrCode": "Codi QR"
     },

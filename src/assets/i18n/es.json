@@ -370,7 +370,7 @@
     },
     "delivery": {
       "label": "Método de entrega",
-      "direct": "Entrega directa",
+      "direct": "Directo",
       "email": "Correo electrónico",
       "qrCode": "Código QR"
     },

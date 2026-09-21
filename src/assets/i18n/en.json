@@ -370,7 +370,7 @@
     },
     "delivery": {
       "label": "Delivery method",
-      "direct": "Direct delivery",
+      "direct": "Direct",
       "email": "Email",
       "qrCode": "QR Code"
     },
