@@ -116,6 +116,13 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   }
 
   public onDeliveryModeToggle(token: DeliveryModeToken, checked: boolean): void {
+    const selectedModes = this.selectedDeliveryModes$();
+
+    // Prevent removing the last selected delivery mode.
+    if (!checked && selectedModes.size === 1 && selectedModes.has(token)) {
+      return;
+    }
+
     this.issuanceService.toggleDeliveryMode(token, checked);
   }
 
