@@ -4,7 +4,7 @@
   <div class="field-row">
     <input
       class="field-value"
-      type="text"
+      [type]="revealed() ? 'text' : 'password'"
       readonly
       [value]="value()"
       [attr.aria-label]="labelKey() | translate"
@@ -13,15 +13,26 @@
       data-lpignore="true"
     />
 
-    <button
-      type="button"
-      class="copy-button"
-      [attr.aria-label]="'dialog.copy' | translate"
-      (click)="copy()"
-    >
-      <mat-icon aria-hidden="true">content_copy</mat-icon>
-      <span>{{ "dialog.copy" | translate }}</span>
-    </button>
+    <div class="field-actions">
+      <button
+        type="button"
+        class="visibility-button"
+        [attr.aria-label]="(revealed() ? 'dialog.hide' : 'dialog.show') | translate"
+        (click)="toggleVisibility()"
+      >
+        <mat-icon aria-hidden="true">{{ revealed() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+
+      <button
+        type="button"
+        class="copy-button"
+        [attr.aria-label]="'dialog.copy' | translate"
+        (click)="copy()"
+      >
+        <mat-icon aria-hidden="true">content_copy</mat-icon>
+        <span>{{ "dialog.copy" | translate }}</span>
+      </button>
+    </div>
   </div>
 
   @if (hasCopied()) {

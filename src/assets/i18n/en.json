@@ -497,6 +497,8 @@
     "ok": "Ok",
     "close": "Close",
     "copy": "Copy",
+    "show": "Show",
+    "hide": "Hide",
     "cancel": "Cancel",
     "accept": "Accept",
     "delete": "Delete",

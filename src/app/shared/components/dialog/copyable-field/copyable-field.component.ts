@@ -5,7 +5,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 /**
  * A labelled, read-only value with a copy button, for values the Operator has to move somewhere
  * safe: a credential token, a private key (EUD-233 AD-10, ported and adapted from
- * `feat/direct-delivery`).
+ * `feat/direct-delivery`). Every value this component renders is sensitive, so it is masked
+ * behind a password-style input by default; a visibility toggle next to the copy button reveals
+ * it. Masking is purely a display concern -- `copy()` always writes the real `value()`, never the
+ * masked text.
  *
  * Two independent timers, both restarted (not stacked) on every copy: the visual "Copied!"
  * confirmation always resets after 2 s regardless of the artifact (AS-IS, `technical-design.md`
@@ -39,6 +42,8 @@ export class CopyableFieldComponent implements OnDestroy {
 
   /** Drives the "Copied!" confirmation only -- not consulted for any gating decision. */
   protected readonly hasCopied = signal(false);
+  /** Every value this component renders is sensitive (private key / signed credential) -- masked by default. */
+  protected readonly revealed = signal(false);
 
   /** Emitted once per successful copy -- the host's signal for `pendingArtifacts` (AD-16). */
   @Output() public readonly copied = new EventEmitter<void>();
@@ -47,6 +52,10 @@ export class CopyableFieldComponent implements OnDestroy {
 
   private visualResetTimer?: ReturnType<typeof setTimeout>;
   private clipboardClearTimer?: ReturnType<typeof setTimeout>;
+
+  protected toggleVisibility(): void {
+    this.revealed.set(!this.revealed());
+  }
 
   public async copy(): Promise<void> {
     try {

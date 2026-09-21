@@ -141,6 +141,37 @@ describe('CopyableFieldComponent', () => {
     });
   });
 
+  describe('visibility toggle', () => {
+    beforeEach(() => {
+      setClipboard(() => Promise.resolve());
+      setup();
+      fixture.detectChanges();
+    });
+
+    it('renders the value masked by default', () => {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector('.field-value');
+      expect(input.type).toBe('password');
+    });
+
+    it('reveals the value as plain text when toggled, and re-masks on a second toggle', () => {
+      const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('.visibility-button');
+      const input: HTMLInputElement = fixture.nativeElement.querySelector('.field-value');
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(input.type).toBe('text');
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(input.type).toBe('password');
+    });
+
+    it('does not affect what copy() writes to the clipboard while masked', async () => {
+      await component.copy();
+      expect(writeTextMock).toHaveBeenCalledWith('secret-value');
+    });
+  });
+
   describe('ngOnDestroy', () => {
     it('performs the pending clipboard clear immediately rather than merely cancelling it', async () => {
       setClipboard(() => Promise.resolve());
