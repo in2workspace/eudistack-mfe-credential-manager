@@ -22,13 +22,14 @@ export interface FieldValidationRuleResolver {
 /**
  * Required keys until EUD-50/58/59 declare the real catalog.
  * Aligned with the legacy fields that already carry `required` in validators-entries.ts
- * (nameValidatorEntries, emailValidatorEntries, orgIdValidatorEntries, serialNumberValidatorEntries).
+ * (nameValidatorEntries, emailValidatorEntries, orgIdValidatorEntries, orgNameValidatorEntries).
+ * `serialNumber` is deliberately NOT here: it is optional (see serialNumberValidatorEntries),
+ * so a metadata-derived `serialNumber` claim must not become required either.
  */
 const PROVISIONAL_REQUIRED_KEYS = new Set<string>([
   'firstName',
   'lastName',
   'email',
-  'serialNumber',
   'organization',
   'organizationIdentifier',
 ]);
