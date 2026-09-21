@@ -9,6 +9,12 @@
     font-size: 0.9rem;
   }
 
+  .field-description {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
   .field-row {
     display: flex;
     gap: 0.5rem;

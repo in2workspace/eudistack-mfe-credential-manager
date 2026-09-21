@@ -1,5 +1,8 @@
 <div class="copyable-field">
   <span class="field-label">{{ labelKey() | translate }}</span>
+  @if (descriptionKey(); as descKey) {
+    <p class="field-description">{{ descKey | translate }}</p>
+  }
 
   <div class="field-row">
     <mat-form-field appearance="outline" class="field-input">
