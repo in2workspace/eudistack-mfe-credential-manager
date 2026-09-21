@@ -27,21 +27,21 @@ interface DeliveryOutcomeEntry {
  * channel", and the Operator has no use for the distinction between the two absence causes.
  *
  * Rendered as one bordered box per mode: green border and
- * copy on delivery, red on failure, never the neutral/grey default. Only this component's own
- * per-mode presentation changed -- the gating that decides WHETHER it renders at all stays exactly
- * as each host already had it (`DirectCredentialResultDialogComponent.showOutcomes` = more than one
- * requested channel; `CredentialOfferDialogComponent.showOutcomes` = more than one
- * channel OR any channel not delivered).
+ * copy on delivery, red on failure, never the neutral/grey default. Whether this renders at all
+ * (vs. the caller's own AS-IS content) is still each host's own call --
+ * `DirectCredentialResultDialogComponent` renders it unconditionally, single channel or hybrid
+ * alike, so the "direct" box always gets the same presentation regardless of channel count;
+ * `CredentialOfferDialogComponent` keeps its narrower `showOutcomes` gate (more than one channel OR
+ * any channel not delivered) to preserve its AS-IS single-Wallet-channel regression path (AC-05.1).
  *
  * The `direct` and `ui` boxes embed the actual artifact instead
  * of a generic "delivered" line, so it is no longer duplicated above this list -- the signed
  * credential (`signedCredential`) inside the `direct` box, the QR (`credentialOfferUri`) inside the
  * `ui` box. Both inputs are optional and only ever consumed when the matching mode is present AND
- * delivered; a host only passes them when it has ALSO stopped rendering its own standalone copy
- * (i.e. only while its `showOutcomes` is true -- this component has no visibility of that flag
- * itself, the host owns the gating). `email` never has an embeddable artifact, so it always falls
- * back to the generic per-mode text, same as `direct`/`ui` do when their data is absent despite a
- * `delivered` outcome (a defensive fallback, not an expected path).
+ * delivered; a host only passes them when it has ALSO stopped rendering its own standalone copy.
+ * `email` never has an embeddable artifact, so it always falls back to the generic per-mode text,
+ * same as `direct`/`ui` do when their data is absent despite a `delivered` outcome (a defensive
+ * fallback, not an expected path).
  */
 @Component({
   selector: 'app-delivery-outcome-list',

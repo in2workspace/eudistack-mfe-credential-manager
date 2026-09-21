@@ -181,9 +181,12 @@ describe('DirectCredentialResultDialogComponent', () => {
       expect(boxes).toHaveLength(3);
     });
 
-    it('shows nothing when only direct was requested (no redundant single-row list)', () => {
+    it('still shows a bordered, titled box when only direct was requested (consistent with the hybrid case)', () => {
       setup(baseData());
-      expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeNull();
+
+      const boxes = fixture.nativeElement.querySelectorAll('.delivery-outcome-list__box');
+      expect(boxes).toHaveLength(1);
+      expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeTruthy();
     });
   });
 

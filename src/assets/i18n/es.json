@@ -393,6 +393,7 @@
     },
     "holderPrivateKey": {
       "label": "Clave privada",
+      "description": "Esta es la clave privada que debes utilizar para firmar las presentaciones de la credencial.",
       "unavailable": "La clave privada generada para esta emisión ya no está disponible en este dispositivo. No es posible recuperarla ni volver a generarla: si la necesitas, emite la credencial de nuevo."
     },
     "discardArtifactsConfirm": {
@@ -411,9 +412,8 @@
     },
     "direct-result-dialog": {
       "title": "Credencial creada",
-      "message": "Copia la credencial firmada antes de cerrar esta ventana: no podrás volver a verla.",
-      "messageCredentialAndKey": "Copia la clave privada y la credencial firmada antes de cerrar esta ventana: no podrás volver a verlas.",
       "credentialLabel": "Credencial firmada",
+      "credentialDescription": "Este es el token de la credencial máquina, listo para ser utilizado por un servicio que quiera presentarse ante el verificador para identificarse (login M2M).",
       "done": "Hecho",
       "copyFailed": {
         "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",

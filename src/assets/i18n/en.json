@@ -393,6 +393,7 @@
     },
     "holderPrivateKey": {
       "label": "Private key",
+      "description": "This is the private key you must use to sign the credential's presentations.",
       "unavailable": "The private key generated for this issuance is no longer available on this device. It cannot be recovered or regenerated: issue the credential again if you need it."
     },
     "discardArtifactsConfirm": {
@@ -411,9 +412,8 @@
     },
     "direct-result-dialog": {
       "title": "Credential created",
-      "message": "Copy the signed credential before closing this window: you won't be able to see it again.",
-      "messageCredentialAndKey": "Copy the private key and the signed credential before closing this window: you won't be able to see them again.",
       "credentialLabel": "Signed credential",
+      "credentialDescription": "This is the machine credential's token, ready to be used by a service that wants to present itself to the verifier to identify itself (M2M login).",
       "done": "Done",
       "copyFailed": {
         "credential": "The credential could not be copied to the clipboard. Try again.",

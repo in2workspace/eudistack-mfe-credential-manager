@@ -27,6 +27,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 export class CopyableFieldComponent implements OnDestroy {
   /** i18n key for the label above the value. */
   public readonly labelKey = input.required<string>();
+  /** i18n key for the short explanatory line between the label and the value, when there is one. */
+  public readonly descriptionKey = input<string>();
   /** i18n key for the confirmation shown after copying. */
   public readonly copiedLabelKey = input<string>('credentialIssuance.credential-offer-dialog.copied');
   public readonly value = input.required<string>();

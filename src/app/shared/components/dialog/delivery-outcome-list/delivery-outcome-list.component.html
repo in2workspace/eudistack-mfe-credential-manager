@@ -8,6 +8,7 @@
       @if (showsCredential(entry)) {
         <app-copyable-field
           labelKey="credentialIssuance.direct-result-dialog.credentialLabel"
+          descriptionKey="credentialIssuance.direct-result-dialog.credentialDescription"
           [value]="signedCredential()!"
           [clipboardTtlMs]="credentialClipboardTtlMs"
           (copied)="credentialCopied.emit()"

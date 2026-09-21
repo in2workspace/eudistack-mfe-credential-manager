@@ -3,9 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDia
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
-import { CopyableFieldComponent } from '../copyable-field/copyable-field.component';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
-import { CredentialOfferQrComponent } from '../credential-offer-qr/credential-offer-qr.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
 import { UncopiedArtifactCloseGuard, ArtifactKind } from 'src/app/shared/services/uncopied-artifact-close-guard';
 import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
@@ -25,7 +23,9 @@ export interface DirectCredentialResultDialogData {
 /**
  * The direct-delivery success surface (EUD-233 AD-6/AD-7/AD-8/AD-10/AD-14/AD-16): one or two
  * copyable artifacts -- the signed credential always, the holder's private key only for the two
- * AD-8 exempt machine types -- plus the per-channel result when the emission was hybrid.
+ * AD-8 exempt machine types. The per-channel result always renders through
+ * `DeliveryOutcomeListComponent`, single channel or hybrid alike, so the credential's box always
+ * gets the same bordered/titled presentation regardless of how many channels were requested.
  *
  * **Opener contract.** Must be opened with `disableClose: true` and `closeOnNavigation: false` in
  * the `MatDialogConfig` (Task 25): the first because `UncopiedArtifactCloseGuard` takes over
@@ -43,9 +43,7 @@ export interface DirectCredentialResultDialogData {
     MatDialogContent,
     MatDialogActions,
     TranslatePipe,
-    CopyableFieldComponent,
     HolderPrivateKeySectionComponent,
-    CredentialOfferQrComponent,
     DeliveryOutcomeListComponent,
   ],
   templateUrl: './direct-credential-result-dialog.component.html',
@@ -69,16 +67,6 @@ export class DirectCredentialResultDialogComponent {
    * render check, so the two can never disagree about an empty-string edge case.
    */
   private readonly hasKeyArtifact = this.data.requiresHolderKeySection && !!this.data.privateKeyHex;
-  /** More than one requested channel: only then is the per-channel breakdown shown (AC-04/EC-07). */
-  protected readonly showOutcomes = this.data.outcomes.size > 1;
-
-  /**
-   * Clipboard-clear TTL for the signed credential (F4, 2026-09-17 hardening) -- same duration and
-   * mechanism as the private key's (`HolderPrivateKeySectionComponent`), closing the asymmetry:
-   * the VC carries mandator PII and had no auto-clear at all before this.
-   */
-  private static readonly CREDENTIAL_CLIPBOARD_TTL_MS = 60_000;
-  protected readonly credentialClipboardTtlMs = DirectCredentialResultDialogComponent.CREDENTIAL_CLIPBOARD_TTL_MS;
 
   /**
    * AD-16: the single source both `Done`'s gating and the close guard read. The credential is
@@ -95,22 +83,6 @@ export class DirectCredentialResultDialogComponent {
       pending.push('privateKey');
     }
     return pending;
-  });
-
-  /**
-   * The top instructional line -- names which artifacts THIS surface holds, not which are still
-   * uncopied. Deliberately static: derived from `hasKeyArtifact` (fixed at open time), never from
-   * `pendingArtifacts`, so copying the credential first does not make the warning drop it and
-   * start talking only about the key (that would be misleading -- both were still shown, both
-   * still need to have been taken). The credential itself is always present in this dialog's data
-   * (`signedCredential` is non-optional), so the only two reachable cases here are
-   * credential-only and credential+key.
-   */
-  protected readonly copyInstructionKey = computed<string>(() => {
-    if (this.hasKeyArtifact) {
-      return 'credentialIssuance.direct-result-dialog.messageCredentialAndKey';
-    }
-    return 'credentialIssuance.direct-result-dialog.message';
   });
 
   // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false
