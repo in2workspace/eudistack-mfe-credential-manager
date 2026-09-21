@@ -1,5 +1,8 @@
 import { Component, EventEmitter, input, OnDestroy, Output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /**
@@ -20,7 +23,13 @@ import { TranslatePipe } from '@ngx-translate/core';
  */
 @Component({
   selector: 'app-copyable-field',
-  imports: [MatIcon, TranslatePipe],
+  imports: [
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIcon,
+    MatInputModule,
+    TranslatePipe,
+  ],
   templateUrl: './copyable-field.component.html',
   styleUrl: './copyable-field.component.scss'
 })
