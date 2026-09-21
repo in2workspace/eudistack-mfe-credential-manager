@@ -11,7 +11,7 @@
 
   .field-row {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 0.5rem;
     min-width: 0;
   }
@@ -65,24 +65,20 @@
   .copy-button {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
+
+    &.copied {
+      color: var(--status-success, #059669);
+      border-color: var(--status-success, #059669);
+
+      &:hover {
+        background-color: var(--status-success, #059669);
+        color: var(--action-primary-contrast, #ffffff);
+        border-color: var(--status-success, #059669);
+      }
+    }
   }
 
   .visibility-button {
     padding: 0.3rem;
-  }
-
-  .copied-confirmation {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--status-success, #059669);
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
   }
 }

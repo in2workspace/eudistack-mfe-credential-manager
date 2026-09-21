@@ -55,16 +55,26 @@ describe('CopyableFieldComponent', () => {
       expect(emitted).toHaveBeenCalledTimes(1);
     });
 
-    it('shows the "Copied!" confirmation and resets it after 2s, independent of any TTL', async () => {
+    it('shows the "Copied!" label in the copy button and never reverts it back to "Copy"', async () => {
       jest.useFakeTimers();
       await component.copy();
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.copied-confirmation')).toBeTruthy();
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.copy-button');
+      expect(button.textContent).toContain('credentialIssuance.credential-offer-dialog.copied');
 
-      jest.advanceTimersByTime(2000);
+      jest.advanceTimersByTime(60_000);
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.copied-confirmation')).toBeNull();
+      expect(button.textContent).toContain('credentialIssuance.credential-offer-dialog.copied');
       jest.useRealTimers();
+    });
+
+    it('keeps the copy button clickable and re-copies on every further click', async () => {
+      await component.copy();
+      fixture.detectChanges();
+
+      await component.copy();
+
+      expect(writeTextMock).toHaveBeenCalledTimes(2);
     });
 
     it('never emits copyFailed on a successful copy', async () => {
@@ -96,11 +106,13 @@ describe('CopyableFieldComponent', () => {
       expect(copied).not.toHaveBeenCalled();
     });
 
-    it('never shows the "Copied!" confirmation', async () => {
+    it('never shows the "Copied!" label on the copy button', async () => {
       await component.copy();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector('.copied-confirmation')).toBeNull();
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.copy-button');
+      expect(button.textContent).toContain('dialog.copy');
+      expect(button.textContent).not.toContain('credentialIssuance.credential-offer-dialog.copied');
     });
   });
 
