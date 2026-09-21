@@ -3,7 +3,6 @@ import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDia
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TranslatePipe } from '@ngx-translate/core';
-import { CredentialOfferQrComponent } from '../credential-offer-qr/credential-offer-qr.component';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
 import { ArtifactKind, UncopiedArtifactCloseGuard, UncopiedArtifactCloseGuardHandle } from 'src/app/shared/services/uncopied-artifact-close-guard';
@@ -21,11 +20,14 @@ export interface CredentialOfferDialogData {
 }
 
 /**
- * The solo-Wallet post-emission surface (EUD-233 AD-8): extended in place, never replaced. Its
- * AS-IS content (QR / email acknowledgement) renders unchanged; what is added is conditional on
- * `requiresHolderKeySection` alone, structurally -- for the regression path (any type outside
- * AD-8's two exceptions) this component's behavior, `disableClose`, and event wiring are all
- * byte-for-byte what they were before this Story (AC-05.1, AC-05.2).
+ * The solo-Wallet post-emission surface (EUD-233 AD-8): extended in place, never replaced. What is
+ * added on top of the AS-IS content is conditional on `requiresHolderKeySection` alone; for the
+ * regression path (any type outside AD-8's two exceptions) `disableClose` and event wiring stay
+ * byte-for-byte what they were before this Story (AC-05.2). The per-channel outcome, however,
+ * always renders through `DeliveryOutcomeListComponent` now (single channel or hybrid alike), the
+ * same bordered/titled box `DirectCredentialResultDialogComponent` uses -- selecting a single
+ * delivery method (`ui` or `email` alone) must not fall back to the old borderless/untitled
+ * presentation just because it is the only one requested.
  */
 @Component({
     selector: 'app-credential-offer-dialog',
@@ -37,7 +39,6 @@ export interface CredentialOfferDialogData {
         MatDialogContent,
         MatDialogActions,
         TranslatePipe,
-        CredentialOfferQrComponent,
         HolderPrivateKeySectionComponent,
         DeliveryOutcomeListComponent,
     ],
@@ -58,13 +59,6 @@ export class CredentialOfferDialogComponent {
 
   protected readonly privateKeyCopied = signal(false);
   protected readonly privateKeyCopyFailed = signal(false);
-
-  /**
-   * AC-05.2/EC-09.1: more permissive than Task 22's dialog on purpose -- a single failed Wallet
-   * channel must still show its failure (EC-09.1), not just "more than one channel requested".
-   */
-  protected readonly showOutcomes = this.data.outcomes.size > 1
-    || [...this.data.outcomes.values()].some(outcome => outcome !== 'delivered');
 
   protected readonly titleKey = this.data.credentialOfferUri
     ? 'credentialIssuance.credential-offer-dialog.title'
