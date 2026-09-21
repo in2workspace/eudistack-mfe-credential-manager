@@ -297,8 +297,7 @@
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {
-      "title": "Credencial creada",
-      "message": "La credencial s'ha creat correctament."
+      "title": "Credencial creada"
     },
     "create-error-dialog": {
       "title": "No s'ha pogut crear la credencial",

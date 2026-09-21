@@ -10,7 +10,7 @@ import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-is
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface CredentialOfferDialogData {
-  /** Absent means email-only: no QR to show, generic acknowledgement copy instead. */
+  /** Absent means email-only: no QR to show, the per-channel outcome box carries the acknowledgement instead. */
   credentialOfferUri?: string;
   /** Host's `requiresRequestHolderKey(configId)` -- true only for the two EUD-233  AD-8 exempt machine types. */
   requiresHolderKeySection?: boolean;
@@ -63,9 +63,6 @@ export class CredentialOfferDialogComponent {
   protected readonly titleKey = this.data.credentialOfferUri
     ? 'credentialIssuance.credential-offer-dialog.title'
     : 'credentialIssuance.create-success-dialog.title';
-  protected readonly messageKey = this.data.credentialOfferUri
-    ? 'credentialIssuance.credential-offer-dialog.message'
-    : 'credentialIssuance.create-success-dialog.message';
 
   /** AC-13: this surface's only trackable artifact is the key -- there is no credential block here. */
   protected readonly pendingArtifacts = computed<readonly ArtifactKind[]>(() =>

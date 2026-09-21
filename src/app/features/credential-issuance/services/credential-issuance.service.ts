@@ -615,12 +615,12 @@ export class CredentialIssuanceService {
             const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
             return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
           }
-  
-          const credentialOfferUri = this.extractCredentialOfferUri(response);
-          if (credentialOfferUri) {
-            return this.openCredentialOfferDialog(credentialOfferUri, false, undefined, outcomes);
-          }
-          return this.openSuccessfulCreateDialog();
+
+          // No key section, direct not declared: ui, email, or both -- always the same extended
+          // CredentialOfferDialogComponent, whether or not a QR URI came back, so an email-only
+          // emission gets the same per-channel outcome box as the ui+email hybrid case instead of
+          // falling back to the old plain "credential created" dialog.
+          return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
         }),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
@@ -771,18 +771,6 @@ export class CredentialIssuanceService {
     // attempt's entry before the dialog opened -- guards a future code path that reaches this
     // dialog without having taken it first.
     return dialogRef.afterClosed().pipe(tap(() => this.holderPrivateKeyStore.clear()));
-  }
-
-  private openSuccessfulCreateDialog(): Observable<any>{
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialIssuance.create-success-dialog.title"),
-      message: this.translate.instant("credentialIssuance.create-success-dialog.message"),
-      confirmationType: 'none',
-      status: 'default'
-    };
-
-    const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
-    return dialogRef.afterClosed();
   }
 
   /**

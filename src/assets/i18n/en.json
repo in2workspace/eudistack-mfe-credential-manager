@@ -322,8 +322,7 @@
       "defaultLoadingTitle": "Please wait while the process is completed..."
     },
     "create-success-dialog": {
-      "title": "Credential created",
-      "message": "The credential was created successfully."
+      "title": "Credential created"
     },
     "create-error-dialog": {
       "title": "The credential could not be created",
