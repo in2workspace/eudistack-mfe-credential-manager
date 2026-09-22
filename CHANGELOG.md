@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-22
+
+## Changed
+- **EUD-233 - issuance form**: shortened the label text for the direct delivery checkbox; removed top padding from the title of the form's first field; updated checkboxes to have rounded corners for visual consistency with radio buttons
+- **EUD-233 - post-issuance dialog**: refactored result display to reuse components, ensuring consistent formatting regardless of credential type and number of selected delivery methods; added credential-specific descriptive text for private keys and signed keys, each with its own field description
+
+## Fixed
+ 
+- **EUD-233 - Delivery method checkboxes**: Ensured that at least one delivery method option remains selected at all times
+- **EUD-233 - Copyable component**: Prevented loss of copied credentials when the CopyableFieldComponent is destroyed. Implemented centralized clipboard management through ClipBoardService, which renews the clipboard timeout with each copy operation and no longer resets the clipboard on component destruction
+
+
 ## [3.8.0] - 2026-09-16
 
 ### Security
