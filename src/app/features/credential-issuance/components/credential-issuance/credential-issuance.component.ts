@@ -115,11 +115,15 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.issuanceService.updateSelectedGrantType(option);
   }
 
-  public onDeliveryModeToggle(token: DeliveryModeToken, checked: boolean): void {
+  public onDeliveryModeToggle(token: DeliveryModeToken, checked: boolean, checkbox: MatCheckbox): void {
     const selectedModes = this.selectedDeliveryModes$();
 
-    // Prevent removing the last selected delivery mode.
+    // Prevent removing the last selected delivery mode. MatCheckbox already flips its own
+    // internal state on click before this handler runs; since the bound [checked] expression
+    // re-evaluates to the same value (true) when we don't touch the model, Angular's dirty
+    // check skips re-applying it, leaving the checkbox visually unchecked. Revert it explicitly.
     if (!checked && selectedModes.size === 1 && selectedModes.has(token)) {
+      checkbox.checked = true;
       return;
     }
 
