@@ -1,4 +1,4 @@
-import { Component, EventEmitter, input, OnDestroy, Output, signal, inject } from '@angular/core';
+import { Component, EventEmitter, input, Output, signal, inject } from '@angular/core';
 import { ClipboardService } from '../../../services/clipboard.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
