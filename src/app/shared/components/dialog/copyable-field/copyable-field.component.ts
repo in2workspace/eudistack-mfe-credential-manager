@@ -1,4 +1,5 @@
-import { Component, EventEmitter, input, OnDestroy, Output, signal } from '@angular/core';
+import { Component, EventEmitter, input, OnDestroy, Output, signal, inject } from '@angular/core';
+import { ClipboardService } from '../../../services/clipboard.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,18 +9,23 @@ import { TranslatePipe } from '@ngx-translate/core';
 /**
  * A labelled, read-only value with a copy button, for values the Operator has to move somewhere
  * safe: a credential token, a private key (EUD-233 AD-10, ported and adapted from
- * `feat/direct-delivery`). Every value this component renders is sensitive, so it is masked
- * behind a password-style input by default; a visibility toggle next to the copy button reveals
- * it. Masking is purely a display concern -- `copy()` always writes the real `value()`, never the
- * masked text.
+ * `feat/direct-delivery`).
+ *
+ * Every value this component renders is sensitive, so it is masked behind a password-style input
+ * by default; a visibility toggle next to the copy button reveals it. Masking is purely a display
+ * concern -- `copy()` always sends the real `value()` to the ClipboardService, never the masked text.
  *
  * The visual "Copied!" confirmation replaces the copy button's own label once set and never
  * reverts to "Copy" -- the button stays clickable and every further click still copies (and
- * re-emits `copied`, monotonic per artifact per AD-16). The clipboard-clear TTL is a *different*,
- * optional concern:
- * absent by default, but the input is **required by convention** whenever this field carries the
- * private key (AD-10, R-4, NFR-S-EUD168-04(b)) -- there is no compiler enforcement of that
- * convention, only the two hosts that render the key section (Tasks 22/24) always supplying it.
+ * re-emits `copied`, monotonic per artifact per AD-16).
+ *
+ * Clipboard lifetime management is intentionally handled by the root-level ClipboardService rather
+ * than by this component. This keeps the clipboard-clear timer independent from the component
+ * lifecycle, so closing a dialog or destroying this component does not clear the clipboard.
+ *
+ * When a clipboard TTL is provided, the ClipboardService starts or resets the global clear timer
+ * after every successful copy. This means that copying a value from another CopyableFieldComponent
+ * also resets the timer, since the system clipboard is a shared resource.
  */
 @Component({
   selector: 'app-copyable-field',
@@ -33,35 +39,32 @@ import { TranslatePipe } from '@ngx-translate/core';
   templateUrl: './copyable-field.component.html',
   styleUrl: './copyable-field.component.scss'
 })
-export class CopyableFieldComponent implements OnDestroy {
-  /** i18n key for the label above the value. */
+export class CopyableFieldComponent {
   public readonly labelKey = input.required<string>();
-  /** i18n key for the short explanatory line between the label and the value, when there is one. */
   public readonly descriptionKey = input<string>();
-  /** i18n key for the confirmation shown after copying. */
   public readonly copiedLabelKey = input<string>('credentialIssuance.credential-offer-dialog.copied');
   public readonly value = input.required<string>();
-  /**
-   * Milliseconds before this field overwrites the clipboard with an empty string after a copy.
-   * Omitted: no clipboard-clear timer at all. Both the private key
-   * (`HolderPrivateKeySectionComponent`) and the signed credential (`DirectCredentialResultDialogComponent`,
-   * `DeliveryOutcomeListComponent`) supply 60s as of the 2026-09-17 hardening -- the credential
-   * carries mandator PII and is no longer treated as exempt from clipboard exposure just because
-   * it isn't the key itself. See the class doc for when it must be supplied.
+ /**
+   * Optional clipboard lifetime in milliseconds.
+   *
+   * When provided, the ClipboardService clears the clipboard after the specified delay.
+   * The timer is owned by the root ClipboardService and is therefore independent of this
+   * component's lifecycle. In particular, destroying this component must not clear the clipboard.
+   *
+   * Both the private key (`HolderPrivateKeySectionComponent`) and the signed credential
+   * (`DirectCredentialResultDialogComponent`, `DeliveryOutcomeListComponent`) supply 60s as of
+   * the 2026-09-17 hardening -- the credential carries mandator PII and is no longer treated as
+   * exempt from clipboard exposure just because it isn't the key itself.
    */
   public readonly clipboardTtlMs = input<number>();
 
-  /** Drives the "Copied!" button label only -- not consulted for any gating decision. Monotonic: once set, stays set. */
   protected readonly hasCopied = signal(false);
-  /** Every value this component renders is sensitive (private key / signed credential) -- masked by default. */
   protected readonly revealed = signal(false);
 
-  /** Emitted once per successful copy -- the host's signal for `pendingArtifacts` (AD-16). */
   @Output() public readonly copied = new EventEmitter<void>();
-  /** Emitted when `navigator.clipboard.writeText` rejects (ES-05, ES-07.1, ES-07.2). */
   @Output() public readonly copyFailed = new EventEmitter<void>();
 
-  private clipboardClearTimer?: ReturnType<typeof setTimeout>;
+  private readonly clipboardService = inject(ClipboardService);
 
   protected toggleVisibility(): void {
     this.revealed.set(!this.revealed());
@@ -69,41 +72,16 @@ export class CopyableFieldComponent implements OnDestroy {
 
   public async copy(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(this.value());
+      await this.clipboardService.copy(
+        this.value(),
+        this.clipboardTtlMs(),
+      );
     } catch {
       this.copyFailed.emit();
       return;
     }
+
     this.hasCopied.set(true);
     this.copied.emit();
-    this.scheduleClipboardClearIfNeeded();
-  }
-
-  public ngOnDestroy(): void {
-    // Perform the pending clipboard clear now rather than merely cancelling it (same precedent as
-    // the retired KeyGeneratorComponent): the dominant path is the Operator copying and then
-    // closing the host dialog well before this timer would otherwise fire on its own.
-    if (this.clipboardClearTimer !== undefined) {
-      clearTimeout(this.clipboardClearTimer);
-      this.clipboardClearTimer = undefined;
-      navigator.clipboard.writeText('').catch(() => {
-        // Best effort: by destroy time the Operator has typically moved focus elsewhere, which
-        // makes writeText reject. Nothing actionable to do with that here.
-      });
-    }
-  }
-
-  private scheduleClipboardClearIfNeeded(): void {
-    const ttl = this.clipboardTtlMs();
-    if (ttl === undefined) {
-      return;
-    }
-    if (this.clipboardClearTimer !== undefined) {
-      clearTimeout(this.clipboardClearTimer);
-    }
-    this.clipboardClearTimer = setTimeout(() => {
-      this.clipboardClearTimer = undefined;
-      navigator.clipboard.writeText('').catch(() => {});
-    }, ttl);
   }
 }
