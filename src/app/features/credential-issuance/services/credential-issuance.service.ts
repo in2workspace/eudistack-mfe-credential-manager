@@ -207,10 +207,23 @@ export class CredentialIssuanceService {
     null
   });
 
+  // Bug fix: switching Credential format (W3C <-> SD-JWT) rebuilds this FormGroup from a new
+  // schema (credentialFormSchema$ changes identity whenever the selected config's claims do),
+  // which used to wipe every value the Operator had already typed. formBuilder() now reads the
+  // FormGroup this rebuild is about to replace -- cached here, outside the signal graph, purely
+  // so form$ can stay a plain computed() (every caller, in this file and outside it, relies on
+  // form$() reflecting the current schema synchronously on read, with no separate flush) -- and
+  // carries over the value (and dirty state) of any field that still exists at the same key path
+  // in the new schema. Fields the destination format does not declare are simply dropped (AC-02).
+  private lastBuiltForm: FormGroup | null = null;
+
   public form$ = computed<FormGroup>(() => {
-    return this.credentialFormSchema$()
-      ? this.formBuilder(this.credentialFormSchema$()!, this.onBehalf$())
-      : new FormGroup({})
+    const schema = this.credentialFormSchema$();
+    const nextForm = schema
+      ? this.formBuilder(schema, this.onBehalf$(), this.lastBuiltForm)
+      : new FormGroup({});
+    this.lastBuiltForm = nextForm;
+    return nextForm;
   });
 
   public formValue$ = toSignal(
@@ -410,9 +423,16 @@ export class CredentialIssuanceService {
 
   private formBuilder(
   schema: CredentialIssuanceViewModelField[],
-  onBehalf: boolean
+  onBehalf: boolean,
+  previousGroup?: FormGroup | null
 ): FormGroup {
   const controls: Record<string, AbstractControl> = {};
+  // Angular's dirty flag does not aggregate bottom-up on construction -- markAsDirty() only
+  // propagates to a control's CURRENT parent, so calling it before the control is attached to
+  // `group` below would stay local and never surface on `group.dirty` (or, once this group
+  // itself becomes a child of an outer one, on that outer group either). Collected here and
+  // applied once `group` exists, so the propagation chain is always correctly attached.
+  const dirtyKeys: string[] = [];
 
   for (const field of schema) {
     if (
@@ -423,28 +443,55 @@ export class CredentialIssuanceService {
       continue;
     }
 
+    // AC-01/AC-02: a field survives a schema rebuild (credential type/format/onBehalf change)
+    // by key path alone -- same key at the same nesting level is "the same field", regardless
+    // of which schema declared it. A field absent from the previous form (new to this schema,
+    // or the previous form had none yet) is simply built fresh, same as before this fix.
+    const previousControl = previousGroup?.get(field.key) ?? null;
+
     switch (field.type) {
       case 'control': {
         const validators = (field.validators ?? [])
           .map(this.getValidatorFn)
           .filter((v): v is ExtendedValidatorFn => !!v);
 
-        const initialValue = field.staticValueGetter?.() ?? null;
+        const hasPreviousValue = previousControl instanceof FormControl;
+        const initialValue = hasPreviousValue ? previousControl.value : (field.staticValueGetter?.() ?? null);
 
         controls[field.key] = new FormControl(initialValue, { validators });
+        // Preserves the "unsaved changes" signal (canLeave()) across the rebuild: the new
+        // control is otherwise pristine even though it carries data the Operator already typed.
+        if (hasPreviousValue && previousControl.dirty) {
+          dirtyKeys.push(field.key);
+        }
         break;
       }
 
       case 'group': {
         const childSchema = field.groupFields ?? [];
-        controls[field.key] = this.formBuilder(childSchema, onBehalf);
+        const childGroup = this.formBuilder(
+          childSchema,
+          onBehalf,
+          previousControl instanceof FormGroup ? previousControl : null
+        );
+        controls[field.key] = childGroup;
+        // The child already carries its own dirty state correctly (it was applied the same
+        // way, one recursion level down) -- re-marking it here is what propagates that state
+        // up through THIS group once it gains `group` as its parent below.
+        if (childGroup.dirty) {
+          dirtyKeys.push(field.key);
+        }
         break;
       }
 
     }
   }
 
-  return new FormGroup(controls);
+  const group = new FormGroup(controls);
+  for (const key of dirtyKeys) {
+    group.get(key)!.markAsDirty();
+  }
+  return group;
 }
 
   /**
