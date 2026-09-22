@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { CredentialIssuanceComponent } from './credential-issuance.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ActivatedRoute } from '@angular/router';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { MatSelect } from '@angular/material/select';
 import { FormControl, FormGroup, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -16,7 +17,6 @@ describe('CredentialIssuanceComponent', () => {
   let routeMock: Partial<ActivatedRoute>;
 
   beforeEach(async () => {
-    // Prepare basic signals for all service properties used
     const emptyFormGroup = new FormGroup({});
 
     mockService = {

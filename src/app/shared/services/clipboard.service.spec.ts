@@ -2,21 +2,27 @@ import { ClipboardService } from './clipboard.service';
 
 describe('ClipboardService', () => {
   let service: ClipboardService;
-  let writeTextMock: jest.Mock;
+  let writeTextMock: jest.Mock<Promise<void>, [string]>;
 
   beforeEach(() => {
     jest.useFakeTimers();
 
-    writeTextMock = jest
-      .spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValue();
+    writeTextMock = jest.fn<Promise<void>, [string]>().mockResolvedValue();
+
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: writeTextMock,
+      },
+    });
 
     service = new ClipboardService();
   });
 
   afterEach(() => {
     jest.clearAllTimers();
-    jest.restoreAllMocks();
+    jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   it('should copy the value to the clipboard', async () => {
@@ -117,17 +123,14 @@ describe('ClipboardService', () => {
     jest.advanceTimersByTime(2000);
 
     expect(writeTextMock).toHaveBeenCalledTimes(3);
+    expect(writeTextMock).toHaveBeenNthCalledWith(1, 'first');
+    expect(writeTextMock).toHaveBeenNthCalledWith(2, 'second');
+    expect(writeTextMock).toHaveBeenNthCalledWith(3, 'third');
 
     jest.advanceTimersByTime(1000);
 
     expect(writeTextMock).toHaveBeenCalledTimes(4);
     expect(writeTextMock).toHaveBeenNthCalledWith(4, '');
   });
-});
 
-Object.defineProperty(navigator, 'clipboard', {
-  configurable: true,
-  value: {
-    writeText: jest.fn().mockResolvedValue(undefined),
-  },
 });
