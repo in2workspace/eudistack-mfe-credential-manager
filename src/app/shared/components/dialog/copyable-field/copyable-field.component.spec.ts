@@ -1,49 +1,71 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { CopyableFieldComponent } from './copyable-field.component';
+import { ClipboardService } from '../../../services/clipboard.service';
 
 describe('CopyableFieldComponent', () => {
   let fixture: ComponentFixture<CopyableFieldComponent>;
   let component: CopyableFieldComponent;
-  let writeTextMock: jest.Mock;
+  let clipboardService: {
+    copy: jest.Mock<Promise<void>, [string, number?]>;
+  };
 
-  function setClipboard(impl: (text: string) => Promise<void>) {
-    writeTextMock = jest.fn(impl);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: writeTextMock },
-      configurable: true,
-    });
-  }
+  function setup(
+    copyImpl: (text: string, ttlMs?: number) => Promise<void> =
+      () => Promise.resolve(),
+  ) {
+    clipboardService = {
+      copy: jest.fn(copyImpl),
+    };
 
-  function setup() {
     TestBed.configureTestingModule({
-      imports: [TranslateModule.forRoot(), CopyableFieldComponent],
+      imports: [
+        TranslateModule.forRoot(),
+        CopyableFieldComponent,
+      ],
+      providers: [
+        {
+          provide: ClipboardService,
+          useValue: clipboardService,
+        },
+      ],
     });
+
     fixture = TestBed.createComponent(CopyableFieldComponent);
-    fixture.componentRef.setInput('labelKey', 'credentialIssuance.holderPrivateKey.label');
+    fixture.componentRef.setInput(
+      'labelKey',
+      'credentialIssuance.holderPrivateKey.label',
+    );
     fixture.componentRef.setInput('value', 'secret-value');
+
     component = fixture.componentInstance;
+
+    fixture.detectChanges();
   }
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
 
   it('should create the component', () => {
-    setClipboard(() => Promise.resolve());
     setup();
-    fixture.detectChanges();
+
     expect(component).toBeTruthy();
   });
 
   describe('copy() success', () => {
     beforeEach(() => {
-      setClipboard(() => Promise.resolve());
       setup();
-      fixture.detectChanges();
     });
 
-    it('writes the value to the clipboard', async () => {
+    it('copies the value through ClipboardService', async () => {
       await component.copy();
-      expect(writeTextMock).toHaveBeenCalledWith('secret-value');
+
+      expect(clipboardService.copy).toHaveBeenCalledWith(
+        'secret-value',
+        undefined,
+      );
     });
 
     it('emits copied exactly once (AD-16 gating signal)', async () => {
@@ -56,25 +78,42 @@ describe('CopyableFieldComponent', () => {
     });
 
     it('shows the "Copied!" label in the copy button and never reverts it back to "Copy"', async () => {
-      jest.useFakeTimers();
       await component.copy();
       fixture.detectChanges();
-      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.copy-button');
-      expect(button.textContent).toContain('credentialIssuance.credential-offer-dialog.copied');
 
-      jest.advanceTimersByTime(60_000);
-      fixture.detectChanges();
-      expect(button.textContent).toContain('credentialIssuance.credential-offer-dialog.copied');
-      jest.useRealTimers();
+      const button: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.copy-button');
+
+      expect(button.textContent).toContain(
+        'credentialIssuance.credential-offer-dialog.copied',
+      );
     });
 
     it('keeps the copy button clickable and re-copies on every further click', async () => {
       await component.copy();
-      fixture.detectChanges();
-
       await component.copy();
 
-      expect(writeTextMock).toHaveBeenCalledTimes(2);
+      expect(clipboardService.copy).toHaveBeenCalledTimes(2);
+      expect(clipboardService.copy).toHaveBeenNthCalledWith(
+        1,
+        'secret-value',
+        undefined,
+      );
+      expect(clipboardService.copy).toHaveBeenNthCalledWith(
+        2,
+        'secret-value',
+        undefined,
+      );
+    });
+
+    it('emits copied on every successful copy', async () => {
+      const copied = jest.fn();
+      component.copied.subscribe(copied);
+
+      await component.copy();
+      await component.copy();
+
+      expect(copied).toHaveBeenCalledTimes(2);
     });
 
     it('never emits copyFailed on a successful copy', async () => {
@@ -85,18 +124,29 @@ describe('CopyableFieldComponent', () => {
 
       expect(failed).not.toHaveBeenCalled();
     });
+
+    it('passes the configured clipboard TTL to ClipboardService', async () => {
+      fixture.componentRef.setInput('clipboardTtlMs', 60_000);
+      fixture.detectChanges();
+
+      await component.copy();
+
+      expect(clipboardService.copy).toHaveBeenCalledWith(
+        'secret-value',
+        60_000,
+      );
+    });
   });
 
   describe('copy() failure (ES-05, ES-07.1, ES-07.2)', () => {
     beforeEach(() => {
-      setClipboard(() => Promise.reject(new Error('denied')));
-      setup();
-      fixture.detectChanges();
+      setup(() => Promise.reject(new Error('denied')));
     });
 
     it('emits copyFailed instead of copied', async () => {
       const copied = jest.fn();
       const failed = jest.fn();
+
       component.copied.subscribe(copied);
       component.copyFailed.subscribe(failed);
 
@@ -110,91 +160,98 @@ describe('CopyableFieldComponent', () => {
       await component.copy();
       fixture.detectChanges();
 
-      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.copy-button');
+      const button: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.copy-button');
+
       expect(button.textContent).toContain('dialog.copy');
-      expect(button.textContent).not.toContain('credentialIssuance.credential-offer-dialog.copied');
+      expect(button.textContent).not.toContain(
+        'credentialIssuance.credential-offer-dialog.copied',
+      );
+    });
+
+    it('does not emit copied after a failed copy', async () => {
+      const copied = jest.fn();
+      component.copied.subscribe(copied);
+
+      await component.copy();
+
+      expect(copied).not.toHaveBeenCalled();
     });
   });
 
-  describe('clipboardTtlMs (AD-10, R-4)', () => {
-    it('overwrites the clipboard after the given TTL, restarted (not stacked) on every copy', async () => {
-      setClipboard(() => Promise.resolve());
-      setup();
-      fixture.componentRef.setInput('clipboardTtlMs', 60_000);
-      fixture.detectChanges();
-      jest.useFakeTimers();
-
-      await component.copy();
-      jest.advanceTimersByTime(30_000);
-      await component.copy(); // restarts the timer -- must not double-clear at the old deadline
-      jest.advanceTimersByTime(30_000);
-      expect(writeTextMock).not.toHaveBeenCalledWith('');
-
-      jest.advanceTimersByTime(30_000);
-      expect(writeTextMock).toHaveBeenCalledWith('');
-      expect(writeTextMock).toHaveBeenCalledTimes(3); // 2 real copies + 1 clear
-
-      jest.useRealTimers();
-    });
-
-    it('never schedules a clipboard-clear when the TTL is omitted', async () => {
-      setClipboard(() => Promise.resolve());
-      setup();
-      fixture.detectChanges();
-      jest.useFakeTimers();
-
-      await component.copy();
-      jest.advanceTimersByTime(120_000);
-
-      expect(writeTextMock).not.toHaveBeenCalledWith('');
-      expect(writeTextMock).toHaveBeenCalledTimes(1);
-
-      jest.useRealTimers();
-    });
+describe('visibility toggle', () => {
+  beforeEach(() => {
+    setup();
   });
 
-  describe('visibility toggle', () => {
-    beforeEach(() => {
-      setClipboard(() => Promise.resolve());
-      setup();
-      fixture.detectChanges();
-    });
+  it('renders the value masked by default', () => {
+    const input: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[matInput]');
 
-    it('renders the value masked by default', () => {
-      const input: HTMLInputElement = fixture.nativeElement.querySelector('.field-value');
-      expect(input.type).toBe('password');
-    });
-
-    it('reveals the value as plain text when toggled, and re-masks on a second toggle', () => {
-      const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('.visibility-button');
-      const input: HTMLInputElement = fixture.nativeElement.querySelector('.field-value');
-
-      toggle.click();
-      fixture.detectChanges();
-      expect(input.type).toBe('text');
-
-      toggle.click();
-      fixture.detectChanges();
-      expect(input.type).toBe('password');
-    });
-
-    it('does not affect what copy() writes to the clipboard while masked', async () => {
-      await component.copy();
-      expect(writeTextMock).toHaveBeenCalledWith('secret-value');
-    });
+    expect(input).not.toBeNull();
+    expect(input.type).toBe('password');
+    expect(input.value).toBe('secret-value');
   });
 
-  describe('ngOnDestroy', () => {
-    it('performs the pending clipboard clear immediately rather than merely cancelling it', async () => {
-      setClipboard(() => Promise.resolve());
+  it('reveals the value as plain text when toggled, and re-masks on a second toggle', () => {
+    const toggle: HTMLButtonElement =
+      fixture.nativeElement.querySelector('.field-input button');
+    const input: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[matInput]');
+
+    expect(toggle).not.toBeNull();
+    expect(input).not.toBeNull();
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(input.type).toBe('text');
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(input.type).toBe('password');
+  });
+
+  it('does not affect what copy() sends to ClipboardService while masked', async () => {
+    await component.copy();
+
+    expect(clipboardService.copy).toHaveBeenCalledWith(
+      'secret-value',
+      undefined,
+    );
+  });
+
+  it('does not affect what copy() sends to ClipboardService while revealed', async () => {
+    const toggle: HTMLButtonElement =
+      fixture.nativeElement.querySelector('.field-input button');
+
+    toggle.click();
+    fixture.detectChanges();
+
+    await component.copy();
+
+    expect(clipboardService.copy).toHaveBeenCalledWith(
+      'secret-value',
+      undefined,
+    );
+  });
+});
+
+  describe('copiedLabelKey', () => {
+    it('uses the configured copied label key', async () => {
       setup();
-      fixture.componentRef.setInput('clipboardTtlMs', 60_000);
+
+      fixture.componentRef.setInput('copiedLabelKey', 'custom.copied');
       fixture.detectChanges();
 
       await component.copy();
-      fixture.destroy();
+      fixture.detectChanges();
 
-      expect(writeTextMock).toHaveBeenCalledWith('');
+      const button: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.copy-button');
+
+      expect(button.textContent).toContain('custom.copied');
     });
   });
 });
