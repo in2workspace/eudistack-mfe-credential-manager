@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { CredentialIssuanceComponent } from './credential-issuance.component';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ActivatedRoute } from '@angular/router';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { MatSelect } from '@angular/material/select';
 import { FormControl, FormGroup, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -16,7 +17,6 @@ describe('CredentialIssuanceComponent', () => {
   let routeMock: Partial<ActivatedRoute>;
 
   beforeEach(async () => {
-    // Prepare basic signals for all service properties used
     const emptyFormGroup = new FormGroup({});
 
     mockService = {
@@ -402,4 +402,60 @@ describe('CredentialIssuanceComponent', () => {
       expect(fixture.debugElement.query(By.css('button[type="submit"]'))).toBeFalsy();
     });
   });
+
+  describe('onDeliveryModeToggle', () => {
+    it('should prevent removing the last selected delivery mode and re-check the checkbox', () => {
+      const token = 'email' as any;
+      const checkbox = { checked: false } as MatCheckbox;
+
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
+        new Set([token])
+      );
+
+      component.onDeliveryModeToggle(token, false, checkbox);
+
+      expect(checkbox.checked).toBe(true);
+      expect(mockService.toggleDeliveryMode).not.toHaveBeenCalled();
+    });
+
+    it('should delegate to the service when adding a delivery mode', () => {
+      const token = 'email' as any;
+      const checkbox = { checked: true } as MatCheckbox;
+
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
+        new Set()
+      );
+
+      component.onDeliveryModeToggle(token, true, checkbox);
+
+      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, true);
+    });
+
+    it('should delegate to the service when removing a delivery mode and other modes remain selected', () => {
+      const token = 'email' as any;
+      const checkbox = { checked: false } as MatCheckbox;
+
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
+        new Set([token, 'direct'])
+      );
+
+      component.onDeliveryModeToggle(token, false, checkbox);
+
+      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, false);
+    });
+
+    it('should delegate to the service when unchecked token is not selected', () => {
+      const token = 'email' as any;
+      const checkbox = { checked: false } as MatCheckbox;
+
+      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
+        new Set(['direct'])
+      );
+
+      component.onDeliveryModeToggle(token, false, checkbox);
+
+      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, false);
+    });
+  });
+
 });

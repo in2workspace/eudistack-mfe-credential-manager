@@ -322,8 +322,7 @@
       "defaultLoadingTitle": "Espere mientras se completa el proceso..."
     },
     "create-success-dialog": {
-      "title": "Credencial creada",
-      "message": "La credencial se ha creado correctamente."
+      "title": "Credencial creada"
     },
     "create-error-dialog": {
       "title": "No se ha podido crear la credencial",
@@ -370,7 +369,7 @@
     },
     "delivery": {
       "label": "Método de entrega",
-      "direct": "Entrega directa",
+      "direct": "Directo",
       "email": "Correo electrónico",
       "qrCode": "Código QR"
     },
@@ -393,6 +392,7 @@
     },
     "holderPrivateKey": {
       "label": "Clave privada",
+      "description": "Esta es la clave privada que debes utilizar para firmar las presentaciones de la credencial.",
       "unavailable": "La clave privada generada para esta emisión ya no está disponible en este dispositivo. No es posible recuperarla ni volver a generarla: si la necesitas, emite la credencial de nuevo."
     },
     "discardArtifactsConfirm": {
@@ -411,9 +411,8 @@
     },
     "direct-result-dialog": {
       "title": "Credencial creada",
-      "message": "Copia la credencial firmada antes de cerrar esta ventana: no podrás volver a verla.",
-      "messageCredentialAndKey": "Copia la clave privada y la credencial firmada antes de cerrar esta ventana: no podrás volver a verlas.",
       "credentialLabel": "Credencial firmada",
+      "credentialDescription": "Este es el token de la credencial máquina, listo para ser utilizado por un servicio que quiera presentarse ante el verificador para identificarse (login M2M).",
       "done": "Hecho",
       "copyFailed": {
         "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
@@ -497,6 +496,8 @@
     "ok": "De acuerdo",
     "close": "Cerrar",
     "copy": "Copiar",
+    "show": "Mostrar",
+    "hide": "Ocultar",
     "cancel": "Cancelar",
     "accept": "Aceptar",
     "delete": "Eliminar",

@@ -394,10 +394,6 @@ describe('CredentialIssuanceService', () => {
   });
 
   describe('submitCredentialPayload', () => {
-    const successDialogData = expect.objectContaining({
-      title: 'credentialIssuance.create-success-dialog.title',
-      status: 'default'
-    });
     const errorDialogData = expect.objectContaining({
       title: 'credentialIssuance.create-error-dialog.title',
       status: 'error'
@@ -644,7 +640,14 @@ describe('CredentialIssuanceService', () => {
 
         service.openSubmitDialog();
 
-        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), successDialogData);
+        // Email-only, no key section, no QR: same extended CredentialOfferDialogComponent as every
+        // other no-key-section case, so the email outcome still gets its own bordered/titled box
+        // instead of falling back to the old plain "credential created" dialog.
+        const [component, config] = mockMatDialog.open.mock.calls[0];
+        expect(component).toBe(CredentialOfferDialogComponent);
+        expect(config.data.requiresHolderKeySection).toBe(false);
+        expect(config.data.credentialOfferUri).toBeUndefined();
+        expect(config.data.outcomes.get('email')).toBe('delivered');
         expect(service.hasSubmitted$()).toBe(true);
       });
     });
@@ -1015,7 +1018,10 @@ describe('CredentialIssuanceService', () => {
         // must never end up with two contradictory success confirmations on screen.
         expect(service.hasSubmitted$()).toBe(true);
         expect(service.canLeave()).toBe(true);
-        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+        // Email-only, no key section: the extended CredentialOfferDialogComponent (via MatDialog),
+        // not the old generic DialogComponent -- so the email outcome gets its own box.
+        expect(mockMatDialog.open).toHaveBeenCalledTimes(1);
+        expect(dialogService.openDialog).not.toHaveBeenCalled();
       });
     });
   });

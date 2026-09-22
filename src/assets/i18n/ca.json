@@ -297,8 +297,7 @@
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {
-      "title": "Credencial creada",
-      "message": "La credencial s'ha creat correctament."
+      "title": "Credencial creada"
     },
     "create-error-dialog": {
       "title": "No s'ha pogut crear la credencial",
@@ -345,7 +344,7 @@
     },
     "delivery": {
       "label": "Mètode de lliurament",
-      "direct": "Lliurament directe",
+      "direct": "Directe",
       "email": "Correu electrònic",
       "qrCode": "Codi QR"
     },
@@ -368,6 +367,7 @@
     },
     "holderPrivateKey": {
       "label": "Clau privada",
+      "description": "Aquesta és la clau privada que has d'utilitzar per firmar les presentacions de la credencial.",
       "unavailable": "La clau privada generada per a aquesta emissió ja no està disponible en aquest dispositiu. No es pot recuperar ni tornar a generar: si la necessites, emet la credencial de nou."
     },
     "discardArtifactsConfirm": {
@@ -386,9 +386,8 @@
     },
     "direct-result-dialog": {
       "title": "Credencial creada",
-      "message": "Copia la credencial signada abans de tancar aquesta finestra: no la podràs tornar a veure.",
-      "messageCredentialAndKey": "Copia la clau privada i la credencial signada abans de tancar aquesta finestra: no les podràs tornar a veure.",
       "credentialLabel": "Credencial signada",
+      "credentialDescription": "Aquest és el token de la credencial màquina, a punt per ser utilitzat per un servei que vulgui presentar-se davant del verificador per identificar-se (login M2M).",
       "done": "Fet",
       "copyFailed": {
         "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
@@ -472,6 +471,8 @@
     "ok": "D'acord",
     "close": "Tancar",
     "copy": "Copiar",
+    "show": "Mostrar",
+    "hide": "Amagar",
     "cancel": "Cancel·lar",
     "accept": "Acceptar",
     "delete" : "Eliminar",

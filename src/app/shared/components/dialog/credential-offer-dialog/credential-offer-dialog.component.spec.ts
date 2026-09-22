@@ -219,10 +219,11 @@ describe('CredentialOfferDialogComponent', () => {
       expect(outcomeList.querySelector('app-credential-offer-qr')).toBeTruthy();
     });
 
-    it('keeps the QR standalone (no box) for the single-channel regression case (EUD-233 AC-05.1)', () => {
-      setup(mockData); // single 'ui' channel, delivered -- showOutcomes false
+    it('shows a bordered, titled box even for the single-channel case, consistent with the hybrid case', () => {
+      setup(mockData); // single 'ui' channel, delivered
 
-      expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-delivery-outcome-list')).toBeTruthy();
+      expect(fixture.nativeElement.querySelectorAll('.delivery-outcome-list__box')).toHaveLength(1);
       expect(fixture.nativeElement.querySelector('app-credential-offer-qr')).toBeTruthy();
     });
   });

@@ -1,33 +1,46 @@
 <div class="copyable-field">
   <span class="field-label">{{ labelKey() | translate }}</span>
+  @if (descriptionKey(); as descKey) {
+    <p class="field-description">{{ descKey | translate }}</p>
+  }
 
   <div class="field-row">
-    <input
-      class="field-value"
-      type="text"
-      readonly
-      [value]="value()"
-      [attr.aria-label]="labelKey() | translate"
-      spellcheck="false"
-      autocomplete="off"
-      data-lpignore="true"
-    />
+    <mat-form-field appearance="outline" class="field-input">
+      <input
+        matInput
+        [type]="revealed() ? 'text' : 'password'"
+        readonly
+        [value]="value()"
+        [attr.aria-label]="labelKey() | translate"
+        spellcheck="false"
+        autocomplete="off"
+        data-lpignore="true"
+      />
+
+      <button
+        mat-icon-button
+        matIconSuffix
+        type="button"
+        [attr.aria-label]="(revealed() ? 'dialog.hide' : 'dialog.show') | translate"
+        (click)="toggleVisibility()"
+      >
+        <mat-icon aria-hidden="true">
+          {{ revealed() ? 'visibility_off' : 'visibility' }}
+        </mat-icon>
+      </button>
+    </mat-form-field>
 
     <button
       type="button"
       class="copy-button"
+      [class.copied]="hasCopied()"
       [attr.aria-label]="'dialog.copy' | translate"
       (click)="copy()"
     >
-      <mat-icon aria-hidden="true">content_copy</mat-icon>
-      <span>{{ "dialog.copy" | translate }}</span>
+      <mat-icon aria-hidden="true">
+        {{ hasCopied() ? 'check' : 'content_copy' }}
+      </mat-icon>
+      <span>{{ (hasCopied() ? copiedLabelKey() : 'dialog.copy') | translate }}</span>
     </button>
   </div>
-
-  @if (hasCopied()) {
-    <output class="copied-confirmation">
-      <mat-icon aria-hidden="true">check</mat-icon>
-      <span>{{ copiedLabelKey() | translate }}</span>
-    </output>
-  }
 </div>
