@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-233 - Delivery method checkboxes**: Ensured that at least one delivery method option remains selected at all times
 - **EUD-233 - Copyable component**: Prevented loss of copied credentials when the CopyableFieldComponent is destroyed. Implemented centralized clipboard management through ClipBoardService, which renews the clipboard timeout with each copy operation and no longer resets the clipboard on component destruction
 
+- **Logging in to the Issuer console requested a scope that let the wallet offer credentials without the power actually required to get in**: the login button's OIDC scope was hardcoded to `learcredential`, which the Verifier only ever resolves to a query constrained by credential type — never by the Onboarding/Execute (or SysAdmin) power that access to the console requires. Changed to a dedicated `issuer_access` scope so the wallet can exclude non-qualifying credentials before presentation, instead of the holder finding out only after logging in. The DoctorID identify flow in other repos deliberately keeps requesting `learcredential` against this same client — unaffected by this change.
+
 
 ## [3.8.0] - 2026-09-16
 
