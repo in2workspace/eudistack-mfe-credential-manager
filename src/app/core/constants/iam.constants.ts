@@ -1,6 +1,9 @@
 export const IAM_PARAMS = Object.freeze({
     CLIENT_ID: "vc-auth-client",
-    SCOPE: "openid profile email offline_access learcredential role",
+    // "issuer_access" (not "learcredential") so the DCQL query the Verifier builds
+    // for this login requires the Onboarding/Execute or SysAdmin power — otherwise
+    // the wallet offers any employee credential regardless of power.
+    SCOPE: "openid profile email offline_access issuer_access role",
     GRANT_TYPE: "code"
 });
 
