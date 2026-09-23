@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialIssuanceService } from './credential-issuance.service';
 import { IssuanceRequestFactoryService } from './issuance-request-factory.service';
@@ -318,6 +319,130 @@ describe('CredentialIssuanceService', () => {
       expect(mockMetadataService.getConfigurationById).toHaveBeenCalledWith('learcredential.employee.w3c.2');
     });
   });
+
+  // Bug: switching Credential format (W3C VC Data Model v2.0 <-> SD-JWT VC) rebuilds form$ from
+  // a new schema (credentialFormSchema$ changes identity whenever the selected config's claims
+  // do), which used to wipe every value the Operator had already typed. AC-01/AC-02.
+  describe('format switch preserves equivalent field values', () => {
+    const w3cSchema = [
+      {
+        id: 1, key: 'mandatee', type: 'group' as const, display: 'main' as const,
+        groupFields: [
+          { key: 'firstName', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          { key: 'lastName', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          { key: 'email', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          // Only declared by W3C: must not survive the switch (AC-02) and must not error out.
+          { key: 'employeeId', type: 'control' as const, controlType: 'text' as const, validators: [] }
+        ]
+      },
+      { id: 2, key: 'power', type: 'group' as const, display: 'main' as const, groupFields: [] }
+    ];
+    // Same three equivalent fields as W3C, no employeeId, plus one SD-JWT-only field to check
+    // it starts empty rather than inheriting an unrelated value.
+    const sdJwtSchema = [
+      {
+        id: 1, key: 'mandatee', type: 'group' as const, display: 'main' as const,
+        groupFields: [
+          { key: 'firstName', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          { key: 'lastName', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          { key: 'email', type: 'control' as const, controlType: 'text' as const, validators: [] },
+          { key: 'disclosureFrequency', type: 'control' as const, controlType: 'text' as const, validators: [] }
+        ]
+      },
+      { id: 2, key: 'power', type: 'group' as const, display: 'main' as const, groupFields: [] }
+    ];
+
+    beforeEach(() => {
+      mockMetadataService.findConfigurationsForType.mockReturnValue([
+        { configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json' },
+        { configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt' }
+      ]);
+      // The two configs' own claims are irrelevant to this suite -- formSchemasBuilder is
+      // stubbed directly, keyed on whichever configId is currently selected, exactly like the
+      // real IssuanceSchemaBuilder would be keyed on the format-specific claims it received.
+      mockSchemaBuilder.formSchemasBuilder.mockImplementation(() => {
+        const configId = service.effectiveFormatOption$()?.configId;
+        return [configId === 'learcredential.employee.sd.1' ? sdJwtSchema : w3cSchema, {}];
+      });
+      service.selectedCredentialType$.set('learcredential.employee');
+      service.updateSelectedFormat({ configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json', labelKey: 'k' });
+    });
+
+    it('keeps the values of fields that exist in both formats when switching W3C -> SD-JWT', () => {
+      const mandatee = service.form$().get('mandatee') as FormGroup;
+      mandatee.get('firstName')!.setValue('John');
+      mandatee.get('lastName')!.setValue('Doe');
+      mandatee.get('email')!.setValue('john@example.com');
+      mandatee.get('employeeId')!.setValue('E-123');
+
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      const newMandatee = service.form$().get('mandatee') as FormGroup;
+      expect(newMandatee.get('firstName')!.value).toBe('John');
+      expect(newMandatee.get('lastName')!.value).toBe('Doe');
+      expect(newMandatee.get('email')!.value).toBe('john@example.com');
+      // AC-02: a field the destination format does not declare is dropped, not merely emptied.
+      expect(newMandatee.get('employeeId')).toBeNull();
+      // A field only SD-JWT declares starts fresh, never inheriting an unrelated value.
+      expect(newMandatee.get('disclosureFrequency')!.value).toBeNull();
+    });
+
+    it('round-trips SD-JWT -> W3C and still has the equivalent values, with the reappearing field empty', () => {
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      const mandatee = service.form$().get('mandatee') as FormGroup;
+      mandatee.get('firstName')!.setValue('Jane');
+      mandatee.get('lastName')!.setValue('Roe');
+      mandatee.get('email')!.setValue('jane@example.com');
+
+      service.updateSelectedFormat({ configId: 'learcredential.employee.w3c.2', format: 'jwt_vc_json', labelKey: 'k' });
+
+      const newMandatee = service.form$().get('mandatee') as FormGroup;
+      expect(newMandatee.get('firstName')!.value).toBe('Jane');
+      expect(newMandatee.get('lastName')!.value).toBe('Roe');
+      expect(newMandatee.get('email')!.value).toBe('jane@example.com');
+      // employeeId is back (W3C declares it) but empty -- SD-JWT never had a value for it either.
+      expect(newMandatee.get('employeeId')!.value).toBeNull();
+    });
+
+    it('marks a carried-over field dirty, so canLeave() still reports unsaved changes after the switch', () => {
+      // setValue() alone does not mark a control dirty in Angular reactive forms -- that only
+      // happens on real user interaction (the form directives call markAsDirty() on input),
+      // which this reproduces explicitly.
+      const mandatee = service.form$().get('mandatee') as FormGroup;
+      mandatee.get('firstName')!.setValue('John');
+      mandatee.get('firstName')!.markAsDirty();
+      expect(service.canLeave()).toBe(false);
+
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      expect(service.form$().dirty).toBe(true);
+      expect(service.canLeave()).toBe(false);
+    });
+
+    it('does not mark an untouched field dirty just because it was carried over', () => {
+      const mandatee = service.form$().get('mandatee') as FormGroup;
+      mandatee.get('firstName')!.setValue('John'); // value set programmatically, never touched by the operator
+
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      const newMandatee = service.form$().get('mandatee') as FormGroup;
+      expect(newMandatee.get('firstName')!.value).toBe('John');
+      expect(newMandatee.get('firstName')!.pristine).toBe(true);
+      expect(service.form$().pristine).toBe(true);
+    });
+
+    it('grant type and delivery method are not reset by a format switch', () => {
+      service.updateSelectedGrantType(service.grantTypeOptions[0]);
+      const modesBeforeSwitch = service.selectedDeliveryModes$();
+
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      expect(service.selectedGrantType$()).toBe(service.grantTypeOptions[0]);
+      expect(service.selectedDeliveryModes$()).toEqual(modesBeforeSwitch);
+    });
+  });
+
   describe('delivery mode defaulting', () => {
     // The delivery-eligibility read is one of the three forkJoin sources gating construction
     // (isLoadingCatalog$'s own describe block above); the policy load is a Promise, so it only

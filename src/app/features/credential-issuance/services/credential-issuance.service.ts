@@ -17,7 +17,7 @@ import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
 import { ChannelOutcome, resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
-import { CredentialFormatOption, CredentialIssuanceViewModelField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelControlField, CredentialIssuanceViewModelField, CredentialIssuanceViewModelGroupField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -207,10 +207,23 @@ export class CredentialIssuanceService {
     null
   });
 
+  // Bug fix: switching Credential format (W3C <-> SD-JWT) rebuilds this FormGroup from a new
+  // schema (credentialFormSchema$ changes identity whenever the selected config's claims do),
+  // which used to wipe every value the Operator had already typed. formBuilder() now reads the
+  // FormGroup this rebuild is about to replace -- cached here, outside the signal graph, purely
+  // so form$ can stay a plain computed() (every caller, in this file and outside it, relies on
+  // form$() reflecting the current schema synchronously on read, with no separate flush) -- and
+  // carries over the value (and dirty state) of any field that still exists at the same key path
+  // in the new schema. Fields the destination format does not declare are simply dropped (AC-02).
+  private lastBuiltForm: FormGroup | null = null;
+
   public form$ = computed<FormGroup>(() => {
-    return this.credentialFormSchema$()
-      ? this.formBuilder(this.credentialFormSchema$()!, this.onBehalf$())
-      : new FormGroup({})
+    const schema = this.credentialFormSchema$();
+    const nextForm = schema
+      ? this.formBuilder(schema, this.onBehalf$(), this.lastBuiltForm)
+      : new FormGroup({});
+    this.lastBuiltForm = nextForm;
+    return nextForm;
   });
 
   public formValue$ = toSignal(
@@ -409,43 +422,86 @@ export class CredentialIssuanceService {
   }
 
   private formBuilder(
-  schema: CredentialIssuanceViewModelField[],
-  onBehalf: boolean
-): FormGroup {
-  const controls: Record<string, AbstractControl> = {};
+    schema: CredentialIssuanceViewModelField[],
+    onBehalf: boolean,
+    previousGroup?: FormGroup | null
+  ): FormGroup {
+    const controls: Record<string, AbstractControl> = {};
+    // Angular's dirty flag does not aggregate bottom-up on construction -- markAsDirty() only
+    // propagates to a control's CURRENT parent, so calling it before the control is attached to
+    // `group` below would stay local and never surface on `group.dirty` (or, once this group
+    // itself becomes a child of an outer one, on that outer group either). Collected here and
+    // applied once `group` exists, so the propagation chain is always correctly attached.
+    const dirtyKeys: string[] = [];
 
-  for (const field of schema) {
-    if (
-      field.type === 'group' &&
-      !onBehalf &&
-      (field.display === 'pref_side' || field.display === 'side')
-    ) {
-      continue;
-    }
-
-    switch (field.type) {
-      case 'control': {
-        const validators = (field.validators ?? [])
-          .map(this.getValidatorFn)
-          .filter((v): v is ExtendedValidatorFn => !!v);
-
-        const initialValue = field.staticValueGetter?.() ?? null;
-
-        controls[field.key] = new FormControl(initialValue, { validators });
-        break;
+    for (const field of schema) {
+      if (this.isHiddenSideGroup(field, onBehalf)) {
+        continue;
       }
 
-      case 'group': {
-        const childSchema = field.groupFields ?? [];
-        controls[field.key] = this.formBuilder(childSchema, onBehalf);
-        break;
-      }
+      // AC-01/AC-02: a field survives a schema rebuild (credential type/format/onBehalf change)
+      // by key path alone -- same key at the same nesting level is "the same field", regardless
+      // of which schema declared it. A field absent from the previous form (new to this schema,
+      // or the previous form had none yet) is simply built fresh, same as before this fix.
+      const previousControl = previousGroup?.get(field.key) ?? null;
 
+      const built = field.type === 'group'
+        ? this.buildGroupField(field, onBehalf, previousControl)
+        : this.buildControlField(field, previousControl);
+
+      controls[field.key] = built.control;
+      if (built.dirty) {
+        dirtyKeys.push(field.key);
+      }
     }
+
+    const group = new FormGroup(controls);
+    for (const key of dirtyKeys) {
+      group.get(key)!.markAsDirty();
+    }
+    return group;
   }
 
-  return new FormGroup(controls);
-}
+  private isHiddenSideGroup(field: CredentialIssuanceViewModelField, onBehalf: boolean): boolean {
+    return field.type === 'group' &&
+      !onBehalf &&
+      (field.display === 'pref_side' || field.display === 'side');
+  }
+
+  private buildControlField(
+    field: CredentialIssuanceViewModelControlField,
+    previousControl: AbstractControl | null
+  ): { control: FormControl; dirty: boolean } {
+    const validators = (field.validators ?? [])
+      .map(this.getValidatorFn)
+      .filter((v): v is ExtendedValidatorFn => !!v);
+
+    const hasPreviousValue = previousControl instanceof FormControl;
+    const initialValue = hasPreviousValue ? previousControl.value : (field.staticValueGetter?.() ?? null);
+
+    // Preserves the "unsaved changes" signal (canLeave()) across the rebuild: the new
+    // control is otherwise pristine even though it carries data the Operator already typed.
+    return {
+      control: new FormControl(initialValue, { validators }),
+      dirty: hasPreviousValue && previousControl.dirty
+    };
+  }
+
+  private buildGroupField(
+    field: CredentialIssuanceViewModelGroupField,
+    onBehalf: boolean,
+    previousControl: AbstractControl | null
+  ): { control: FormGroup; dirty: boolean } {
+    const childGroup = this.formBuilder(
+      field.groupFields ?? [],
+      onBehalf,
+      previousControl instanceof FormGroup ? previousControl : null
+    );
+    // The child already carries its own dirty state correctly (it was applied the same
+    // way, one recursion level down) -- re-marking it here is what propagates that state
+    // up through THIS group once it gains `group` as its parent.
+    return { control: childGroup, dirty: childGroup.dirty };
+  }
 
   /**
    * The one place that resolves "which delivery modes does this configId offer" (EUD-233 AD-9),
