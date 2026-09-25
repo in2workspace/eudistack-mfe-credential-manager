@@ -290,6 +290,8 @@
     },
    "credentialIssuance": {
     "title": "Emissió de LEAR Credential",
+    "backToList": "Tornar a la llista de credencials emeses",
+    "holderInfo": "Informació del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
@@ -308,7 +310,7 @@
       "message": "L'emissió no s'ha completat. Les dades del formulari s'han conservat; revisa-les i torna-ho a intentar."
     },
     "creating-credential": "Creant credencial",
-    "create-credential": "Crear credencial",
+    "create-credential": "Crear nova credencial",
     "credentialType": "Tipus de credencial",
     "cancel": "Cancel·lar",
     "mandatee": "persona delegada",

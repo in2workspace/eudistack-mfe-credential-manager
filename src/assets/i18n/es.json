@@ -315,6 +315,8 @@
   },
   "credentialIssuance": {
     "title": "Emisión de credencial",
+    "backToList": "Volver a la lista de credenciales emitidas",
+    "holderInfo": "Información del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
@@ -333,7 +335,7 @@
       "message": "La emisión no se ha completado. Los datos del formulario se han conservado; revísalos y vuelve a intentarlo."
     },
     "creating-credential": "Creando credencial",
-    "create-credential": "Crear credencial",
+    "create-credential": "Crear nueva credencial",
     "credentialType": "Tipo de credencial",
     "cancel": "Cancelar",
     "mandatee": "persona mandatada",

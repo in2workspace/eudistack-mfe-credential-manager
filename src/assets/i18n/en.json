@@ -315,6 +315,8 @@
   },
   "credentialIssuance": {
     "title": "LEAR Credential Issuance",
+    "backToList": "Back to list of issued credentials",
+    "holderInfo": "Holder information / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
@@ -333,7 +335,7 @@
       "message": "The issuance did not complete. Your form data has been kept; review it and try again."
     },
     "creating-credential": "Creating credential",
-    "create-credential": "Create credential",
+    "create-credential": "Create new credential",
     "credentialType": "Credential Type",
     "cancel": "Cancel",
     "mandatee": "mandatee",
