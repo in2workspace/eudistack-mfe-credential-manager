@@ -31,7 +31,8 @@ describe('CredentialIssuanceService', () => {
   let dialogService: MockDialogWrapperService;
   let mockMatDialog: { open: jest.Mock };
   let mockAuthService: {
-    getMandateeEmail: jest.Mock
+    getMandateeEmail: jest.Mock,
+    getMandator: jest.Mock
   };
   let issuableTypes: ReturnType<typeof signal<string[]>>;
   let metadataLoadFailed: ReturnType<typeof signal<boolean>>;
@@ -60,7 +61,10 @@ describe('CredentialIssuanceService', () => {
     mockMatDialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
     mockProcedureService = { createProcedure: jest.fn() }
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
-    mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
+    mockAuthService = {
+      getMandateeEmail: jest.fn(() => 'mandatee@example.com'),
+      getMandator: jest.fn(() => of(null))
+    };
     // Backed by real signals: if these were fixed values, the service's computed
     // signals would memoize and we couldn't test the recompute after loadMetadata().
     issuableTypes = signal<string[]>(['learcredential.employee', 'learcredential.machine']);

@@ -24,6 +24,8 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
+import { AuthService } from 'src/app/core/services/auth.service';
+import { convertToOrderedArray, holderPanelFieldsOrder } from '../helpers/fields-order-helpers';
 
 /** Issuance-specific wording for the shared "pending edits will be lost" prompt. */
 const UNSAVED_ISSUANCE_ALERT_KEY = 'credentialIssuance.unloadAlert';
@@ -143,6 +145,18 @@ export class CredentialIssuanceService {
     ? this.issuanceViewModelsBuilder(this.selectedCredentialType$()!, this.onBehalf$(), this.selectedConfigClaims$())
     : null
   );
+
+  // HOLDER PANEL
+  private readonly authService = inject(AuthService);
+  private readonly mandator$ = toSignal(this.authService.getMandator(), { initialValue: null });
+
+  public holderInfo$ = computed<{ key: string; value: string }[]>(() => {
+    if (this.onBehalf$()) return [];
+    const mandator = this.mandator$();
+    if (!mandator) return [];
+    return convertToOrderedArray(mandator, holderPanelFieldsOrder)
+      .map(({ key, value }) => ({ key: String(key), value: String(value ?? '') }));
+  });
 
   // SIDE (STATIC CREDENTIAL DATA)
   public staticData$ = computed<IssuanceStaticViewModel | null>(() => {
