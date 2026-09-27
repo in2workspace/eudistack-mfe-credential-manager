@@ -1,7 +1,6 @@
 
 import { MatButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -33,7 +32,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
     // private key material they handle cannot outlive the form. Inherited from the deleted
     // KeyGeneratorComponent, which used to be the (wrong, component-local) home for the first one.
     providers: [CredentialIssuanceService, KeyGeneratorService, IssuanceHolderKeyService],
-    imports: [AlertBannerComponent, CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
