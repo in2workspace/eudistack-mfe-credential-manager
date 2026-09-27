@@ -11,7 +11,6 @@ import {
   organizationIdentifierField,
   serialNumberField,
 } from './common-issuance-schema-fields';
-import { KeyGeneratorComponent } from '../../components/key-generator/key-generator.component';
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 import { CredentialIssuanceTypedViewModelSchema } from 'src/app/core/models/entity/lear-credential-issuance';
 
@@ -64,20 +63,13 @@ describe('LearCredentialMachineIssuanceSchemaProvider', () => {
       schema = service.getSchema();
     });
 
-    it('includes the keys group with KeyGeneratorComponent', () => {
+    // EUD-233 AC-12.1: structural negative -- no `keys` group, no `didKey` control, no
+    // KeyGeneratorComponent outlet. The holder key pair is generated invisibly in the submit
+    // command (IssuanceHolderKeyService, AD-6), never rendered as a form step.
+    it('does not include a keys group (AC-12.1)', () => {
       (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
       const keysGroup = schema.schema.find(f => f.key === 'keys');
-      expect(keysGroup).toBeDefined();
-      expect(keysGroup?.type).toBe('group');
-      expect(keysGroup?.display).toBe('main');
-      expect(keysGroup?.custom?.component).toBe(KeyGeneratorComponent);
-
-      const didField = keysGroup?.groupFields[0];
-      expect(didField).toMatchObject({
-        key: 'didKey',
-        type: 'control',
-        validators: [{ name: 'required' }],
-      });
+      expect(keysGroup).toBeUndefined();
     });
 
     it('includes the mandatee group with domain and ipAddress fields', () => {

@@ -35,6 +35,14 @@ describe('ProvisionalFieldValidationRuleResolver', () => {
     it('does not mark a field outside the provisional set as required without an explicit signal', () => {
       expect(resolver.resolve({ key: 'middleName' }).required).toBe(false);
     });
+
+    it('does not mark serialNumber as required (it is an optional field)', () => {
+      expect(resolver.resolve({ key: 'serialNumber' })).toEqual({
+        key: 'serialNumber',
+        required: false,
+        basicType: 'text',
+      });
+    });
   });
 
   describe('EC-01 — no basicType declared', () => {

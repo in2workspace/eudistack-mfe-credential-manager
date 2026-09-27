@@ -22,6 +22,12 @@ export interface CredentialConfigurationDto {
   /** mso_mdoc. */
   doctype?: string;
   credential_metadata?: CredentialMetadataDto;
+  /**
+   * Present when the issuer requires a wallet key proof for this type, i.e. the credential is
+   * cryptographically bound to a holder key (ADR-110). Its mere presence is the signal; the inner
+   * shape (proof type -> supported signing algorithms) is the wallet's concern, not the form's.
+   */
+  proof_types_supported?: Record<string, unknown>;
 }
 
 export interface CredentialIssuerMetadataDto {

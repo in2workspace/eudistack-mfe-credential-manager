@@ -9,7 +9,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { TenantService } from 'src/app/core/services/tenant.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialCatalogComponent } from './credential-catalog.component';
-import { CredentialCatalogService } from './credential-catalog.service';
+import { CredentialCatalogAdminService } from './credential-catalog-admin.service';
 import { CredentialCatalogEntry } from './catalog.models';
 
 describe('CredentialCatalogComponent', () => {
@@ -62,7 +62,7 @@ describe('CredentialCatalogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [CredentialCatalogComponent, TranslateModule.forRoot(), NoopAnimationsModule],
       providers: [
-        { provide: CredentialCatalogService, useValue: catalogService },
+        { provide: CredentialCatalogAdminService, useValue: catalogService },
         { provide: AuthService, useValue: authService },
         { provide: DialogWrapperService, useValue: dialog },
         { provide: TenantService, useValue: tenantService }

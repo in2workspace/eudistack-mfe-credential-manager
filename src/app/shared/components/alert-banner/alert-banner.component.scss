@@ -1,0 +1,19 @@
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px 12px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-warning, #fff4e5);
+  color: var(--text-warning, #7a4a00);
+
+  &__message {
+    flex: 1;
+  }
+
+  &__dismiss {
+    flex-shrink: 0;
+  }
+}

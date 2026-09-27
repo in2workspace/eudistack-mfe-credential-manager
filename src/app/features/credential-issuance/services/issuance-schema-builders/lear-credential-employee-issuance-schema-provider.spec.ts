@@ -212,18 +212,29 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     it('AC-06/AC-07: required-ness for non-overridden keys is derived from the EUD-73 generic resolver, not a static list (regression guard)', () => {
       // firstName/lastName/email/employeeId short-circuit via fieldOverrides (PROVISIONAL_MANDATEE_FIELDS)
       // and never reach the resolver — this test needs keys that actually go through
-      // FieldValidationRuleResolver.resolve(). 'serialNumber' is in its provisional required
+      // FieldValidationRuleResolver.resolve(). 'organization' is in its provisional required
       // set (field-validation-rule.resolver.ts); 'nickname' is not.
       const claims = [
-        { path: ['mandatee', 'serialNumber'], display: [{ name: 'Serial number', locale: 'en' }] },
+        { path: ['mandatee', 'organization'], display: [{ name: 'Organization', locale: 'en' }] },
         { path: ['mandatee', 'nickname'], display: [{ name: 'Nickname', locale: 'en' }] }
       ];
 
       const { schema } = service.getSchema(false, claims);
-      const [serialNumberControl, nicknameControl] = mandateeGroup(schema).groupFields;
+      const [organizationControl, nicknameControl] = mandateeGroup(schema).groupFields;
 
-      expect(serialNumberControl.validators).toEqual(expect.arrayContaining([{ name: 'required' }]));
+      expect(organizationControl.validators).toEqual(expect.arrayContaining([{ name: 'required' }]));
       expect(nicknameControl.validators).not.toEqual(expect.arrayContaining([{ name: 'required' }]));
+    });
+
+    it('does not make a derived serialNumber claim required (it is an optional field)', () => {
+      const claims = [
+        { path: ['mandatee', 'serialNumber'], display: [{ name: 'Serial number', locale: 'en' }] }
+      ];
+
+      const { schema } = service.getSchema(false, claims);
+      const [serialNumberControl] = mandateeGroup(schema).groupFields;
+
+      expect(serialNumberControl.validators).not.toEqual(expect.arrayContaining([{ name: 'required' }]));
     });
 
     it('should keep the provisional validators for known keys (no regression)', () => {

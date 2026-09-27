@@ -7,6 +7,7 @@ import { ServeErrorInterceptor } from "./server-error-interceptor";
 import { DialogComponent } from "src/app/shared/components/dialog/dialog-component/dialog.component";
 import { TenantService } from "../services/tenant.service";
 import { signal } from "@angular/core";
+import { API_PATH } from '../constants/api-paths.constants';
 
 const TEST_IAM_URL = 'https://verifier.test.example.org';
 
@@ -261,9 +262,9 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
     });
 
     it.each([
-      ['a path relative to the base href', 'issuer/admin/v1/credential-catalog'],
-      ['an absolute path', '/issuer/admin/v1/credential-catalog'],
-      ['a fully qualified URL', 'https://kpmg.eudistack.net/issuer/admin/v1/credential-catalog'],
+      ['a path relative to the base href', `issuer${API_PATH.CREDENTIAL_CATALOG}`],
+      ['an absolute path', API_PATH.CREDENTIAL_CATALOG],
+      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_CATALOG}`],
     ])('should rethrow without a dialog for %s (any status, e.g. an unexpected 200-with-HTML)', (_label, url) => {
       const httpErrorResponse = new HttpErrorResponse({ status: 200, statusText: 'OK', url });
       httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
