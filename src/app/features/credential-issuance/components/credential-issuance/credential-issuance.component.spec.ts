@@ -29,6 +29,7 @@ describe('CredentialIssuanceComponent', () => {
       selectedCredentialType$: signal(undefined) as WritableSignal<any>,
       credentialFormSchema$: signal(null) as Signal<any>,
       staticData$: signal(null) as Signal<any>,
+      holderInfo$: signal([]) as Signal<any>,
       form$: signal(emptyFormGroup) as Signal<FormGroup>,
       formValue$: signal({ foo: 'bar' }) as Signal<Record<string, any>>,
       isFormValid$: signal(false) as WritableSignal<boolean>,
@@ -74,6 +75,9 @@ describe('CredentialIssuanceComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
+
+  const submitButton = (): HTMLButtonElement =>
+    fixture.nativeElement.querySelector('button[type="submit"]');
 
   it('should create the component', () => {
     expect(component).toBeTruthy();
@@ -146,9 +150,6 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   describe('required field validation (AC-07)', () => {
-    const submitButton = (): HTMLButtonElement =>
-      fixture.nativeElement.querySelector('button[type="submit"]');
-
     beforeEach(() => {
       // Minimal schema with one required field, equivalent to the mandatee group derived in T8.
       const form = new FormGroup({
@@ -278,10 +279,10 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   describe('EUD-73 — ES-02 fail-closed (no schema means the form does not render)', () => {
-    it('does not render <form> nor the submit button when credentialFormSchema$ is null', () => {
+    it('does not render <form> and keeps the submit button disabled when credentialFormSchema$ is null', () => {
       // mockService.credentialFormSchema$ is already signal(null) by default in the beforeEach
       expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
-      expect(fixture.debugElement.query(By.css('button[type="submit"]'))).toBeFalsy();
+      expect(submitButton().disabled).toBe(true);
     });
   });
 });

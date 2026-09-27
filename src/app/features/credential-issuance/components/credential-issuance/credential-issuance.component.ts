@@ -1,16 +1,16 @@
 
 import { MatButton } from '@angular/material/button';
-import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { TitleCasePipe, KeyValuePipe, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatIcon } from '@angular/material/icon';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
@@ -24,7 +24,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
 @Component({
     selector: 'app-credential-issuance',
     providers: [CredentialIssuanceService],
-    imports: [CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
@@ -52,6 +52,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
 
   public staticData$: Signal<IssuanceStaticViewModel | null>;
+  public holderInfo$: Signal<{ key: string; value: string }[]>;
   public form$: Signal <FormGroup<Record<string, FormGroup>>>;
   public formValue$: Signal<Record<string, any>>;
   public isFormValid$: Signal<boolean>;
@@ -85,6 +86,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.selectedDelivery$ = this.issuanceService.selectedDelivery$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
+    this.holderInfo$ = this.issuanceService.holderInfo$;
     this.form$ = this.issuanceService.form$;
     this.formValue$ = this.issuanceService.formValue$;
     this.isFormValid$ = this.issuanceService.isFormValid$;
