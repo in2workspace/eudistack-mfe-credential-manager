@@ -1,78 +1,64 @@
+@let scope = activeScope();
+@let group = scopeGroup(scope);
+
 <div class="power-container">
-  <!-- Power Selector Section -->
   <h2 class="title">{{ 'power.power' | translate }}</h2>
-  <div class="power-selector-section">
-    <!-- Domain & Function titles -->
-    <div class="domain-function">
-      <h3 class="domain-title first-col">{{ "power.domain" | translate }}</h3>
-      <h3>{{ "power.function" | translate }}</h3>
-    </div>
-    <!-- Selector container-->
-    <div class="selector-container">
-      <!-- Domain -->
-      <p class="domain first-col">{{ sysTenant }}</p>
-      <!--  Selector -->
-      <mat-form-field  appearance="fill">
-        <mat-label>{{ 'power.select' | translate }}</mat-label>
-        <mat-select [(value)]="selectedPower">
-          <mat-select-trigger>
-            @if (selectedPower) {
-              <span>{{ ("power." + selectedPower.function.toLocaleLowerCase()) | translate }}</span>
-            }
-          </mat-select-trigger>
-          @for (power of selectorPowers; track power.function) {
-            <mat-option 
-              [value]="power"
-              [disabled]="power.isDisabled">
-              {{ ("power." + power.function.toLocaleLowerCase() | translate) }}
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <!-- Add button -->
-      <button 
-        mat-raised-button 
-        color="primary"
+  <p class="subtitle">{{ 'power.subtitle' | translate }}</p>
+
+  <div class="scope-segment" role="tablist">
+    @for (tab of scopes; track tab) {
+      <button
         type="button"
-        [disabled]="!selectedPower || selectedPower.isDisabled"
-        (click)="addPower(selectedPower!.function)">
-        {{ 'power.add' | translate }}
+        role="tab"
+        class="scope-tab"
+        [class.active]="scope === tab"
+        [attr.aria-selected]="scope === tab"
+        (click)="activeScope.set(tab)">
+        <span class="scope-tab-label">{{ scopeLabel(tab) }}</span>
+        @if (scopeCount(tab) > 0) {
+          <span class="scope-count">{{ scopeCount(tab) }}</span>
+        }
       </button>
-    </div>
+    }
   </div>
 
+  <div class="functions-card">
+    <h3 class="functions-title">{{ 'power.function' | translate }}</h3>
 
-  <!-- Added powers Section -->
-  @if (form().controls | keyvalue) {
-    <div class="added-powers-section">     
-      <form [formGroup]="form()" class="powers-form" novalidate>
-        @for (powerControl of form().controls | keyvalue: keepOrder; track powerControl.key) {
-            <p>{{ ( "power." + powerControl.key.toLocaleLowerCase()| translate) }}</p>
-            <div class="functions-container" [formGroupName]="powerControl.key">
-              <!-- Actions Toggle Section -->
-                <div class="toggles-container">
-                  @for (actionControl of getFormGroup(powerControl.value).controls | keyvalue; track actionControl.key) {
-                      <mat-slide-toggle 
-                        [formControlName]="actionControl.key"
-                        color="primary">
-                        {{ ( "power." +  actionControl.key.toLocaleLowerCase() | translate )}}
-                      </mat-slide-toggle>
-                  }
-                </div>
-            </div>
-            <button 
-              type="button"
-              mat-mini-fab 
-              class="small-icon-button delete-power"
-              color="warn"
-              (click)="removePower(powerControl.key)"
-              aria-label="Remove power">
-              <mat-icon class="remove-icon">delete</mat-icon>
-            </button>
+    @if (group) {
+      <div [formGroup]="group">
+        @for (power of selectorPowers; track power.function) {
+          @let enabled = isPowerEnabled(scope, power.function);
+          <div class="function-row">
+            <mat-slide-toggle
+              class="function-switch"
+              [checked]="enabled"
+              (change)="onPowerToggle(scope, power.function, $event)">
+              {{ ( "power." + power.function.toLocaleLowerCase() | translate )}}
+            </mat-slide-toggle>
+
+            @if (enabled) {
+              <div class="action-list" [formGroupName]="power.function">
+                @for (action of power.action; track action) {
+                  <mat-checkbox class="round-checkbox" [formControlName]="action">
+                    {{ 'power.' + action.toLocaleLowerCase() | translate }}
+                  </mat-checkbox>
+                }
+              </div>
+            } @else {
+              <div class="action-list">
+                @for (action of power.action; track action) {
+                  <mat-checkbox class="round-checkbox" disabled>
+                    {{ 'power.' + action.toLocaleLowerCase() | translate }}
+                  </mat-checkbox>
+                }
+              </div>
+            }
+          </div>
         }
-      </form>
-    </div>
-  }
+      </div>
+    }
+  </div>
 
   <div>
     @if(form().hasError('noPower')){

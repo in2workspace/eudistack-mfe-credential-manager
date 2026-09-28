@@ -65,7 +65,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           emailAddress: 'bob@example.com',
           organization: 'Beta Ltd',
@@ -89,7 +89,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           firstName: 'Eve',
           lastName: 'Doe',
@@ -135,7 +135,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           commonName: 'MachineCo',
           organization: 'Org',
@@ -157,11 +157,13 @@ describe('IssuanceRequestFactoryService', () => {
 
   it('should parse power errors for unknown base and no actions', () => {
     const powerForm: IssuanceRawPowerForm = {
-      UnknownFunc: { Foo: true },
-      Onboarding: { Execute: false }
+      domain: {
+        UnknownFunc: { Foo: true },
+        Onboarding: { Execute: false }
+      }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
 
     expect(parsed).toEqual([]);
     expect(console.error).toHaveBeenCalledWith(
@@ -172,8 +174,47 @@ describe('IssuanceRequestFactoryService', () => {
     );
   });
 
+  it('should stamp organization-scoped powers with type=organization and the org as domain', () => {
+    const powerForm: IssuanceRawPowerForm = {
+      organization: { Onboarding: { Execute: true } }
+    } as any;
+
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+
+    expect(parsed).toEqual([
+      { type: 'organization', domain: 'Acme Ltd', function: 'Onboarding', action: ['Execute'] }
+    ]);
+  });
+
+  it('should emit both scopes of the same function as two distinct powers', () => {
+    const powerForm: IssuanceRawPowerForm = {
+      domain: { Onboarding: { Execute: true } },
+      organization: { ProductOffering: { Create: true, Update: false } }
+    } as any;
+
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+
+    expect(parsed).toEqual([
+      { type: 'domain', domain: 'TENANT', function: 'Onboarding', action: ['Execute'] },
+      { type: 'organization', domain: 'Acme Ltd', function: 'ProductOffering', action: ['Create'] }
+    ]);
+  });
+
+  it('should drop organization-scoped powers when the mandator carries no organization', () => {
+    const powerForm: IssuanceRawPowerForm = {
+      domain: { Onboarding: { Execute: true } },
+      organization: { ProductOffering: { Create: true } }
+    } as any;
+
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', '');
+
+    expect(parsed).toEqual([
+      { type: 'domain', domain: 'TENANT', function: 'Onboarding', action: ['Execute'] }
+    ]);
+  });
+
   it('should return empty array when power form is empty', () => {
-    const parsed = (service as any).parsePower({}, 'learcredential.employee');
+    const parsed = (service as any).parsePower({}, 'learcredential.employee', 'Acme Ltd');
     expect(parsed).toEqual([]);
   });
 
@@ -181,7 +222,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: null,
         mandatee: { id: 'M1', email: 'emp@example.com' }
       }
@@ -195,7 +236,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: null,
         mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
@@ -211,7 +252,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           firstName: 'Eve',
           lastName: 'Doe',
@@ -244,7 +285,7 @@ describe('IssuanceRequestFactoryService', () => {
         ]
       },
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandatee: { domain: 'machine.com', ipAddress: '10.0.0.1' }
       }
     };
@@ -267,7 +308,7 @@ describe('IssuanceRequestFactoryService', () => {
       onBehalf: false,
       staticData: {},
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
       }
     };
@@ -278,11 +319,13 @@ describe('IssuanceRequestFactoryService', () => {
 
   it('should parse multiple powers correctly', () => {
     const powerForm: IssuanceRawPowerForm = {
-      Onboarding: { Execute: true },
-      ProductOffering: { Create: true, Update: true, Upload: false }
+      domain: {
+        Onboarding: { Execute: true },
+        ProductOffering: { Create: true, Update: true, Upload: false }
+      }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
 
     expect(parsed).toEqual([
       {
@@ -306,7 +349,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           firstName: 'Alice',
           lastName: 'Smith',
@@ -329,7 +372,7 @@ describe('IssuanceRequestFactoryService', () => {
     const credentialData: any = {
       onBehalf: true,
       formData: {
-        power: { Onboarding: { Execute: true } },
+        power: { domain: { Onboarding: { Execute: true } } },
         mandator: {
           firstName: 'Bob',
           lastName: 'Jones',

@@ -1,6 +1,6 @@
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { IssuancePowerComponent, TempIssuanceFormPowerSchema } from './issuance-power.component';
+import { IssuancePowerComponent } from './issuance-power.component';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -16,18 +16,21 @@ describe('IssuancePowerComponent', () => {
   let fixture: ComponentFixture<IssuancePowerComponent>;
   let authService: Partial<AuthService>;
   let dialog: Partial<DialogWrapperService>;
-  let translate: Partial<TranslateService>;
   const proto = IssuancePowerComponent.prototype as any;
   let mockIssuanceService: Partial<CredentialIssuanceService>;
+
+  const attachForm = (cmp: IssuancePowerComponent): FormGroup => {
+    const fg = new FormGroup({});
+    (cmp as any).form = () => fg;
+    return fg;
+  };
 
   beforeEach(async () => {
     proto.updateMessages = () => () => {};
     proto.data = () => [];
     proto.resetForm = () => {};
-    proto.mapToTempPowerSchema = function(powers: IssuanceFormPowerSchema[]) {
-      return (powers || [])
-        .map(p => ({ ...p, isDisabled: false }))
-        .filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
+    proto.filterVisiblePowers = function(powers: IssuanceFormPowerSchema[]) {
+      return (powers || []).filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
     };
     Object.defineProperty(proto, 'powersInput', {
       configurable: true,
@@ -35,7 +38,7 @@ describe('IssuancePowerComponent', () => {
         if (value !== undefined) {
           (this as any).resetForm();
           this['_powersInput'] = value || [];
-          this.selectorPowers = (this as any).mapToTempPowerSchema(value);
+          this.selectorPowers = (this as any).filterVisiblePowers(value);
         }
       }
     });
@@ -43,9 +46,11 @@ describe('IssuancePowerComponent', () => {
       updateAlertMessages: jest.fn()
     };
 
-    authService = { hasAdminOrganizationIdentifier: jest.fn() };
+    authService = {
+      hasAdminOrganizationIdentifier: jest.fn(),
+      extractRawMandator: jest.fn().mockReturnValue({ organization: 'Acme Ltd' } as any)
+    };
     dialog = { openDialogWithCallback: jest.fn() };
-    translate = { instant: jest.fn((key: string) => `t:${key}`), get: jest.fn().mockReturnValue(of(undefined)) };
 
     await TestBed.configureTestingModule({
       imports: [IssuancePowerComponent, ReactiveFormsModule, TranslateModule.forRoot(), NoopAnimationsModule],
@@ -59,25 +64,18 @@ describe('IssuancePowerComponent', () => {
 
     fixture = TestBed.createComponent(IssuancePowerComponent);
     component = fixture.componentInstance;
+    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
   });
 
   it('should create the component', () => {
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    Object.defineProperty(component, 'form', {
-      value: () => new FormGroup({}),
-      configurable: true
-    });
+    attachForm(component);
     component.powersInput = [];
     fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('organizationIdentifierIsAdmin is truthy if the service indicates so', () => {
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    Object.defineProperty(component, 'form', {
-      value: () => new FormGroup({}),
-      configurable: true
-    });
+    attachForm(component);
     component.organizationIdentifierIsAdmin = true;
     component.powersInput = [];
     fixture.detectChanges();
@@ -86,118 +84,118 @@ describe('IssuancePowerComponent', () => {
     (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(false);
     const f2 = TestBed.createComponent(IssuancePowerComponent);
     const cmp2 = f2.componentInstance;
-    Object.defineProperty(cmp2, 'form', {
-      value: () => new FormGroup({}),
-      configurable: true
-    });
+    attachForm(cmp2);
     cmp2.organizationIdentifierIsAdmin = false;
     cmp2.powersInput = [];
     f2.detectChanges();
     expect(cmp2.organizationIdentifierIsAdmin).toBeFalsy();
   });
 
-  it('keepOrder always returns 0', () => {
-    expect(component.keepOrder('x', 'y')).toBe(0);
+  it('ngOnInit creates one FormGroup per power scope', () => {
+    const fg = attachForm(component);
+    component.ngOnInit();
+
+    expect(fg.contains('domain')).toBeTruthy();
+    expect(fg.contains('organization')).toBeTruthy();
   });
 
-  it('addPower adds a control and disables the selector', () => {
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    const schema: TempIssuanceFormPowerSchema = {
-      function: 'power1',
-      action: ['act1','act2'],
-      isAdminRequired: false,
-      isDisabled: false
-    };
-    component.powersInput = [schema];
-    component.selectedPower = schema;
-    const fg = new FormGroup({});
-    (component as any).form = () => fg;
+  it('scopeLabel resolves the tenant for domain and the mandator organization for organization', () => {
+    attachForm(component);
+    component.ngOnInit();
 
-    component.addPower('power1');
+    expect(component.scopeLabel('domain')).toBe('TENANT');
+    expect(component.scopeLabel('organization')).toBe('Acme Ltd');
+  });
 
-    expect(fg.contains('power1')).toBeTruthy();
-    const child = fg.get('power1') as any;
-    expect((child.get('act1') as FormControl)).toBeTruthy();
-    expect((child.get('act2') as FormControl)).toBeTruthy();
+  it('addPower attaches the actions under the requested scope only', () => {
+    const fg = attachForm(component);
+    (component as any).data = () => [{ function: 'power1', action: ['act1', 'act2'], isAdminRequired: false }];
+    component.ngOnInit();
+    component.addPower('organization', 'power1');
 
-    const p = component.selectorPowers.find(pw => pw.function==='power1')!;
-    expect(p.isDisabled).toBeTruthy();
-    expect(component.selectedPower).toBeUndefined();
+    const organization = fg.get('organization') as FormGroup;
+    const domain = fg.get('domain') as FormGroup;
+    expect(organization.contains('power1')).toBeTruthy();
+    expect(domain.contains('power1')).toBeFalsy();
+
+    const child = organization.get('power1') as FormGroup;
+    expect(child.get('act1') as FormControl).toBeTruthy();
+    expect(child.get('act2') as FormControl).toBeTruthy();
+  });
+
+  it('scopeCount and isPowerEnabled report per scope', () => {
+    attachForm(component);
+    (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
+    component.ngOnInit();
+
+    expect(component.scopeCount('domain')).toBe(0);
+    expect(component.isPowerEnabled('domain', 'pw')).toBeFalsy();
+
+    component.addPower('domain', 'pw');
+
+    expect(component.scopeCount('domain')).toBe(1);
+    expect(component.scopeCount('organization')).toBe(0);
+    expect(component.isPowerEnabled('domain', 'pw')).toBeTruthy();
+    expect(component.isPowerEnabled('organization', 'pw')).toBeFalsy();
   });
 
   it('addPower with undefined actions logs an error and does not modify the form', () => {
     console.error = jest.fn();
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    const schema: IssuanceFormPowerSchema = {
-      function: 'p2',
-      action: undefined as any,
-      isAdminRequired: false
-    };
-    component.powersInput = [schema];
-    const fg = new FormGroup({});
-    (component as any).form = () => fg;
+    const fg = attachForm(component);
+    (component as any).data = () => [{ function: 'p2', action: undefined as any, isAdminRequired: false }];
+    component.ngOnInit();
 
-    component.addPower('p2');
+    component.addPower('domain', 'p2');
+
     expect(console.error).toHaveBeenCalledWith('No actions for this power');
-    expect(fg.contains('p2')).toBeFalsy();
+    expect((fg.get('domain') as FormGroup).contains('p2')).toBeFalsy();
   });
 
-  it('removePower opens the dialog then removes the control and enables the selector', fakeAsync(() => {
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    const schema: IssuanceFormPowerSchema = {
-      function: 'pw',
-      action: ['a'],
-      isAdminRequired: false
-    };
-    component.powersInput = [schema];
-    const fg = new FormGroup({});
-    (component as any).form = () => fg;
-    component.addPower('pw');
+  it('removePower drops an untouched power without prompting', () => {
+    const fg = attachForm(component);
+    (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
+    component.ngOnInit();
+    component.addPower('domain', 'pw');
 
-    (dialog.openDialogWithCallback as jest.Mock).mockImplementation((_, data: DialogData, cb: any) => {
+    component.removePower('domain', 'pw');
+
+    expect((fg.get('domain') as FormGroup).contains('pw')).toBeFalsy();
+    expect(dialog.openDialogWithCallback).not.toHaveBeenCalled();
+  });
+
+  it('removePower confirms before discarding actions the operator already selected', fakeAsync(() => {
+    const fg = attachForm(component);
+    (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
+    component.ngOnInit();
+    component.addPower('domain', 'pw');
+    (fg.get('domain.pw.a') as FormControl).setValue(true);
+
+    (dialog.openDialogWithCallback as jest.Mock).mockImplementation((_: any, data: DialogData, cb: any) => {
       expect(data.title).toBe('power.remove-dialog.title');
       expect(data.message).toBe('power.remove-dialog.message (power.pw)');
       return cb();
     });
 
-    component.removePower('pw');
+    component.removePower('domain', 'pw');
     tick();
 
-    expect(fg.contains('pw')).toBeFalsy();
-    const p = component.selectorPowers.find(x => x.function==='pw')!;
-    expect(p.isDisabled).toBeFalsy();
+    expect((fg.get('domain') as FormGroup).contains('pw')).toBeFalsy();
   }));
 
-  it('ngOnInit initializes data() and subscribes to valueChanges', fakeAsync(() => {
-    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
-    const initial: IssuanceFormPowerSchema[] = [
-      { function: 'f', action: ['x'], isAdminRequired: false }
-    ];
-    (component as any).data = () => initial;
-    const fg = new FormGroup({});
-    (component as any).form = () => fg;
-
+  it('the form is invalid until every enabled power carries at least one action', () => {
+    const fg = attachForm(component);
+    (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
     component.ngOnInit();
-    expect(component['_powersInput']).toEqual(initial);
-    expect(component.selectorPowers.length).toBe(1);
 
-    fg.addControl('f', new FormGroup({ x: new FormControl(false) }));
-    fg.patchValue({ f: { x: true } });
-    tick();
+    expect(fg.hasError('noPower')).toBeTruthy();
 
-  }));
+    component.addPower('organization', 'pw');
+    expect(fg.hasError('noPower')).toBeFalsy();
+    expect(fg.hasError('noActionPerPower')).toBeTruthy();
 
-  it('getPowerByFunction returns the correct element', () => {
-    component.selectorPowers = [
-      { function: 'a', action: [], isAdminRequired: false, isDisabled: false }
-    ];
-    expect(component.getPowerByFunction('a')).toEqual(component.selectorPowers[0]);
-    expect(component.getPowerByFunction('nope')).toBeUndefined();
-  });
-
-  it('getFormGroup performs the correct cast', () => {
-    const fg = new FormGroup({});
-    expect(component.getFormGroup(fg)).toBe(fg);
+    (fg.get('organization.pw.a') as FormControl).setValue(true);
+    fg.updateValueAndValidity();
+    expect(fg.hasError('noActionPerPower')).toBeFalsy();
   });
 
 });

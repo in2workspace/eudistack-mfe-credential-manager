@@ -178,7 +178,11 @@ export interface IssuanceRawCredentialPayload {
 }
 
 // Power component types
-export type IssuanceRawPowerForm = Partial<Record<TmfFunction, Record<TmfAction, boolean>>>;
+export type PowerScope = 'domain' | 'organization';
+export const POWER_SCOPES: readonly PowerScope[] = ['domain', 'organization'];
+
+export type IssuanceRawPowerScopeForm = Partial<Record<TmfFunction, Record<TmfAction, boolean>>>;
+export type IssuanceRawPowerForm = Partial<Record<PowerScope, IssuanceRawPowerScopeForm>>;
 
 export interface IssuanceFormPowerSchema{
   //todo: in the future, if there are multiple domains, add a "domain" field
