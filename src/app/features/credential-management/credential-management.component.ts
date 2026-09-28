@@ -93,7 +93,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /** Total rows currently matching the compound filter — drives the "X results" line. */
   public readonly resultsCount = signal(0);
 
-  /** Currently selected "Sort by" option — matches the table's default sort (Updated, desc). */
+  /** Currently selected "Sort by" option — matches the data's default order (Updated, desc). */
   public readonly sortOption = signal<SortByOption>('recentlyUpdated');
 
   /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */
@@ -323,7 +323,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       next: (data: CredentialProceduresResponse) => {
         // No separate Archived view — every status (including ARCHIVED) loads
         // into the same table; the filter predicate hides ARCHIVED by default.
-        const withClass = this.statusService.addStatusClass(data.credential_procedures);
+        // Pre-sorted instead of via matSortActive: the default order must match
+        // "Sort by: Recently updated" without any column header looking selected.
+        const withClass = this.statusService.addStatusClass(data.credential_procedures)
+          .sort((a, b) => this.updatedTime(b) - this.updatedTime(a));
         this.dataSource.data = withClass;
         this.originData = withClass;
 
@@ -421,6 +424,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return value.toLowerCase();
   }
 
+  private updatedTime(item: CredentialProcedureBasicInfo): number {
+    const t = Date.parse(item.credential_procedure?.updated ?? '');
+    return Number.isFinite(t) ? t : 0;
+  }
+
   private setDataSortingAccessor(): void{
     this.dataSource.sortingDataAccessor = (item: CredentialProcedureBasicInfo, property: string) => {
       const procedure = item.credential_procedure;
@@ -442,8 +450,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return Number.isFinite(t) ? t : 0;
         }
         case 'updated': {
-          const t = Date.parse(procedure?.updated ?? '');
-          return Number.isFinite(t) ? t : 0;
+          return this.updatedTime(item);
         }
         case 'credential_type': {
           // Sorts by the displayed (grouped) label, not the raw type string, so
