@@ -586,5 +586,10 @@
     "searchByOrganization": "Buscar por nombre de organización",
     "noOptions": "Sin opciones",
     "resultsCount": "{{count}} resultados"
+  },
+  "pagination": {
+    "back": "Atrás",
+    "next": "Siguiente",
+    "resultsPerPage": "Resultados por página"
   }
 }

@@ -1,7 +1,6 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
 import { Router } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
@@ -26,9 +25,8 @@ import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translatio
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
+import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
 import { RouterLink } from '@angular/router';
-
-
 
 @Component({
     selector: 'app-credential-management',
@@ -56,18 +54,17 @@ import { RouterLink } from '@angular/router';
         MatRow,
         NgClass,
         MatTooltipModule,
-        MatPaginator,
         DatePipe,
         SubjectComponent,
         TranslatePipe,
         CapitalizePipe,
         SkeletonLoaderComponent,
         FilterDropdownComponent,
+        PaginationComponent,
         RouterLink,
     ],
 })
 export class CredentialManagementComponent implements OnInit, AfterViewInit {
-  @ViewChild(MatPaginator) public paginator!: MatPaginator;
   @ViewChild(MatSort) public sort!: MatSort;
   @ViewChild('searchInput') public searchInput!: ElementRef<HTMLInputElement>;
   public dataSource = new MatTableDataSource<CredentialProcedureWithClass>();
@@ -313,7 +310,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
         this.isLoading = false;
         this.cd.detectChanges();
-        this.dataSource.paginator = this.paginator;
+        // dataSource.paginator is wired by PaginationComponent itself (it owns
+        // the real MatPaginator internally now — see its doc comment).
         this.setDataSortingAccessor();
         this.dataSource.sort = this.sort;
       },

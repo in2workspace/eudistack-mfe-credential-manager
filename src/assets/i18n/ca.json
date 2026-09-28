@@ -561,5 +561,10 @@
     "searchByOrganization": "Cerca pel nom de l'organització",
     "noOptions": "Sense opcions",
     "resultsCount": "{{count}} resultats"
+  },
+  "pagination": {
+    "back": "Enrere",
+    "next": "Següent",
+    "resultsPerPage": "Resultats per pàgina"
   }
 }
