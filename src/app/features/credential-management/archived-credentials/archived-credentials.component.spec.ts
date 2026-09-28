@@ -5,13 +5,15 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
+import { AuthService } from 'src/app/core/services/auth.service';
+import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideHttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
-import { ElementRef } from '@angular/core';
+import { ElementRef, signal } from '@angular/core';
 
 // helper to mock search input
 function createMockInput(initialValue = '') {
@@ -33,6 +35,8 @@ function makeProc(id: string, status: string): CredentialProcedureBasicInfo {
       credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
       email: 'a@b.com',
       organization_identifier: 'VATES-000000',
+      issued_at: '2025-01-01T00:00:00Z',
+      expires_at: '2026-01-01T00:00:00Z',
     },
   };
 }
@@ -44,8 +48,14 @@ describe('ArchivedCredentialsComponent', () => {
   let credentialProcedureSpy: jest.SpyInstance;
   let router: Router;
   let statusService: LifeCycleStatusService;
+  let authService: jest.Mocked<any>;
 
   beforeEach(async () => {
+    authService = {
+      roleType: signal(RoleType.TENANT_ADMIN),
+      tenantType: signal('multi_org'),
+    } as jest.Mocked<any>;
+
     await TestBed.configureTestingModule({
       imports: [
         NoopAnimationsModule,
@@ -58,6 +68,7 @@ describe('ArchivedCredentialsComponent', () => {
       providers: [
         CredentialProcedureService,
         TranslateService,
+        { provide: AuthService, useValue: authService },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => '1' } } },
@@ -174,10 +185,10 @@ describe('ArchivedCredentialsComponent', () => {
     }));
   });
 
-  describe('onRowClick (navigation to detail)', () => {
-    it('should navigate to /organization/credentials/details/:id on row click', () => {
+  describe('navigateToCredentialDetails (Action column eye icon)', () => {
+    it('should navigate to /organization/credentials/details/:id', () => {
       const proc = makeProc('nav-1', 'ARCHIVED');
-      component.onRowClick(proc);
+      component.navigateToCredentialDetails(proc);
       expect(router.navigate).toHaveBeenCalledWith([
         '/organization/credentials/details',
         'nav-1',
@@ -186,7 +197,7 @@ describe('ArchivedCredentialsComponent', () => {
 
     it('should navigate with the correct procedureId when multiple archived exist', () => {
       const proc = makeProc('nav-2', 'ARCHIVED');
-      component.onRowClick(proc);
+      component.navigateToCredentialDetails(proc);
       expect(router.navigate).toHaveBeenCalledWith([
         '/organization/credentials/details',
         'nav-2',
@@ -217,7 +228,8 @@ describe('ArchivedCredentialsComponent', () => {
     const filterSpy = jest.spyOn(component as any, 'setFilterPredicate');
     const searchSpy = jest.spyOn(component as any, 'setStringSearchSubscription');
     component.ngAfterViewInit();
-    expect(filterSpy).toHaveBeenCalledWith('subject');
+    // setFilterPredicate no longer takes a filter argument (compound predicate, shared shape with the active table)
+    expect(filterSpy).toHaveBeenCalledTimes(1);
     expect(searchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -228,7 +240,9 @@ describe('ArchivedCredentialsComponent', () => {
     component['searchSubject'].next('FOO');
     tick(500);
 
-    expect(component.dataSource.filter).toBe('foo');
+    // filter is now a JSON-serialized CredentialFilter (compound: subject + organizations + types)
+    const parsed = JSON.parse(component.dataSource.filter);
+    expect(parsed.subject).toBe('FOO');
     expect(paginatorSpy).toHaveBeenCalled();
   }));
 
@@ -275,7 +289,7 @@ describe('ArchivedCredentialsComponent', () => {
     component['initializeArchivedTable']();
     tick();
 
-    expect(component.displayedColumns).toContain('tenant');
-    expect(component.displayedColumns[0]).toBe('tenant');
+    expect(component.displayedColumns()).toContain('tenant');
+    expect(component.displayedColumns()[0]).toBe('tenant');
   }));
 });

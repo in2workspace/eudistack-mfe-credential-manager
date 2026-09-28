@@ -40,6 +40,8 @@ describe('StatusService', () => {
             subject: 'Alpha',
             credential_type: 'learcredential.employee.w3c.1',
             status: 'VALID',
+            issued_at: '2025-01-09T12:00:00Z',
+            expires_at: '2026-07-09T12:00:00Z',
             updated: '2025-07-09T12:00:00Z',
             email: "email@aaa.com",
             organization_identifier: "2345"
@@ -51,6 +53,8 @@ describe('StatusService', () => {
             subject: 'Beta',
             credential_type: 'learcredential.machine.w3c.1',
             status: 'UNKNOWN' as LifeCycleStatus,
+            issued_at: '2025-01-09T13:00:00Z',
+            expires_at: '2026-07-09T13:00:00Z',
             updated: '2025-07-09T13:00:00Z',
             email: "email@bbb.com",
             organization_identifier: "1234"

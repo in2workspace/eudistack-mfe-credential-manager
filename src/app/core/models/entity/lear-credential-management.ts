@@ -37,13 +37,41 @@ export type FilterConfig = {
 
 /**
  * Composite filter model for the credential list.
- * Both fields are evaluated in AND by the MatTableDataSource filterPredicate.
- * An empty string ('') means "no filter applied" for that field.
+ * `subject` is evaluated as a substring match; `organizations`/`types`/`statuses`
+ * are evaluated as OR-within-facet, AND-across-facets by the MatTableDataSource
+ * filterPredicate. An empty string / empty array means "no filter applied" for
+ * that facet.
  */
 export interface CredentialFilter {
   subject: string;
-  status: string;
+  organizations: string[];
+  types: string[];
+  statuses: string[];
 }
+
+/** A single checkbox option offered by a `FilterDropdownComponent` instance. */
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Material icon ligature shown per status in the table's Status column, with a
+ * matTooltip carrying the translated label (US — credential-management dashboard
+ * revamp). One icon per status: ISSUED is included for completeness even though it
+ * is normally transient (see LifeCycleStatusService.getStatusIcon doc).
+ */
+export const STATUS_ICON_MAP: Record<string, string> = {
+  DRAFT: 'edit',
+  ISSUED: 'outbound',
+  VALID: 'check_circle',
+  EXPIRED: 'event_busy',
+  REVOKED: 'block',
+  WITHDRAWN: 'undo',
+  ARCHIVED: 'archive',
+};
+
+export const DEFAULT_STATUS_ICON = 'help_outline';
 
 /**
  * Statuses available as options in the status filter control.

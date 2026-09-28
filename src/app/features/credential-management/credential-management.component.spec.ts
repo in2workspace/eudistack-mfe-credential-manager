@@ -129,7 +129,7 @@ describe('CredentialManagementComponent', () => {
     // filter is now a JSON-serialized CredentialFilter
     const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
     expect(parsed.subject).toBe('FOO'); // raw trimmed value; predicate lowercases on eval
-    expect(parsed.status).toBe('');
+    expect(parsed.statuses).toEqual([]);
     expect(paginatorSpy).toHaveBeenCalled();
   }));
 
@@ -179,20 +179,25 @@ describe('CredentialManagementComponent', () => {
   it('should configure compound filterPredicate after ngAfterViewInit', () => {
     component.ngAfterViewInit(); // sets compound predicate
     const mockItem: any = {
-      credential_procedure: { subject: 'My Fancy Subject', status: 'VALID' }
+      credential_procedure: { subject: 'My Fancy Subject', status: 'VALID', organization_identifier: 'ORG-1', credential_type: 'type-a' }
     };
-    // subject match, no status filter
-    const filterAll = JSON.stringify({ subject: 'fancy', status: '' });
+    // subject match, no other filters
+    const filterAll = JSON.stringify({ subject: 'fancy', organizations: [], types: [], statuses: [] });
     expect(component.dataSource.filterPredicate!(mockItem, filterAll)).toBe(true);
     // subject no match
-    const filterNoSubject = JSON.stringify({ subject: 'xyz', status: '' });
+    const filterNoSubject = JSON.stringify({ subject: 'xyz', organizations: [], types: [], statuses: [] });
     expect(component.dataSource.filterPredicate!(mockItem, filterNoSubject)).toBe(false);
-    // status match, no subject filter
-    const filterStatus = JSON.stringify({ subject: '', status: 'VALID' });
+    // status match (OR-within-facet), no subject filter
+    const filterStatus = JSON.stringify({ subject: '', organizations: [], types: [], statuses: ['VALID', 'DRAFT'] });
     expect(component.dataSource.filterPredicate!(mockItem, filterStatus)).toBe(true);
     // status no match
-    const filterStatusNo = JSON.stringify({ subject: '', status: 'REVOKED' });
+    const filterStatusNo = JSON.stringify({ subject: '', organizations: [], types: [], statuses: ['REVOKED'] });
     expect(component.dataSource.filterPredicate!(mockItem, filterStatusNo)).toBe(false);
+    // organization + type facets, AND-across-facets
+    const filterOrgType = JSON.stringify({ subject: '', organizations: ['ORG-1'], types: ['type-a'], statuses: [] });
+    expect(component.dataSource.filterPredicate!(mockItem, filterOrgType)).toBe(true);
+    const filterOrgNoMatch = JSON.stringify({ subject: '', organizations: ['ORG-2'], types: [], statuses: [] });
+    expect(component.dataSource.filterPredicate!(mockItem, filterOrgNoMatch)).toBe(false);
   });
 
   it('should call searchSubject.next with input value when onSearchStringChange is triggered', () => {
@@ -263,6 +268,8 @@ describe('CredentialManagementComponent', () => {
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         email: 'email',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
     };
     const mockResponse = { credential_procedures: [mockProc] } as CredentialProceduresResponse;
@@ -369,6 +376,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
     });
 
@@ -445,6 +454,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
     });
@@ -463,7 +474,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     // AC-01: filter by status reduces filteredData to only matching rows
     it('AC-01: filtering by status VALID shows only VALID credentials', () => {
-      component.onStatusFilterChange('VALID');
+      component.onStatusFilterChange(['VALID']);
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(2);
@@ -473,16 +484,16 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
 
     it('AC-01: filtering by status REVOKED shows only REVOKED credentials', () => {
-      component.onStatusFilterChange('REVOKED');
+      component.onStatusFilterChange(['REVOKED']);
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(1);
       expect(filtered[0].credential_procedure.status).toBe('REVOKED');
     });
 
-    it('AC-01: selecting empty status (All) shows all credentials', () => {
-      component.onStatusFilterChange('VALID');  // first apply a filter
-      component.onStatusFilterChange('');        // then clear it
+    it('AC-01: clearing the status selection (empty array) shows all credentials', () => {
+      component.onStatusFilterChange(['VALID']);  // first apply a filter
+      component.onStatusFilterChange([]);          // then clear it
 
       expect(component.dataSource.filteredData.length).toBe(4);
     });
@@ -490,8 +501,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     // AC-03: subject + status + sort applied together (AND combination)
     it('AC-03: subject and status filters are evaluated in AND', () => {
       // Apply subject filter via searchSubject
-      component['selectedStatus'] = 'VALID';
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(1);
@@ -500,7 +511,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
 
     it('AC-03: subject match + wrong status → no results', () => {
-      component['applyCompoundFilter']('Alice', 'REVOKED');
+      component.selectedStatuses.set(['REVOKED']);
+      component['applyCompoundFilter']('Alice');
 
       expect(component.dataSource.filteredData.length).toBe(0);
     });
@@ -510,21 +522,21 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.dataSource['_paginator'] = { firstPage: jest.fn() } as any;
       const firstPageSpy = jest.spyOn(component.dataSource.paginator!, 'firstPage');
 
-      component.onStatusFilterChange('REVOKED'); // narrow dataset
+      component.onStatusFilterChange(['REVOKED']); // narrow dataset
       component.clearFilters();
       tick(500); // debounce for searchSubject.next('')
 
       const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
       expect(parsed.subject).toBe('');
-      expect(parsed.status).toBe('');
-      expect(component.selectedStatus).toBe('');
+      expect(parsed.statuses).toEqual([]);
+      expect(component.selectedStatuses()).toEqual([]);
       expect(component.dataSource.filteredData.length).toBe(4);
       expect(firstPageSpy).toHaveBeenCalled();
     }));
 
     // EC-02: filter leaves exactly one result (no empty state, no error)
     it('EC-02: filter that matches exactly one credential shows one row', () => {
-      component.onStatusFilterChange('EXPIRED');
+      component.onStatusFilterChange(['EXPIRED']);
 
       expect(component.dataSource.filteredData.length).toBe(1);
       expect(component.isEmptyFiltered).toBe(false);
@@ -535,11 +547,12 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     // EC-05: clearing only one filter keeps the other active
     it('EC-05: clearing status filter keeps subject filter active', fakeAsync(() => {
       // Set both filters
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
       expect(component.dataSource.filteredData.length).toBe(1);
 
       // Clear only status; subject stays
-      component.onStatusFilterChange('');
+      component.onStatusFilterChange([]);
       tick(0);
 
       // Now only subject='alice' is active → matches 'Alice Smith'
@@ -550,11 +563,12 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     it('EC-05: clearing subject filter keeps status filter active', fakeAsync(() => {
       // Set both filters
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
       expect(component.dataSource.filteredData.length).toBe(1);
 
       // Clear only subject; status stays
-      component['applyCompoundFilter']('', 'VALID');
+      component['applyCompoundFilter']('');
       tick(0);
 
       // All VALID credentials visible
@@ -567,7 +581,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     // ES-01: empty / whitespace / special-char input treated as literal (no filter)
     it('ES-01: empty subject string does not filter (treats as no-filter)', () => {
-      component['applyCompoundFilter']('', '');
+      component['applyCompoundFilter']('');
 
       expect(component.dataSource.filteredData.length).toBe(4);
     });
@@ -583,7 +597,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     it('ES-01: special characters in subject are treated as literal text (no regex injection)', () => {
       // Input with regex special chars — should not throw and should not match anything
-      component['applyCompoundFilter']('(.*)', '');
+      component['applyCompoundFilter']('(.*)');
 
       // None of our fixture subjects contain '(.*)' literally → 0 results
       expect(component.dataSource.filteredData.length).toBe(0);
@@ -594,9 +608,9 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const predicate = component.dataSource.filterPredicate!;
       const item = makeItem('Alice Smith', 'VALID');
 
-      // Empty filter string → treated as { subject:'', status:'' } → matches everything
+      // Empty filter string → treated as no-filter → matches everything
       expect(predicate(item as any, '')).toBe(true);
-      // Malformed JSON → treated as { subject:'', status:'' } → matches everything
+      // Malformed JSON → treated as no-filter → matches everything
       expect(predicate(item as any, 'not-valid-json')).toBe(true);
     });
   });
@@ -621,6 +635,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         credential_type: credentialType,
         email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
     });
@@ -780,6 +796,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
           updated: '2025-01-01',
           credential_type: 'LEAR_CREDENTIAL_MACHINE',
           organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
           // subject intentionally absent
         },
       } as any;
@@ -852,6 +870,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const proc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'VALID',
+          issued_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -868,7 +887,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.isEmptyFiltered).toBe(false);
 
       // 2. Apply a filter that yields 0 results
-      component.onStatusFilterChange('REVOKED');
+      component.onStatusFilterChange(['REVOKED']);
       
       expect(component.dataSource.filteredData.length).toBe(0);
       expect(component['originData'].length).toBe(1); // origin still has data
@@ -884,6 +903,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const unknownProc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'UNKNOWN_NEW_STATUS' as any,
+          issued_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -956,17 +976,26 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(clearSpy).toHaveBeenCalled();
     });
 
-    it('should render the status filter dropdown', () => {
+    it('should render the Organization / Type / Status filter dropdowns in the filter bar', () => {
       component.isLoading = false;
       fixture.detectChanges();
-      
+
       const compiled = fixture.nativeElement as HTMLElement;
-      const select = compiled.querySelector('mat-select#status-filter-select');
-      expect(select).toBeTruthy();
-      
-      const label = compiled.querySelector('mat-label#status-filter-label');
-      expect(label).toBeTruthy();
-      expect(label?.textContent).toContain('credentialManagement.filterByStatus.label');
+      const filterBar = compiled.querySelector('.filter-bar');
+      expect(filterBar).toBeTruthy();
+      expect(filterBar?.querySelectorAll('app-filter-dropdown').length).toBe(3);
+
+      const clearAllBtn = compiled.querySelector('#filter-bar-clear-all');
+      expect(clearAllBtn).toBeTruthy();
+    });
+
+    it('should hide the Organization filter dropdown for a simple (single-org) tenant', () => {
+      authService.tenantType.set('simple');
+      component.isLoading = false;
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelectorAll('.filter-bar app-filter-dropdown').length).toBe(2);
     });
 
   });

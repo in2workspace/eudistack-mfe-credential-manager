@@ -242,7 +242,11 @@
     "filter-by-org": "Filtra por org.",
     "subject": "Sujeto",
     "credentialType": "Tipo de credencial",
+    "issuedOn": "Emitida el",
+    "expiresOn": "Expira el",
     "updated": "Actualizado",
+    "action": "Acción",
+    "viewDetails": "Ver detalles",
     "cancel": "Cancelar",
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
@@ -575,5 +579,13 @@
     "error-title": "Algo ha ido mal",
     "error-description": "No hemos podido enviar una nueva oferta de credencial. Por favor, inténtalo de nuevo más tarde.",
     "retry-btn": "Reintentar"
+  },
+  "filters": {
+    "selectAnOption": "Selecciona una opción",
+    "clearAll": "Limpiar todo",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "searchByOrganization": "Buscar por nombre de organización",
+    "noOptions": "Sin opciones"
   }
 }

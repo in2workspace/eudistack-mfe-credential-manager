@@ -1,5 +1,5 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, computed } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { Router } from '@angular/router';
@@ -12,11 +12,12 @@ import { NgClass, DatePipe } from '@angular/common';
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
-import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig } from 'src/app/core/models/entity/lear-credential-management';
+import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 
@@ -25,9 +26,9 @@ import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
+import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatSelectModule } from '@angular/material/select';
 
 
 
@@ -56,16 +57,17 @@ import { MatSelectModule } from '@angular/material/select';
         MatRowDef,
         MatRow,
         NgClass,
+        MatTooltipModule,
         MatPaginator,
         DatePipe,
         SubjectComponent,
         TranslatePipe,
         CapitalizePipe,
         SkeletonLoaderComponent,
+        FilterDropdownComponent,
         RouterLink,
         RouterLinkActive,
         MatTabsModule,
-        MatSelectModule
     ],
     animations: [
         trigger('openClose', [
@@ -86,32 +88,82 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) public paginator!: MatPaginator;
   @ViewChild(MatSort) public sort!: MatSort;
   @ViewChild('searchInput') public searchInput!: ElementRef<HTMLInputElement>;
-  public displayedColumns: string[] = ['subject', 'organization_identifier', 'credential_type', 'updated', 'status'];
   public dataSource = new MatTableDataSource<CredentialProcedureWithClass>();
-  public isSearchByOrganizationFilterChecked = false;
   public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
   public searchPlaceholder = CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT;
   public isLoading = true;
 
-  /** Status value currently selected in the status filter control. Empty string means "All". */
-  public selectedStatus: string = '';
-
   /** True when the initial credential load failed (ES-02). Prevents showing empty-state as "no matches". */
   public hasLoadError: boolean = false;
 
-  /** Read-only list of statuses shown in the filter dropdown (excludes ARCHIVED). */
+  /** Read-only list of statuses shown in the status filter dropdown (excludes ARCHIVED). */
   public readonly filterableStatuses = FILTERABLE_STATUSES;
 
-  /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
-  private originData: CredentialProcedureWithClass[] = [];
-
   public hideSearchBar: boolean = true;
+
+  /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */
+  public selectedOrganizations = signal<string[]>([]);
+  public selectedTypes = signal<string[]>([]);
+  public selectedStatuses = signal<string[]>([]);
+
+  /**
+   * Options for the Organization / Type filter dropdowns, derived from the loaded
+   * dataset after render (AC-2.2: "recol·lecció de noms... pot ser posterior a la
+   * càrrega, per evitar afegir temps de càrrega"). Status options are the static
+   * filterableStatuses list instead — no need to wait for data.
+   */
+  public readonly organizationOptions = signal<FilterOption[]>([]);
+  public readonly typeOptions = signal<FilterOption[]>([]);
+  public readonly statusOptions = computed<FilterOption[]>(() =>
+    this.filterableStatuses.map(status => ({
+      value: status,
+      label: this.translate.instant(`credentialDetails.${status}`),
+    }))
+  );
 
   // computed
   public readonly canWrite = computed(() => this.authService.roleType() !== RoleType.SYSADMIN_READONLY);
   public readonly isAdminOrganizationIdentifier = computed(() =>
     this.authService.roleType() === RoleType.TENANT_ADMIN && this.authService.tenantType() === 'multi_org'
   );
+  /** Single-organization tenants have nothing to filter/group by org — column and filter are hidden (AC — tenant-type gating). */
+  public readonly isSimpleTenant = computed(() => this.authService.tenantType() === 'simple');
+
+  public readonly displayedColumns = computed<string[]>(() => {
+    const columns: string[] = [];
+    if (this.hasTenantColumn()) columns.push('tenant');
+    if (!this.isSimpleTenant()) columns.push('organization_identifier');
+    columns.push('subject', 'credential_type', 'status', 'issued', 'expires', 'updated', 'action');
+    return columns;
+  });
+
+  /** True when any of the three checkbox-dropdown filters has an active selection. */
+  public readonly hasActiveDropdownFilters = computed(() =>
+    this.selectedOrganizations().length > 0 || this.selectedTypes().length > 0 || this.selectedStatuses().length > 0
+  );
+
+  /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
+  private originData: CredentialProcedureWithClass[] = [];
+
+  private readonly hasTenantColumn = signal(false);
+
+  private readonly authService = inject(AuthService);
+  private readonly credentialProcedureService = inject(CredentialProcedureService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private readonly statusService = inject(LifeCycleStatusService);
+  private readonly cd = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
+  private readonly searchSubject = new Subject<string>();
+
+  /** FilterConfig map for text-search filters only. Type/status/organization use the checkbox dropdowns. */
+  private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
+    subject: {
+      filterName: "subject",
+      translationLabel: CREDENTIAL_MANAGEMENT_SUBJECT,
+      placeholderTranslationLabel: CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT
+    }
+   } as const;
 
   /** True when the load failed — show error state (ES-02). */
   public get isLoadError(): boolean {
@@ -131,24 +183,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       this.dataSource.filteredData.length === 0
     );
   }
-
-  private readonly authService = inject(AuthService);
-  private readonly credentialProcedureService = inject(CredentialProcedureService);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly router = inject(Router);
-  private readonly statusService = inject(LifeCycleStatusService);
-  private readonly cd = inject(ChangeDetectorRef);
-  private readonly translate = inject(TranslateService);
-  private readonly searchSubject = new Subject<string>();
-
-  /** FilterConfig map for text-search filters only. The status filter uses a separate mat-select control. */
-  private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
-    subject: {
-      filterName: "subject",
-      translationLabel: CREDENTIAL_MANAGEMENT_SUBJECT,
-      placeholderTranslationLabel: CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT
-    }
-   } as const;
 
   public ngOnInit() {
     this.initializeCredentialTable();
@@ -171,15 +205,15 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.router.navigate(route);
   }
 
-  public onRowClick(row: CredentialProcedureBasicInfo): void {
-    this.navigateToCredentialDetails(row);
-  }
-
   public navigateToCredentialDetails(credential_procedures: CredentialProcedureBasicInfo): void {
     this.router.navigate([
       '/organization/credentials/details',
       credential_procedures.credential_procedure?.procedure_id
     ]);
+  }
+
+  public getStatusIcon(status: string): string {
+    return this.statusService.getStatusIcon(status);
   }
 
   public toggleSearchBar(){
@@ -230,6 +264,41 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return credentialType;
   }
 
+  /** Handler for the Organization checkbox-dropdown (Confirm-gated, AC-2.2). */
+  public onOrganizationFilterChange(values: string[]): void {
+    this.selectedOrganizations.set(values);
+    this.reapplyDropdownFilters();
+  }
+
+  /** Handler for the Credential type checkbox-dropdown (live filtering, AC-2.3). */
+  public onTypeFilterChange(values: string[]): void {
+    this.selectedTypes.set(values);
+    this.reapplyDropdownFilters();
+  }
+
+  /** Handler for the Credential status checkbox-dropdown (live filtering, AC-2.3). */
+  public onStatusFilterChange(values: string[]): void {
+    this.selectedStatuses.set(values);
+    this.reapplyDropdownFilters();
+  }
+
+  /** "Clear all" — resets subject search and the three checkbox-dropdown filters (AC-2.1). */
+  public clearFilters(): void {
+    this.selectedOrganizations.set([]);
+    this.selectedTypes.set([]);
+    this.selectedStatuses.set([]);
+    this.searchSubject.next('');
+    // Also clear the input element if search bar is visible
+    if (!this.hideSearchBar && this.searchInput?.nativeElement) {
+      this.searchInput.nativeElement.value = '';
+    }
+    this.applyCompoundFilter('');
+
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
+  }
+
   private initializeCredentialTable(): void {
     this.isLoading = true;
     this.hasLoadError = false;
@@ -245,10 +314,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         this.originData = withClass;
 
         // Show tenant column when cross-tenant data is present (platform admin view)
-        const hasTenantData = data.credential_procedures.some(p => !!p.credential_procedure.tenant);
-        if (hasTenantData && !this.displayedColumns.includes('tenant')) {
-          this.displayedColumns = ['tenant', ...this.displayedColumns];
-        }
+        this.hasTenantColumn.set(data.credential_procedures.some(p => !!p.credential_procedure.tenant));
+        this.computeFilterOptions(withClass);
 
         this.isLoading = false;
         this.cd.detectChanges();
@@ -262,6 +329,36 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         this.hasLoadError = true;
       }
     });
+  }
+
+  /**
+   * Derives the Organization/Type filter dropdown options from the already-loaded
+   * dataset (AC-2.2) — runs after the table has rendered, never blocking initial load.
+   */
+  private computeFilterOptions(rows: CredentialProcedureWithClass[]): void {
+    const organizations = new Map<string, string>();
+    const types = new Map<string, string>();
+
+    for (const row of rows) {
+      const procedure = row.credential_procedure;
+      if (procedure?.organization_identifier && !organizations.has(procedure.organization_identifier)) {
+        organizations.set(procedure.organization_identifier, procedure.organization_identifier);
+      }
+      if (procedure?.credential_type && !types.has(procedure.credential_type)) {
+        types.set(procedure.credential_type, this.getCredentialTypeLabel(procedure.credential_type));
+      }
+    }
+
+    this.organizationOptions.set(
+      [...organizations.entries()]
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    );
+    this.typeOptions.set(
+      [...types.entries()]
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    );
   }
 
   /**
@@ -296,6 +393,14 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         case 'subject': {
           return this.getSafeLowerCaseValue(procedure?.subject, 'subject', procedureId);
         }
+        case 'issued': {
+          const t = Date.parse(procedure?.issued_at ?? '');
+          return Number.isFinite(t) ? t : 0;
+        }
+        case 'expires': {
+          const t = Date.parse(procedure?.expires_at ?? '');
+          return Number.isFinite(t) ? t : 0;
+        }
         case 'updated': {
           const t = Date.parse(procedure?.updated ?? '');
           return Number.isFinite(t) ? t : 0;
@@ -322,15 +427,17 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   /**
    * Compound filter predicate (AD-2).
-   * dataSource.filter is a JSON-serialized CredentialFilter: { subject, status }.
-   * Both fields are evaluated in AND. An empty string means "no filter" for that field.
-   * Robust against empty/undefined filter string (ES-01).
+   * dataSource.filter is a JSON-serialized CredentialFilter: subject is AND'd with
+   * organizations/types/statuses; each of those three facets is OR-within-facet
+   * (any selected value matches) and AND-across-facets. Empty string/array means
+   * "no filter" for that facet. Robust against empty/undefined filter string (ES-01).
    */
   private setFilterPredicate(): void{
     this.dataSource.filterPredicate = (data: CredentialProcedureBasicInfo, filterString: string) => {
-      let parsed: CredentialFilter = { subject: '', status: '' };
+      const empty: CredentialFilter = { subject: '', organizations: [], types: [], statuses: [] };
+      let parsed: CredentialFilter = empty;
       try {
-        parsed = filterString ? JSON.parse(filterString) : { subject: '', status: '' };
+        parsed = filterString ? JSON.parse(filterString) : empty;
       } catch {
         // Malformed filter string — treat as no filter
       }
@@ -342,18 +449,38 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
             .includes(parsed.subject.trim().toLowerCase())
         : true;
 
-      const statusMatch = parsed.status
-        ? procedure?.status === parsed.status
+      const orgMatch = parsed.organizations?.length
+        ? parsed.organizations.includes(procedure?.organization_identifier)
         : true;
 
-      return subjectMatch && statusMatch;
+      const typeMatch = parsed.types?.length
+        ? parsed.types.includes(procedure?.credential_type)
+        : true;
+
+      const statusMatch = parsed.statuses?.length
+        ? parsed.statuses.includes(procedure?.status)
+        : true;
+
+      return subjectMatch && orgMatch && typeMatch && statusMatch;
     };
   }
 
-  /** Builds and sets the serialized CredentialFilter on the dataSource. */
-  private applyCompoundFilter(subject: string, status: string): void {
-    const filter: CredentialFilter = { subject: subject.trim(), status };
+  /** Builds and sets the serialized CredentialFilter on the dataSource from current facet state. */
+  private applyCompoundFilter(subject: string): void {
+    const filter: CredentialFilter = {
+      subject: subject.trim(),
+      organizations: this.selectedOrganizations(),
+      types: this.selectedTypes(),
+      statuses: this.selectedStatuses(),
+    };
     this.dataSource.filter = JSON.stringify(filter);
+  }
+
+  private reapplyDropdownFilters(): void {
+    this.applyCompoundFilter(this.getCurrentSubjectFilter());
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
   }
 
   private setFilterLabelAndPlaceholder(filter: Filter): void{
@@ -367,7 +494,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.searchSubject.pipe(debounceTime(500))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((searchValue) => {
-        this.applyCompoundFilter(searchValue, this.selectedStatus);
+        this.applyCompoundFilter(searchValue);
 
         if (this.dataSource.paginator) {
           this.dataSource.paginator.firstPage();
@@ -375,43 +502,12 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     });
   }
 
-  /**
-   * Handler for status filter control changes (AC-01, AC-03, EC-04).
-   * Resets paginator to first page on each change.
-   */
-  public onStatusFilterChange(status: string): void {
-    this.selectedStatus = status;
-    const currentSubject = this.getCurrentSubjectFilter();
-    this.applyCompoundFilter(currentSubject, status);
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
-  }
-
-  /**
-   * Clears both filters and resets the paginator to first page (AC-05).
-   */
-  public clearFilters(): void {
-    this.selectedStatus = '';
-    this.searchSubject.next('');
-    // Also clear the input element if search bar is visible
-    if (!this.hideSearchBar && this.searchInput?.nativeElement) {
-      this.searchInput.nativeElement.value = '';
-    }
-    this.applyCompoundFilter('', '');
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
-  }
-
   /** Extracts the current subject value from the serialized dataSource.filter (safe). */
   private getCurrentSubjectFilter(): string {
     try {
       const parsed: CredentialFilter = this.dataSource.filter
         ? JSON.parse(this.dataSource.filter)
-        : { subject: '', status: '' };
+        : { subject: '', organizations: [], types: [], statuses: [] };
       return parsed.subject ?? '';
     } catch {
       return '';

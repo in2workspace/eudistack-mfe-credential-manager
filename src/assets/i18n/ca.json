@@ -217,7 +217,11 @@
     "filter-by-org": "Filtra per org.",
     "subject": "Subjecte",
     "credentialType": "Tipus de credencial",
+    "issuedOn": "Emesa el",
+    "expiresOn": "Expira el",
     "updated": "Actualitzat",
+    "action": "Acció",
+    "viewDetails": "Veure detalls",
     "cancel": "Cancel·lar",
     "create" : "Crear Credencial",
     "buttonAdmin": "Nova Credencial (en nom de)",
@@ -550,5 +554,13 @@
     "error-title": "Alguna cosa ha anat malament",
     "error-description": "No hem pogut enviar una nova oferta de credencial. Si us plau, torna-ho a intentar més tard.",
     "retry-btn": "Tornar a intentar"
+  },
+  "filters": {
+    "selectAnOption": "Selecciona una opció",
+    "clearAll": "Netejar-ho tot",
+    "close": "Tancar",
+    "confirm": "Confirmar",
+    "searchByOrganization": "Cerca pel nom de l'organització",
+    "noOptions": "Sense opcions"
   }
 }

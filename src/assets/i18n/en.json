@@ -242,7 +242,11 @@
     "filter-by-org": "Filter by org.",
     "subject": "Subject",
     "credentialType": "Credential Type",
+    "issuedOn": "Issued on",
+    "expiresOn": "Expires on",
     "updated": "Updated",
+    "action": "Action",
+    "viewDetails": "View details",
     "cancel": "Cancel",
     "create": "Create Credential",
     "buttonAdmin": "New credential (on behalf)",
@@ -575,5 +579,13 @@
     "error-title": "Something Went Wrong",
     "error-description": "We were unable to send a new credential offer. Please try again later.",
     "retry-btn": "Try Again"
+  },
+  "filters": {
+    "selectAnOption": "Select an option",
+    "clearAll": "Clear all",
+    "close": "Close",
+    "confirm": "Confirm",
+    "searchByOrganization": "Search by organization name",
+    "noOptions": "No options"
   }
 }
