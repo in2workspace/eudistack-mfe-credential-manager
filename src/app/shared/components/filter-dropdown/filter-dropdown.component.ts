@@ -58,6 +58,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       <div class="filter-dropdown-content" (click)="$event.stopPropagation()">
         @if (searchable()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
+            <mat-icon matPrefix>search</mat-icon>
             <input
               matInput
               [placeholder]="searchPlaceholder() | translate"
@@ -157,6 +158,11 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
 
     .filter-dropdown-search {
       width: 100%;
+
+      mat-icon[matPrefix] {
+        color: var(--text-secondary, #6B7280);
+        margin-right: 4px;
+      }
     }
 
     .filter-dropdown-title-row {
