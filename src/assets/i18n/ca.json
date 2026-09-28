@@ -566,5 +566,12 @@
     "back": "Enrere",
     "next": "Següent",
     "resultsPerPage": "Resultats per pàgina"
+  },
+  "sort": {
+    "label": "Ordenar per:",
+    "recentlyIssued": "Emeses recentment",
+    "recentlyUpdated": "Actualitzades recentment",
+    "expiringSoon": "Expiren aviat",
+    "expiringLater": "Expiren més tard"
   }
 }

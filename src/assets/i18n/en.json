@@ -591,5 +591,12 @@
     "back": "Back",
     "next": "Next",
     "resultsPerPage": "Results per page"
+  },
+  "sort": {
+    "label": "Sort by:",
+    "recentlyIssued": "Recently issued",
+    "recentlyUpdated": "Recently updated",
+    "expiringSoon": "Expires soon",
+    "expiringLater": "Expires later"
   }
 }

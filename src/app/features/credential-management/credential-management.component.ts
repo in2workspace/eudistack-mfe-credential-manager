@@ -4,7 +4,8 @@ import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeader
 import { Router } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { MatSort, MatSortHeader } from '@angular/material/sort';
+import { MatSort, MatSortHeader, SortDirection } from '@angular/material/sort';
+import { MatSelectModule } from '@angular/material/select';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from "../../core/models/dto/credential-procedures-response.dto";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NgClass, DatePipe } from '@angular/common';
@@ -27,6 +28,17 @@ import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-load
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
 import { RouterLink } from '@angular/router';
+
+/** Options for the "Sort by" selector, next to the results count. */
+type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
+
+/** Maps each SortByOption to the matSort column id + direction it drives. */
+const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDirection }> = {
+  recentlyIssued: { active: 'issued', direction: 'desc' },
+  recentlyUpdated: { active: 'updated', direction: 'desc' },
+  expiringSoon: { active: 'expires', direction: 'asc' },
+  expiringLater: { active: 'expires', direction: 'desc' },
+};
 
 @Component({
     selector: 'app-credential-management',
@@ -54,6 +66,7 @@ import { RouterLink } from '@angular/router';
         MatRow,
         NgClass,
         MatTooltipModule,
+        MatSelectModule,
         DatePipe,
         SubjectComponent,
         TranslatePipe,
@@ -80,6 +93,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   /** Total rows currently matching the compound filter — drives the "X results" line. */
   public readonly resultsCount = signal(0);
+
+  /** Currently selected "Sort by" option — matches the table's default sort (Updated, desc). */
+  public readonly sortOption = signal<SortByOption>('recentlyUpdated');
 
   /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */
   public selectedOrganizations = signal<string[]>([]);
@@ -267,6 +283,20 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public onStatusFilterChange(values: string[]): void {
     this.selectedStatuses.set(values);
     this.reapplyDropdownFilters();
+  }
+
+  /**
+   * Handler for the "Sort by" selector next to the results count. Drives the
+   * same MatSort the column headers use — emitting sortChange() is what
+   * MatTableDataSource listens to re-sort, and MatSortHeader listens to it too,
+   * so the arrow on the corresponding column header updates to match.
+   */
+  public onSortOptionChange(option: SortByOption): void {
+    this.sortOption.set(option);
+    const { active, direction } = SORT_BY_OPTIONS[option];
+    this.sort.active = active;
+    this.sort.direction = direction;
+    this.sort.sortChange.emit({ active, direction });
   }
 
   /** "Clear all" — resets subject search and the three checkbox-dropdown filters (AC-2.1). */
