@@ -209,14 +209,19 @@
     }
   },
   "credentialManagement": {
-    "title": "Llista de credencials emeses",
+    "title": "Credencials emeses",
     "button": "Nova Credencial",
     "status": "Estatus",
     "organization": "Organització",
     "organizationIdentifier": "ID d'Organització",
     "filter-by-org": "Filtra per org.",
     "subject": "Subjecte",
-    "credentialType": "Tipus de credencial",
+    "credentialType": "Tipus",
+    "typeFamily": {
+      "employee": "Empleat",
+      "machine": "Màquina",
+      "label": "Credencial d'Etiqueta"
+    },
     "issuedOn": "Emesa el",
     "expiresOn": "Expira el",
     "updated": "Actualitzat",
@@ -554,6 +559,7 @@
     "close": "Tancar",
     "confirm": "Confirmar",
     "searchByOrganization": "Cerca pel nom de l'organització",
-    "noOptions": "Sense opcions"
+    "noOptions": "Sense opcions",
+    "resultsCount": "{{count}} resultats"
   }
 }

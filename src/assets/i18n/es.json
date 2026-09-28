@@ -234,14 +234,19 @@
     }
   },
   "credentialManagement": {
-    "title": "Lista de credenciales emitidas",
+    "title": "Credenciales emitidas",
     "button": "Nueva Credencial",
     "status": "Estatus",
     "organization": "Organización",
     "organizationIdentifier": "ID de Organización",
     "filter-by-org": "Filtra por org.",
     "subject": "Sujeto",
-    "credentialType": "Tipo de credencial",
+    "credentialType": "Tipo",
+    "typeFamily": {
+      "employee": "Empleado",
+      "machine": "Máquina",
+      "label": "Credencial de Etiqueta"
+    },
     "issuedOn": "Emitida el",
     "expiresOn": "Expira el",
     "updated": "Actualizado",
@@ -579,6 +584,7 @@
     "close": "Cerrar",
     "confirm": "Confirmar",
     "searchByOrganization": "Buscar por nombre de organización",
-    "noOptions": "Sin opciones"
+    "noOptions": "Sin opciones",
+    "resultsCount": "{{count}} resultados"
   }
 }

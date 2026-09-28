@@ -15,7 +15,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
 import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
@@ -66,20 +65,6 @@ import { RouterLink } from '@angular/router';
         FilterDropdownComponent,
         RouterLink,
     ],
-    animations: [
-        trigger('openClose', [
-            state('open', style({
-                width: '200px',
-                opacity: 1,
-            })),
-            state('closed', style({
-                width: '0px',
-                opacity: 0,
-            })),
-            transition('open => closed', [animate('0.2s')]),
-            transition('closed => open', [animate('0.2s')]),
-        ]),
-    ]
 })
 export class CredentialManagementComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) public paginator!: MatPaginator;
@@ -96,7 +81,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /** Read-only list of statuses shown in the status filter dropdown (excludes ARCHIVED). */
   public readonly filterableStatuses = FILTERABLE_STATUSES;
 
-  public hideSearchBar: boolean = true;
+  /** Total rows currently matching the compound filter — drives the "X results" line. */
+  public readonly resultsCount = signal(0);
 
   /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */
   public selectedOrganizations = signal<string[]>([]);
@@ -221,33 +207,18 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return this.statusService.getStatusIcon(status);
   }
 
-  public toggleSearchBar(){
-    this.hideSearchBar = !this.hideSearchBar;
-    const searchInputNativeEl = this.searchInput.nativeElement;
-
-    if (this.hideSearchBar) {
-
-      this.searchSubject.next('');
-
-      if (this.searchInput) {
-        searchInputNativeEl.value = '';
-      }
-
-      if (this.dataSource.paginator) {
-        this.dataSource.paginator.firstPage();
-      }
-    }else{
-      searchInputNativeEl.focus();
-      searchInputNativeEl.select();
-    }
-  }
-
   public onSearchStringChange(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.searchSubject.next(filterValue);
   }
 
   public getCredentialTypeLabel(credentialType: string): string {
+    switch (this.getTypeFamilyKey(credentialType)) {
+      case 'EMPLOYEE': return this.translate.instant('credentialManagement.typeFamily.employee');
+      case 'MACHINE': return this.translate.instant('credentialManagement.typeFamily.machine');
+      case 'LABEL': return this.translate.instant('credentialManagement.typeFamily.label');
+    }
+
     const prefixedKey = `credentialManagement.${credentialType}`;
     const translated = this.translate.instant(prefixedKey);
     if (translated !== prefixedKey) {
@@ -293,8 +264,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.selectedTypes.set([]);
     this.selectedStatuses.set([]);
     this.searchSubject.next('');
-    // Also clear the input element if search bar is visible
-    if (!this.hideSearchBar && this.searchInput?.nativeElement) {
+    if (this.searchInput?.nativeElement) {
       this.searchInput.nativeElement.value = '';
     }
     this.applyCompoundFilter('');
@@ -354,8 +324,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       if (procedure?.organization_identifier && !organizations.has(procedure.organization_identifier)) {
         organizations.set(procedure.organization_identifier, procedure.organization_identifier);
       }
-      if (procedure?.credential_type && !types.has(procedure.credential_type)) {
-        types.set(procedure.credential_type, this.getCredentialTypeLabel(procedure.credential_type));
+      if (procedure?.credential_type) {
+        const familyKey = this.getTypeFamilyKey(procedure.credential_type);
+        if (!types.has(familyKey)) {
+          types.set(familyKey, this.getCredentialTypeLabel(procedure.credential_type));
+        }
       }
     }
 
@@ -369,6 +342,22 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         .map(([value, label]) => ({ value, label }))
         .sort((a, b) => a.label.localeCompare(b.label))
     );
+  }
+
+  /**
+   * Groups every version — legacy or current — of the employee/machine/label
+   * credential types under one canonical bucket, so the Type filter offers one
+   * "Employee"/"Machine"/"Label Credential" option instead of one per raw
+   * credential_type string (e.g. legacy "LEARCredentialEmployee" vs current
+   * "learcredential.employee.w3c.4" used to show up as two separate options).
+   * Anything outside these three families (doctorid, PID, ...) keeps its own
+   * raw value as its bucket — one option per type, as before.
+   */
+  private getTypeFamilyKey(credentialType: string): string {
+    if (/employee/i.test(credentialType)) return 'EMPLOYEE';
+    if (/machine/i.test(credentialType)) return 'MACHINE';
+    if (/label/i.test(credentialType)) return 'LABEL';
+    return credentialType;
   }
 
   /**
@@ -416,7 +405,12 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return Number.isFinite(t) ? t : 0;
         }
         case 'credential_type': {
-          return this.getSafeLowerCaseValue(procedure?.credential_type, 'credential_type', procedureId);
+          // Sorts by the displayed (grouped) label, not the raw type string, so
+          // e.g. all "Employee" rows (legacy and current) sort together.
+          if (typeof procedure?.credential_type !== 'string') {
+            return this.getSafeLowerCaseValue(procedure?.credential_type, 'credential_type', procedureId);
+          }
+          return this.getCredentialTypeLabel(procedure.credential_type).toLowerCase();
         }
         case 'organization_identifier': {
           return this.getSafeLowerCaseValue(procedure?.organization_identifier, 'organization_identifier', procedureId);
@@ -467,7 +461,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         : true;
 
       const typeMatch = parsed.types?.length
-        ? parsed.types.includes(procedure?.credential_type)
+        ? parsed.types.includes(this.getTypeFamilyKey(procedure?.credential_type ?? ''))
         : true;
 
       const statusMatch = parsed.statuses?.length
@@ -487,6 +481,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       statuses: this.selectedStatuses(),
     };
     this.dataSource.filter = JSON.stringify(filter);
+    this.resultsCount.set(this.dataSource.filteredData.length);
   }
 
   private reapplyDropdownFilters(): void {

@@ -13,16 +13,7 @@ import { of, throwError } from 'rxjs';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialFilter, CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
-import { ElementRef, signal } from '@angular/core';
-
-// helper to mock search input
-function createMockInput(initialValue = '') {
-  const el = document.createElement('input');
-  el.value = initialValue;
-  const focusSpy = jest.spyOn(el, 'focus').mockImplementation(() => {});
-  const selectSpy = jest.spyOn(el, 'select').mockImplementation(() => {});
-  return { el, focusSpy, selectSpy };
-}
+import { signal } from '@angular/core';
 
 describe('CredentialManagementComponent', () => {
   let component: CredentialManagementComponent;
@@ -217,47 +208,6 @@ describe('CredentialManagementComponent', () => {
     expect(nextSpy).toHaveBeenCalledWith('searchTerm');
   });
 
-  it('should focus and select input when opening the search bar', () => {
-    component.hideSearchBar = true;
-
-    const { el, focusSpy, selectSpy } = createMockInput();
-    component.searchInput = new ElementRef<HTMLInputElement>(el);
-
-    component.toggleSearchBar();
-
-    expect(component.hideSearchBar).toBe(false);
-    expect(focusSpy).toHaveBeenCalled();
-    expect(selectSpy).toHaveBeenCalled();
-  });
-
-  it('should clear value, push empty filter, and go to first page when closing the search bar', () => {
-    component.hideSearchBar = false;
-
-    const { el } = createMockInput('lorem');
-    component.searchInput = new ElementRef<HTMLInputElement>(el);
-
-    component.dataSource['_paginator'] = { firstPage: jest.fn() } as any;
-    const firstPageSpy = jest.spyOn(component.dataSource.paginator!, 'firstPage');
-
-    const nextSpy = jest.spyOn(component['searchSubject'], 'next');
-    component.toggleSearchBar();
-
-    expect(component.hideSearchBar).toBe(true);
-    expect(el.value).toBe('');
-    expect(nextSpy).toHaveBeenCalledWith('');
-    expect(firstPageSpy).toHaveBeenCalled();
-  });
-
-  it('should toggle searchbar open/close consistently', () => {
-    component.hideSearchBar = true;
-
-    component.toggleSearchBar();
-    expect(component.hideSearchBar).toBeFalsy();
-
-    component.toggleSearchBar();
-    expect(component.hideSearchBar).toBeTruthy();
-  });
-
   it('should load credential data and update dataSource', fakeAsync(() => {
     const mockProc: CredentialProcedureBasicInfo = {
       credential_procedure: {
@@ -310,28 +260,63 @@ describe('CredentialManagementComponent', () => {
   expect(component.searchPlaceholder).toBe(subjectConfig.placeholderTranslationLabel);
 });
 
-it('should return direct translated credential type when key exists', () => {
+it('groups every employee credential_type — legacy or current — under one "Employee" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.learcredential.employee.w3c.4') {
-      return 'LEAR Credential Employee v4';
-    }
+    if (key === 'credentialManagement.typeFamily.employee') return 'Employee';
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee v4');
+  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('Employee');
+  expect(component.getCredentialTypeLabel('learcredential.employee.sd.1')).toBe('Employee');
+  expect(component.getCredentialTypeLabel('LEARCredentialEmployee')).toBe('Employee'); // legacy v2/v3 bare DOME name
 });
 
-it('should fallback to .1 translation when current version key is missing', () => {
+it('groups every machine credential_type — legacy or current — under one "Machine" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.learcredential.employee.w3c.1') {
-      return 'LEAR Credential Employee';
+    if (key === 'credentialManagement.typeFamily.machine') return 'Machine';
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('learcredential.machine.w3c.3')).toBe('Machine');
+  expect(component.getCredentialTypeLabel('LEARCredentialMachine')).toBe('Machine'); // legacy v1/v2 bare DOME name
+});
+
+it('groups every label credential_type — legacy or current — under one "Label Credential" label', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.typeFamily.label') return 'Label Credential';
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label Credential');
+  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label Credential'); // legacy v1
+});
+
+it('should return direct translated credential type when key exists (types outside the employee/machine/label families)', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.doctorid.sd.1') {
+      return 'Doctor ID';
     }
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee');
+  expect(component.getCredentialTypeLabel('doctorid.sd.1')).toBe('Doctor ID');
+});
+
+it('should fallback to .1 translation when current version key is missing (types outside the employee/machine/label families)', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.doctorid.sd.1') {
+      return 'Doctor ID';
+    }
+    return key;
+  });
+
+  // No exact key for "doctorid.sd.2" — falls back to the ".1" version key
+  expect(component.getCredentialTypeLabel('doctorid.sd.2')).toBe('Doctor ID');
 });
 
 it('should subscribe to searchSubject and update dataSource.filter (and call firstPage if paginator exists)', fakeAsync(() => {
@@ -691,9 +676,18 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.dataSource.sortingDataAccessor(item, 'updated')).toBe(0);
     });
 
-    it('AC-02: credential_type column uses lowercase credential_type', () => {
-      const item = makeSortItem('Alice', 'VALID', '2025-01-01', 'LEAR_CREDENTIAL_EMPLOYEE');
-      expect(component.dataSource.sortingDataAccessor(item, 'credential_type')).toBe('lear_credential_employee');
+    it('AC-02: credential_type column sorts by the displayed (grouped) label, lowercased', () => {
+      const item = makeSortItem('Alice', 'VALID', '2025-01-01', 'doctorid.sd.1'); // outside employee/machine/label families
+      expect(component.dataSource.sortingDataAccessor(item, 'credential_type'))
+        .toBe(component.getCredentialTypeLabel('doctorid.sd.1').toLowerCase());
+    });
+
+    it('AC-02: credential_type sort groups legacy and current employee types under the same key', () => {
+      const legacy = makeSortItem('Alice', 'VALID', '2025-01-01', 'LEARCredentialEmployee', 'legacy');
+      const current = makeSortItem('Bob', 'VALID', '2025-01-01', 'learcredential.employee.w3c.4', 'current');
+      const legacyKey = component.dataSource.sortingDataAccessor(legacy, 'credential_type');
+      const currentKey = component.dataSource.sortingDataAccessor(current, 'credential_type');
+      expect(legacyKey).toBe(currentKey);
     });
 
     it('AC-02: asc sort by updated puts older date first', () => {

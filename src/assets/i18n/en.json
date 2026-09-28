@@ -234,14 +234,19 @@
     }
   },
   "credentialManagement": {
-    "title": "List of issued credentials",
+    "title": "Issued credentials",
     "button": "New credential",
     "status": "Status",
     "organization": "Organization",
     "organizationIdentifier": "Organization ID",
     "filter-by-org": "Filter by org.",
     "subject": "Subject",
-    "credentialType": "Credential Type",
+    "credentialType": "Type",
+    "typeFamily": {
+      "employee": "Employee",
+      "machine": "Machine",
+      "label": "Label Credential"
+    },
     "issuedOn": "Issued on",
     "expiresOn": "Expires on",
     "updated": "Updated",
@@ -579,6 +584,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "searchByOrganization": "Search by organization name",
-    "noOptions": "No options"
+    "noOptions": "No options",
+    "resultsCount": "{{count}} results"
   }
 }
