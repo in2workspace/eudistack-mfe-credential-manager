@@ -293,6 +293,10 @@
     "power": "Poderes",
     "domain": "Dominio",
     "function": "Función",
+    "subtitle": "Añade uno o más poderes y selecciona las funciones de cada uno.",
+    "scope": {
+      "organization": "Organización"
+    },
     "marketplace": "Marketplace",
     "add": "Añadir",
     "onboarding": "Alta",
@@ -338,6 +342,10 @@
     "mandatee": "persona mandatada",
     "mandator": "mandante",
     "select-type": "Selecciona el tipo de credencial",
+    "description": {
+      "learcredential.employee": "Identifica a una persona de tu organización y transporta los poderes que le delegas. La recibe en su wallet y la presenta para actuar en nombre de la organización.",
+      "learcredential.machine": "Identifica a un sistema automatizado, no a una persona: se vincula a un par de claves y se identifica por dominio y dirección IP, para operaciones máquina a máquina sin nadie delante."
+    },
     "loadingCatalog": "Cargando los formularios de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No se han encontrado formularios de credencial habilitados para tu organización. Contacta con el administrador de tu tenant para solicitar el alta de un formulario.",
@@ -360,17 +368,20 @@
       "organizationIdentifier": "Introduce solo los caracteres que van después de 'VAT...-'. Por ejemplo, si es 'VATEU-123ABC', introduce '123ABC'."
     },
     "format": {
+      "tooltip": "Modelo de datos con el que se emite la credencial. W3C VC 2.0 es el formato que consume DOME; SD-JWT VC permite al titular revelar solo parte de sus datos al presentarla.",
       "label": "Formato de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (próximamente)"
     },
     "grantType": {
+      "tooltip": "Cómo recoge la credencial el titular (OID4VCI). Authorization Code le obliga a autenticarse antes ante el emisor; Pre-Authorized Code se salta ese login porque su identidad ya se verificó.",
       "label": "Tipo de concesión",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno: cada canal se intenta por separado y se informa de su resultado.",
       "label": "Método de entrega",
       "direct": "Directo",
       "email": "Correo electrónico",

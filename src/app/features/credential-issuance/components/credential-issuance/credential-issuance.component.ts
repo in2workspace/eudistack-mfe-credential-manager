@@ -12,6 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { AlertBannerComponent } from 'src/app/shared/components/alert-banner/alert-banner.component';
@@ -32,7 +33,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
     // private key material they handle cannot outlive the form. Inherited from the deleted
     // KeyGeneratorComponent, which used to be the (wrong, component-local) home for the first one.
     providers: [CredentialIssuanceService, KeyGeneratorService, IssuanceHolderKeyService],
-    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TranslatePipe],
+    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, MatTooltip, RouterLink, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })

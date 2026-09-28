@@ -293,6 +293,10 @@
     "power": "Powers",
     "domain": "Domain",
     "function": "Function",
+    "subtitle": "Add one or more powers and select the functions for each one.",
+    "scope": {
+      "organization": "Organization"
+    },
     "onboarding": "Onboarding",
     "marketplace": "Marketplace",
     "productoffering": "Product Offering",
@@ -338,6 +342,10 @@
     "mandatee": "mandatee",
     "mandator": "mandator",
     "select-type": "Select credential type",
+    "description": {
+      "learcredential.employee": "Identifies a person in your organization and carries the powers you delegate to them. They receive it in their wallet and present it to act on the organization's behalf.",
+      "learcredential.machine": "Identifies an automated system rather than a person: it binds to a key pair and is identified by domain and IP address, for machine-to-machine operations with nobody at the keyboard."
+    },
     "loadingCatalog": "Loading the available credential forms...",
     "emptySelector": {
       "noTypes": "There are no credential forms enabled for your organization. Contact your tenant administrator to request one.",
@@ -360,17 +368,20 @@
       "organizationIdentifier": "Enter only the characters after 'VAT...-'. For example, if 'VATEU-123ABC', enter '123ABC'"
     },
     "format": {
+      "tooltip": "Data model the credential is issued in. W3C VC 2.0 is the format DOME consumes; SD-JWT VC lets the holder disclose only some of its claims when presenting it.",
       "label": "Credential format",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (coming soon)"
     },
     "grantType": {
+      "tooltip": "How the holder collects the credential (OID4VCI). Authorization Code makes them sign in against the issuer first; Pre-Authorized Code skips that login because their identity was already verified.",
       "label": "Grant type",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Channel the credential is sent through. You can pick more than one: each is attempted independently and reported separately.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",

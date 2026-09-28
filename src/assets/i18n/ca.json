@@ -268,6 +268,10 @@
       "power": "Poders",
       "domain": "Domini",
       "function": "Funció",
+      "subtitle": "Afegeix un o més poders i selecciona les funcions de cadascun.",
+      "scope": {
+        "organization": "Organització"
+      },
       "onboarding": "Alta",
       "marketplace": "Marketplace",
       "productoffering": "Oferta de producte",
@@ -313,6 +317,10 @@
     "mandatee": "persona delegada",
     "mandator": "mandant",
     "select-type": "Selecciona el tipus de credencial",
+    "description": {
+      "learcredential.employee": "Identifica una persona de la teva organització i transporta els poders que li delegues. La rep al seu wallet i la presenta per actuar en nom de l'organització.",
+      "learcredential.machine": "Identifica un sistema automatitzat, no una persona: es vincula a un parell de claus i s'identifica per domini i adreça IP, per a operacions màquina a màquina sense ningú al davant."
+    },
     "loadingCatalog": "S'estan carregant els formularis de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No hi ha cap formulari de credencial habilitat per a la teva organització. Contacta amb l'administrador del teu tenant per sol·licitar-ne l'alta.",
@@ -335,17 +343,20 @@
       "organizationIdentifier": "Introdueix només els caràcters que van després de 'VAT...-'. Per exemple, si és 'VATEU-123ABC', introdueix '123ABC'."
     },
     "format": {
+      "tooltip": "Model de dades amb què s'emet la credencial. W3C VC 2.0 és el format que consumeix DOME; SD-JWT VC permet al titular revelar només part de les seves dades en presentar-la.",
       "label": "Format de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (pròximament)"
     },
     "grantType": {
+      "tooltip": "Com recull la credencial el titular (OID4VCI). Authorization Code l'obliga a autenticar-se abans davant l'emissor; Pre-Authorized Code se salta aquest login perquè la seva identitat ja es va verificar.",
       "label": "Tipus de concessió",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un: cada canal s'intenta per separat i se n'informa el resultat.",
       "label": "Mètode de lliurament",
       "direct": "Directe",
       "email": "Correu electrònic",
