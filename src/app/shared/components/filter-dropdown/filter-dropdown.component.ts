@@ -106,14 +106,15 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     .filter-dropdown-trigger {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      height: 40px;
-      padding: 0 12px;
-      border-radius: 8px;
+      gap: 4px;
+      height: 32px;
+      padding: 0 6px 0 12px;
+      border-radius: var(--radius-md, 8px);
       border: 1px solid var(--border-default, #D1D5DB);
-      background: var(--surface-card, #fff);
+      background: var(--surface-card, #FFFFFF);
       color: var(--text-primary, #1A1A2E);
       font: inherit;
+      font-size: 0.875rem;
       cursor: pointer;
       white-space: nowrap;
 
