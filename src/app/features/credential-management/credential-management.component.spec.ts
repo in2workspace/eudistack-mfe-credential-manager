@@ -535,6 +535,31 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(firstPageSpy).toHaveBeenCalled();
     }));
 
+    // "Clear all" must reflect (and clear) a lone subject search too, not just the
+    // three checkbox-dropdown facets — see hasActiveFilters().
+    it('hasActiveFilters is true when only the subject search box has text (no dropdown filter active)', fakeAsync(() => {
+      expect(component.hasActiveFilters()).toBe(false);
+
+      component['searchSubject'].next('Alice');
+      tick(500);
+
+      expect(component.selectedOrganizations()).toEqual([]);
+      expect(component.selectedTypes()).toEqual([]);
+      expect(component.selectedStatuses()).toEqual([]);
+      expect(component.hasActiveFilters()).toBe(true);
+    }));
+
+    it('clearFilters() resets hasActiveFilters back to false, including a lone subject search', fakeAsync(() => {
+      component['searchSubject'].next('Alice');
+      tick(500);
+      expect(component.hasActiveFilters()).toBe(true);
+
+      component.clearFilters();
+      tick(500);
+
+      expect(component.hasActiveFilters()).toBe(false);
+    }));
+
     // EC-02: filter leaves exactly one result (no empty state, no error)
     it('EC-02: filter that matches exactly one credential shows one row', () => {
       component.onStatusFilterChange(['EXPIRED']);

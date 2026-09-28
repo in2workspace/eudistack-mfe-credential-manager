@@ -120,15 +120,25 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return columns;
   });
 
-  /** True when any of the three checkbox-dropdown filters has an active selection. */
-  public readonly hasActiveDropdownFilters = computed(() =>
-    this.selectedOrganizations().length > 0 || this.selectedTypes().length > 0 || this.selectedStatuses().length > 0
+  /**
+   * True when any filter is active — the three checkbox-dropdowns or the
+   * subject search box. Drives whether "Clear all" is enabled: a lone search
+   * term with no dropdown filter selected is still a filter worth clearing.
+   */
+  public readonly hasActiveFilters = computed(() =>
+    this.currentSubjectFilter().length > 0 ||
+    this.selectedOrganizations().length > 0 ||
+    this.selectedTypes().length > 0 ||
+    this.selectedStatuses().length > 0
   );
 
   /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
   private originData: CredentialProcedureWithClass[] = [];
 
   private readonly hasTenantColumn = signal(false);
+
+  /** Current (debounced, applied) subject search text — kept in sync by applyCompoundFilter(). */
+  private readonly currentSubjectFilter = signal('');
 
   private readonly authService = inject(AuthService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
@@ -295,7 +305,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         // data — setting dataSource.data alone does not reliably re-run
         // filteredData, so without this, "hide ARCHIVED by default" would only
         // take effect once the user first touches a filter control.
-        this.applyCompoundFilter(this.getCurrentSubjectFilter());
+        this.applyCompoundFilter(this.currentSubjectFilter());
 
         this.isLoading = false;
         this.cd.detectChanges();
@@ -474,18 +484,20 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   /** Builds and sets the serialized CredentialFilter on the dataSource from current facet state. */
   private applyCompoundFilter(subject: string): void {
+    const trimmedSubject = subject.trim();
     const filter: CredentialFilter = {
-      subject: subject.trim(),
+      subject: trimmedSubject,
       organizations: this.selectedOrganizations(),
       types: this.selectedTypes(),
       statuses: this.selectedStatuses(),
     };
     this.dataSource.filter = JSON.stringify(filter);
+    this.currentSubjectFilter.set(trimmedSubject);
     this.resultsCount.set(this.dataSource.filteredData.length);
   }
 
   private reapplyDropdownFilters(): void {
-    this.applyCompoundFilter(this.getCurrentSubjectFilter());
+    this.applyCompoundFilter(this.currentSubjectFilter());
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
@@ -508,18 +520,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           this.dataSource.paginator.firstPage();
         }
     });
-  }
-
-  /** Extracts the current subject value from the serialized dataSource.filter (safe). */
-  private getCurrentSubjectFilter(): string {
-    try {
-      const parsed: CredentialFilter = this.dataSource.filter
-        ? JSON.parse(this.dataSource.filter)
-        : { subject: '', organizations: [], types: [], statuses: [] };
-      return parsed.subject ?? '';
-    } catch {
-      return '';
-    }
   }
 
 }
