@@ -333,6 +333,7 @@
     "creating-credential": "Creando credencial",
     "create-credential": "Crear nueva credencial",
     "credentialType": "Tipo de credencial",
+    "placeholder": "Introduce {{field}}",
     "cancel": "Cancelar",
     "mandatee": "persona mandatada",
     "mandator": "mandante",

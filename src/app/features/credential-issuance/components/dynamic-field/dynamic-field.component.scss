@@ -8,7 +8,30 @@
 }
 
 h2 {
-  margin-top: 0;
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #1A1A2E);
+}
+
+.group-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 24px;
+}
+
+@media (width > 600px) {
+  .group-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #1A1A2E);
 }
 
 .field-hint{

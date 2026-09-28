@@ -308,6 +308,7 @@
     "creating-credential": "Creant credencial",
     "create-credential": "Crear nova credencial",
     "credentialType": "Tipus de credencial",
+    "placeholder": "Introdueix {{field}}",
     "cancel": "Cancel·lar",
     "mandatee": "persona delegada",
     "mandator": "mandant",
