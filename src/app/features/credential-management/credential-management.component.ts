@@ -219,6 +219,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   public onSearchStringChange(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
+    // Updated immediately (not debounced) so "Clear all" reflects a just-typed
+    // search term right away — the actual filtering below still debounces, but
+    // the button's enabled state must not lag behind what's visibly in the box.
+    this.currentSubjectFilter.set(filterValue.trim());
     this.searchSubject.next(filterValue);
   }
 

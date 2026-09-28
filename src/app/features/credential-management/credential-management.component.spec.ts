@@ -549,6 +549,17 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.hasActiveFilters()).toBe(true);
     }));
 
+    // The actual filtering still debounces (500ms), but "Clear all" must not keep
+    // looking disabled for that window while there's plainly text in the box —
+    // onSearchStringChange() updates hasActiveFilters synchronously.
+    it('hasActiveFilters reacts immediately on keystroke, before the 500ms filter debounce fires', () => {
+      expect(component.hasActiveFilters()).toBe(false);
+
+      component.onSearchStringChange({ target: { value: 'Ali' } } as unknown as Event);
+
+      expect(component.hasActiveFilters()).toBe(true);
+    });
+
     it('clearFilters() resets hasActiveFilters back to false, including a lone subject search', fakeAsync(() => {
       component['searchSubject'].next('Alice');
       tick(500);
