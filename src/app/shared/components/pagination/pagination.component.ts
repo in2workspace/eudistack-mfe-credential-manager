@@ -261,7 +261,10 @@ export class PaginationComponent implements AfterViewInit {
     return this.paginatorRef.pageIndex < this.totalPages() - 1;
   }
 
-  /** Sliding window of up to 6 numbered pages, following the current page. */
+  /**
+   * Sliding window of up to 6 numbered pages. Page 1 always stays the first
+   * button — only the remaining slots slide as the current page moves.
+   */
   protected pageWindow(): number[] {
     const total = this.totalPages();
     const maxNumbered = 6;
@@ -270,12 +273,13 @@ export class PaginationComponent implements AfterViewInit {
       return Array.from({ length: total }, (_, i) => i + 1);
     }
 
+    const slidingCount = maxNumbered - 1;
     const current = this.currentPageNumber();
-    let start = current - Math.floor(maxNumbered / 2) + 1;
-    start = Math.max(1, start);
-    start = Math.min(start, total - maxNumbered);
+    let start = current - Math.floor(slidingCount / 2) + 1;
+    start = Math.max(2, start);
+    start = Math.min(start, total - slidingCount);
 
-    return Array.from({ length: maxNumbered }, (_, i) => start + i);
+    return [1, ...Array.from({ length: slidingCount }, (_, i) => start + i)];
   }
 
   /** True when there are pages beyond the numbered window — the "..." + last-page button show. */
