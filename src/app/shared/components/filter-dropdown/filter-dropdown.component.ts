@@ -58,13 +58,13 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       <div class="filter-dropdown-content" (click)="$event.stopPropagation()">
         @if (searchable()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
-            <mat-icon matPrefix>search</mat-icon>
             <input
               matInput
               [placeholder]="searchPlaceholder() | translate"
               [ngModel]="searchTerm()"
               (ngModelChange)="searchTerm.set($event)"
               (click)="$event.stopPropagation()">
+            <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
         }
 
@@ -159,9 +159,9 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     .filter-dropdown-search {
       width: 100%;
 
-      mat-icon[matPrefix] {
+      mat-icon[matSuffix] {
         color: var(--text-secondary, #6B7280);
-        margin-right: 4px;
+        margin-left: 4px;
       }
     }
 
