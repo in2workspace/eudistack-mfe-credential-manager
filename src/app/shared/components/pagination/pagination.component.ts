@@ -58,7 +58,7 @@ import { TranslatePipe } from '@ngx-translate/core';
           [disabled]="!hasPrevious()"
           [attr.aria-label]="'pagination.back' | translate"
           (click)="previous()">
-          <mat-icon>chevron_left</mat-icon>
+          <mat-icon>arrow_back</mat-icon>
           {{ 'pagination.back' | translate }}
         </button>
 
@@ -91,7 +91,7 @@ import { TranslatePipe } from '@ngx-translate/core';
           [attr.aria-label]="'pagination.next' | translate"
           (click)="next()">
           {{ 'pagination.next' | translate }}
-          <mat-icon>chevron_right</mat-icon>
+          <mat-icon>arrow_forward</mat-icon>
         </button>
       </div>
 
@@ -106,6 +106,8 @@ import { TranslatePipe } from '@ngx-translate/core';
     </div>
   `,
   styles: [`
+    $primary-tint: rgb(var(--primary-color-rgb, 15 43 91) / 0.1);
+
     .paginator-engine {
       display: none;
     }
@@ -141,27 +143,42 @@ import { TranslatePipe } from '@ngx-translate/core';
 
     .pagination-page-size-field {
       width: 72px;
+      font-size: 0.875rem;
+      --mat-form-field-container-height: 32px;
+      --mat-form-field-container-vertical-padding: 4px;
+      --mdc-outlined-text-field-container-shape: var(--radius-md, 8px);
+      --mdc-outlined-text-field-outline-color: var(--border-default, #D1D5DB);
+      --mdc-outlined-text-field-hover-outline-color: var(--border-strong, #9CA3AF);
+      --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
     }
 
     .pagination-nav-btn {
       display: inline-flex;
       align-items: center;
-      gap: 2px;
-      height: 36px;
+      gap: 4px;
+      height: 32px;
       padding: 0 10px;
-      border: none;
-      background: transparent;
-      color: var(--text-primary, #1A1A2E);
+      border: 1px solid var(--primary-color);
+      background: var(--surface-card, #FFFFFF);
+      color: var(--primary-color);
       font: inherit;
+      font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: var(--radius-md, 8px);
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
 
       &:hover:not(:disabled) {
-        background: var(--action-secondary, #F3F4F6);
+        background: $primary-tint;
       }
 
       &:disabled {
+        border-color: var(--border-default, #D1D5DB);
         color: var(--text-disabled, #9CA3AF);
         cursor: default;
       }
@@ -180,10 +197,11 @@ import { TranslatePipe } from '@ngx-translate/core';
       height: 32px;
       padding: 0 4px;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-md, 8px);
       background: transparent;
       color: var(--text-primary, #1A1A2E);
       font: inherit;
+      font-size: 0.875rem;
       cursor: pointer;
 
       &:hover:not(&--active) {
@@ -191,8 +209,9 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
 
       &--active {
-        background: var(--action-secondary, #F3F4F6);
-        font-weight: 700;
+        background: $primary-tint;
+        color: var(--primary-color);
+        font-weight: 600;
       }
 
       &:focus-visible {
