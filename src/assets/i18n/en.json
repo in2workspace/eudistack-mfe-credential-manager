@@ -250,8 +250,6 @@
     "cancel": "Cancel",
     "create": "Create Credential",
     "buttonAdmin": "New credential (on behalf)",
-    "tabActive": "Active",
-    "tabArchived": "Archived",
     "search": "Search by",
     "searchPlaceholderSubject": "Joe Doe",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -286,11 +284,6 @@
     "loadError": {
       "title": "Error loading credentials",
       "description": "The credentials could not be loaded. Please reload the page or try again later."
-    },
-    "archivedTitle": "Archived credentials",
-    "archivedEmptyState": {
-      "title": "No archived credentials",
-      "description": "When you archive a credential it will appear here."
     }
   },
   "power": {

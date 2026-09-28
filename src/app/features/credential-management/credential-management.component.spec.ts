@@ -366,7 +366,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // no error and no paginator call
 }));
 
-  describe('ARCHIVED filtering in initializeCredentialTable', () => {
+  describe('ARCHIVED handling — no separate view, hidden by default via the filter predicate', () => {
     const makeProc = (id: string, status: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
         procedure_id: id,
@@ -381,22 +381,10 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       },
     });
 
-    it('should exclude ARCHIVED credentials from dataSource', fakeAsync(() => {
+    it('loads ARCHIVED credentials into dataSource.data (no separate view/exclusion)', fakeAsync(() => {
       const archivedProc = makeProc('arch-1', 'ARCHIVED');
+      const withClass: CredentialProcedureWithClass[] = [{ ...archivedProc, statusClass: 'status-archived' }];
       const mockResponse = { credential_procedures: [archivedProc] } as CredentialProceduresResponse;
-      credentialProcedureSpy.mockReturnValue(of(mockResponse));
-      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
-
-      component['initializeCredentialTable']();
-      tick();
-
-      expect(component.dataSource.data).toEqual([]);
-    }));
-
-    it('should include non-ARCHIVED credentials in dataSource', fakeAsync(() => {
-      const draftProc = makeProc('draft-1', 'DRAFT');
-      const withClass: CredentialProcedureWithClass[] = [{ ...draftProc, statusClass: 'status-draft' }];
-      const mockResponse = { credential_procedures: [draftProc] } as CredentialProceduresResponse;
       credentialProcedureSpy.mockReturnValue(of(mockResponse));
       jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
 
@@ -406,7 +394,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.dataSource.data).toEqual(withClass);
     }));
 
-    it('should only pass non-ARCHIVED items to addStatusClass', fakeAsync(() => {
+    it('passes ARCHIVED items to addStatusClass together with every other status', fakeAsync(() => {
       const archivedProc = makeProc('arch-2', 'ARCHIVED');
       const validProc = makeProc('valid-1', 'VALID');
       const withdrawnProc = makeProc('withdrawn-1', 'WITHDRAWN');
@@ -420,19 +408,47 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component['initializeCredentialTable']();
       tick();
 
-      expect(statusSpy).toHaveBeenCalledWith([validProc, withdrawnProc]);
-      expect(statusSpy).not.toHaveBeenCalledWith(expect.arrayContaining([archivedProc]));
+      expect(statusSpy).toHaveBeenCalledWith([archivedProc, validProc, withdrawnProc]);
     }));
 
-    it('should show empty dataSource when all credentials are ARCHIVED', fakeAsync(() => {
-      const procs = [makeProc('a1', 'ARCHIVED'), makeProc('a2', 'ARCHIVED'), makeProc('a3', 'ARCHIVED')];
-      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
-      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: procs } as CredentialProceduresResponse));
+    it('hides ARCHIVED rows from filteredData when no status is explicitly selected', fakeAsync(() => {
+      const archivedProc = makeProc('arch-3', 'ARCHIVED');
+      const validProc = makeProc('valid-2', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
+
+      // Goes through the real ngOnInit (predicate installed, then data loaded,
+      // then the compound filter explicitly (re)applied against it) rather than
+      // calling initializeCredentialTable() directly, to exercise the actual
+      // production ordering.
+      component.ngOnInit();
+      tick();
+
+      expect(component.dataSource.data).toHaveLength(2);
+      expect(component.dataSource.filteredData).toEqual([{ ...validProc, statusClass: 'status-valid' }]);
+    }));
+
+    it('reveals ARCHIVED rows once ARCHIVED is explicitly checked in the status filter', fakeAsync(() => {
+      const archivedProc = makeProc('arch-4', 'ARCHIVED');
+      const validProc = makeProc('valid-3', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
 
       component['initializeCredentialTable']();
       tick();
+      component.ngAfterViewInit();
 
-      expect(component.dataSource.data).toHaveLength(0);
+      component.onStatusFilterChange(['ARCHIVED']);
+
+      expect(component.dataSource.filteredData).toEqual([{ ...archivedProc, statusClass: 'status-archived' }]);
     }));
   });
 

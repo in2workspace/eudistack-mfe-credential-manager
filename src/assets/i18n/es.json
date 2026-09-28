@@ -250,8 +250,6 @@
     "cancel": "Cancelar",
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
-    "tabActive": "Activas",
-    "tabArchived": "Archivadas",
     "search": "Buscar por",
     "searchPlaceholderSubject": "Juan García",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -286,11 +284,6 @@
     "loadError": {
       "title": "Error al cargar las credenciales",
       "description": "No se han podido cargar las credenciales. Por favor, recarga la página o inténtalo de nuevo más tarde."
-    },
-    "archivedTitle": "Credenciales archivadas",
-    "archivedEmptyState": {
-      "title": "Sin credenciales archivadas",
-      "description": "Cuando archives una credencial aparecerá aquí."
     }
   },
   "power": {

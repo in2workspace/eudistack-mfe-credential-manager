@@ -225,8 +225,6 @@
     "cancel": "Cancel·lar",
     "create" : "Crear Credencial",
     "buttonAdmin": "Nova Credencial (en nom de)",
-    "tabActive": "Actives",
-    "tabArchived": "Arxivades",
     "search": "Buscar per",
     "searchPlaceholderSubject": "Joan Garcia",
     "searchPlaceholderOrgID": "VATES-000000",
@@ -261,11 +259,6 @@
     "loadError": {
       "title": "Error en carregar les credencials",
       "description": "No s'han pogut carregar les credencials. Si us plau, recarrega la pàgina o torna-ho a intentar més tard."
-    },
-    "archivedTitle": "Credencials arxivades",
-    "archivedEmptyState": {
-      "title": "Sense credencials arxivades",
-      "description": "Quan arxivi una credencial apareixerà aquí."
     }
   },
     "power": {

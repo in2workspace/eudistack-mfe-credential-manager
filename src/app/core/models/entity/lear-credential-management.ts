@@ -74,10 +74,9 @@ export const STATUS_ICON_MAP: Record<string, string> = {
 export const DEFAULT_STATUS_ICON = 'help_outline';
 
 /**
- * Statuses available as options in the status filter control.
- * Derived from STATUSES_WITH_DEFINED_CLASS, excluding ARCHIVED
- * (archived credentials are handled by a separate view — US-06/EUD-129).
+ * Statuses available as options in the status filter control. Archived is a
+ * status like any other here (no separate "Archived" view/tab) — the compound
+ * filter predicate hides it by default when no status is explicitly selected,
+ * and reveals it once the user checks it.
  */
-export const FILTERABLE_STATUSES = STATUSES_WITH_DEFINED_CLASS.filter(
-  (s) => s !== 'ARCHIVED'
-) as ReadonlyArray<Exclude<DefinedStatusClass, 'ARCHIVED'>>;
+export const FILTERABLE_STATUSES = STATUSES_WITH_DEFINED_CLASS;
