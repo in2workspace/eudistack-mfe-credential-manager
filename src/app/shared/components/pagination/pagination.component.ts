@@ -158,7 +158,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       border-radius: 8px;
 
       &:hover:not(:disabled) {
-        background: var(--bg-neutral-light, #f3f4f6);
+        background: var(--action-secondary, #F3F4F6);
       }
 
       &:disabled {
@@ -187,11 +187,11 @@ import { TranslatePipe } from '@ngx-translate/core';
       cursor: pointer;
 
       &:hover:not(&--active) {
-        background: var(--bg-neutral-light, #f3f4f6);
+        background: var(--action-secondary, #F3F4F6);
       }
 
       &--active {
-        background: var(--bg-neutral-light, #f3f4f6);
+        background: var(--action-secondary, #F3F4F6);
         font-weight: 700;
       }
 

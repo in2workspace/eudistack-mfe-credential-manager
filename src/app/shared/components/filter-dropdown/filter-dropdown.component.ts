@@ -110,7 +110,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       height: 40px;
       padding: 0 12px;
       border-radius: 8px;
-      border: 1px solid var(--border-default, #e5e7eb);
+      border: 1px solid var(--border-default, #D1D5DB);
       background: var(--surface-card, #fff);
       color: var(--text-primary, #1A1A2E);
       font: inherit;
@@ -203,7 +203,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       gap: 8px;
       margin-top: 12px;
       padding-top: 8px;
-      border-top: 1px solid var(--border-default, #e5e7eb);
+      border-top: 1px solid var(--border-default, #D1D5DB);
     }
 
     .filter-dropdown-close {
@@ -216,7 +216,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       border-radius: 4px;
 
       &:hover {
-        background: var(--bg-neutral-light, #f3f4f6);
+        background: var(--action-secondary, #F3F4F6);
       }
     }
   `],
