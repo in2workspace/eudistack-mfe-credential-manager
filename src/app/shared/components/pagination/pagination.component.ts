@@ -72,8 +72,8 @@ import { TranslatePipe } from '@ngx-translate/core';
           {{ page }}
         </button>
 
-        <ng-container *ngIf="showEllipsis()">
-          <button type="button" class="pagination-ellipsis" disabled aria-hidden="true">&hellip;</button>
+        <ng-container *ngIf="hasLastPageButton()">
+          <button *ngIf="showEllipsis()" type="button" class="pagination-ellipsis" disabled aria-hidden="true">&hellip;</button>
           <button
             type="button"
             class="pagination-page-btn"
@@ -282,9 +282,15 @@ export class PaginationComponent implements AfterViewInit {
     return [1, ...Array.from({ length: slidingCount }, (_, i) => start + i)];
   }
 
-  /** True when there are pages beyond the numbered window — the "..." + last-page button show. */
-  protected showEllipsis(): boolean {
+  /** True whenever the last page isn't already part of the numbered window — it gets its own button. */
+  protected hasLastPageButton(): boolean {
     return this.totalPages() > 6;
+  }
+
+  /** True only when a real gap separates the window from the last page — never for an adjacent one. */
+  protected showEllipsis(): boolean {
+    const window = this.pageWindow();
+    return this.hasLastPageButton() && window[window.length - 1] < this.totalPages() - 1;
   }
 
   protected trackByPage(_index: number, page: number): number {
