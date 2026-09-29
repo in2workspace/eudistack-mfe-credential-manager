@@ -1046,4 +1046,63 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
   });
 
+  describe('Sort by ↔ table sync', () => {
+    const makeProcedure = (id: string, updated: string): CredentialProcedureBasicInfo => ({
+      credential_procedure: {
+        procedure_id: id,
+        subject: `Subject ${id}`,
+        status: 'VALID' as any,
+        updated,
+        credential_type: 'learcredential.employee.w3c.4',
+        email: 'a@b.com',
+        organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
+      },
+    });
+
+    it('starts sorted by Updated desc, matching "Recently updated"', () => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          makeProcedure('old', '2024-01-01T00:00:00Z'),
+          makeProcedure('new', '2025-06-01T00:00:00Z'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      expect(component.sortOption()).toBe('recentlyUpdated');
+      expect(component.sort.active).toBe('updated');
+      expect(component.sort.direction).toBe('desc');
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['new', 'old']);
+    });
+
+    it('selector drives the table sort', () => {
+      component.onSortOptionChange('expiringSoon');
+
+      expect(component.sort.active).toBe('expires');
+      expect(component.sort.direction).toBe('asc');
+      expect(component.sortOption()).toBe('expiringSoon');
+    });
+
+    it('header sort matching an option selects that option', () => {
+      component.sort.sort({ id: 'expires', start: 'desc', disableClear: false });
+
+      expect(component.sortOption()).toBe('expiringLater');
+    });
+
+    it('header sort matching no option clears the selector to its placeholder', () => {
+      component.sort.sort({ id: 'subject', start: 'asc', disableClear: false });
+
+      expect(component.sortOption()).toBeNull();
+    });
+
+    it('clearing the header sort clears the selector', () => {
+      component.onTableSortChange({ active: 'updated', direction: '' });
+
+      expect(component.sortOption()).toBeNull();
+    });
+  });
+
 });

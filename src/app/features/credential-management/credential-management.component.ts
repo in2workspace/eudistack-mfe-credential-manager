@@ -4,7 +4,7 @@ import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeader
 import { Router } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { MatSort, MatSortHeader, SortDirection } from '@angular/material/sort';
+import { MatSort, MatSortHeader, Sort, SortDirection } from '@angular/material/sort';
 import { MatSelectModule } from '@angular/material/select';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from "../../core/models/dto/credential-procedures-response.dto";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -93,8 +93,13 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /** Total rows currently matching the compound filter — drives the "X results" line. */
   public readonly resultsCount = signal(0);
 
-  /** Currently selected "Sort by" option — matches the data's default order (Updated, desc). */
-  public readonly sortOption = signal<SortByOption>('recentlyUpdated');
+  /**
+   * Currently selected "Sort by" option, kept in sync with the table's MatSort.
+   * null when the table is sorted by a header in a way no option describes — the
+   * selector then shows its "-" placeholder.
+   */
+  public readonly sortOption = signal<SortByOption | null>('recentlyUpdated');
+  protected readonly sortByOptions = Object.keys(SORT_BY_OPTIONS) as SortByOption[];
 
   /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */
   public selectedOrganizations = signal<string[]>([]);
@@ -298,6 +303,14 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.sort.sortChange.emit({ active, direction });
   }
 
+  /** Mirrors any table sort change (header click or selector) back into the "Sort by" selector. */
+  public onTableSortChange({ active, direction }: Sort): void {
+    const match = (Object.keys(SORT_BY_OPTIONS) as SortByOption[]).find(option =>
+      SORT_BY_OPTIONS[option].active === active && SORT_BY_OPTIONS[option].direction === direction
+    );
+    this.sortOption.set(match ?? null);
+  }
+
   /** "Clear all" — resets subject search and the three checkbox-dropdown filters (AC-2.1). */
   public clearFilters(): void {
     this.selectedOrganizations.set([]);
@@ -323,10 +336,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       next: (data: CredentialProceduresResponse) => {
         // No separate Archived view — every status (including ARCHIVED) loads
         // into the same table; the filter predicate hides ARCHIVED by default.
-        // Pre-sorted instead of via matSortActive: the default order must match
-        // "Sort by: Recently updated" without any column header looking selected.
-        const withClass = this.statusService.addStatusClass(data.credential_procedures)
-          .sort((a, b) => this.updatedTime(b) - this.updatedTime(a));
+        // Default order comes from matSortActive/matSortDirection in the template.
+        const withClass = this.statusService.addStatusClass(data.credential_procedures);
         this.dataSource.data = withClass;
         this.originData = withClass;
 
