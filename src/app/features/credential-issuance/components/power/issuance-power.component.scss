@@ -51,11 +51,6 @@
   &.active {
     background: var(--segment-checked-bg, #B6CAEC);
   }
-
-  &:focus-visible {
-    outline: 2px solid var(--action-primary, #2563EB);
-    outline-offset: 2px;
-  }
 }
 
 .scope-tab-label {
