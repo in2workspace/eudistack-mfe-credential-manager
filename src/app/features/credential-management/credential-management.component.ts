@@ -126,14 +126,13 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public readonly isAdminOrganizationIdentifier = computed(() =>
     this.authService.roleType() === RoleType.TENANT_ADMIN && this.authService.tenantType() === 'multi_org'
   );
-  /** Single-organization tenants have nothing to filter/group by org — column and filter are hidden (AC — tenant-type gating). */
+  /** Single-organization tenants have nothing to filter by org — the Organization ID filter is hidden (AC — tenant-type gating). */
   public readonly isSimpleTenant = computed(() => this.authService.tenantType() === 'simple');
 
   public readonly displayedColumns = computed<string[]>(() => {
     const columns: string[] = [];
     if (this.hasTenantColumn()) columns.push('tenant');
-    if (!this.isSimpleTenant()) columns.push('organization_identifier');
-    columns.push('subject', 'credential_type', 'status', 'issued', 'expires', 'updated', 'action');
+    columns.push('organization_identifier', 'subject','credential_type', 'status', 'issued', 'expires', 'updated', 'action');
     return columns;
   });
 

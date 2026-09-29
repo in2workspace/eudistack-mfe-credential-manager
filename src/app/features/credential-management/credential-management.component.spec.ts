@@ -1044,6 +1044,14 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(compiled.querySelectorAll('.filter-bar app-filter-dropdown').length).toBe(2);
     });
 
+    it('should show the Organization ID column for every tenant type, simple included', () => {
+      authService.tenantType.set('simple');
+      expect(component.displayedColumns()).toContain('organization_identifier');
+
+      authService.tenantType.set('multi_org');
+      expect(component.displayedColumns()).toContain('organization_identifier');
+    });
+
   });
 
   describe('Sort by ↔ table sync', () => {
