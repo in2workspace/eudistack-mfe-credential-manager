@@ -403,6 +403,11 @@
       "credentialLabel": "Credencial signada",
       "credentialDescription": "Aquest és el token de la credencial màquina, a punt per ser utilitzat per un servei que vulgui presentar-se davant del verificador per identificar-se (login M2M).",
       "done": "Fet",
+      "pending": {
+        "both": "Copia abans la credencial signada i la clau privada. Cap de les dues es pot recuperar un cop tanquis aquest diàleg.",
+        "credential": "Copia abans la credencial signada. No es pot recuperar un cop tanquis aquest diàleg.",
+        "privateKey": "Copia abans la clau privada. No es pot recuperar un cop tanquis aquest diàleg."
+      },
       "copyFailed": {
         "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
         "privateKey": "No s'ha pogut copiar la clau privada al porta-retalls. Torna-ho a intentar."

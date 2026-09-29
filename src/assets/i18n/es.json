@@ -428,6 +428,11 @@
       "credentialLabel": "Credencial firmada",
       "credentialDescription": "Este es el token de la credencial máquina, listo para ser utilizado por un servicio que quiera presentarse ante el verificador para identificarse (login M2M).",
       "done": "Hecho",
+      "pending": {
+        "both": "Copia antes la credencial firmada y la clave privada. Ninguna de las dos se puede recuperar una vez cierres este diálogo.",
+        "credential": "Copia antes la credencial firmada. No se puede recuperar una vez cierres este diálogo.",
+        "privateKey": "Copia antes la clave privada. No se puede recuperar una vez cierres este diálogo."
+      },
       "copyFailed": {
         "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
         "privateKey": "No se ha podido copiar la clave privada al portapapeles. Inténtalo de nuevo."

@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
@@ -39,6 +40,7 @@ export interface DirectCredentialResultDialogData {
     MatButton,
     MatIconButton,
     MatIcon,
+    MatTooltip,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,
@@ -83,6 +85,19 @@ export class DirectCredentialResultDialogComponent {
       pending.push('privateKey');
     }
     return pending;
+  });
+
+  protected readonly pendingHintKey = computed<string>(() => {
+    const pending = this.pendingArtifacts();
+    if (pending.length === 0) {
+      return '';
+    }
+    if (pending.length > 1) {
+      return 'credentialIssuance.direct-result-dialog.pending.both';
+    }
+    return pending[0] === 'privateKey'
+      ? 'credentialIssuance.direct-result-dialog.pending.privateKey'
+      : 'credentialIssuance.direct-result-dialog.pending.credential';
   });
 
   // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false

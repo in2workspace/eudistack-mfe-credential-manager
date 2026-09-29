@@ -207,7 +207,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
 
     it('stays disabled after only one artifact is copied', async () => {
-      const [credentialField, keyField] = copyableFields();
+      const [keyField, credentialField] = copyableFields();
 
       await credentialField.copy();
       fixture.detectChanges();
@@ -221,7 +221,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
 
     it('enables Done regardless of which artifact is copied first', async () => {
-      const [credentialField, keyField] = copyableFields();
+      const [keyField, credentialField] = copyableFields();
 
       await keyField.copy();
       fixture.detectChanges();
@@ -231,6 +231,47 @@ describe('DirectCredentialResultDialogComponent', () => {
       await credentialField.copy();
       fixture.detectChanges();
 
+      expect(doneButton().disabled).toBe(false);
+    });
+  });
+
+  describe('why Done is still disabled', () => {
+    const hintOf = () => (component as any).pendingHintKey();
+
+    it('names both artifacts while neither has been copied', () => {
+      setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' }));
+
+      expect(hintOf()).toBe('credentialIssuance.direct-result-dialog.pending.both');
+    });
+
+    it('narrows to the key once only the credential has been copied', async () => {
+      setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' }));
+      const [, credentialField] = copyableFields();
+
+      await credentialField.copy();
+      fixture.detectChanges();
+
+      expect(hintOf()).toBe('credentialIssuance.direct-result-dialog.pending.privateKey');
+    });
+
+    it('narrows to the credential once only the key has been copied', async () => {
+      setup(baseData({ requiresHolderKeySection: true, privateKeyHex: 'a-private-key' }));
+      const [keyField] = copyableFields();
+
+      await keyField.copy();
+      fixture.detectChanges();
+
+      expect(hintOf()).toBe('credentialIssuance.direct-result-dialog.pending.credential');
+    });
+
+    it('falls silent once nothing is pending, so the tooltip cannot outlive the block', async () => {
+      setup(baseData());
+      const [credentialField] = copyableFields();
+
+      await credentialField.copy();
+      fixture.detectChanges();
+
+      expect(hintOf()).toBe('');
       expect(doneButton().disabled).toBe(false);
     });
   });
@@ -392,7 +433,7 @@ describe('DirectCredentialResultDialogComponent', () => {
         }),
       );
 
-      const [credentialField, keyField] = copyableFields();
+      const [keyField, credentialField] = copyableFields();
 
       await credentialField.copy();
       fixture.detectChanges();
@@ -440,7 +481,7 @@ describe('DirectCredentialResultDialogComponent', () => {
     });
 
     it('gives credential and private-key fields distinct labels', () => {
-      const [credentialField, keyField] = copyableFields();
+      const [keyField, credentialField] = copyableFields();
 
       expect(credentialField.labelKey()).not.toBe(keyField.labelKey());
     });
