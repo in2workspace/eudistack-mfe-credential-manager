@@ -87,18 +87,9 @@ export class DirectCredentialResultDialogComponent {
     return pending;
   });
 
-  protected readonly pendingHintKey = computed<string>(() => {
-    const pending = this.pendingArtifacts();
-    if (pending.length === 0) {
-      return '';
-    }
-    if (pending.length > 1) {
-      return 'credentialIssuance.direct-result-dialog.pending.both';
-    }
-    return pending[0] === 'privateKey'
-      ? 'credentialIssuance.direct-result-dialog.pending.privateKey'
-      : 'credentialIssuance.direct-result-dialog.pending.credential';
-  });
+  protected readonly pendingHintKey = computed<string>(() =>
+    this.pendingArtifacts().length > 0 ? 'credentialIssuance.direct-result-dialog.pending' : ''
+  );
 
   // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false
   // (opener contract, see class doc above).

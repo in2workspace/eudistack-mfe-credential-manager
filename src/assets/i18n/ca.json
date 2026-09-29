@@ -343,20 +343,20 @@
       "organizationIdentifier": "Introdueix només els caràcters que van després de 'VAT...-'. Per exemple, si és 'VATEU-123ABC', introdueix '123ABC'."
     },
     "format": {
-      "tooltip": "Model de dades amb què s'emet la credencial. W3C VC 2.0 és el format que consumeix DOME; SD-JWT VC permet al titular revelar només part de les seves dades en presentar-la.",
+      "tooltip": "Model de dades amb què s'emet la credencial. W3C VC 2.0 és el d'interoperabilitat més àmplia; SD-JWT VC afegeix divulgació selectiva, de manera que el titular revela només part de les seves dades en presentar-la.",
       "label": "Format de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (pròximament)"
     },
     "grantType": {
-      "tooltip": "Com recull la credencial el titular (OID4VCI). Authorization Code l'obliga a autenticar-se abans davant l'emissor; Pre-Authorized Code se salta aquest login perquè la seva identitat ja es va verificar.",
+      "tooltip": "Com demostra el titular qui és abans de recollir la credencial (OID4VCI). Amb Authorization Code s'autentica davant l'emissor en el moment de recollir-la. Amb Pre-Authorized Code no hi ha login: confirma un codi d'un sol ús que rep al seu correu.",
       "label": "Tipus de concessió",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un: cada canal s'intenta per separat i se n'informa el resultat.",
+      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un. Directe retorna aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra un codi per escanejar amb el wallet. Correu electrònic envia al titular un enllaç per recollir-la.",
       "label": "Mètode de lliurament",
       "direct": "Directe",
       "email": "Correu electrònic",
@@ -403,11 +403,7 @@
       "credentialLabel": "Credencial signada",
       "credentialDescription": "Aquest és el token de la credencial màquina, a punt per ser utilitzat per un servei que vulgui presentar-se davant del verificador per identificar-se (login M2M).",
       "done": "Fet",
-      "pending": {
-        "both": "Copia abans la credencial signada i la clau privada. Cap de les dues es pot recuperar un cop tanquis aquest diàleg.",
-        "credential": "Copia abans la credencial signada. No es pot recuperar un cop tanquis aquest diàleg.",
-        "privateKey": "Copia abans la clau privada. No es pot recuperar un cop tanquis aquest diàleg."
-      },
+      "pending": "Copia el contingut sensible que es mostra a dalt abans d'acabar. Només es mostra un cop i no es pot recuperar un cop tanquis aquest diàleg.",
       "copyFailed": {
         "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
         "privateKey": "No s'ha pogut copiar la clau privada al porta-retalls. Torna-ho a intentar."

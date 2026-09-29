@@ -148,6 +148,18 @@ describe('CredentialOfferDialogComponent', () => {
       expect(actionButton().disabled).toBe(false);
     });
 
+    it('explains why "Done" is blocked, and falls silent once the key is copied', async () => {
+      const hintOf = () => (fixture.componentInstance as any).pendingHintKey();
+
+      expect(hintOf()).toBe('credentialIssuance.direct-result-dialog.pending');
+
+      const field = fixture.debugElement.query(By.directive(CopyableFieldComponent)).componentInstance as CopyableFieldComponent;
+      await field.copy();
+      fixture.detectChanges();
+
+      expect(hintOf()).toBe('');
+    });
+
     it('ES-07.2: a failed key copy is announced and keeps "Done" disabled', async () => {
       Object.defineProperty(navigator, 'clipboard', { value: { writeText: jest.fn(() => Promise.reject(new Error('denied'))) }, configurable: true });
 

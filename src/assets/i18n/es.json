@@ -368,20 +368,20 @@
       "organizationIdentifier": "Introduce solo los caracteres que van después de 'VAT...-'. Por ejemplo, si es 'VATEU-123ABC', introduce '123ABC'."
     },
     "format": {
-      "tooltip": "Modelo de datos con el que se emite la credencial. W3C VC 2.0 es el formato que consume DOME; SD-JWT VC permite al titular revelar solo parte de sus datos al presentarla.",
+      "tooltip": "Modelo de datos con el que se emite la credencial. W3C VC 2.0 es el de interoperabilidad más amplia; SD-JWT VC añade divulgación selectiva, de modo que el titular revela solo parte de sus datos al presentarla.",
       "label": "Formato de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (próximamente)"
     },
     "grantType": {
-      "tooltip": "Cómo recoge la credencial el titular (OID4VCI). Authorization Code le obliga a autenticarse antes ante el emisor; Pre-Authorized Code se salta ese login porque su identidad ya se verificó.",
+      "tooltip": "Cómo demuestra el titular quién es antes de recoger la credencial (OID4VCI). Con Authorization Code se autentica ante el emisor en el momento de recogerla. Con Pre-Authorized Code no hay login: confirma un código de un solo uso que recibe en su correo.",
       "label": "Tipo de concesión",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno: cada canal se intenta por separado y se informa de su resultado.",
+      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno. Directo devuelve aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra un código para escanear con el wallet. Correo electrónico envía al titular un enlace para recogerla.",
       "label": "Método de entrega",
       "direct": "Directo",
       "email": "Correo electrónico",
@@ -428,11 +428,7 @@
       "credentialLabel": "Credencial firmada",
       "credentialDescription": "Este es el token de la credencial máquina, listo para ser utilizado por un servicio que quiera presentarse ante el verificador para identificarse (login M2M).",
       "done": "Hecho",
-      "pending": {
-        "both": "Copia antes la credencial firmada y la clave privada. Ninguna de las dos se puede recuperar una vez cierres este diálogo.",
-        "credential": "Copia antes la credencial firmada. No se puede recuperar una vez cierres este diálogo.",
-        "privateKey": "Copia antes la clave privada. No se puede recuperar una vez cierres este diálogo."
-      },
+      "pending": "Copia el contenido sensible que se muestra arriba antes de terminar. Solo se muestra una vez y no se puede recuperar una vez cierres este diálogo.",
       "copyFailed": {
         "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
         "privateKey": "No se ha podido copiar la clave privada al portapapeles. Inténtalo de nuevo."

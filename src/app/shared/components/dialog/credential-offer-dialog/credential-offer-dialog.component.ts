@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
@@ -35,6 +36,7 @@ export interface CredentialOfferDialogData {
         MatButton,
         MatIconButton,
         MatIcon,
+        MatTooltip,
         MatDialogTitle,
         MatDialogContent,
         MatDialogActions,
@@ -67,6 +69,10 @@ export class CredentialOfferDialogComponent {
   /** AC-13: this surface's only trackable artifact is the key -- there is no credential block here. */
   protected readonly pendingArtifacts = computed<readonly ArtifactKind[]>(() =>
     this.hasKeyArtifact && !this.privateKeyCopied() ? ['privateKey'] : []
+  );
+
+  protected readonly pendingHintKey = computed<string>(() =>
+    this.pendingArtifacts().length > 0 ? 'credentialIssuance.direct-result-dialog.pending' : ''
   );
 
   /**

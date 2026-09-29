@@ -368,20 +368,20 @@
       "organizationIdentifier": "Enter only the characters after 'VAT...-'. For example, if 'VATEU-123ABC', enter '123ABC'"
     },
     "format": {
-      "tooltip": "Data model the credential is issued in. W3C VC 2.0 is the format DOME consumes; SD-JWT VC lets the holder disclose only some of its claims when presenting it.",
+      "tooltip": "Data model the credential is issued in. W3C VC 2.0 is the widely interoperable one; SD-JWT VC adds selective disclosure, letting the holder reveal only some of its claims when presenting it.",
       "label": "Credential format",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (coming soon)"
     },
     "grantType": {
-      "tooltip": "How the holder collects the credential (OID4VCI). Authorization Code makes them sign in against the issuer first; Pre-Authorized Code skips that login because their identity was already verified.",
+      "tooltip": "How the holder proves who they are before collecting the credential (OID4VCI). With Authorization Code they sign in against the issuer at collection time. With Pre-Authorized Code there is no sign-in: they confirm a one-time code sent to their email instead.",
       "label": "Grant type",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Channel the credential is sent through. You can pick more than one: each is attempted independently and reported separately.",
+      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct returns the signed credential here, for you to copy and hand over yourself. QR Code shows a code to scan with the wallet. Email sends the holder a link to collect it.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",
@@ -428,11 +428,7 @@
       "credentialLabel": "Signed credential",
       "credentialDescription": "This is the machine credential's token, ready to be used by a service that wants to present itself to the verifier to identify itself (M2M login).",
       "done": "Done",
-      "pending": {
-        "both": "Copy the signed credential and the private key first. Neither can be recovered once you close this dialog.",
-        "credential": "Copy the signed credential first. It cannot be recovered once you close this dialog.",
-        "privateKey": "Copy the private key first. It cannot be recovered once you close this dialog."
-      },
+      "pending": "Copy the sensitive content shown above before finishing. It is shown only once and cannot be recovered after you close this dialog.",
       "copyFailed": {
         "credential": "The credential could not be copied to the clipboard. Try again.",
         "privateKey": "The private key could not be copied to the clipboard. Try again."
