@@ -67,7 +67,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="menuTriggerRef.openMenu()">arrow_drop_down</mat-icon>
     </div>
 
-    <mat-menu #menu="matMenu" class="filter-dropdown-panel accent-scope rounded-scope" [hasBackdrop]="true">
+    <mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
       <div class="filter-dropdown-content"
            [class.filter-dropdown-content--wide]="showFooter()"
            (click)="$event.stopPropagation()">
@@ -127,17 +127,17 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       height: 32px;
       padding-right: 6px;
       box-sizing: border-box;
-      border-radius: var(--radius-lg, 16px);
+      border-radius: var(--radius-md, 8px);
       border: 1px solid var(--border-default, #D1D5DB);
       background: var(--surface-card, #FFFFFF);
       white-space: nowrap;
 
       &:hover, &--active {
-        border-color: var(--primary-accent);
+        border-color: var(--primary-color);
       }
 
       &:has(.filter-dropdown-trigger:focus-visible) {
-        outline: 2px solid var(--primary-accent);
+        outline: 2px solid var(--primary-color);
         outline-offset: 2px;
       }
     }
@@ -151,7 +151,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       height: 100%;
       padding: 0 0 0 12px;
       border: none;
-      border-radius: var(--radius-lg, 16px) 0 0 var(--radius-lg, 16px);
+      border-radius: var(--radius-md, 8px) 0 0 var(--radius-md, 8px);
       background: transparent;
       color: var(--text-primary, #1A1A2E);
       font: inherit;
@@ -193,7 +193,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       }
 
       &:focus-visible {
-        outline: 2px solid var(--primary-accent);
+        outline: 2px solid var(--primary-color);
         outline-offset: 1px;
       }
     }
@@ -222,8 +222,8 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       padding: 0 4px;
       border-radius: 999px;
       line-height: 1;
-      background: var(--primary-accent);
-      color: var(--color-white);
+      background: var(--secondary-color, #6B7280);
+      color: var(--secondary-contrast-color, #fff);
       font-size: 0.7rem;
       font-weight: 700;
     }
@@ -305,20 +305,14 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       border-top: 1px solid var(--border-default, #D1D5DB);
     }
 
-    // Beats the global tenant override (:root .mat-mdc-flat-button.mat-primary).
-    .filter-dropdown-footer .mat-mdc-flat-button.mat-primary {
-      --mdc-filled-button-container-color: var(--primary-accent);
-      --mdc-filled-button-label-text-color: var(--color-white);
-    }
-
     .filter-dropdown-close {
-      background: var(--color-white);
-      color: var(--primary-accent);
+      background: var(--surface-card, #fff);
+      color: var(--primary-color);
       border: none;
       padding: 0 12px;
       font: inherit;
       cursor: pointer;
-      border-radius: var(--radius-lg, 16px);
+      border-radius: 4px;
 
       &:hover {
         background: var(--action-secondary, #F3F4F6);

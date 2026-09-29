@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY, MatTooltipModule } from '@angular/material/tooltip';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIcon } from '@angular/material/icon';
@@ -44,11 +44,6 @@ const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDir
     selector: 'app-credential-management',
     templateUrl: './credential-management.component.html',
     styleUrls: ['./credential-management.component.scss'],
-    host: { class: 'accent-scope rounded-scope' },
-    // Tooltips render in the overlay, outside the host's .rounded-scope.
-    providers: [
-        { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: { ...MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY(), tooltipClass: 'rounded-scope' } },
-    ],
     imports: [
         FormsModule,
         MatButton,
