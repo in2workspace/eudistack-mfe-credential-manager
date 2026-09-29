@@ -67,7 +67,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="menuTriggerRef.openMenu()">arrow_drop_down</mat-icon>
     </div>
 
-    <mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
+    <mat-menu #menu="matMenu" class="filter-dropdown-panel accent-scope" [hasBackdrop]="true">
       <div class="filter-dropdown-content"
            [class.filter-dropdown-content--wide]="showFooter()"
            (click)="$event.stopPropagation()">
@@ -133,11 +133,11 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       white-space: nowrap;
 
       &:hover, &--active {
-        border-color: var(--primary-color);
+        border-color: var(--primary-accent);
       }
 
       &:has(.filter-dropdown-trigger:focus-visible) {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--primary-accent);
         outline-offset: 2px;
       }
     }
@@ -193,7 +193,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       }
 
       &:focus-visible {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--primary-accent);
         outline-offset: 1px;
       }
     }
@@ -222,8 +222,8 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       padding: 0 4px;
       border-radius: 999px;
       line-height: 1;
-      background: var(--secondary-color, #6B7280);
-      color: var(--secondary-contrast-color, #fff);
+      background: var(--primary-accent);
+      color: var(--color-white);
       font-size: 0.7rem;
       font-weight: 700;
     }
@@ -305,9 +305,15 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       border-top: 1px solid var(--border-default, #D1D5DB);
     }
 
+    // Beats the global tenant override (:root .mat-mdc-flat-button.mat-primary).
+    .filter-dropdown-footer .mat-mdc-flat-button.mat-primary {
+      --mdc-filled-button-container-color: var(--primary-accent);
+      --mdc-filled-button-label-text-color: var(--color-white);
+    }
+
     .filter-dropdown-close {
-      background: var(--surface-card, #fff);
-      color: var(--primary-color);
+      background: var(--color-white);
+      color: var(--primary-accent);
       border: none;
       padding: 0 12px;
       font: inherit;

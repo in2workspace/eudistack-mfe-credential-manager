@@ -1,0 +1,27 @@
+// Fixed palette — brand-independent, unlike the tenant --primary-color.
+:root {
+  --color-white: #FFFFFF;
+
+  --primary-accent: #2D58A7;
+  --primary-15: #F7F9FD;
+  --primary-25: #EBF0F7;
+  --primary-50: #DDE6F6;
+  --primary-100: #B6CAEC;
+  --primary-200: #8EACE1;
+  --primary-400: #3D71CC;
+
+  --neutral-50: #EBECEE;
+  --neutral-300: #A1A5B0;
+}
+
+// Opt-in scope: controls follow --primary-accent instead of the tenant brand.
+// Also set on overlay panels (menus, select panels), which render outside the
+// scoped component and would otherwise not inherit these.
+.accent-scope {
+  --control-color: var(--primary-accent);
+  --control-contrast-color: var(--color-white);
+  --text-disabled: var(--neutral-300);
+
+  --mdc-outlined-text-field-focus-outline-color: var(--primary-accent);
+  --mat-select-focused-arrow-color: var(--primary-accent);
+}

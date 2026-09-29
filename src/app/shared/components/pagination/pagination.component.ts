@@ -98,7 +98,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       <div class="pagination-right">
         <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-          <mat-select [value]="paginatorRef.pageSize" (selectionChange)="onPageSizeChange($event.value)">
+          <mat-select [value]="paginatorRef.pageSize" panelClass="accent-scope" (selectionChange)="onPageSizeChange($event.value)">
             <mat-option *ngFor="let size of pageSizeOptions(); trackBy: trackBySize" [value]="size">{{ size }}</mat-option>
           </mat-select>
         </mat-form-field>
@@ -106,8 +106,6 @@ import { TranslatePipe } from '@ngx-translate/core';
     </div>
   `,
   styles: [`
-    $primary-tint: rgb(var(--primary-color-rgb, 15 43 91) / 0.1);
-
     .paginator-engine {
       display: none;
     }
@@ -147,9 +145,11 @@ import { TranslatePipe } from '@ngx-translate/core';
       --mat-form-field-container-height: 32px;
       --mat-form-field-container-vertical-padding: 4px;
       --mdc-outlined-text-field-container-shape: var(--radius-md, 8px);
-      --mdc-outlined-text-field-outline-color: var(--border-default, #D1D5DB);
-      --mdc-outlined-text-field-hover-outline-color: var(--border-strong, #9CA3AF);
-      --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+      --mdc-outlined-text-field-outline-color: var(--primary-accent);
+      --mdc-outlined-text-field-hover-outline-color: var(--primary-accent);
+      --mdc-outlined-text-field-focus-outline-color: var(--primary-accent);
+      --mat-select-enabled-arrow-color: var(--primary-accent);
+      --mat-select-focused-arrow-color: var(--primary-accent);
     }
 
     .pagination-nav-btn {
@@ -158,9 +158,9 @@ import { TranslatePipe } from '@ngx-translate/core';
       gap: 4px;
       height: 32px;
       padding: 0 10px;
-      border: 1px solid var(--primary-color);
-      background: var(--surface-card, #FFFFFF);
-      color: var(--primary-color);
+      border: 1px solid var(--primary-accent);
+      background: var(--color-white);
+      color: var(--primary-accent);
       font: inherit;
       font-size: 0.875rem;
       font-weight: 500;
@@ -174,7 +174,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
 
       &:hover:not(:disabled) {
-        background: $primary-tint;
+        background: var(--primary-15);
       }
 
       &:disabled {
@@ -184,7 +184,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
 
       &:focus-visible {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--primary-accent);
         outline-offset: 2px;
       }
     }
@@ -198,24 +198,24 @@ import { TranslatePipe } from '@ngx-translate/core';
       padding: 0 4px;
       border: none;
       border-radius: var(--radius-md, 8px);
-      background: transparent;
+      background: var(--color-white);
       color: var(--text-primary, #1A1A2E);
       font: inherit;
       font-size: 0.875rem;
       cursor: pointer;
 
       &:hover:not(&--active) {
-        background: var(--action-secondary, #F3F4F6);
+        background: var(--primary-50);
       }
 
+      // Text stays --text-primary: --primary-accent on --primary-100 is only ~4.1:1.
       &--active {
-        background: $primary-tint;
-        color: var(--primary-color);
+        background: var(--primary-100);
         font-weight: 600;
       }
 
       &:focus-visible {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--primary-accent);
         outline-offset: 2px;
       }
     }

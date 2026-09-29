@@ -44,6 +44,7 @@ const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDir
     selector: 'app-credential-management',
     templateUrl: './credential-management.component.html',
     styleUrls: ['./credential-management.component.scss'],
+    host: { class: 'accent-scope' },
     imports: [
         FormsModule,
         MatButton,
