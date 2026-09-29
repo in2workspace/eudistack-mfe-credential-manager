@@ -1,10 +1,11 @@
 export const IAM_PARAMS = Object.freeze({
     CLIENT_ID: "vc-auth-client",
-    // "issuer_access" (not "learcredential") so the DCQL query the Verifier builds
-    // for this login requires the Onboarding/Execute or SysAdmin power — otherwise
-    // the wallet offers any employee credential regardless of power.
-    SCOPE: "openid profile email offline_access issuer_access role",
-    GRANT_TYPE: "code"
+    SCOPE: "openid profile email offline_access learcredential role",
+    GRANT_TYPE: "code",
+    // Sent as the `access_profile` authorization parameter so the Verifier narrows the wallet's
+    // credential selection to those able to enter the Issuer console (Onboarding/Execute or
+    // SysAdmin power). Deliberately a parameter, not a scope: it needs no client registration.
+    ACCESS_PROFILE: "issuer_access"
 });
 
 const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
