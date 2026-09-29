@@ -556,6 +556,7 @@
   "filters": {
     "selectAnOption": "Selecciona una opció",
     "clearAll": "Netejar-ho tot",
+    "clearFilter": "Esborra el filtre: {{filter}}",
     "close": "Tancar",
     "confirm": "Confirmar",
     "searchByOrganization": "Cerca pel nom de l'organització",

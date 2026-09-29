@@ -581,6 +581,7 @@
   "filters": {
     "selectAnOption": "Selecciona una opción",
     "clearAll": "Limpiar todo",
+    "clearFilter": "Borrar filtro: {{filter}}",
     "close": "Cerrar",
     "confirm": "Confirmar",
     "searchByOrganization": "Buscar por nombre de organización",

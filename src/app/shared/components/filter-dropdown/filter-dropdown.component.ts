@@ -39,20 +39,33 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     TranslatePipe,
   ],
   template: `
-    <button
-      type="button"
-      class="filter-dropdown-trigger"
-      [class.filter-dropdown-trigger--active]="selected().length > 0"
-      [matMenuTriggerFor]="menu"
-      #menuTriggerRef="matMenuTrigger"
-      (menuOpened)="onOpened()"
-      [attr.aria-label]="label() | translate">
-      <span class="filter-dropdown-trigger-label">{{ label() | translate }}</span>
+    <!-- One bordered chip, three parts: the menu trigger (label + count), a
+         separate clear button (a button can't be nested inside another) and
+         the caret, which opens the menu like the trigger does. -->
+    <div class="filter-dropdown-chip" [class.filter-dropdown-chip--active]="selected().length > 0">
+      <button
+        type="button"
+        class="filter-dropdown-trigger"
+        [matMenuTriggerFor]="menu"
+        #menuTriggerRef="matMenuTrigger"
+        (menuOpened)="onOpened()"
+        [attr.aria-label]="label() | translate">
+        <span class="filter-dropdown-trigger-label">{{ label() | translate }}</span>
+        @if (selected().length > 0) {
+          <span class="filter-dropdown-count">{{ selected().length }}</span>
+        }
+      </button>
       @if (selected().length > 0) {
-        <span class="filter-dropdown-count">{{ selected().length }}</span>
+        <button
+          type="button"
+          class="filter-dropdown-clear"
+          [attr.aria-label]="'filters.clearFilter' | translate: { filter: (label() | translate) }"
+          (click)="clear()">
+          <mat-icon>close</mat-icon>
+        </button>
       }
-      <mat-icon class="filter-dropdown-caret">arrow_drop_down</mat-icon>
-    </button>
+      <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="menuTriggerRef.openMenu()">arrow_drop_down</mat-icon>
+    </div>
 
     <mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
       <div class="filter-dropdown-content"
@@ -108,33 +121,93 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     </mat-menu>
   `,
   styles: [`
-    .filter-dropdown-trigger {
+    .filter-dropdown-chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
       height: 32px;
-      padding: 0 6px 0 12px;
+      padding-right: 6px;
+      box-sizing: border-box;
       border-radius: var(--radius-md, 8px);
       border: 1px solid var(--border-default, #D1D5DB);
       background: var(--surface-card, #FFFFFF);
-      color: var(--text-primary, #1A1A2E);
-      font: inherit;
-      font-size: 0.875rem;
-      cursor: pointer;
       white-space: nowrap;
 
       &:hover, &--active {
         border-color: var(--primary-color);
       }
 
-      &:focus-visible {
+      &:has(.filter-dropdown-trigger:focus-visible) {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
       }
     }
 
-    .filter-dropdown-caret {
+    // Borderless: the chip draws the box. Its left padding makes the whole
+    // left part of the chip clickable.
+    .filter-dropdown-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      padding: 0 0 0 12px;
+      border: none;
+      border-radius: var(--radius-md, 8px) 0 0 var(--radius-md, 8px);
+      background: transparent;
+      color: var(--text-primary, #1A1A2E);
+      font: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none; // drawn on the chip instead
+      }
+    }
+
+    // 6px after the count (4px gap + 2px inside this 20px target around the
+    // 16px icon); the caret pulls in so only a hairline separates them.
+    .filter-dropdown-clear {
+      position: relative;
+      z-index: 1; // above the caret, which overlaps its right edge (see below)
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      margin-left: 4px;
+      padding: 0;
+      border: none;
+      border-radius: var(--radius-full, 9999px);
+      background: transparent;
       color: var(--text-secondary, #6B7280);
+      cursor: pointer;
+
+      mat-icon {
+        width: 16px;
+        height: 16px;
+        font-size: 16px;
+      }
+
+      &:hover {
+        background: var(--action-secondary, #F3F4F6);
+        color: var(--text-primary, #1A1A2E);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 1px;
+      }
+    }
+
+    .filter-dropdown-caret {
+      margin-left: 4px;
+      color: var(--text-secondary, #6B7280);
+      cursor: pointer;
+    }
+
+    // The glyph has ~7px of empty space on its left: this leaves ~2px of
+    // visible gap after the clear button's own 2px.
+    .filter-dropdown-clear + .filter-dropdown-caret {
+      margin-left: -7px;
     }
 
     .filter-dropdown-count {
@@ -285,6 +358,12 @@ export class FilterDropdownComponent {
     if (!this.showFooter()) {
       this.selectionChange.emit(this.draft());
     }
+  }
+
+  /** Clear button on the chip: empties this filter right away, in both modes (no Confirm step). */
+  protected clear(): void {
+    this.draft.set([]);
+    this.selectionChange.emit([]);
   }
 
   protected confirm(trigger: MatMenuTrigger): void {
