@@ -144,10 +144,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.selectedStatuses().length > 0
   );
 
+  protected readonly hasTenantColumn = signal(false);
+
   /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
   private originData: CredentialProcedureWithClass[] = [];
-
-  private readonly hasTenantColumn = signal(false);
 
   /** Current (debounced, applied) subject search text — kept in sync by applyCompoundFilter(). */
   private readonly currentSubjectFilter = signal('');
