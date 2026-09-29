@@ -141,10 +141,14 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      // border-box: a single digit fits inside 18×18, so it renders as a
+      // circle; only 2+ digits stretch it into a pill.
+      box-sizing: border-box;
       min-width: 18px;
       height: 18px;
-      padding: 0 5px;
+      padding: 0 4px;
       border-radius: 999px;
+      line-height: 1;
       background: var(--secondary-color, #6B7280);
       color: var(--secondary-contrast-color, #fff);
       font-size: 0.7rem;

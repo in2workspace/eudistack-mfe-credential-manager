@@ -112,7 +112,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public readonly statusOptions = computed<FilterOption[]>(() =>
     this.filterableStatuses.map(status => ({
       value: status,
-      label: this.translate.instant(`credentialDetails.${status}`),
+      label: this.toSentenceCase(this.translate.instant(`credentialDetails.${status}`)),
     }))
   );
 
@@ -427,6 +427,12 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private updatedTime(item: CredentialProcedureBasicInfo): number {
     const t = Date.parse(item.credential_procedure?.updated ?? '');
     return Number.isFinite(t) ? t : 0;
+  }
+
+  /** "TO SIGN" → "To sign". Status translations are uppercase for the details-page pill. */
+  private toSentenceCase(text: string): string {
+    const lower = text.toLocaleLowerCase();
+    return lower.charAt(0).toLocaleUpperCase() + lower.slice(1);
   }
 
   private setDataSortingAccessor(): void{
