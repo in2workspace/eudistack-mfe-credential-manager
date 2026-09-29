@@ -25,3 +25,28 @@
   --mdc-outlined-text-field-focus-outline-color: var(--primary-accent);
   --mat-select-focused-arrow-color: var(--primary-accent);
 }
+
+// Opt-in scope: Material buttons, inputs, menus, cards and tooltips get
+// --radius-lg corners (custom boxes/buttons use var(--radius-lg) themselves).
+// Like .accent-scope, also set on overlay panels and tooltips. To roll it out
+// app-wide, move these declarations to :root.
+.rounded-scope {
+  --mdc-filled-button-container-shape: var(--radius-lg);
+  --mdc-outlined-button-container-shape: var(--radius-lg);
+  --mdc-protected-button-container-shape: var(--radius-lg);
+  --mdc-text-button-container-shape: var(--radius-lg);
+  --mdc-outlined-text-field-container-shape: var(--radius-lg);
+  --mdc-filled-text-field-container-shape: var(--radius-lg);
+  --mat-menu-container-shape: var(--radius-lg);
+  --mat-autocomplete-container-shape: var(--radius-lg);
+  --mdc-elevated-card-container-shape: var(--radius-lg);
+  --mdc-outlined-card-container-shape: var(--radius-lg);
+  --mdc-plain-tooltip-container-shape: var(--radius-lg);
+}
+
+// The select panel has no shape token: Material hardcodes 4px and flattens the
+// edge next to the field (.cdk-overlay-pane:not(.mat-mdc-select-panel-above) …),
+// so this needs more specificity than that rule.
+.cdk-overlay-container .cdk-overlay-pane div.mat-mdc-select-panel.rounded-scope {
+  border-radius: var(--radius-lg);
+}

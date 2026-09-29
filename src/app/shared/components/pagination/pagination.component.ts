@@ -98,7 +98,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       <div class="pagination-right">
         <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-          <mat-select [value]="paginatorRef.pageSize" panelClass="accent-scope" (selectionChange)="onPageSizeChange($event.value)">
+          <mat-select [value]="paginatorRef.pageSize" panelClass="accent-scope rounded-scope" (selectionChange)="onPageSizeChange($event.value)">
             <mat-option *ngFor="let size of pageSizeOptions(); trackBy: trackBySize" [value]="size">{{ size }}</mat-option>
           </mat-select>
         </mat-form-field>
@@ -144,7 +144,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       font-size: 0.875rem;
       --mat-form-field-container-height: 32px;
       --mat-form-field-container-vertical-padding: 4px;
-      --mdc-outlined-text-field-container-shape: var(--radius-md, 8px);
       --mdc-outlined-text-field-outline-color: var(--primary-accent);
       --mdc-outlined-text-field-hover-outline-color: var(--primary-accent);
       --mdc-outlined-text-field-focus-outline-color: var(--primary-accent);
@@ -165,7 +164,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
-      border-radius: var(--radius-md, 8px);
+      border-radius: var(--radius-lg, 16px);
 
       mat-icon {
         font-size: 16px;
@@ -197,7 +196,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       height: 32px;
       padding: 0 4px;
       border: none;
-      border-radius: var(--radius-md, 8px);
+      border-radius: var(--radius-lg, 16px);
       background: var(--color-white);
       color: var(--text-primary, #1A1A2E);
       font: inherit;
