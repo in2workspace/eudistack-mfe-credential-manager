@@ -6,7 +6,7 @@
   <p class="subtitle">{{ 'power.subtitle' | translate }}</p>
 
   <div class="scope-segment" role="tablist">
-    @for (tab of scopes; track tab) {
+    @for (tab of visibleScopes; track tab) {
       <button
         type="button"
         role="tab"

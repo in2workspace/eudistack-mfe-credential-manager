@@ -21,6 +21,15 @@ import { ThemeService } from 'src/app/core/services/theme.service';
 export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedFormGroup> implements OnInit{
 
   public readonly scopes = POWER_SCOPES;
+
+  /**
+   * The scopes the Operator can actually pick from. `organization` is withheld pending a product
+   * decision on whether a tenant may delegate organization-scoped powers at all; the scope itself
+   * stays wired end to end (form group, validator, payload), so restoring the tab is a one-line
+   * change here and nothing else.
+   */
+  public readonly visibleScopes: readonly PowerScope[] = POWER_SCOPES.filter(scope => scope !== 'organization');
+
   public readonly activeScope = signal<PowerScope>('domain');
 
   public organizationIdentifierIsAdmin: boolean;

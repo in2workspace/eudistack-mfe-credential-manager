@@ -198,4 +198,13 @@ describe('IssuancePowerComponent', () => {
     expect(fg.hasError('noActionPerPower')).toBeFalsy();
   });
 
+
+  it('withholds the organization tab while the product decision is open, without unwiring the scope', () => {
+    const fg = attachForm(component);
+    component.ngOnInit();
+
+    expect(component.visibleScopes).toEqual(['domain']);
+    expect(fg.contains('organization')).toBe(true);
+  });
+
 });
