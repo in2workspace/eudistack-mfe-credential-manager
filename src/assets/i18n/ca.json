@@ -560,6 +560,7 @@
     "close": "Tancar",
     "confirm": "Confirmar",
     "searchByOrganizationId": "Cerca per ID de l’organització",
+    "clearSearch": "Esborra la cerca",
     "noOptions": "Sense opcions",
     "credentialType": "Tipus de credencial",
     "credentialStatus": "Estat de la credencial",

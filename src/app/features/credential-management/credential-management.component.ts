@@ -137,12 +137,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   });
 
   /**
-   * True when any filter is active — the three checkbox-dropdowns or the
-   * subject search box. Drives whether "Clear all" is enabled: a lone search
-   * term with no dropdown filter selected is still a filter worth clearing.
+   * True when any of the three checkbox-dropdowns has a selection. Drives
+   * whether "Clear all" is enabled; the search box has its own clear button.
    */
   public readonly hasActiveFilters = computed(() =>
-    this.currentSubjectFilter().length > 0 ||
     this.selectedOrganizations().length > 0 ||
     this.selectedTypes().length > 0 ||
     this.selectedStatuses().length > 0
@@ -150,11 +148,14 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   protected readonly hasTenantColumn = signal(false);
 
+  /**
+   * Current subject search text, trimmed — set on every keystroke (drives the
+   * search clear button) and kept in sync by applyCompoundFilter().
+   */
+  protected readonly currentSubjectFilter = signal('');
+
   /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
   private originData: CredentialProcedureWithClass[] = [];
-
-  /** Current (debounced, applied) subject search text — kept in sync by applyCompoundFilter(). */
-  private readonly currentSubjectFilter = signal('');
 
   private readonly authService = inject(AuthService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
@@ -235,9 +236,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   public onSearchStringChange(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    // Updated immediately (not debounced) so "Clear all" reflects a just-typed
-    // search term right away — the actual filtering below still debounces, but
-    // the button's enabled state must not lag behind what's visibly in the box.
+    // Updated immediately (not debounced) so the search box's clear button shows
+    // up as soon as there's text — the actual filtering below still debounces,
+    // but the button must not lag behind what's visibly in the box.
     this.currentSubjectFilter.set(filterValue.trim());
     this.searchSubject.next(filterValue);
   }
@@ -310,11 +311,16 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.sortOption.set(match ?? null);
   }
 
-  /** "Clear all" — resets subject search and the three checkbox-dropdown filters (AC-2.1). */
-  public clearFilters(): void {
+  /** "Clear all" — resets the three checkbox-dropdown filters (AC-2.1), keeping the subject search. */
+  public clearDropdownFilters(): void {
     this.selectedOrganizations.set([]);
     this.selectedTypes.set([]);
     this.selectedStatuses.set([]);
+    this.reapplyDropdownFilters();
+  }
+
+  /** The search box's clear button — empties the subject search at once, without waiting for the debounce. */
+  public clearSearch(): void {
     this.searchSubject.next('');
     if (this.searchInput?.nativeElement) {
       this.searchInput.nativeElement.value = '';
@@ -324,6 +330,14 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
+  }
+
+  /** "No matches" empty state — resets the subject search and the three checkbox-dropdown filters. */
+  public clearFilters(): void {
+    this.selectedOrganizations.set([]);
+    this.selectedTypes.set([]);
+    this.selectedStatuses.set([]);
+    this.clearSearch();
   }
 
   private initializeCredentialTable(): void {

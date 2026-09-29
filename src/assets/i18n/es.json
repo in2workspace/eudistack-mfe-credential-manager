@@ -585,6 +585,7 @@
     "close": "Cerrar",
     "confirm": "Confirmar",
     "searchByOrganizationId": "Buscar por ID de organización",
+    "clearSearch": "Borrar búsqueda",
     "noOptions": "Sin opciones",
     "credentialType": "Tipo de credencial",
     "credentialStatus": "Estado de la credencial",

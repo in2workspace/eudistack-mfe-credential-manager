@@ -585,6 +585,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "searchByOrganizationId": "Search by organization ID",
+    "clearSearch": "Clear search",
     "noOptions": "No options",
     "credentialType": "Credential type",
     "credentialStatus": "Credential status",

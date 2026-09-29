@@ -535,41 +535,72 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(firstPageSpy).toHaveBeenCalled();
     }));
 
-    // "Clear all" must reflect (and clear) a lone subject search too, not just the
-    // three checkbox-dropdown facets — see hasActiveFilters().
-    it('hasActiveFilters is true when only the subject search box has text (no dropdown filter active)', fakeAsync(() => {
-      expect(component.hasActiveFilters()).toBe(false);
-
+    // "Clear all" only covers the three checkbox-dropdown facets: the search box
+    // has its own clear button — see hasActiveFilters().
+    it('hasActiveFilters ignores a lone subject search', fakeAsync(() => {
       component['searchSubject'].next('Alice');
       tick(500);
 
-      expect(component.selectedOrganizations()).toEqual([]);
-      expect(component.selectedTypes()).toEqual([]);
-      expect(component.selectedStatuses()).toEqual([]);
-      expect(component.hasActiveFilters()).toBe(true);
+      expect(component.hasActiveFilters()).toBe(false);
     }));
 
-    // The actual filtering still debounces (500ms), but "Clear all" must not keep
-    // looking disabled for that window while there's plainly text in the box —
-    // onSearchStringChange() updates hasActiveFilters synchronously.
-    it('hasActiveFilters reacts immediately on keystroke, before the 500ms filter debounce fires', () => {
-      expect(component.hasActiveFilters()).toBe(false);
-
-      component.onSearchStringChange({ target: { value: 'Ali' } } as unknown as Event);
-
-      expect(component.hasActiveFilters()).toBe(true);
-    });
-
-    it('clearFilters() resets hasActiveFilters back to false, including a lone subject search', fakeAsync(() => {
+    it('clearDropdownFilters() resets the dropdown facets but keeps the subject search', fakeAsync(() => {
       component['searchSubject'].next('Alice');
       tick(500);
+      component.onStatusFilterChange(['VALID']);
       expect(component.hasActiveFilters()).toBe(true);
+
+      component.clearDropdownFilters();
+
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.statuses).toEqual([]);
+      expect(parsed.subject).toBe('Alice');
+      expect(component.hasActiveFilters()).toBe(false);
+    }));
+
+    it('clearSearch() empties the subject search at once but keeps the dropdown facets', () => {
+      component.onStatusFilterChange(['VALID']);
+      component.onSearchStringChange({ target: { value: 'Alice' } } as unknown as Event);
+
+      component.clearSearch();
+
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.subject).toBe('');
+      expect(parsed.statuses).toEqual(['VALID']);
+    });
+
+    it('clearFilters() resets both the subject search and the dropdown facets', fakeAsync(() => {
+      component['searchSubject'].next('Alice');
+      tick(500);
+      component.onStatusFilterChange(['VALID']);
 
       component.clearFilters();
       tick(500);
 
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.subject).toBe('');
+      expect(parsed.statuses).toEqual([]);
       expect(component.hasActiveFilters()).toBe(false);
     }));
+
+    // The actual filtering still debounces (500ms), but the clear button must
+    // show up as soon as there's text in the box.
+    it('shows the search clear button immediately on keystroke and hides it once cleared', () => {
+      component.isLoading = false;
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('#search-clear')).toBeNull();
+
+      component.onSearchStringChange({ target: { value: 'Ali' } } as unknown as Event);
+      fixture.detectChanges();
+      const clearBtn = compiled.querySelector<HTMLButtonElement>('#search-clear');
+      expect(clearBtn).toBeTruthy();
+
+      clearBtn!.click();
+      fixture.detectChanges();
+      expect(compiled.querySelector('#search-clear')).toBeNull();
+      expect(JSON.parse(component.dataSource.filter).subject).toBe('');
+    });
 
     // EC-02: filter leaves exactly one result (no empty state, no error)
     it('EC-02: filter that matches exactly one credential shows one row', () => {
