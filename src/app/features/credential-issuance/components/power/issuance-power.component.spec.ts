@@ -28,20 +28,6 @@ describe('IssuancePowerComponent', () => {
   beforeEach(async () => {
     proto.updateMessages = () => () => {};
     proto.data = () => [];
-    proto.resetForm = () => {};
-    proto.filterVisiblePowers = function(powers: IssuanceFormPowerSchema[]) {
-      return (powers || []).filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
-    };
-    Object.defineProperty(proto, 'powersInput', {
-      configurable: true,
-      set(this: IssuancePowerComponent, value: IssuanceFormPowerSchema[]) {
-        if (value !== undefined) {
-          (this as any).resetForm();
-          this['_powersInput'] = value || [];
-          this.selectorPowers = (this as any).filterVisiblePowers(value);
-        }
-      }
-    });
     mockIssuanceService = {
       updateAlertMessages: jest.fn()
     };
@@ -69,7 +55,7 @@ describe('IssuancePowerComponent', () => {
 
   it('should create the component', () => {
     attachForm(component);
-    component.powersInput = [];
+    component.ngOnInit();
     fixture.detectChanges();
     expect(component).toBeTruthy();
   });
@@ -77,7 +63,7 @@ describe('IssuancePowerComponent', () => {
   it('organizationIdentifierIsAdmin is truthy if the service indicates so', () => {
     attachForm(component);
     component.organizationIdentifierIsAdmin = true;
-    component.powersInput = [];
+    component.ngOnInit();
     fixture.detectChanges();
     expect(component.organizationIdentifierIsAdmin).toBeTruthy();
 
@@ -86,7 +72,7 @@ describe('IssuancePowerComponent', () => {
     const cmp2 = f2.componentInstance;
     attachForm(cmp2);
     cmp2.organizationIdentifierIsAdmin = false;
-    cmp2.powersInput = [];
+    cmp2.ngOnInit();
     f2.detectChanges();
     expect(cmp2.organizationIdentifierIsAdmin).toBeFalsy();
   });
@@ -205,6 +191,93 @@ describe('IssuancePowerComponent', () => {
 
     expect(component.visibleScopes).toEqual(['domain']);
     expect(fg.contains('organization')).toBe(true);
+  });
+
+
+  describe('the switch drives add and remove', () => {
+    const toggleEvent = (checked: boolean, source: any = {}) => ({ checked, source } as any);
+
+    const withCatalogue = () => {
+      const fg = attachForm(component);
+      (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
+      component.ngOnInit();
+      return fg;
+    };
+
+    it('adds the power when the switch goes on', () => {
+      const fg = withCatalogue();
+
+      component.onPowerToggle('domain', 'pw', toggleEvent(true));
+
+      expect((fg.get('domain') as FormGroup).contains('pw')).toBe(true);
+    });
+
+    it('removes it when the switch goes off', () => {
+      const fg = withCatalogue();
+      component.onPowerToggle('domain', 'pw', toggleEvent(true));
+
+      component.onPowerToggle('domain', 'pw', toggleEvent(false));
+
+      expect((fg.get('domain') as FormGroup).contains('pw')).toBe(false);
+    });
+
+    it('does nothing when asked to remove a power that was never added', () => {
+      const fg = withCatalogue();
+
+      component.removePower('domain', 'pw');
+
+      expect((fg.get('domain') as FormGroup).contains('pw')).toBe(false);
+      expect(dialog.openDialogWithCallback).not.toHaveBeenCalled();
+    });
+
+    it('restores the switch before prompting, so a dismissed dialog cannot desync it', () => {
+      const fg = withCatalogue();
+      component.onPowerToggle('domain', 'pw', toggleEvent(true));
+      (fg.get('domain.pw.a') as FormControl).setValue(true);
+      const source = { checked: false } as any;
+
+      // Dialog left unanswered: the callback is never invoked.
+      (dialog.openDialogWithCallback as jest.Mock).mockImplementation(() => undefined);
+      component.onPowerToggle('domain', 'pw', toggleEvent(false, source));
+
+      expect(source.checked).toBe(true);
+      expect((fg.get('domain') as FormGroup).contains('pw')).toBe(true);
+    });
+  });
+
+
+  describe('degraded session and unknown scopes', () => {
+    it('falls back to a generic label when the session carries no organization', () => {
+      (authService.extractRawMandator as jest.Mock).mockReturnValue(null);
+      attachForm(component);
+      component.ngOnInit();
+
+      expect(component.organizationName()).toBe('');
+      expect(component.scopeLabel('organization')).toBe('power.scope.organization');
+    });
+
+    it('reports an absent scope as empty rather than throwing', () => {
+      const fg = new FormGroup({});
+      (component as any).form = () => fg;
+
+      expect(component.scopeCount('domain')).toBe(0);
+      expect(component.isPowerEnabled('domain', 'pw')).toBe(false);
+    });
+  });
+
+
+  it('refuses to add a power the operator is not allowed to delegate, even off-template', () => {
+    (authService.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(false);
+    const f = TestBed.createComponent(IssuancePowerComponent);
+    const cmp = f.componentInstance;
+    const fg = attachForm(cmp);
+    (cmp as any).data = () => [{ function: 'Certification', action: ['Attest'], isAdminRequired: true }];
+    cmp.ngOnInit();
+
+    cmp.addPower('domain', 'Certification');
+
+    expect(cmp.selectorPowers).toEqual([]);
+    expect((fg.get('domain') as FormGroup).contains('Certification')).toBe(false);
   });
 
 });

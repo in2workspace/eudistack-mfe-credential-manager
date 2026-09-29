@@ -1,5 +1,5 @@
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, UntypedFormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { MatSlideToggle, MatSlideToggleChange } from '@angular/material/slide-toggle';
@@ -33,7 +33,6 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   public readonly activeScope = signal<PowerScope>('domain');
 
   public organizationIdentifierIsAdmin: boolean;
-  public _powersInput: IssuanceFormPowerSchema[] = [];
   public selectorPowers: IssuanceFormPowerSchema[] = [];
   private readonly themeService = inject(ThemeService);
   public readonly sysTenant: string = this.themeService.tenantDomain;
@@ -44,13 +43,6 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   public constructor(){
     super();
     this.organizationIdentifierIsAdmin = this.authService.hasAdminOrganizationIdentifier();
-  }
-
-  @Input()
-  public set powersInput(value: IssuanceFormPowerSchema[]) {
-    this.resetForm();
-    this._powersInput = value || [];
-    this.selectorPowers = this.filterVisiblePowers(value) || [];
   }
 
   public organizationName(): string {
@@ -85,7 +77,7 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   }
 
   public addPower(scope: PowerScope, funcName: string): void {
-    const power = this._powersInput.find(p => p.function === funcName);
+    const power = this.selectorPowers.find(p => p.function === funcName);
     const actions = power?.action;
     if(!actions){
       console.error('No actions for this power');
@@ -136,9 +128,7 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
     this.ensureScopeGroups();
     this.form().addValidators(this.powerRulesValidator);
     this.form().updateValueAndValidity({ emitEvent: false });
-    const selectorPowers = this.data();
-    this._powersInput = selectorPowers || [];
-    this.selectorPowers = this.filterVisiblePowers(selectorPowers) || [];
+    this.selectorPowers = this.filterVisiblePowers(this.data() ?? []);
   }
 
   private ensureScopeGroups(): void {
@@ -151,14 +141,6 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
 
   private filterVisiblePowers(powers: IssuanceFormPowerSchema[]): IssuanceFormPowerSchema[]{
     return powers.filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
-  }
-
-  private resetForm() {
-    this.form().reset();
-    for (const key of Object.keys(this.form().controls)) {
-      this.form().removeControl(key);
-    }
-    this.ensureScopeGroups();
   }
 
   private readonly powerRulesValidator: ValidatorFn = (ctrl: AbstractControl): ValidationErrors | null => {

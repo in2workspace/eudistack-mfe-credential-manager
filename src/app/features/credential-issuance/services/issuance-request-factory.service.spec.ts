@@ -213,6 +213,17 @@ describe('IssuanceRequestFactoryService', () => {
     ]);
   });
 
+  it('should skip a function whose action map never arrived, instead of throwing', () => {
+    const powerForm: IssuanceRawPowerForm = {
+      domain: { Onboarding: undefined }
+    } as any;
+
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+
+    expect(parsed).toEqual([]);
+    expect(console.error).toHaveBeenCalledWith('Not actions found for this key: Onboarding');
+  });
+
   it('should return empty array when power form is empty', () => {
     const parsed = (service as any).parsePower({}, 'learcredential.employee', 'Acme Ltd');
     expect(parsed).toEqual([]);
