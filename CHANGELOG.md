@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-233 - Copyable component**: Prevented loss of copied credentials when the CopyableFieldComponent is destroyed. Implemented centralized clipboard management through ClipBoardService, which renews the clipboard timeout with each copy operation and no longer resets the clipboard on component destruction
 
 
+## [Unreleased]
+
+### Fixed
+
+- **Logging in to the Issuer console could offer credentials lacking the power required to get in**: the login authorization request now carries `access_profile=issuer_access` (via `customParamsAuthRequest`), so the Verifier narrows the wallet's selection to credentials holding the Onboarding/Execute or SysAdmin power instead of any employee credential. The requested scope is unchanged, so no client registration is needed.
+
 ## [3.8.0] - 2026-09-16
 
 ### Security

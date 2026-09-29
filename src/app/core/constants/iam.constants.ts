@@ -1,7 +1,11 @@
 export const IAM_PARAMS = Object.freeze({
     CLIENT_ID: "vc-auth-client",
     SCOPE: "openid profile email offline_access learcredential role",
-    GRANT_TYPE: "code"
+    GRANT_TYPE: "code",
+    // Sent as the `access_profile` authorization parameter so the Verifier narrows the wallet's
+    // credential selection to those able to enter the Issuer console (Onboarding/Execute or
+    // SysAdmin power). Deliberately a parameter, not a scope: it needs no client registration.
+    ACCESS_PROFILE: "issuer_access"
 });
 
 const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
