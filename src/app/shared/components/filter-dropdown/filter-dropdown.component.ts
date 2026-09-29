@@ -55,7 +55,9 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     </button>
 
     <mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
-      <div class="filter-dropdown-content" (click)="$event.stopPropagation()">
+      <div class="filter-dropdown-content"
+           [class.filter-dropdown-content--wide]="showFooter()"
+           (click)="$event.stopPropagation()">
         @if (searchable()) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
             <input
@@ -68,12 +70,15 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
           </mat-form-field>
         }
 
-        <div class="filter-dropdown-title-row">
-          <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
-          @if (draft().length > 0) {
-            <span class="filter-dropdown-count filter-dropdown-count--title">{{ draft().length }}</span>
-          }
-        </div>
+        <!-- Footer mode only: live-filtering dropdowns show their options directly. -->
+        @if (showFooter()) {
+          <div class="filter-dropdown-title-row">
+            <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
+            @if (draft().length > 0) {
+              <span class="filter-dropdown-count">{{ draft().length }}</span>
+            }
+          </div>
+        }
 
         <div class="filter-dropdown-options">
           @for (option of filteredOptions(); track option.value) {
@@ -144,10 +149,6 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       color: var(--secondary-contrast-color, #fff);
       font-size: 0.7rem;
       font-weight: 700;
-
-      &--title {
-        margin-left: 8px;
-      }
     }
 
     .filter-dropdown-content {
@@ -155,6 +156,17 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       flex-direction: column;
       width: 260px;
       padding: 12px;
+      box-sizing: border-box;
+
+      // Organization: as wide as its longest name, up to the 50-character
+      // maximum (ch in the option labels' font) plus the checkbox; anything
+      // longer wraps instead of scrolling sideways.
+      &--wide {
+        width: max-content;
+        min-width: 260px;
+        max-width: min(calc(50ch + 64px), calc(100vw - 32px));
+        font-size: var(--mat-checkbox-label-text-size, 0.875rem);
+      }
     }
 
     .filter-dropdown-search {
@@ -169,6 +181,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
     .filter-dropdown-title-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       margin: 4px 0 8px;
     }
 
@@ -185,11 +198,19 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       flex-direction: column;
       max-height: 260px;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .filter-dropdown-option {
       display: block;
       padding: 2px 0;
+      overflow-wrap: anywhere;
+    }
+
+    // The menu panel lives in the CDK overlay, outside this component —
+    // Material caps it at 280px, which would clip the wide (organization) mode.
+    ::ng-deep .mat-mdc-menu-panel.filter-dropdown-panel {
+      max-width: none;
     }
 
     .filter-dropdown-no-options {

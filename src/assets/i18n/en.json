@@ -585,6 +585,8 @@
     "confirm": "Confirm",
     "searchByOrganization": "Search by organization name",
     "noOptions": "No options",
+    "credentialType": "Credential type",
+    "credentialStatus": "Credential status",
     "resultsCount": "{{count}} results"
   },
   "pagination": {

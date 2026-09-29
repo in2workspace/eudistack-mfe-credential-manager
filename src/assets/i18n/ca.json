@@ -560,6 +560,8 @@
     "confirm": "Confirmar",
     "searchByOrganization": "Cerca pel nom de l'organització",
     "noOptions": "Sense opcions",
+    "credentialType": "Tipus de credencial",
+    "credentialStatus": "Estat de la credencial",
     "resultsCount": "{{count}} resultats"
   },
   "pagination": {
