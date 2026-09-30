@@ -280,4 +280,17 @@ describe('IssuancePowerComponent', () => {
     expect((fg.get('domain') as FormGroup).contains('Certification')).toBe(false);
   });
 
+
+  it('offers the lone scope as a label, not as a clickable choice', () => {
+    attachForm(component);
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.visibleScopes.length).toBe(1);
+    expect(component.isScopeSelectable).toBe(false);
+
+    const tab: HTMLButtonElement = fixture.nativeElement.querySelector('.scope-tab');
+    expect(tab.disabled).toBe(true);
+  });
+
 });

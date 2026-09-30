@@ -12,6 +12,7 @@
         role="tab"
         class="scope-tab"
         [class.active]="scope === tab"
+        [disabled]="!isScopeSelectable"
         [attr.aria-selected]="scope === tab"
         (click)="activeScope.set(tab)">
         <span class="scope-tab-label">{{ scopeLabel(tab) }}</span>

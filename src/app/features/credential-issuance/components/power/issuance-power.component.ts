@@ -32,6 +32,13 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
 
   public readonly activeScope = signal<PowerScope>('domain');
 
+  /**
+   * With a single scope on offer the segment is a label, not a choice: it stays visible so the
+   * Operator can see which scope the powers land in, but it must not invite a click that would
+   * do nothing.
+   */
+  public readonly isScopeSelectable = this.visibleScopes.length > 1;
+
   public organizationIdentifierIsAdmin: boolean;
   public selectorPowers: IssuanceFormPowerSchema[] = [];
   private readonly themeService = inject(ThemeService);

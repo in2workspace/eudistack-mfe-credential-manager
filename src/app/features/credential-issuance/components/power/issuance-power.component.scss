@@ -51,6 +51,12 @@
   &.active {
     background: var(--segment-checked-bg, #B6CAEC);
   }
+
+  // Not greyed out: the tab is unavailable as a choice, not as information.
+  &:disabled {
+    cursor: default;
+    color: var(--text-primary, #1A1A2E);
+  }
 }
 
 .scope-tab-label {

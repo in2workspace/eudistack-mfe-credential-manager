@@ -387,7 +387,7 @@
       "mdoc": "mDOC (próximamente)"
     },
     "grantType": {
-      "tooltip": "Cómo demuestra el titular quién es antes de recoger la credencial (OID4VCI). Con Authorization Code se autentica ante el emisor en el momento de recogerla. Con Pre-Authorized Code no hay login: confirma un código de un solo uso que recibe en su correo.",
+      "tooltip": "Cómo demuestra el titular quién es antes de recoger la credencial. Con Authorization Code se identifica ante el emisor en el momento de recogerla. Con Pre-Authorized Code se le envía un código de un solo uso a su correo, y confirmarlo es todo lo que necesita.",
       "label": "Tipo de concesión",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"

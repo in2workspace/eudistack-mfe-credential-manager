@@ -387,7 +387,7 @@
       "mdoc": "mDOC (coming soon)"
     },
     "grantType": {
-      "tooltip": "How the holder proves who they are before collecting the credential (OID4VCI). With Authorization Code they sign in against the issuer at collection time. With Pre-Authorized Code there is no sign-in: they confirm a one-time code sent to their email instead.",
+      "tooltip": "How the holder proves who they are before collecting the credential. With Authorization Code they identify themselves against the issuer at the moment of collecting it. With Pre-Authorized Code a one-time code is sent to their email, and confirming that code is all they need.",
       "label": "Grant type",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
