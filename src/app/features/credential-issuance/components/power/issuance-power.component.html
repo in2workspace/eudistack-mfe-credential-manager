@@ -23,8 +23,11 @@
           @for (power of selectorPowers; track power.function) {
             <mat-option 
               [value]="power"
-              [disabled]="power.isDisabled">
+              [disabled]="!isSelectable(power)">
               {{ ("power." + power.function.toLocaleLowerCase() | translate) }}
+              @if (getUnavailableReason(power.function)) {
+                <span class="unavailable-tag">({{ "power.unavailable.tag" | translate }})</span>
+              }
             </mat-option>
           }
         </mat-select>
@@ -34,13 +37,21 @@
         mat-raised-button 
         color="primary"
         type="button"
-        [disabled]="!selectedPower || selectedPower.isDisabled"
+        [disabled]="!selectedPower || !isSelectable(selectedPower)"
         (click)="addPower(selectedPower!.function)">
         {{ 'power.add' | translate }}
       </button>
     </div>
   </div>
 
+
+  <!-- I-03: explain, before submitting, why an offered power cannot be used right now -->
+  @for (unavailable of getUnavailablePowers(); track unavailable.function) {
+    <p class="unavailable-hint" role="note">
+      {{ ("power." + unavailable.function.toLocaleLowerCase()) | translate }}:
+      {{ ("power.unavailable." + unavailable.reason) | translate }}
+    </p>
+  }
 
   <!-- Added powers Section -->
   @if (form().controls | keyvalue) {
@@ -79,6 +90,8 @@
       <div class="bottom-alert">{{ "error.form.no_power" | translate }}</div>
     }@else if(form().hasError('noActionPerPower')){
       <div class="bottom-alert">{{ "error.form.no_function" | translate }}</div>
+    }@else if(form().hasError('unavailablePower')){
+      <div class="bottom-alert">{{ "power.unavailable.remove" | translate }}</div>
     }
   </div>
 

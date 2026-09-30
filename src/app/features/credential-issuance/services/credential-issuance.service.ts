@@ -34,6 +34,7 @@ import { CredentialIssuerMetadataService } from 'src/app/core/services/credentia
 import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
 import { ClaimDefinitionDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { UnsavedChangesService } from 'src/app/shared/services/unsaved-changes.service';
+import { IssuanceBusinessError, resolveIssuanceBusinessError } from '../helpers/issuance-error.helpers';
 
 /** Issuance-specific wording for the shared "pending edits will be lost" prompt. */
 const UNSAVED_ISSUANCE_ALERT_KEY = 'credentialIssuance.unloadAlert';
@@ -854,22 +855,44 @@ export class CredentialIssuanceService {
     // AD-6 cleanup point 2: a transport failure (incl. ES-09's HolderKeyGenerationError, which
     // reaches this same catchError) leaves nothing to hand over on any surface.
     this.holderPrivateKeyStore.clear();
-    this.openFailedCreateDialog();
+    this.openFailedCreateDialog(resolveIssuanceBusinessError(error));
     return EMPTY;
   }
 
-  private openFailedCreateDialog(): Observable<any> {
-    // ES-02: generic message for any cause (400/403/5xx/timeout). Distinguishing by status
-    // code would leak to the Operator which configurations are enabled for their tenant.
+  private openFailedCreateDialog(businessError: IssuanceBusinessError | null = null): Observable<any> {
+    // ES-02: generic message for any cause (400/403/5xx/timeout) -- distinguishing by status
+    // code would leak to the Operator which configurations are enabled for their tenant. I-03's
+    // only exception: a business rejection the Issuer names with a stable code (a LEAR issuance
+    // policy reason, or the fields a payload validation rejected), which says nothing about the
+    // tenant's configuration and is exactly what the Operator needs to fix the request.
     const dialogData: DialogData = {
       title: this.translate.instant("credentialIssuance.create-error-dialog.title"),
-      message: this.translate.instant("credentialIssuance.create-error-dialog.message"),
+      message: this.buildFailedCreateMessage(businessError),
       confirmationType: 'none',
       status: 'error'
     };
 
     const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
     return dialogRef.afterClosed();
+  }
+
+  private buildFailedCreateMessage(businessError: IssuanceBusinessError | null): string {
+    const keep = this.translate.instant("credentialIssuance.create-error-dialog.data-kept");
+    if (businessError?.kind === 'policy') {
+      const reason = this.translate.instant(`credentialIssuance.create-error-dialog.reasons.${businessError.reason}`);
+      return `${reason} ${keep}`;
+    }
+    if (businessError?.kind === 'validation') {
+      const fields = businessError.fields
+        .map(({ group, field }) => {
+          const label = this.translate.instant(`credentialIssuance.${field}`);
+          return group ? `${this.translate.instant(`credentialIssuance.${group}`)}: ${label}` : label;
+        })
+        .join(', ');
+      const intro = this.translate.instant("credentialIssuance.create-error-dialog.invalid-fields");
+      return `${intro} ${fields}. ${keep}`;
+    }
+    return this.translate.instant("credentialIssuance.create-error-dialog.message");
   }
 
 }

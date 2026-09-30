@@ -1123,6 +1123,39 @@ describe('CredentialIssuanceService', () => {
         expect(JSON.stringify(dialogData)).not.toContain('403');
       });
 
+      it('should explain a LEAR issuance policy rejection by its reason code, not by its detail (I-03)', () => {
+        mockProcedureService.createProcedure.mockReturnValue(
+          throwError(() => ({
+            status: 403,
+            error: { type: 'insufficient_permission', reason: 'onboarding_delegation_same_org', detail: "operator org 'VATES-A15456585'" }
+          }))
+        );
+
+        service.openSubmitDialog();
+
+        const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
+        expect(dialogData.title).toBe('credentialIssuance.create-error-dialog.title');
+        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.reasons.onboarding_delegation_same_org');
+        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.data-kept');
+        expect(dialogData.message).not.toContain('VATES-A15456585');
+      });
+
+      it('should name the fields a payload validation rejected (I-03)', () => {
+        mockProcedureService.createProcedure.mockReturnValue(
+          throwError(() => ({
+            status: 400,
+            error: { type: 'payload_validation_error', violations: [{ field: '$.mandatee.email', message: 'bad pattern' }] }
+          }))
+        );
+
+        service.openSubmitDialog();
+
+        const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
+        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.invalid-fields');
+        expect(dialogData.message).toContain('credentialIssuance.mandatee: credentialIssuance.email');
+        expect(dialogData.message).not.toContain('bad pattern');
+      });
+
       it('should release the loading state and report a failure when the issuer does not answer (ES-05)', () => {
         jest.useFakeTimers();
         mockProcedureService.createProcedure.mockReturnValue(NEVER);

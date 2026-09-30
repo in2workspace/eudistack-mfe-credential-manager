@@ -1,5 +1,6 @@
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, Input, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatSelect, MatSelectTrigger } from '@angular/material/select';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MatIcon } from '@angular/material/icon';
@@ -16,6 +17,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { IssuanceFormPowerSchema } from 'src/app/core/models/entity/lear-credential-issuance';
 import { BaseIssuanceCustomFormChild } from 'src/app/features/credential-details/components/base-issuance-custom-form-child';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { toMandatorOrganizationId } from '../../helpers/issuance-error.helpers';
 
 export interface TempIssuanceFormPowerSchema extends IssuanceFormPowerSchema{
   isDisabled: boolean;
@@ -26,6 +28,18 @@ export interface NormalizedTempIssuanceFormSchemaPower extends TempIssuanceFormP
 }
 
 export type NormalizedAction = { action: string; value: boolean };
+
+/**
+ * I-03: why a power the schema offers would be rejected by the Issuer's LEAR issuance policy
+ * (`RequireLearCredentialIssuanceRule`) for the data currently in the form. SysAdmin bypasses
+ * that policy, so nothing is ever unavailable for them.
+ * - `requires_multi_org`: Onboarding/Execute can only be delegated in a multi_org tenant.
+ * - `same_org`: Onboarding/Execute can only be delegated on-behalf of ANOTHER organization --
+ *   the target (mandator) organization is the operator's own.
+ */
+export type PowerUnavailableReason = 'requires_multi_org' | 'same_org';
+
+const ONBOARDING = 'Onboarding';
 
 @Component({
     selector: 'app-issuance-power',
@@ -45,6 +59,7 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public constructor(){
     super();
@@ -111,10 +126,59 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   public ngOnInit(){
     this.form().addValidators(this.powerRulesValidator);
     this.form().updateValueAndValidity({ emitEvent: false });
+    // The target organization lives in the sibling `mandator` group (on-behalf only): an
+    // Onboarding power that was valid a moment ago becomes unavailable as soon as the Operator
+    // types their own organization there, so the power group has to be re-validated then.
+    this.mandatorGroup()?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.form().updateValueAndValidity());
     const selectorPowers = this.data();
     this._powersInput = selectorPowers || [];
     this.selectorPowers = this.mapToTempPowerSchema(selectorPowers) || [];
   }
+
+/**
+ * The reason `functionName` would be rejected by the Issuer for the current form data, or null
+ * when it is viable. Only Onboarding depends on the form (tenant type and target organization);
+ * the rest of the LEAR policy is already enforced by which powers the schema offers at all.
+ */
+public getUnavailableReason(functionName: string): PowerUnavailableReason | null {
+  if (functionName !== ONBOARDING || this.authService.isSysAdmin()) return null;
+  if (this.authService.tenantType() !== 'multi_org') return 'requires_multi_org';
+  return this.isTargetOperatorOrganization() ? 'same_org' : null;
+}
+
+public isSelectable(power: TempIssuanceFormPowerSchema): boolean {
+  return !power.isDisabled && this.getUnavailableReason(power.function) === null;
+}
+
+/** Offered powers the Operator cannot use right now, so the template can explain each one. */
+public getUnavailablePowers(): Array<{ function: string; reason: PowerUnavailableReason }> {
+  return this.selectorPowers
+    .map(p => ({ function: p.function, reason: this.getUnavailableReason(p.function) }))
+    .filter((p): p is { function: string; reason: PowerUnavailableReason } => p.reason !== null);
+}
+
+private mandatorGroup(): AbstractControl | null {
+  return this.form().parent?.get('mandator') ?? null;
+}
+
+/**
+ * Whether the credential would be issued to the operator's own organization. Without a
+ * `mandator` group in the form (not on-behalf) the mandator IS the operator. On-behalf, an
+ * organization not fully typed yet is not treated as a match -- nothing to warn about yet.
+ */
+private isTargetOperatorOrganization(): boolean {
+  const operatorOrgId = this.authService.organizationIdentifier()
+    || this.authService.extractRawMandator()?.organizationIdentifier
+    || null;
+  if (!operatorOrgId) return false;
+  const mandator = this.mandatorGroup();
+  if (!mandator) return true;
+  const value = mandator.value as Record<string, string | null | undefined>;
+  const targetOrgId = toMandatorOrganizationId(value['country'], value['organizationIdentifier']);
+  return targetOrgId !== null && targetOrgId.toUpperCase() === operatorOrgId.toUpperCase();
+}
 
 public getPowerByFunction(functionName: string): TempIssuanceFormPowerSchema | undefined {
   return this.selectorPowers.find(p => p.function === functionName);
@@ -149,6 +213,11 @@ private readonly powerRulesValidator: ValidatorFn = (ctrl: AbstractControl): Val
   const errors: ValidationErrors = {};
   if (!hasOnePower) errors['noPower'] = true;
   if (!hasOneActionPerPower) errors['noActionPerPower'] = true;
+  // I-03: an added power the Issuer would reject blocks the submit up front, with the reason
+  // shown next to it, instead of a failed request after the Operator confirms.
+  if (Object.keys(group.controls).some(fn => this.getUnavailableReason(fn) !== null)) {
+    errors['unavailablePower'] = true;
+  }
 
   return Object.keys(errors).length ? errors : null;
 };

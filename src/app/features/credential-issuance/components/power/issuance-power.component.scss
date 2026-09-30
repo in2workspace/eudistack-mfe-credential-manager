@@ -123,3 +123,15 @@ h2.title{
     width:100%;
   }
 }
+
+.unavailable-hint{
+  margin: 4px 0 12px;
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+.unavailable-tag{
+  margin-left: 4px;
+  font-size: 0.85em;
+  font-style: italic;
+}
