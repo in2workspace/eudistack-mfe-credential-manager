@@ -1080,6 +1080,14 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(filterBar).toBeTruthy();
       expect(filterBar?.querySelectorAll('app-filter-dropdown').length).toBe(3);
 
+      // Every sibling instance gets its own bindings, not just the first one.
+      const triggers = Array.from(filterBar!.querySelectorAll<HTMLButtonElement>('.filter-dropdown-trigger'));
+      expect(triggers.map(t => t.getAttribute('aria-label'))).toEqual([
+        'credentialManagement.organizationId',
+        'filters.credentialType',
+        'filters.credentialStatus',
+      ]);
+
       const clearAllBtn = compiled.querySelector('#filter-bar-clear-all');
       expect(clearAllBtn).toBeTruthy();
     });
