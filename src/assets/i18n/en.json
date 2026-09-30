@@ -110,6 +110,7 @@
     "email": "Email"
   },
   "credentialDetails": {
+    "issuedBy": "Issued by",
     "revokedOn": "Revoked on",
     "badge": {
       "DRAFT": "Draft credential",

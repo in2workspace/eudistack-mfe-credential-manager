@@ -85,6 +85,7 @@
     "email": "Correu electrònic"
   },
   "credentialDetails": {
+    "issuedBy": "Emesa per",
     "revokedOn": "Revocada el",
     "badge": {
       "DRAFT": "Credencial en esborrany",

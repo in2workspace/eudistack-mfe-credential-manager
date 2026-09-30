@@ -122,7 +122,33 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(text).toContain('andrea.romano@engineering.it');
   });
 
-  it('does not advertise the issuer in the header', async () => {
+  it('names the issuer by its common name', async () => {
+    credential$.set({ issuer: { id: 'did:elsi:issuer', commonName: 'Sello Electronico', organization: 'ALTIA' } });
+    await createComponent();
+
+    expect(component.issuedBy$()).toBe('Sello Electronico');
+    expect(fixture.nativeElement.querySelector('.drawer__issued-by')?.textContent)
+      .toContain('Sello Electronico');
+  });
+
+  it('falls back to the organization, then to the issuer id', async () => {
+    credential$.set({ issuer: { id: 'did:elsi:issuer', organization: 'ALTIA' } });
+    await createComponent();
+    expect(component.issuedBy$()).toBe('ALTIA');
+
+    credential$.set({ issuer: { id: 'did:elsi:issuer' } });
+    expect(component.issuedBy$()).toBe('did:elsi:issuer');
+  });
+
+  it('accepts a bare string issuer', async () => {
+    credential$.set({ issuer: 'did:elsi:issuer' });
+    await createComponent();
+
+    expect(component.issuedBy$()).toBe('did:elsi:issuer');
+  });
+
+  it('omits the line when the credential carries no issuer', async () => {
+    credential$.set({});
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('.drawer__issued-by')).toBeNull();

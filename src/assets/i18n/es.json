@@ -110,6 +110,7 @@
     "email": "Correo electrónico"
   },
 "credentialDetails": {
+    "issuedBy": "Emitida por",
     "revokedOn": "Revocada el",
     "badge": {
       "DRAFT": "Credencial en borrador",

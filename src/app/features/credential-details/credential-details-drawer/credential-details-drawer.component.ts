@@ -63,6 +63,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly tooltipText = 'credentialDetails.revokeTooltip';
   public readonly knowledgeBaseUrl: string;
 
+  public readonly issuedBy$: Signal<string>;
   public readonly revokedAt$: Signal<string | undefined>;
 
   private readonly data = inject<CredentialDetailsDrawerData>(MAT_DIALOG_DATA);
@@ -90,6 +91,13 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showArchiveCredentialButton$ = this.detailsService.showArchiveCredentialButton$;
 
+
+    this.issuedBy$ = computed<string>(() => {
+      const issuer = this.detailsService.credential$()?.issuer;
+      if (!issuer) return '';
+      if (typeof issuer === 'string') return issuer;
+      return issuer.commonName || issuer.organization || issuer.id || '';
+    });
 
     this.revokedAt$ = computed<string | undefined>(() =>
       this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated : undefined
