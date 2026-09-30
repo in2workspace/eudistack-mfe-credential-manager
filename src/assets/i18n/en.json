@@ -110,6 +110,18 @@
     "email": "Email"
   },
   "credentialDetails": {
+    "revokedOn": "Revoked on",
+    "badge": {
+      "DRAFT": "Draft credential",
+      "PEND_SIGNATURE": "Pending signature",
+      "PEND_DOWNLOAD": "Pending download",
+      "ISSUED": "Credential issued",
+      "VALID": "Credential is valid",
+      "EXPIRED": "Credential expired",
+      "REVOKED": "Credential revoked",
+      "WITHDRAWN": "Credential withdrawn",
+      "ARCHIVED": "Credential archived"
+    },
     "title": "Credential details",
     "DRAFT": "DRAFT",
     "PEND_SIGNATURE": "TO SIGN",
