@@ -202,6 +202,20 @@ describe('CredentialDetailsService', () => {
       expect(service.credentialType$()).toBe('learcredential.employee.w3c.1');
     });
 
+    it('issuerOrganization$() reads the organization of an object issuer', () => {
+      service.credentialProcedureDetails$.set({
+        credential: { vc: { ...mockVc, issuer: { id: 'did:elsi:x', organization: 'Engineering S.p.A.' } } }
+      } as any);
+      expect(service.issuerOrganization$()).toBe('Engineering S.p.A.');
+    });
+
+    it('issuerOrganization$() is undefined for a string issuer or none at all', () => {
+      service.credentialProcedureDetails$.set({ credential: { vc: { ...mockVc, issuer: 'did:elsi:x' } } } as any);
+      expect(service.issuerOrganization$()).toBeUndefined();
+      service.credentialProcedureDetails$.set({ credential: { vc: mockVc } } as any);
+      expect(service.issuerOrganization$()).toBeUndefined();
+    });
+
     it('showSideTemplateCard$() is false by default, true when sideViewModel has items', () => {
       expect(service.showSideTemplateCard$()).toBe(false);
       service.sideViewModel$.set([ { foo: 'bar' } as any ]);

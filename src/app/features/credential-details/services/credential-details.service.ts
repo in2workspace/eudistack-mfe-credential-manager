@@ -42,6 +42,10 @@ export class CredentialDetailsService {
   public credentialType$ = computed<string | undefined>(() => {
     return this.credentialProcedureDetails$()?.credential_configuration_id;
   });
+  public issuerOrganization$ = computed<string | undefined>(() => {
+    const issuer = this.credential$()?.issuer;
+    return issuer && typeof issuer === 'object' ? issuer.organization || undefined : undefined;
+  });
   public credentialDisplayName$ = computed<string>(() => {
     const configId = this.credentialType$();
     // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---

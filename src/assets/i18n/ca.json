@@ -86,6 +86,7 @@
   },
   "credentialDetails": {
     "revokedOn": "Revocada el",
+    "issuedBy": "Emesa per {{organization}}",
     "badge": {
       "DRAFT": "Credencial en esborrany",
       "PEND_SIGNATURE": "Pendent de signatura",

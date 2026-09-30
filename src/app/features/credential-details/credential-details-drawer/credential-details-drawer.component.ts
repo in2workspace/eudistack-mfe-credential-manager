@@ -47,6 +47,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly lifeCycleStatus$: Signal<LifeCycleStatus | undefined>;
   public readonly lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public readonly email$: Signal<string | undefined>;
+  public readonly issuerOrganization$: Signal<string | undefined>;
 
   public readonly mainViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   public readonly sideViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
@@ -81,6 +82,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.lifeCycleStatus$ = this.detailsService.lifeCycleStatus$;
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;
+    this.issuerOrganization$ = this.detailsService.issuerOrganization$;
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.sideViewModel$ = this.detailsService.sideViewModel$;
     this.showSideTemplateCard$ = this.detailsService.showSideTemplateCard$;

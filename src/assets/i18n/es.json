@@ -111,6 +111,7 @@
   },
 "credentialDetails": {
     "revokedOn": "Revocada el",
+    "issuedBy": "Emitida por {{organization}}",
     "badge": {
       "DRAFT": "Credencial en borrador",
       "PEND_SIGNATURE": "Pendiente de firma",

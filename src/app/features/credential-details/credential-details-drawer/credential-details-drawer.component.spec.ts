@@ -87,6 +87,7 @@ describe('CredentialDetailsDrawerComponent', () => {
       lifeCycleStatus$: lifecycle$,
       lifeCycleStatusClass$: signal<StatusClass | undefined>('status-valid'),
       email$: signal('andrea.romano@engineering.it'),
+      issuerOrganization$: signal<string | undefined>('Engineering S.p.A.'),
       mainViewModel$: mainModel$,
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
@@ -122,7 +123,16 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(text).toContain('andrea.romano@engineering.it');
   });
 
-  it('does not advertise the issuer in the header', async () => {
+  it('names the issuing organization under the credential name', async () => {
+    await createComponent();
+
+    const issuedBy: HTMLElement = fixture.nativeElement.querySelector('.drawer__issued-by');
+    expect(issuedBy).toBeTruthy();
+    expect(issuedBy.textContent).toContain('credentialDetails.issuedBy');
+  });
+
+  it('omits the issued-by line when the issuer carries no organization', async () => {
+    (detailsService['issuerOrganization$'] as WritableSignal<string | undefined>).set(undefined);
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('.drawer__issued-by')).toBeNull();
