@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-30
+
+## Fixed
+- **Credential Offer Refresh**: Fixed a bug where the `CREDENTIAL_ALREADY_ACTIVE` business error (HTTP 410 Gone) was incorrectly handled as a generic unknown error with unnecessary retry options. The `ServeErrorInterceptor` was corrected to properly exclude this business flow from global error dialogs. The service now correctly identifies RFC7807 problem details, allowing the component to show a specific "already active" message instead of a generic error screen.
+
 ## [Unreleased] - 2026-09-22
 
 ## Changed

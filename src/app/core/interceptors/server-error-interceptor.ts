@@ -47,6 +47,14 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }
+
+        // The credential offer refresh screen renders its own outcome for every failure —
+        // including functional ones such as CREDENTIAL_ALREADY_ACTIVE — so a generic
+        // "unknown error" dialog on top of it would contradict the in-page message.
+        if (this.isCredentialOfferRefreshEndpoint(request.url)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
         let errorMessage: string;
         if (error.error instanceof ErrorEvent) {
           errorMessage = `Error: ${error.error.message}`;
@@ -77,6 +85,11 @@ export class ServeErrorInterceptor implements HttpInterceptor {
   private isCredentialCatalogEndpoint(url: string): boolean {
     const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
     return path.endsWith(API_PATH.CREDENTIAL_CATALOG);
+  }
+
+  private isCredentialOfferRefreshEndpoint(url: string): boolean {
+    const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
+    return path.includes(`${API_PATH.CREDENTIAL_OFFER_REFRESH}/`);
   }
 
   private getServerErrorMessage(error: HttpErrorResponse): string {

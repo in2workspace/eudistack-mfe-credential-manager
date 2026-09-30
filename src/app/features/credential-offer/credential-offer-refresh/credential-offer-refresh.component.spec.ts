@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { Observable, of, throwError } from 'rxjs';
@@ -94,6 +95,39 @@ describe('CredentialOfferRefreshComponent', () => {
       component.sendOffer();
 
       expect(refreshService.refreshCredentialOffer).toHaveBeenCalledWith(TOKEN);
+      expect(component.state()).toBe('error');
+    });
+
+    it('should transition to already-active state on CREDENTIAL_ALREADY_ACTIVE problem details', () => {
+      refreshService.refreshCredentialOffer.mockReturnValue(throwError(() => new HttpErrorResponse({
+        status: 410,
+        error: {
+          type: 'CREDENTIAL_ALREADY_ACTIVE',
+          title: 'Credential already active',
+          status: 410,
+          detail: 'The credential is already active.',
+          instance: 'd8f87c0a-e327-4dda-bfa9-5000cb8e1f1d'
+        }
+      })));
+
+      component.sendOffer();
+
+      expect(component.state()).toBe('already-active');
+    });
+
+    it.each([
+      ['a 410 with another problem type', 410, { type: 'OFFER_EXPIRED', status: 410 }],
+      ['a 410 without body', 410, null],
+      ['a 404', 404, { type: 'NOT_FOUND', status: 404 }],
+      ['a 500', 500, 'Internal Server Error'],
+      ['a network failure', 0, new ProgressEvent('error')],
+    ])('should transition to generic error state on %s', (_label, status, error) => {
+      refreshService.refreshCredentialOffer.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status, error }))
+      );
+
+      component.sendOffer();
+
       expect(component.state()).toBe('error');
     });
 
