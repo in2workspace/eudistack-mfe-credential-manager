@@ -56,9 +56,7 @@ export interface FilterOption {
 }
 
 /**
- * Material icon ligature shown per status in the table's Status column, with a
- * matTooltip carrying the translated label (US — credential-management dashboard
- * revamp). One icon per status: ISSUED is included for completeness even though it
+ * Material icon ligature shown per status in the table's Status column. One icon per status: ISSUED is included for completeness even though it
  * is normally transient (see LifeCycleStatusService.getStatusIcon doc).
  */
 export const STATUS_ICON_MAP: Record<string, string> = {
@@ -74,8 +72,6 @@ export const STATUS_ICON_MAP: Record<string, string> = {
 export const DEFAULT_STATUS_ICON = 'help_outline';
 
 /**
- * Statuses available as options in the status filter control. Archived is a
- * status like any other here (no separate "Archived" view/tab): shown when no
- * status is selected, or when it is one of the selected ones.
+ * Statuses available as options in the status filter control.
  */
 export const FILTERABLE_STATUSES = STATUSES_WITH_DEFINED_CLASS;

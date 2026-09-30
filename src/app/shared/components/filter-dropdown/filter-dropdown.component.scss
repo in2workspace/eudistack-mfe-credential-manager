@@ -19,8 +19,6 @@
   }
 }
 
-// Borderless: the chip draws the box. Its left padding makes the whole
-// left part of the chip clickable.
 .filter-dropdown-trigger {
   display: inline-flex;
   align-items: center;
@@ -40,11 +38,9 @@
   }
 }
 
-// 6px after the count (4px gap + 2px inside this 20px target around the
-// 16px icon); the caret pulls in so only a hairline separates them.
 .filter-dropdown-clear {
   position: relative;
-  z-index: 1; // above the caret, which overlaps its right edge (see below)
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -81,8 +77,6 @@
   cursor: pointer;
 }
 
-// The glyph has ~7px of empty space on its left: this leaves ~2px of
-// visible gap after the clear button's own 2px.
 .filter-dropdown-clear + .filter-dropdown-caret {
   margin-left: -7px;
 }
@@ -91,8 +85,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  // border-box: a single digit fits inside 18×18, so it renders as a
-  // circle; only 2+ digits stretch it into a pill.
   box-sizing: border-box;
   min-width: 18px;
   height: 18px;
@@ -112,9 +104,6 @@
   padding: 12px;
   box-sizing: border-box;
 
-  // Organization: as wide as its longest name, up to the 50-character
-  // maximum (ch in the option labels' font) plus the checkbox; anything
-  // longer wraps instead of scrolling sideways.
   &--wide {
     width: max-content;
     min-width: 260px;
@@ -161,14 +150,11 @@
   padding: 2px 0;
   overflow-wrap: anywhere;
 
-  // MatCheckbox's own box: fixed 2px, no token to override.
   ::ng-deep .mdc-checkbox__background {
     border-radius: var(--radius-sm, 4px);
   }
 }
 
-// The menu panel lives in the CDK overlay, outside this component —
-// Material caps it at 280px, which would clip the wide (organization) mode.
 ::ng-deep .mat-mdc-menu-panel.filter-dropdown-panel {
   max-width: none;
   --mat-menu-container-shape: var(--radius-md, 8px);

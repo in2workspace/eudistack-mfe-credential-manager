@@ -28,7 +28,6 @@ import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-load
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
 
-/** Options for the "Sort by" selector, next to the results count. */
 type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
 
 /** Maps each SortByOption to the matSort column id + direction it drives. */
@@ -105,12 +104,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public selectedTypes = signal<string[]>([]);
   public selectedStatuses = signal<string[]>([]);
 
-  /**
-   * Options for the Organization / Type filter dropdowns, derived from the loaded
-   * dataset after render (AC-2.2: "recol·lecció de noms... pot ser posterior a la
-   * càrrega, per evitar afegir temps de càrrega"). Status options are the static
-   * filterableStatuses list instead — no need to wait for data.
-   */
   public readonly organizationOptions = signal<FilterOption[]>([]);
   public readonly typeOptions = signal<FilterOption[]>([]);
   public readonly statusOptions = computed<FilterOption[]>(() =>
@@ -125,8 +118,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public readonly isAdminOrganizationIdentifier = computed(() =>
     this.authService.roleType() === RoleType.TENANT_ADMIN && this.authService.tenantType() === 'multi_org'
   );
-  /** Single-organization tenants have nothing to filter by org — the Organization ID filter is hidden (AC — tenant-type gating). */
-  public readonly isSimpleTenant = computed(() => this.authService.tenantType() === 'simple');
 
   public readonly displayedColumns = computed<string[]>(() => {
     const columns: string[] = [];
@@ -135,10 +126,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return columns;
   });
 
-  /**
-   * True when any of the three checkbox-dropdowns has a selection. Drives
-   * whether "Clear all" is enabled; the search box has its own clear button.
-   */
   public readonly hasActiveFilters = computed(() =>
     this.selectedOrganizations().length > 0 ||
     this.selectedTypes().length > 0 ||
@@ -176,18 +163,15 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     }
    } as const;
 
-  /** True when the load failed — show error state (ES-02). */
-  public get isLoadError(): boolean {
+ public get isLoadError(): boolean {
     return this.hasLoadError;
   }
 
-  /** True when the source dataset has no credentials at all (EC-01). */
-  public get isEmptyOrigin(): boolean {
+ public get isEmptyOrigin(): boolean {
     return !this.hasLoadError && this.originData.length === 0;
   }
 
-  /** True when filters are active but produce no matches, yet there IS data (AC-04). */
-  public get isEmptyFiltered(): boolean {
+ public get isEmptyFiltered(): boolean {
     return (
       !this.hasLoadError &&
       this.originData.length > 0 &&
@@ -238,9 +222,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   public onSearchStringChange(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    // Updated immediately (not debounced) so the search box's clear button shows
-    // up as soon as there's text — the actual filtering below still debounces,
-    // but the button must not lag behind what's visibly in the box.
     this.currentSubjectFilter.set(filterValue.trim());
     this.searchSubject.next(filterValue);
   }
@@ -273,19 +254,16 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     return credentialType;
   }
 
-  /** Handler for the Organization checkbox-dropdown (Confirm-gated, AC-2.2). */
   public onOrganizationFilterChange(values: string[]): void {
     this.selectedOrganizations.set(values);
     this.reapplyDropdownFilters();
   }
 
-  /** Handler for the Credential type checkbox-dropdown (live filtering, AC-2.3). */
-  public onTypeFilterChange(values: string[]): void {
+ public onTypeFilterChange(values: string[]): void {
     this.selectedTypes.set(values);
     this.reapplyDropdownFilters();
   }
 
-  /** Handler for the Credential status checkbox-dropdown (live filtering, AC-2.3). */
   public onStatusFilterChange(values: string[]): void {
     this.selectedStatuses.set(values);
     this.reapplyDropdownFilters();
@@ -313,7 +291,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.sortOption.set(match ?? null);
   }
 
-  /** "Clear all" — resets the three checkbox-dropdown filters (AC-2.1), keeping the subject search. */
   public clearDropdownFilters(): void {
     this.selectedOrganizations.set([]);
     this.selectedTypes.set([]);
@@ -321,7 +298,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     this.reapplyDropdownFilters();
   }
 
-  /** The search box's clear button — empties the subject search at once, without waiting for the debounce. */
   public clearSearch(): void {
     this.searchSubject.next('');
     if (this.searchInput?.nativeElement) {
@@ -334,8 +310,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     }
   }
 
-  /** "No matches" empty state — resets the subject search and the three checkbox-dropdown filters. */
-  public clearFilters(): void {
+ public clearFilters(): void {
     this.selectedOrganizations.set([]);
     this.selectedTypes.set([]);
     this.selectedStatuses.set([]);
@@ -349,9 +324,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     .pipe(take(1))
     .subscribe({
       next: (data: CredentialProceduresResponse) => {
-        // No separate Archived view — every status (including ARCHIVED) loads
-        // into the same table and is filtered like any other.
-        // Default order comes from matSortActive/matSortDirection in the template.
         const withClass = this.statusService.addStatusClass(data.credential_procedures);
         this.dataSource.data = withClass;
         this.originData = withClass;
@@ -381,10 +353,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     });
   }
 
-  /**
-   * Derives the Organization/Type filter dropdown options from the already-loaded
-   * dataset (AC-2.2) — runs after the table has rendered, never blocking initial load.
-   */
   private computeFilterOptions(rows: CredentialProcedureWithClass[]): void {
     const organizations = new Map<string, string>();
     const types = new Map<string, string>();
@@ -421,7 +389,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    * credential_type string (e.g. legacy "LEARCredentialEmployee" vs current
    * "learcredential.employee.w3c.4" used to show up as two separate options).
    * Anything outside these three families (doctorid, PID, ...) keeps its own
-   * raw value as its bucket — one option per type, as before.
+   * raw value as its bucket — one option per type.
    */
   private getTypeFamilyKey(credentialType: string): string {
     if (/employee/i.test(credentialType)) return 'EMPLOYEE';
@@ -485,8 +453,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return this.updatedTime(item);
         }
         case 'credential_type': {
-          // Sorts by the displayed (grouped) label, not the raw type string, so
-          // e.g. all "Employee" rows (legacy and current) sort together.
           if (typeof procedure?.credential_type !== 'string') {
             return this.getSafeLowerCaseValue(procedure?.credential_type, 'credential_type', procedureId);
           }
@@ -510,12 +476,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Compound filter predicate (AD-2).
+   * Compound filter predicate
    * dataSource.filter is a JSON-serialized CredentialFilter: subject is AND'd with
    * organizations/types/statuses; each of those three facets is OR-within-facet
    * (any selected value matches) and AND-across-facets. Empty string/array means
-   * "no filter" for that facet — ARCHIVED included, like any other status (no
-   * separate Archived view). Robust against empty/undefined filter string (ES-01).
+   * "no filter" for that facet.
    */
   private setFilterPredicate(): void{
     this.dataSource.filterPredicate = (data: CredentialProcedureBasicInfo, filterString: string) => {

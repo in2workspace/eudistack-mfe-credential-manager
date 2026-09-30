@@ -1,6 +1,3 @@
-<!-- One bordered chip, three parts: the menu trigger (label + count), a
-     separate clear button (a button can't be nested inside another) and
-     the caret, which opens the menu like the trigger does. -->
 <div class="filter-dropdown-chip" [class.filter-dropdown-chip--active]="selected().length > 0">
   <button
     type="button"
@@ -42,8 +39,7 @@
       </mat-form-field>
     }
 
-    <!-- Footer mode only: live-filtering dropdowns show their options directly. -->
-    @if (showFooter()) {
+     @if (showFooter()) {
       <div class="filter-dropdown-title-row">
         <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
         @if (draft().length > 0) {

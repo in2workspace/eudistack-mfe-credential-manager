@@ -29,9 +29,7 @@ export class LifeCycleStatusService {
 
     /**
      * Material icon ligature for the Status column (one icon per status, tooltip
-     * carries the label). ISSUED rarely persists in practice — activateIfReady on
-     * the issuer flips DRAFT->ISSUED->VALID in the same round trip unless the
-     * credential has a future validFrom (delayed activation) — but still gets its
+     * carries the label). ISSUED rarely persists in practice  — but still gets its
      * own icon for that case.
      */
     public getStatusIcon(status: string): string {

@@ -8,8 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /**
- * Custom numbered-page pagination bar (US — credential-management dashboard,
- * "paginació" round). Angular Material's own MatPaginator UI has no numbered
+ * Custom numbered-page pagination bar. Angular Material's own MatPaginator UI has no numbered
  * page buttons or ellipsis — only prev/next arrows, a page-size select and a
  * "X-Y of Z" label — so there is no way to get this look from Material alone.
  *
