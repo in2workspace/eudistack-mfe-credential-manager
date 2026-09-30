@@ -3,19 +3,23 @@ import { CredentialManagementComponent } from './credential-management.component
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule, convertToParamMap, ParamMap } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideHttpClient } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { CredentialActionsService } from '../credential-details/services/credential-actions.service';
+import { CredentialDetailsDrawerComponent } from '../credential-details/credential-details-drawer/credential-details-drawer.component';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialFilter, CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
 import { signal } from '@angular/core';
 
 describe('CredentialManagementComponent', () => {
+  let queryParamMap$: BehaviorSubject<ParamMap>;
   let component: CredentialManagementComponent;
   let fixture: ComponentFixture<CredentialManagementComponent>;
   let credentialProcedureService: CredentialProcedureService;
@@ -25,6 +29,7 @@ describe('CredentialManagementComponent', () => {
   let statusService: LifeCycleStatusService;
 
   beforeEach(async () => {
+    queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
     authService = {
       getMandator: () => of(null),
       getName: () => of('Name'),
@@ -53,7 +58,8 @@ describe('CredentialManagementComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: { get: () => '1' } },
+            snapshot: { paramMap: { get: () => '1' }, queryParamMap: convertToParamMap({}) },
+            queryParamMap: queryParamMap$.asObservable(),
           },
         },
         provideHttpClient(),
@@ -1162,4 +1168,87 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
   });
 
+
+  describe('details drawer routing', () => {
+    function row(procedureId: string): CredentialProcedureBasicInfo {
+      return { credential_procedure: { procedure_id: procedureId } } as CredentialProcedureBasicInfo;
+    }
+
+    it('puts the credential id on the URL instead of opening the drawer directly', () => {
+      component.openCredentialDetails(row('proc-42'));
+
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { id: 'proc-42' }, queryParamsHandling: 'merge' })
+      );
+    });
+
+    it('ignores a row carrying no procedure id', () => {
+      component.openCredentialDetails({ credential_procedure: {} } as CredentialProcedureBasicInfo);
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('opens the drawer when the id appears on the URL', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+
+      expect(open).toHaveBeenCalledWith(
+        CredentialDetailsDrawerComponent,
+        expect.objectContaining({ data: expect.objectContaining({ procedureId: 'proc-42' }) })
+      );
+    });
+
+    it('closes the open drawer when the id leaves the URL', () => {
+      const close = jest.fn();
+      jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close,
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({}));
+
+      expect(close).toHaveBeenCalled();
+    });
+
+    it('does not reopen the drawer while it is already showing the same credential', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close: jest.fn(),
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+
+      expect(open).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('refresh after a credential action', () => {
+    it('refetches the table when a sign / revoke / withdraw / archive completes', () => {
+      credentialProcedureSpy.mockClear();
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+
+      expect(credentialProcedureSpy).toHaveBeenCalled();
+    });
+
+    it('refetches even while the drawer is open, whatever result it closes with', () => {
+      jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      credentialProcedureSpy.mockClear();
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+
+      expect(credentialProcedureSpy).toHaveBeenCalled();
+    });
+  });
 });

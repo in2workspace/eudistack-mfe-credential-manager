@@ -5,7 +5,6 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { PortalModule } from '@angular/cdk/portal';
 import { TranslatePipe } from '@ngx-translate/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { CustomTooltipDirective } from 'src/app/shared/directives/custom-tooltip.directive';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
@@ -16,7 +15,6 @@ import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { CredentialActionsService } from '../services/credential-actions.service';
 import { CredentialDetailsService } from '../services/credential-details.service';
 
 export interface CredentialDetailsDrawerData {
@@ -24,9 +22,6 @@ export interface CredentialDetailsDrawerData {
   lastUpdated?: string;
 }
 
-export interface CredentialDetailsDrawerResult {
-  credentialChanged: boolean;
-}
 
 @Component({
   selector: 'app-credential-details-drawer',
@@ -71,15 +66,11 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly revokedAt$: Signal<string | undefined>;
 
   private readonly data = inject<CredentialDetailsDrawerData>(MAT_DIALOG_DATA);
-  private readonly dialogRef =
-    inject<MatDialogRef<CredentialDetailsDrawerComponent, CredentialDetailsDrawerResult>>(MatDialogRef);
+  private readonly dialogRef = inject<MatDialogRef<CredentialDetailsDrawerComponent>>(MatDialogRef);
   private readonly detailsService = inject(CredentialDetailsService);
-  private readonly actionsService = inject(CredentialActionsService);
   private readonly themeService = inject(ThemeService);
   private readonly injector = inject(Injector);
   private readonly loader = inject(LoaderService);
-
-  private credentialChanged = false;
 
   public constructor() {
     this.isLoading$ = this.loader.isLoading$;
@@ -104,12 +95,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
       this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated : undefined
     );
 
-    this.actionsService.actionCompleted$
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        this.credentialChanged = true;
-        this.close();
-      });
   }
 
   public isPowersSection(section: EvaluatedExtendedDetailsField): boolean {
@@ -122,7 +107,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   }
 
   public close(): void {
-    this.dialogRef.close({ credentialChanged: this.credentialChanged });
+    this.dialogRef.close();
   }
 
   public openSignCredentialDialog(): void {

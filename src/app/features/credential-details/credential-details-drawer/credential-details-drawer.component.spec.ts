@@ -154,20 +154,20 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(component.revokedAt$()).toBe('2026-06-25T16:42:00Z');
   });
 
-  it('closes reporting no change when the user just dismisses it', async () => {
+  it('closes without a result, because refreshing the list is not its job', async () => {
     await createComponent();
 
     component.close();
 
-    expect(dialogRef.close).toHaveBeenCalledWith({ credentialChanged: false });
+    expect(dialogRef.close).toHaveBeenCalledWith();
   });
 
-  it('closes reporting a change once an action completes, so the list refetches', async () => {
+  it('does not close itself when an action completes', async () => {
     await createComponent();
 
     actionCompleted$.next();
 
-    expect(dialogRef.close).toHaveBeenCalledWith({ credentialChanged: true });
+    expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
   it('renders the issuer and credential-status sections once the credential is validated', async () => {

@@ -1,7 +1,13 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, NgZone, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import {
+  CredentialDetailsDrawerComponent,
+  CredentialDetailsDrawerData,
+} from '../credential-details/credential-details-drawer/credential-details-drawer.component';
+import { CredentialActionsService } from '../credential-details/services/credential-actions.service';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatSort, MatSortHeader, Sort, SortDirection } from '@angular/material/sort';
@@ -13,7 +19,7 @@ import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { debounceTime, Subject, take } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, Subject, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIcon } from '@angular/material/icon';
 import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
@@ -156,10 +162,15 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
   private originData: CredentialProcedureWithClass[] = [];
 
+  private drawerRef?: MatDialogRef<CredentialDetailsDrawerComponent>;
+
   private readonly authService = inject(AuthService);
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly route = inject(ActivatedRoute);
+  private readonly credentialActions = inject(CredentialActionsService);
   private readonly statusService = inject(LifeCycleStatusService);
   private readonly cd = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
@@ -205,6 +216,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     // it again is harmless.
     this.setFilter('subject');
     this.initializeCredentialTable();
+    this.syncDrawerWithUrl();
+    this.refreshOnCredentialAction();
   }
 
   public ngAfterViewInit(): void {
@@ -225,11 +238,79 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     void this.router.navigate(route);
   }
 
-  public navigateToCredentialDetails(credential_procedures: CredentialProcedureBasicInfo): void {
-    void this.router.navigate([
-      '/organization/credentials/details',
-      credential_procedures.credential_procedure?.procedure_id
-    ]);
+  public openCredentialDetails(credential_procedures: CredentialProcedureBasicInfo): void {
+    const id = credential_procedures.credential_procedure?.procedure_id;
+    if (!id) return;
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { id },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  private refreshOnCredentialAction(): void {
+    this.credentialActions.actionCompleted$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.initializeCredentialTable());
+  }
+
+  private syncDrawerWithUrl(): void {
+    this.route.queryParamMap
+      .pipe(
+        map(params => params.get('id')),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(id => (id ? this.openDrawer(id) : this.closeDrawer()));
+  }
+
+  private openDrawer(procedureId: string): void {
+    if (this.drawerRef) return;
+
+    const data: CredentialDetailsDrawerData = {
+      procedureId,
+      lastUpdated: this.findLastUpdated(procedureId),
+    };
+
+    this.drawerRef = this.dialog.open<CredentialDetailsDrawerComponent, CredentialDetailsDrawerData>(
+      CredentialDetailsDrawerComponent,
+      {
+        data,
+        autoFocus: false,
+        width: 'min(560px, 100vw)',
+        maxHeight: '100vh',
+        panelClass: 'credential-details-drawer',
+      }
+    );
+
+    this.drawerRef
+      .afterClosed()
+      .pipe(take(1))
+      .subscribe(() => {
+        this.drawerRef = undefined;
+        this.clearDrawerQueryParam();
+      });
+  }
+
+  private closeDrawer(): void {
+    this.drawerRef?.close();
+  }
+
+  private clearDrawerQueryParam(): void {
+    if (!this.route.snapshot.queryParamMap.get('id')) return;
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { id: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private findLastUpdated(procedureId: string): string | undefined {
+    return this.originData.find(row => row.credential_procedure?.procedure_id === procedureId)
+      ?.credential_procedure?.updated;
   }
 
   public getStatusIcon(status: string): string {
