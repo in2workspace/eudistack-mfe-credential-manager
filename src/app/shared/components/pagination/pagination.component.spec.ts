@@ -64,7 +64,7 @@ describe('PaginationComponent', () => {
     await setup(25);
 
     expect(dataSource.paginator).toBeTruthy();
-    expect(dataSource.paginator!.length).toBe(25);
+    expect(dataSource.paginator!).toHaveLength(25);
     expect(dataSource.connect().value).toEqual(Array.from({ length: 10 }, (_, i) => i));
   });
 
