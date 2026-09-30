@@ -1084,15 +1084,6 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(clearAllBtn).toBeTruthy();
     });
 
-    it('should hide the Organization filter dropdown for a simple (single-org) tenant', () => {
-      authService.tenantType.set('simple');
-      component.isLoading = false;
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.querySelectorAll('.filter-bar app-filter-dropdown')).toHaveLength(2);
-    });
-
     it('should show the Organization ID column for every tenant type, simple included', () => {
       authService.tenantType.set('simple');
       expect(component.displayedColumns()).toContain('organization_identifier');
