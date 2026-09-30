@@ -33,6 +33,7 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     // automatically (UrlService reads customParamsEndSessionRequest off the config).
     customParamsEndSessionRequest: { client_id: clientId },
     scope: IAM_PARAMS.SCOPE,
+    customParamsAuthRequest: { access_profile: IAM_PARAMS.ACCESS_PROFILE },
     responseType: IAM_PARAMS.GRANT_TYPE,
     silentRenew: true,
     useRefreshToken: true,
