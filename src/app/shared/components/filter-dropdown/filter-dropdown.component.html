@@ -1,0 +1,80 @@
+<!-- One bordered chip, three parts: the menu trigger (label + count), a
+     separate clear button (a button can't be nested inside another) and
+     the caret, which opens the menu like the trigger does. -->
+<div class="filter-dropdown-chip" [class.filter-dropdown-chip--active]="selected().length > 0">
+  <button
+    type="button"
+    class="filter-dropdown-trigger"
+    [matMenuTriggerFor]="menu"
+    #menuTriggerRef="matMenuTrigger"
+    (menuOpened)="onOpened()"
+    [attr.aria-label]="label() | translate">
+    <span class="filter-dropdown-trigger-label">{{ label() | translate }}</span>
+    @if (selected().length > 0) {
+      <span class="filter-dropdown-count">{{ selected().length }}</span>
+    }
+  </button>
+  @if (selected().length > 0) {
+    <button
+      type="button"
+      class="filter-dropdown-clear"
+      [attr.aria-label]="'filters.clearFilter' | translate: { filter: (label() | translate) }"
+      (click)="clear()">
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+  <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="menuTriggerRef.openMenu()">arrow_drop_down</mat-icon>
+</div>
+
+<mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
+  <div class="filter-dropdown-content"
+       [class.filter-dropdown-content--wide]="showFooter()"
+       (click)="$event.stopPropagation()">
+    @if (searchable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
+        <input
+          matInput
+          [placeholder]="searchPlaceholder() | translate"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          (click)="$event.stopPropagation()">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    }
+
+    <!-- Footer mode only: live-filtering dropdowns show their options directly. -->
+    @if (showFooter()) {
+      <div class="filter-dropdown-title-row">
+        <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
+        @if (draft().length > 0) {
+          <span class="filter-dropdown-count">{{ draft().length }}</span>
+        }
+      </div>
+    }
+
+    <div class="filter-dropdown-options">
+      @for (option of filteredOptions(); track option.value) {
+        <mat-checkbox
+          class="filter-dropdown-option"
+          [checked]="draft().includes(option.value)"
+          (change)="toggle(option.value)">
+          {{ option.label }}
+        </mat-checkbox>
+      }
+      @if (filteredOptions().length === 0) {
+        <span class="filter-dropdown-no-options">{{ 'filters.noOptions' | translate }}</span>
+      }
+    </div>
+
+    @if (showFooter()) {
+      <div class="filter-dropdown-footer">
+        <button type="button" class="filter-dropdown-close" (click)="cancel(menuTriggerRef)">
+          {{ 'filters.close' | translate }}
+        </button>
+        <button type="button" mat-flat-button color="primary" (click)="confirm(menuTriggerRef)">
+          {{ 'filters.confirm' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</mat-menu>
