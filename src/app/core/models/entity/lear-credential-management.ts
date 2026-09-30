@@ -64,10 +64,10 @@ export interface FilterOption {
 export const STATUS_ICON_MAP: Record<string, string> = {
   DRAFT: 'edit',
   ISSUED: 'outbound',
-  VALID: 'check_circle',
-  EXPIRED: 'event_busy',
-  REVOKED: 'block',
-  WITHDRAWN: 'undo',
+  VALID: 'verified',
+  EXPIRED: 'warning',
+  REVOKED: 'warning',
+  WITHDRAWN: 'unpublished',
   ARCHIVED: 'archive',
 };
 
