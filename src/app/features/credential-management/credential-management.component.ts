@@ -1,5 +1,5 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, computed, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, NgZone, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
 import { Router } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
@@ -164,6 +164,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly statusService = inject(LifeCycleStatusService);
   private readonly cd = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly zone = inject(NgZone);
   private readonly searchSubject = new Subject<string>();
 
   /** FilterConfig map for text-search filters only. Type/status/organization use the checkbox dropdowns. */
@@ -209,6 +211,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public ngAfterViewInit(): void {
     this.setFilter("subject");
     this.setStringSearchSubscription();
+    this.pinTableHeaderOnScroll();
   }
 
   public navigateToCreateCredential(): void {
@@ -576,6 +579,66 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     if (!filterConfig) return;
     this.searchLabel = filterConfig.translationLabel;
     this.searchPlaceholder = filterConfig.placeholderTranslationLabel;
+  }
+
+  /**
+   * Keeps the table header in sight while the page scrolls past the table.
+   * Not matHeaderRowDef's sticky: true — the card scrolls horizontally, which
+   * makes it the header's scroll container, so a CSS sticky header would never
+   * stick to the page. Listens in the capture phase to catch the scroll of
+   * whichever element scrolls the page (window or a shell container), and runs
+   * outside the zone so scrolling never triggers change detection.
+   */
+  private pinTableHeaderOnScroll(): void {
+    let frame = 0;
+    const schedule = () => {
+      if (!frame) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          this.pinTableHeader();
+        });
+      }
+    };
+
+    // The page also changes height without scrolling (paging, filtering), which
+    // can leave the header below a now shorter table.
+    const resizeObserver = new ResizeObserver(schedule);
+
+    this.zone.runOutsideAngular(() => {
+      document.addEventListener('scroll', schedule, { capture: true, passive: true });
+      window.addEventListener('resize', schedule, { passive: true });
+      resizeObserver.observe(this.host.nativeElement);
+    });
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('scroll', schedule, { capture: true });
+      window.removeEventListener('resize', schedule);
+      resizeObserver.disconnect();
+      cancelAnimationFrame(frame);
+    });
+  }
+
+  /** Moves the header down to the top of the page's scroll area, never past the table's last row. */
+  private pinTableHeader(): void {
+    const table = this.host.nativeElement.querySelector<HTMLElement>('.table-container table');
+    const header = table?.querySelector<HTMLElement>('thead');
+    if (!table || !header) return;
+
+    const tableTop = table.getBoundingClientRect().top;
+    const maxOffset = table.offsetHeight - header.offsetHeight;
+    const offset = Math.min(Math.max(this.scrollAreaTop(table) - tableTop, 0), maxOffset);
+    header.style.transform = offset > 0 ? `translateY(${offset}px)` : '';
+  }
+
+  /** Viewport top of the nearest ancestor that scrolls vertically (0 when it's the window). */
+  private scrollAreaTop(table: HTMLElement): number {
+    // Starts above the card: its own overflow-x makes it a (horizontal-only) scroll container.
+    const card = table.closest('.table-container');
+    for (let el = card?.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (/auto|scroll|overlay/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) {
+        return Math.max(el.getBoundingClientRect().top, 0);
+      }
+    }
+    return 0;
   }
 
   private setStringSearchSubscription(): void{
