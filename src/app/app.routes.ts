@@ -27,10 +27,6 @@ export const routes: Routes = [
         loadChildren: () => import('./features/credential-management/credential-management.routes').then(m => m.default)
       },
       {
-        path: 'details',
-        loadChildren: () => import('./features/credential-details/credential-details.routes').then(m => m.default)
-      },
-      {
         path: 'create',
         loadChildren: () => import('./features/credential-issuance/credential-issuance.routes').then(m => m.default)
       },

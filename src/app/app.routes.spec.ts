@@ -68,12 +68,6 @@ describe('App Routes', () => {
     expect(module).toBeDefined();
   });
 
-  it('should actually load the credential details module (child of organization/credentials)', async () => {
-    const parent = routes.find(r => r.path === 'organization/credentials')!;
-    const credDetailsRoute = parent.children!.find(r => r.path === 'details')!;
-    const module = await credDetailsRoute.loadChildren!();
-    expect(module).toBeDefined();
-  });
 
   it('should actually load the credential creation module (child of organization/credentials)', async () => {
     const parent = routes.find(r => r.path === 'organization/credentials')!;
@@ -82,13 +76,9 @@ describe('App Routes', () => {
     expect(module).toBeDefined();
   });
 
-  it('should define lazy loading for credential details', async () => {
+  it('no longer routes to a credential details page — the list drawer replaced it', () => {
     const parentRoute = routes.find((route) => route.path === 'organization/credentials');
-    const credDetailsRoute = parentRoute?.children?.find((r) => r.path === 'details');
-    expect(credDetailsRoute).toBeTruthy();
-    expect(typeof credDetailsRoute?.loadChildren).toBe('function');
-    const module = await credDetailsRoute!.loadChildren!();
-    expect(module).toBeDefined();
+    expect(parentRoute?.children?.some((r) => r.path === 'details')).toBe(false);
   });
 
   it('should define lazy loading for credential creation', () => {
