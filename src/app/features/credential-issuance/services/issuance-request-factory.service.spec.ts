@@ -163,7 +163,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([]);
     expect(console.error).toHaveBeenCalledWith(
@@ -174,39 +174,13 @@ describe('IssuanceRequestFactoryService', () => {
     );
   });
 
-  it('should stamp organization-scoped powers with type=organization and the org as domain', () => {
-    const powerForm: IssuanceRawPowerForm = {
-      organization: { Onboarding: { Execute: true } }
-    } as any;
-
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
-
-    expect(parsed).toEqual([
-      { type: 'organization', domain: 'Acme Ltd', function: 'Onboarding', action: ['Execute'] }
-    ]);
-  });
-
-  it('should emit both scopes of the same function as two distinct powers', () => {
-    const powerForm: IssuanceRawPowerForm = {
-      domain: { Onboarding: { Execute: true } },
-      organization: { ProductOffering: { Create: true, Update: false } }
-    } as any;
-
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
-
-    expect(parsed).toEqual([
-      { type: 'domain', domain: 'TENANT', function: 'Onboarding', action: ['Execute'] },
-      { type: 'organization', domain: 'Acme Ltd', function: 'ProductOffering', action: ['Create'] }
-    ]);
-  });
-
-  it('should drop organization-scoped powers when the mandator carries no organization', () => {
+  it('should ignore a scope the tenant does not offer, whatever the form carries', () => {
     const powerForm: IssuanceRawPowerForm = {
       domain: { Onboarding: { Execute: true } },
       organization: { ProductOffering: { Create: true } }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', '');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([
       { type: 'domain', domain: 'TENANT', function: 'Onboarding', action: ['Execute'] }
@@ -218,14 +192,14 @@ describe('IssuanceRequestFactoryService', () => {
       domain: { Onboarding: undefined }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([]);
     expect(console.error).toHaveBeenCalledWith('Not actions found for this key: Onboarding');
   });
 
   it('should return empty array when power form is empty', () => {
-    const parsed = (service as any).parsePower({}, 'learcredential.employee', 'Acme Ltd');
+    const parsed = (service as any).parsePower({}, 'learcredential.employee');
     expect(parsed).toEqual([]);
   });
 
@@ -336,7 +310,7 @@ describe('IssuanceRequestFactoryService', () => {
       }
     } as any;
 
-    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee', 'Acme Ltd');
+    const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([
       {

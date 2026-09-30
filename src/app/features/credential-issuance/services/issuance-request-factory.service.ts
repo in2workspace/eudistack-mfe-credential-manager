@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, IssuanceRawPowerScopeForm, POWER_SCOPES, PowerScope, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, IssuanceRawPowerScopeForm, POWER_SCOPES, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -61,7 +61,7 @@ export class IssuanceRequestFactoryService {
     const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
 
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee', mandator['organization']);
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee');
 
     // Payload
     const payload: IssuanceLEARCredentialEmployeePayload =    
@@ -104,7 +104,7 @@ export class IssuanceRequestFactoryService {
     const mandatorEmail = mandator['email'];
 
     // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine', mandator['organization']);
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
     // EUD-233 AD-6: the did:key travels as a typed parameter, no longer read out of
     // formData['keys']['didKey'] -- IssuanceHolderKeyService.generateForSubmission() always
@@ -171,23 +171,14 @@ export class IssuanceRequestFactoryService {
 
   private parsePower(
     power: IssuanceRawPowerForm,
-    credType: IssuanceCredentialType,
-    organizationName: string
+    credType: IssuanceCredentialType
   ): IssuancePayloadPower[] {
     const tenantDomain = this.themeService.tenantDomain;
     const catalogue = buildPowerMap(tenantDomain)[credType];
-    const scopeBindings: Record<PowerScope, { type: string; domain: string }> = {
-      domain: { type: 'domain', domain: tenantDomain },
-      organization: { type: 'organization', domain: organizationName }
-    };
 
-    return POWER_SCOPES.flatMap(scope => {
-      const binding = scopeBindings[scope];
-      if (!binding.domain) {
-        return [];
-      }
-      return this.parsePowerScope(power?.[scope] ?? {}, catalogue, binding);
-    });
+    return POWER_SCOPES.flatMap(scope =>
+      this.parsePowerScope(power?.[scope] ?? {}, catalogue, { type: scope, domain: tenantDomain })
+    );
   }
 
   private parsePowerScope(

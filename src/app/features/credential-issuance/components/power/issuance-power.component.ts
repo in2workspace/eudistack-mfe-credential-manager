@@ -22,14 +22,6 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
 
   public readonly scopes = POWER_SCOPES;
 
-  /**
-   * The scopes the Operator can actually pick from. `organization` is withheld pending a product
-   * decision on whether a tenant may delegate organization-scoped powers at all; the scope itself
-   * stays wired end to end (form group, validator, payload), so restoring the tab is a one-line
-   * change here and nothing else.
-   */
-  public readonly visibleScopes: readonly PowerScope[] = POWER_SCOPES.filter(scope => scope !== 'organization');
-
   public readonly activeScope = signal<PowerScope>('domain');
 
   /**
@@ -37,7 +29,7 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
    * Operator can see which scope the powers land in, but it must not invite a click that would
    * do nothing.
    */
-  public readonly isScopeSelectable = this.visibleScopes.length > 1;
+  public readonly isScopeSelectable = this.scopes.length > 1;
 
   public organizationIdentifierIsAdmin: boolean;
   public selectorPowers: IssuanceFormPowerSchema[] = [];
@@ -50,17 +42,6 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   public constructor(){
     super();
     this.organizationIdentifierIsAdmin = this.authService.hasAdminOrganizationIdentifier();
-  }
-
-  public organizationName(): string {
-    return this.authService.extractRawMandator()?.organization ?? '';
-  }
-
-  public scopeLabel(scope: PowerScope): string {
-    if (scope === 'domain') {
-      return this.sysTenant;
-    }
-    return this.organizationName() || this.translate.instant('power.scope.organization');
   }
 
   public scopeGroup(scope: PowerScope): FormGroup {

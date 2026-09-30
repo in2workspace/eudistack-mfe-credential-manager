@@ -269,9 +269,6 @@
       "domain": "Domini",
       "function": "Funció",
       "subtitle": "Afegeix un o més poders i selecciona les funcions de cadascun.",
-      "scope": {
-        "organization": "Organització"
-      },
       "onboarding": "Alta",
       "marketplace": "Marketplace",
       "productoffering": "Oferta de producte",

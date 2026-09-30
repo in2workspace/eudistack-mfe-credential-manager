@@ -6,7 +6,7 @@
   <p class="subtitle">{{ 'power.subtitle' | translate }}</p>
 
   <div class="scope-segment" role="tablist">
-    @for (tab of visibleScopes; track tab) {
+    @for (tab of scopes; track tab) {
       <button
         type="button"
         role="tab"
@@ -15,7 +15,7 @@
         [disabled]="!isScopeSelectable"
         [attr.aria-selected]="scope === tab"
         (click)="activeScope.set(tab)">
-        <span class="scope-tab-label">{{ scopeLabel(tab) }}</span>
+        <span class="scope-tab-label">{{ sysTenant }}</span>
         @if (scopeCount(tab) > 0) {
           <span class="scope-count">{{ scopeCount(tab) }}</span>
         }

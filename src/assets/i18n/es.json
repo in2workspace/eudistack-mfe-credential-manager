@@ -294,9 +294,6 @@
     "domain": "Dominio",
     "function": "Función",
     "subtitle": "Añade uno o más poderes y selecciona las funciones de cada uno.",
-    "scope": {
-      "organization": "Organización"
-    },
     "marketplace": "Marketplace",
     "add": "Añadir",
     "onboarding": "Alta",

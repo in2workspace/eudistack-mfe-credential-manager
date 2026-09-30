@@ -294,9 +294,6 @@
     "domain": "Domain",
     "function": "Function",
     "subtitle": "Add one or more powers and select the functions for each one.",
-    "scope": {
-      "organization": "Organization"
-    },
     "onboarding": "Onboarding",
     "marketplace": "Marketplace",
     "productoffering": "Product Offering",

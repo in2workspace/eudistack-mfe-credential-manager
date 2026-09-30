@@ -33,8 +33,7 @@ describe('IssuancePowerComponent', () => {
     };
 
     authService = {
-      hasAdminOrganizationIdentifier: jest.fn(),
-      extractRawMandator: jest.fn().mockReturnValue({ organization: 'Acme Ltd' } as any)
+      hasAdminOrganizationIdentifier: jest.fn()
     };
     dialog = { openDialogWithCallback: jest.fn() };
 
@@ -77,39 +76,30 @@ describe('IssuancePowerComponent', () => {
     expect(cmp2.organizationIdentifierIsAdmin).toBeFalsy();
   });
 
-  it('ngOnInit creates one FormGroup per power scope', () => {
+  it('ngOnInit wires the tenant domain and no other scope', () => {
     const fg = attachForm(component);
     component.ngOnInit();
 
+    expect(component.scopes).toEqual(['domain']);
     expect(fg.contains('domain')).toBeTruthy();
-    expect(fg.contains('organization')).toBeTruthy();
+    expect(fg.contains('organization')).toBeFalsy();
   });
 
-  it('scopeLabel resolves the tenant for domain and the mandator organization for organization', () => {
-    attachForm(component);
-    component.ngOnInit();
-
-    expect(component.scopeLabel('domain')).toBe('TENANT');
-    expect(component.scopeLabel('organization')).toBe('Acme Ltd');
-  });
-
-  it('addPower attaches the actions under the requested scope only', () => {
+  it('addPower attaches the actions of the power under the tenant domain', () => {
     const fg = attachForm(component);
     (component as any).data = () => [{ function: 'power1', action: ['act1', 'act2'], isAdminRequired: false }];
     component.ngOnInit();
-    component.addPower('organization', 'power1');
+    component.addPower('domain', 'power1');
 
-    const organization = fg.get('organization') as FormGroup;
     const domain = fg.get('domain') as FormGroup;
-    expect(organization.contains('power1')).toBeTruthy();
-    expect(domain.contains('power1')).toBeFalsy();
+    expect(domain.contains('power1')).toBeTruthy();
 
-    const child = organization.get('power1') as FormGroup;
+    const child = domain.get('power1') as FormGroup;
     expect(child.get('act1') as FormControl).toBeTruthy();
     expect(child.get('act2') as FormControl).toBeTruthy();
   });
 
-  it('scopeCount and isPowerEnabled report per scope', () => {
+  it('scopeCount and isPowerEnabled report the powers of the scope', () => {
     attachForm(component);
     (component as any).data = () => [{ function: 'pw', action: ['a'], isAdminRequired: false }];
     component.ngOnInit();
@@ -120,9 +110,7 @@ describe('IssuancePowerComponent', () => {
     component.addPower('domain', 'pw');
 
     expect(component.scopeCount('domain')).toBe(1);
-    expect(component.scopeCount('organization')).toBe(0);
     expect(component.isPowerEnabled('domain', 'pw')).toBeTruthy();
-    expect(component.isPowerEnabled('organization', 'pw')).toBeFalsy();
   });
 
   it('addPower with undefined actions logs an error and does not modify the form', () => {
@@ -175,22 +163,21 @@ describe('IssuancePowerComponent', () => {
 
     expect(fg.hasError('noPower')).toBeTruthy();
 
-    component.addPower('organization', 'pw');
+    component.addPower('domain', 'pw');
     expect(fg.hasError('noPower')).toBeFalsy();
     expect(fg.hasError('noActionPerPower')).toBeTruthy();
 
-    (fg.get('organization.pw.a') as FormControl).setValue(true);
+    (fg.get('domain.pw.a') as FormControl).setValue(true);
     fg.updateValueAndValidity();
     expect(fg.hasError('noActionPerPower')).toBeFalsy();
   });
 
 
-  it('withholds the organization tab while the product decision is open, without unwiring the scope', () => {
+  it('builds no form group for a scope the tenant does not offer', () => {
     const fg = attachForm(component);
     component.ngOnInit();
 
-    expect(component.visibleScopes).toEqual(['domain']);
-    expect(fg.contains('organization')).toBe(true);
+    expect(Object.keys(fg.controls)).toEqual(['domain']);
   });
 
 
@@ -247,15 +234,6 @@ describe('IssuancePowerComponent', () => {
 
 
   describe('degraded session and unknown scopes', () => {
-    it('falls back to a generic label when the session carries no organization', () => {
-      (authService.extractRawMandator as jest.Mock).mockReturnValue(null);
-      attachForm(component);
-      component.ngOnInit();
-
-      expect(component.organizationName()).toBe('');
-      expect(component.scopeLabel('organization')).toBe('power.scope.organization');
-    });
-
     it('reports an absent scope as empty rather than throwing', () => {
       const fg = new FormGroup({});
       (component as any).form = () => fg;
@@ -286,11 +264,12 @@ describe('IssuancePowerComponent', () => {
     component.ngOnInit();
     fixture.detectChanges();
 
-    expect(component.visibleScopes.length).toBe(1);
+    expect(component.scopes.length).toBe(1);
     expect(component.isScopeSelectable).toBe(false);
 
     const tab: HTMLButtonElement = fixture.nativeElement.querySelector('.scope-tab');
     expect(tab.disabled).toBe(true);
+    expect(tab.textContent).toContain('TENANT');
   });
 
 });

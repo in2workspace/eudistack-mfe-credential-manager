@@ -185,8 +185,8 @@ export interface IssuedCredentialSummary {
 }
 
 // Power component types
-export type PowerScope = 'domain' | 'organization';
-export const POWER_SCOPES: readonly PowerScope[] = ['domain', 'organization'];
+export type PowerScope = 'domain';
+export const POWER_SCOPES: readonly PowerScope[] = ['domain'];
 
 export type IssuanceRawPowerScopeForm = Partial<Record<TmfFunction, Record<TmfAction, boolean>>>;
 export type IssuanceRawPowerForm = Partial<Record<PowerScope, IssuanceRawPowerScopeForm>>;
