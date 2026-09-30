@@ -35,7 +35,10 @@ h2 {
 }
 
 .field-hint{
+  margin-top: -14px;
   font-size: 12px;
   font-family: inherit;
-  font-style:italic;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--text-secondary, #6B7280);
 }
