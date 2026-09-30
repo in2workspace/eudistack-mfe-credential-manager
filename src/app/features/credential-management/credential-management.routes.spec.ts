@@ -1,17 +1,16 @@
 import routes from './credential-management.routes';
 import { CredentialManagementComponent } from './credential-management.component';
-import { CredentialDetailsComponent } from '../credential-details/credential-details.component';
 
 describe('Credential Management Routes', () => {
-  it('should define routes with correct components and paths', () => {
-    expect(routes).toHaveLength(2);
+  it('serves the credential list at the feature root', () => {
+    expect(routes).toHaveLength(1);
 
     const rootRoute = routes.find(r => r.path === '');
     expect(rootRoute).toBeTruthy();
     expect(rootRoute!.component).toBe(CredentialManagementComponent);
+  });
 
-    const detailsRoute = routes.find(r => r.path === 'details/:id');
-    expect(detailsRoute).toBeTruthy();
-    expect(detailsRoute!.component).toBe(CredentialDetailsComponent);
+  it('no longer exposes a standalone details page — the drawer replaced it', () => {
+    expect(routes.some(r => r.path?.startsWith('details'))).toBe(false);
   });
 });

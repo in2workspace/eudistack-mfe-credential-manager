@@ -1,13 +1,16 @@
-<h3>{{ "power.domain" | translate }}: <span class="domain-value">{{ domain }}</span></h3>
-<div class="powers-container">
-    @for(power of groupedPowers; track $index){
-        <p>{{ ("power." + power.function.toLocaleLowerCase() | translate ) | capitalize  }}</p>
-        <div class="functions-container">
-            <div class="toggles-container">
-                @for(action of power.actions; track $index){
-                    <mat-slide-toggle checked disabled>{{ ("power." + action.toLocaleLowerCase() | translate ) | capitalize}}</mat-slide-toggle>
-                }
-            </div>
-        </div>
-    }
+<div class="powers">
+  @for (power of groupedPowers; track $index) {
+    <div class="powers__row">
+      <span class="powers__name">
+        {{ ("power." + power.function.toLocaleLowerCase() | translate) | capitalize }}@if (domain) { ({{ domain }})}
+      </span>
+      <div class="powers__actions">
+        @for (action of power.actions; track $index) {
+          <span class="powers__action">
+            {{ ("power." + action.toLocaleLowerCase() | translate) | capitalize }}
+          </span>
+        }
+      </div>
+    </div>
+  }
 </div>

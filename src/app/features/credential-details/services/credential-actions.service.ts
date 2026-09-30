@@ -2,7 +2,7 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, switchMap, from, EMPTY } from 'rxjs';
+import { Observable, switchMap, from, EMPTY, Subject } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
@@ -11,6 +11,15 @@ import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
   providedIn: 'root'
 })
 export class CredentialActionsService {
+
+  /**
+   * Emits once a sign / revoke / withdraw / archive action has actually hit the
+   * backend and the user dismissed the success dialog. Consumers that stay mounted
+   * across the action — the credential-details drawer and the list behind it — use
+   * it to refresh; the details PAGE does not need it because the navigation below
+   * remounts the list.
+   */
+  public readonly actionCompleted$ = new Subject<void>();
 
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
@@ -108,9 +117,10 @@ export class CredentialActionsService {
         const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
         return dialogRef.afterClosed();
       }),
-      switchMap(()  =>
-        from(this.router.navigate(['/organization/credentials']))
-      )
+      switchMap(()  => {
+        this.actionCompleted$.next();
+        return from(this.router.navigate(['/organization/credentials']));
+      })
     );
   }
 
