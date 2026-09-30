@@ -177,6 +177,13 @@ export interface IssuanceRawCredentialPayload {
   onBehalf: boolean
 }
 
+export interface IssuedCredentialSummary {
+  credentialType: IssuanceCredentialType;
+  typeLabel?: string;
+  domain?: string;
+  ipAddress?: string;
+}
+
 // Power component types
 export type PowerScope = 'domain' | 'organization';
 export const POWER_SCOPES: readonly PowerScope[] = ['domain', 'organization'];

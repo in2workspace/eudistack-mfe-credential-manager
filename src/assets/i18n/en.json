@@ -318,6 +318,18 @@
   },
   "credentialIssuance": {
     "title": "LEAR Credential Issuance",
+    "result": {
+      "title": {
+        "delivered": "Credential created successfully",
+        "pending": "Create credential"
+      },
+      "subtitle": {
+        "learcredential.machine": "Your machine credential has been created.",
+        "learcredential.employee": "Your employee credential has been created."
+      },
+      "keyWarning": "Save the generated key now. For security reasons, it will only be shown once and cannot be retrieved later.",
+      "credentialType": "Credential type"
+    },
     "backToList": "Back to list of issued credentials",
     "holderInfo": "Holder information / Mandator",
     "learcredential.employee": "LEAR Credential Employee",

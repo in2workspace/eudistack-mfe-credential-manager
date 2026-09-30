@@ -6,8 +6,9 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
+import { IssuedCredentialSummaryComponent } from '../issued-credential-summary/issued-credential-summary.component';
 import { UncopiedArtifactCloseGuard, ArtifactKind } from 'src/app/shared/services/uncopied-artifact-close-guard';
-import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryModeToken, IssuedCredentialSummary } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface DirectCredentialResultDialogData {
@@ -19,6 +20,7 @@ export interface DirectCredentialResultDialogData {
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
   /** Present only when the `ui` channel delivered (EC-02) -- embeds the QR alongside the credential. */
   credentialOfferUri?: string;
+  summary?: IssuedCredentialSummary;
 }
 
 /**
@@ -47,6 +49,7 @@ export interface DirectCredentialResultDialogData {
     TranslatePipe,
     HolderPrivateKeySectionComponent,
     DeliveryOutcomeListComponent,
+    IssuedCredentialSummaryComponent,
   ],
   templateUrl: './direct-credential-result-dialog.component.html',
   styleUrl: './direct-credential-result-dialog.component.scss'

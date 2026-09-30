@@ -293,6 +293,18 @@
     },
    "credentialIssuance": {
     "title": "Emissió de LEAR Credential",
+    "result": {
+      "title": {
+        "delivered": "Credencial creada correctament",
+        "pending": "Crear credencial"
+      },
+      "subtitle": {
+        "learcredential.machine": "La teva credencial de màquina s’ha creat.",
+        "learcredential.employee": "La teva credencial d’empleat s’ha creat."
+      },
+      "keyWarning": "Desa ara la clau generada. Per seguretat, només es mostra un cop i no es podrà recuperar després.",
+      "credentialType": "Tipus de credencial"
+    },
     "backToList": "Tornar a la llista de credencials emeses",
     "holderInfo": "Informació del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",

@@ -17,7 +17,7 @@ import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-
 import { CredentialCatalogService } from 'src/app/core/services/credential-catalog.service';
 import { DeliveryEligibilitySnapshot } from 'src/app/core/models/entity/delivery-eligibility-snapshot';
 import { ChannelOutcome, resolveChannelOutcomes } from 'src/app/core/models/entity/issuance-channel-outcome';
-import { CredentialFormatOption, CredentialIssuanceViewModelControlField, CredentialIssuanceViewModelField, CredentialIssuanceViewModelGroupField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
+import { CredentialFormatOption, CredentialIssuanceViewModelControlField, CredentialIssuanceViewModelField, CredentialIssuanceViewModelGroupField, CredentialIssuanceViewModelSchemaWithId, DELIVERY_MODE_OPTIONS, DeliveryModeOption, DeliveryModeToken, FORMAT_LABEL_MAP, GRANT_TYPE_OPTIONS, GrantTypeOption, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceStaticViewModel, IssuedCredentialSummary, IssuanceViewModelsTuple, WALLET_DELIVERY_MODE_OPTIONS } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ExtendedValidatorFn, ValidatorEntry } from 'src/app/core/models/entity/validator-types';
 import { ALL_VALIDATORS_FACTORY_MAP, ValidatorName } from 'src/app/shared/validators/credential-issuance/all-validators';
 import { MatSelect } from '@angular/material/select';
@@ -696,6 +696,25 @@ export class CredentialIssuanceService {
         catchError((error: unknown) => this.handleIssuanceFailure(error))
       );
     }
+    
+    /**
+     * What the result surfaces echo back. The machine identifiers come from the form the Operator
+     * just submitted, not from the response: the Issuer does not return them, and they are what the
+     * Operator needs in order to confirm the credential went to the system they meant.
+     */
+    private buildIssuedSummary(): IssuedCredentialSummary | undefined {
+      const credentialType = this.selectedCredentialType$();
+      if (!credentialType) {
+        return undefined;
+      }
+      const mandatee = this.formValue$()?.['mandatee'] ?? {};
+      return {
+        credentialType,
+        typeLabel: this.translate.instant('credentialIssuance.' + credentialType),
+        domain: mandatee['domain'] ?? undefined,
+        ipAddress: mandatee['ipAddress'] ?? undefined
+      };
+    }
 
   /**
    * The offer URI, wherever in `responses[]` it landed. Backend only builds one when the requested
@@ -787,12 +806,15 @@ export class CredentialIssuanceService {
     privateKeyHex: string | undefined,
     outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>
   ): Observable<any> {
-    const dialogData: CredentialOfferDialogData = { credentialOfferUri, requiresHolderKeySection, privateKeyHex, outcomes };
+    const dialogData: CredentialOfferDialogData = {
+      credentialOfferUri, requiresHolderKeySection, privateKeyHex, outcomes,
+      summary: this.buildIssuedSummary()
+    };
     const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
       data: dialogData,
       autoFocus: false,
-      width: '420px',
-      panelClass: 'dialog-custom',
+      width: '560px',
+      panelClass: ['dialog-custom', 'result-dialog'],
       // closeOnNavigation must be false whenever UncopiedArtifactCloseGuard is active, or
       // Material closes the dialog on NavigationStart before the guard's popstate listener ever
       // gets a chance to react to the browser's back button.
@@ -828,14 +850,16 @@ export class CredentialIssuanceService {
       requiresHolderKeySection,
       privateKeyHex,
       outcomes,
-      credentialOfferUri: this.extractCredentialOfferUri(response)
+      credentialOfferUri: this.extractCredentialOfferUri(response),
+      summary: this.buildIssuedSummary()
     };
     const dialogRef = this.matDialog.open(DirectCredentialResultDialogComponent, {
       data: dialogData,
       autoFocus: false,
+      width: '560px',
       disableClose: true,
       closeOnNavigation: false,
-      panelClass: 'dialog-custom'
+      panelClass: ['dialog-custom', 'result-dialog']
     });
     // AD-6 cleanup point 4: belt-and-suspenders alongside the take() that already drained this
     // attempt's entry before the dialog opened -- guards a future code path that reaches this

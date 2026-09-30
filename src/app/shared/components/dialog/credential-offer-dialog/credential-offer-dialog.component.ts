@@ -6,8 +6,9 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
+import { IssuedCredentialSummaryComponent } from '../issued-credential-summary/issued-credential-summary.component';
 import { ArtifactKind, UncopiedArtifactCloseGuard, UncopiedArtifactCloseGuardHandle } from 'src/app/shared/services/uncopied-artifact-close-guard';
-import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryModeToken, IssuedCredentialSummary } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface CredentialOfferDialogData {
@@ -18,6 +19,7 @@ export interface CredentialOfferDialogData {
   /** Present only when `requiresHolderKeySection` and the store still had it (EUD-233 AC-13); absent under `requiresHolderKeySection` is AC-10.2. */
   privateKeyHex?: string;
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
+  summary?: IssuedCredentialSummary;
 }
 
 /**
@@ -43,6 +45,7 @@ export interface CredentialOfferDialogData {
         TranslatePipe,
         HolderPrivateKeySectionComponent,
         DeliveryOutcomeListComponent,
+        IssuedCredentialSummaryComponent,
     ],
     templateUrl: './credential-offer-dialog.component.html',
     styleUrl: './credential-offer-dialog.component.scss'
@@ -62,9 +65,7 @@ export class CredentialOfferDialogComponent {
   protected readonly privateKeyCopied = signal(false);
   protected readonly privateKeyCopyFailed = signal(false);
 
-  protected readonly titleKey = this.data.credentialOfferUri
-    ? 'credentialIssuance.credential-offer-dialog.title'
-    : 'credentialIssuance.create-success-dialog.title';
+  protected readonly titleKey = 'credentialIssuance.result.title.pending';
 
   /** AC-13: this surface's only trackable artifact is the key -- there is no credential block here. */
   protected readonly pendingArtifacts = computed<readonly ArtifactKind[]>(() =>

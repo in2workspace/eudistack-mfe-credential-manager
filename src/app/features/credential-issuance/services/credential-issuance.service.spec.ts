@@ -796,7 +796,7 @@ describe('CredentialIssuanceService', () => {
         service.openSubmitDialog();
 
         expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
-          width: '420px',
+          width: '560px',
           disableClose: false,
           closeOnNavigation: true,
         }));

@@ -318,6 +318,18 @@
   },
   "credentialIssuance": {
     "title": "Emisión de credencial",
+    "result": {
+      "title": {
+        "delivered": "Credencial creada correctamente",
+        "pending": "Crear credencial"
+      },
+      "subtitle": {
+        "learcredential.machine": "Tu credencial de máquina se ha creado.",
+        "learcredential.employee": "Tu credencial de empleado se ha creado."
+      },
+      "keyWarning": "Guarda ahora la clave generada. Por seguridad, solo se muestra una vez y no se podrá recuperar después.",
+      "credentialType": "Tipo de credencial"
+    },
     "backToList": "Volver a la lista de credenciales emitidas",
     "holderInfo": "Información del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
