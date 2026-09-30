@@ -1072,7 +1072,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       fixture.detectChanges();
 
       const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.querySelectorAll('.filter-bar app-filter-dropdown').length).toBe(2);
+      expect(compiled.querySelectorAll('.filter-bar app-filter-dropdown')).toHaveLength(2);
     });
 
     it('should show the Organization ID column for every tenant type, simple included', () => {

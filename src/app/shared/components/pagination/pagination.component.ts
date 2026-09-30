@@ -309,7 +309,7 @@ export class PaginationComponent implements AfterViewInit {
   /** True only when a real gap separates the window from the last page — never for an adjacent one. */
   protected showEllipsis(): boolean {
     const window = this.pageWindow();
-    return this.hasLastPageButton() && window[window.length - 1] < this.totalPages() - 1;
+    return this.hasLastPageButton() && (window.at(-1) ?? 0) < this.totalPages() - 1;
   }
 
   protected trackByPage(_index: number, page: number): number {

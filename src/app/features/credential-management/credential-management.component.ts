@@ -1,7 +1,7 @@
 import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/constants/translations.constants';
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, NgZone, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { MatSort, MatSortHeader, Sort, SortDirection } from '@angular/material/sort';
@@ -27,7 +27,6 @@ import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
-import { RouterLink } from '@angular/router';
 
 /** Options for the "Sort by" selector, next to the results count. */
 type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
@@ -215,7 +214,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   public navigateToCreateCredential(): void {
-    this.router.navigate(['/organization/credentials/create']);
+    void this.router.navigate(['/organization/credentials/create']);
   }
 
   public navigateToCreateCredentialOnBehalf(): void {
@@ -223,11 +222,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       ? ['/organization/credentials/create-on-behalf']
       : ['/organization/credentials/create'];
 
-    this.router.navigate(route);
+    void this.router.navigate(route);
   }
 
   public navigateToCredentialDetails(credential_procedures: CredentialProcedureBasicInfo): void {
-    this.router.navigate([
+    void this.router.navigate([
       '/organization/credentials/details',
       credential_procedures.credential_procedure?.procedure_id
     ]);

@@ -4,7 +4,7 @@ import { CredentialDetailsComponent } from '../credential-details/credential-det
 
 describe('Credential Management Routes', () => {
   it('should define routes with correct components and paths', () => {
-    expect(routes.length).toBe(2);
+    expect(routes).toHaveLength(2);
 
     const rootRoute = routes.find(r => r.path === '');
     expect(rootRoute).toBeTruthy();
