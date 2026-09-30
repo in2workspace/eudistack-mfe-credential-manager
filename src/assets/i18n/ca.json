@@ -311,7 +311,7 @@
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Crear credencial",
-      "message": "Segur que vols crear aquesta credencial?",
+      "message": "Un cop creada, aquesta credencial no es pot editar. Per fer canvis, hauràs de revocar-la i crear-ne una de nova.",
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {

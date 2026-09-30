@@ -336,7 +336,7 @@
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Create credential",
-      "message": "Are you sure you want to create this credential?",
+      "message": "Once created, this credential cannot be edited. To make changes, you'll need to revoke it and create a new one.",
       "defaultLoadingTitle": "Please wait while the process is completed..."
     },
     "create-success-dialog": {
