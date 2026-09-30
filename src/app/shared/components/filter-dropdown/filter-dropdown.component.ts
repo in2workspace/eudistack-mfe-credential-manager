@@ -248,6 +248,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
 
     .filter-dropdown-search {
       width: 100%;
+      --mdc-outlined-text-field-container-shape: var(--radius-lg, 16px);
 
       mat-icon[matSuffix] {
         color: var(--text-secondary, #6B7280);
@@ -282,12 +283,18 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
       display: block;
       padding: 2px 0;
       overflow-wrap: anywhere;
+
+      // MatCheckbox's own box: fixed 2px, no token to override.
+      ::ng-deep .mdc-checkbox__background {
+        border-radius: var(--radius-sm, 4px);
+      }
     }
 
     // The menu panel lives in the CDK overlay, outside this component —
     // Material caps it at 280px, which would clip the wide (organization) mode.
     ::ng-deep .mat-mdc-menu-panel.filter-dropdown-panel {
       max-width: none;
+      --mat-menu-container-shape: var(--radius-md, 8px);
     }
 
     .filter-dropdown-no-options {
