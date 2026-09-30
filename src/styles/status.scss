@@ -22,41 +22,35 @@
     }
   }
 
+  // Single source of the per-status palette: the table's status icon and the
+  // details drawer's pill both take their colors from these classes.
   .status-default {
     color: var(--status-neutral, #6B7280);
     background-color: rgba(107, 114, 128, 0.1);
   }
 
   .status-valid {
-    color: var(--status-success, #059669);
-    background-color: rgba(5, 150, 105, 0.1);
+    color: #0B5C33;
+    background-color: #C3F5D6;
   }
 
   .status-expired {
-    color: var(--status-error, #DC2626);
-    background-color: rgba(220, 38, 38, 0.1);
+    color: #826C00;
+    background-color: #FFF0C4;
   }
 
   .status-revoked {
-    color: var(--status-error, #DC2626);
-    background-color: rgba(220, 38, 38, 0.1);
+    color: #680008;
+    background-color: #FFACAC;
   }
 
-  .status-draft {
-    color: var(--status-warning, #D97706);
-    background-color: rgba(217, 119, 6, 0.1);
-  }
-
+  .status-draft,
   .status-withdrawn {
-    color: var(--status-neutral, #6B7280);
-    background-color: rgba(107, 114, 128, 0.1);
+    color: #666B76;
+    background-color: #EBECEE;
   }
 
   .status-archived {
-    color: #111827;
+    color: var(--text-disabled, #9CA3AF);
     background-color: rgba(107, 114, 128, 0.12);
-
-    &::before {
-      background-color: #6B7280;
-    }
   }
