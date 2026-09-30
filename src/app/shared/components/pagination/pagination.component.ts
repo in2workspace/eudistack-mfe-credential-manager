@@ -98,7 +98,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       <div class="pagination-right">
         <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-          <mat-select [value]="paginatorRef.pageSize" (selectionChange)="onPageSizeChange($event.value)">
+          <mat-select [value]="paginatorRef.pageSize" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
             <mat-option *ngFor="let size of pageSizeOptions(); trackBy: trackBySize" [value]="size">{{ size }}</mat-option>
           </mat-select>
         </mat-form-field>
@@ -209,7 +209,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
 
       &--active {
-        background: $primary-tint;
+        background: var(--surface-selected, #B6CAEC);
         color: var(--primary-color);
         font-weight: 600;
       }
