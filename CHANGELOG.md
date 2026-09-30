@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-09-22
 
+## Added
+- **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box and is hidden for single-organization tenants.
+- **Credential management - search**: the subject search box is always visible and has a clear button inside it.
+- **Credential management - sorting**: new "Sort by" selector next to a results count (Recently issued, Recently updated, Expiring soon, Expires later), kept in sync with the column header sort. The table starts sorted by Updated, newest first.
+- **Credential management - pagination**: numbered pagination bar (Back/Next, page numbers with ellipsis, 10/20/50 results per page) replaces Material's paginator.
+- **Credential management - table header**: the header stays pinned at the top while the page scrolls.
+
 ## Changed
+- **Credential management - single table**: the Active/Archived tabs are gone. Archived is now one more status in the Status filter, and shows up like any other status.
+- **Credential management - columns**: new column order (Organization ID, Subject, Type, Status, Issued on, Expires on, Updated, Action). The Organization ID column is shown for every tenant. The Type column and filter group every version of a credential type under one label (Employee, Machine, Label Credential). The "Updated" column uses the same date format as the other dates, with the full date and time in a tooltip.
+- **Credential management - status and details**: the status is shown as a tinted icon with a tooltip instead of a text pill. Credential details now open from an eye button in the new Action column instead of from a click anywhere on the row.
+- **Credential management - layout**: the page is titled "Issued credentials". The table has fixed column widths and fits laptop screens without horizontal scroll, truncating long values with a tooltip. The table, header, filters and pagination are restyled on the theme tokens. "New credential (on behalf)" is now the primary button. On small screens the create buttons sit in a bar fixed to the bottom of the screen.
 - **EUD-233 - issuance form**: shortened the label text for the direct delivery checkbox; removed top padding from the title of the form's first field; updated checkboxes to have rounded corners for visual consistency with radio buttons
 - **EUD-233 - post-issuance dialog**: refactored result display to reuse components, ensuring consistent formatting regardless of credential type and number of selected delivery methods; added credential-specific descriptive text for private keys and signed keys, each with its own field description
 
