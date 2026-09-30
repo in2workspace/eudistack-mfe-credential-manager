@@ -351,7 +351,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // no error and no paginator call
 }));
 
-  describe('ARCHIVED handling — no separate view, hidden by default via the filter predicate', () => {
+  describe('ARCHIVED handling — no separate view, filtered like any other status', () => {
     const makeProc = (id: string, status: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
         procedure_id: id,
@@ -396,7 +396,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(statusSpy).toHaveBeenCalledWith([archivedProc, validProc, withdrawnProc]);
     }));
 
-    it('hides ARCHIVED rows from filteredData when no status is explicitly selected', fakeAsync(() => {
+    it('shows ARCHIVED rows in filteredData when no status is selected', fakeAsync(() => {
       const archivedProc = makeProc('arch-3', 'ARCHIVED');
       const validProc = makeProc('valid-2', 'VALID');
       const withClass: CredentialProcedureWithClass[] = [
@@ -413,11 +413,29 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.ngOnInit();
       tick();
 
-      expect(component.dataSource.data).toHaveLength(2);
+      expect(component.dataSource.filteredData).toEqual(withClass);
+    }));
+
+    it('hides ARCHIVED rows when only other statuses are selected', fakeAsync(() => {
+      const archivedProc = makeProc('arch-5', 'ARCHIVED');
+      const validProc = makeProc('valid-4', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
+
+      component['initializeCredentialTable']();
+      tick();
+      component.ngAfterViewInit();
+
+      component.onStatusFilterChange(['VALID']);
+
       expect(component.dataSource.filteredData).toEqual([{ ...validProc, statusClass: 'status-valid' }]);
     }));
 
-    it('reveals ARCHIVED rows once ARCHIVED is explicitly checked in the status filter', fakeAsync(() => {
+    it('shows only ARCHIVED rows when ARCHIVED is the selected status', fakeAsync(() => {
       const archivedProc = makeProc('arch-4', 'ARCHIVED');
       const validProc = makeProc('valid-3', 'VALID');
       const withClass: CredentialProcedureWithClass[] = [

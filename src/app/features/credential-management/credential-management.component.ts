@@ -86,7 +86,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /** True when the initial credential load failed (ES-02). Prevents showing empty-state as "no matches". */
   public hasLoadError: boolean = false;
 
-  /** Read-only list of statuses shown in the status filter dropdown (excludes ARCHIVED). */
+  /** Read-only list of statuses shown in the status filter dropdown. */
   public readonly filterableStatuses = FILTERABLE_STATUSES;
 
   /** Total rows currently matching the compound filter — drives the "X results" line. */
@@ -196,11 +196,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   public ngOnInit() {
-    // Installs the compound filter predicate (which hides ARCHIVED by default)
-    // before data loads — with a synchronous data source (e.g. a mock used for
-    // local testing) initializeCredentialTable()'s subscribe callback would
-    // otherwise run before ngAfterViewInit() ever sets it, leaving the
-    // MatTableDataSource's default predicate (which never hides anything) in
+    // Installs the compound filter predicate before data loads — with a
+    // synchronous data source (e.g. a mock used for local testing)
+    // initializeCredentialTable()'s subscribe callback would otherwise run
+    // before ngAfterViewInit() ever sets it, leaving MatTableDataSource's
+    // default predicate (which can't read the serialized CredentialFilter) in
     // place. setFilter('subject') is idempotent, so ngAfterViewInit() calling
     // it again is harmless.
     this.setFilter('subject');
@@ -350,7 +350,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     .subscribe({
       next: (data: CredentialProceduresResponse) => {
         // No separate Archived view — every status (including ARCHIVED) loads
-        // into the same table; the filter predicate hides ARCHIVED by default.
+        // into the same table and is filtered like any other.
         // Default order comes from matSortActive/matSortDirection in the template.
         const withClass = this.statusService.addStatusClass(data.credential_procedures);
         this.dataSource.data = withClass;
@@ -362,8 +362,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
         // Explicitly (re)applies the compound filter against the freshly loaded
         // data — setting dataSource.data alone does not reliably re-run
-        // filteredData, so without this, "hide ARCHIVED by default" would only
-        // take effect once the user first touches a filter control.
+        // filteredData, so without this, the table and the results count would
+        // only match the current filters once the user first touches a control.
         this.applyCompoundFilter(this.currentSubjectFilter());
 
         this.isLoading = false;
@@ -514,10 +514,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    * dataSource.filter is a JSON-serialized CredentialFilter: subject is AND'd with
    * organizations/types/statuses; each of those three facets is OR-within-facet
    * (any selected value matches) and AND-across-facets. Empty string/array means
-   * "no filter" for that facet — EXCEPT statuses, where an empty selection means
-   * "no filter other than hiding ARCHIVED" (no separate Archived view; the user
-   * opts in to seeing archived credentials by checking that status explicitly).
-   * Robust against empty/undefined filter string (ES-01).
+   * "no filter" for that facet — ARCHIVED included, like any other status (no
+   * separate Archived view). Robust against empty/undefined filter string (ES-01).
    */
   private setFilterPredicate(): void{
     this.dataSource.filterPredicate = (data: CredentialProcedureBasicInfo, filterString: string) => {
@@ -546,7 +544,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
       const statusMatch = parsed.statuses?.length
         ? parsed.statuses.includes(procedure?.status)
-        : procedure?.status !== 'ARCHIVED';
+        : true;
 
       return subjectMatch && orgMatch && typeMatch && statusMatch;
     };
