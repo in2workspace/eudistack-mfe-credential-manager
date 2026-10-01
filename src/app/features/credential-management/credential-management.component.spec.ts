@@ -1147,6 +1147,15 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
       expect(button.getAttribute('aria-label')).toBe('View details of Alice Smith');
     });
+
+    it('labels the sort select with its visible label', () => {
+      const root = renderRow('VALID');
+      const label = root.querySelector('.sort-by-label')!;
+      const select = root.querySelector('.sort-by-field mat-select')!;
+
+      expect(label.id).toBe('sort-by-label');
+      expect(select.getAttribute('aria-labelledby')?.split(' ')).toContain('sort-by-label');
+    });
   });
 
   describe('Sort by ↔ table sync', () => {
