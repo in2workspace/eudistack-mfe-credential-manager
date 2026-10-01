@@ -575,6 +575,7 @@
     "selectAnOption": "Selecciona una opció",
     "clearAll": "Netejar-ho tot",
     "clearFilter": "Esborra el filtre: {{filter}}",
+    "labelWithCount": "{{filter}}, {{count}} seleccionats",
     "close": "Tancar",
     "confirm": "Confirmar",
     "searchByOrganizationId": "Cerca per ID de l’organització",
@@ -587,7 +588,9 @@
   "pagination": {
     "back": "Enrere",
     "next": "Següent",
-    "resultsPerPage": "Resultats per pàgina"
+    "resultsPerPage": "Resultats per pàgina",
+    "label": "Paginació",
+    "page": "Pàgina {{page}}"
   },
   "sort": {
     "label": "Ordenar per:",

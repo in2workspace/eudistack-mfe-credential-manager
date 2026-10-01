@@ -5,7 +5,9 @@
     [matMenuTriggerFor]="menu"
     #menuTriggerRef="matMenuTrigger"
     (menuOpened)="onOpened()"
-    [attr.aria-label]="label() | translate">
+    [attr.aria-label]="selected().length > 0
+      ? ('filters.labelWithCount' | translate: { filter: (label() | translate), count: selected().length })
+      : (label() | translate)">
     <span class="filter-dropdown-trigger-label">{{ label() | translate }}</span>
     @if (selected().length > 0) {
       <span class="filter-dropdown-count">{{ selected().length }}</span>

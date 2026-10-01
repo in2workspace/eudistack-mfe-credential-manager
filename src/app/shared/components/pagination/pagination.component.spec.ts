@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatTableDataSource } from '@angular/material/table';
 import { PageEvent } from '@angular/material/paginator';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PaginationComponent } from './pagination.component';
 
 describe('PaginationComponent', () => {
@@ -166,6 +166,21 @@ describe('PaginationComponent', () => {
     expect(dataSource.paginator!.pageSize).toBe(5);
     expect(dataSource.paginator!.pageSizeOptions).toEqual([5, 15]);
     expect(pageLabels()).toEqual(['1', '2', '3', '4', '5', '6']);
+  });
+
+  it('names the navigation landmark, every page button and the page-size select', async () => {
+    await setup(100);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', {
+      pagination: { label: 'Pagination', page: 'Page {{page}}', resultsPerPage: 'Results per page' },
+    });
+    translate.use('en');
+    await settle();
+
+    expect(fixture.nativeElement.querySelector('nav')?.getAttribute('aria-label')).toBe('Pagination');
+    expect(pageButtons().map(b => b.getAttribute('aria-label')))
+      .toEqual(['Page 1', 'Page 2', 'Page 3', 'Page 4', 'Page 5', 'Page 6', 'Page 10']);
+    expect(fixture.nativeElement.querySelector('.pagination-page-size-field mat-select')?.getAttribute('aria-label')).toBe('Results per page');
   });
 
   it('tracks page and size items by their value', async () => {

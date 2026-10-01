@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FilterDropdownComponent } from './filter-dropdown.component';
 
 describe('FilterDropdownComponent', () => {
@@ -38,6 +38,22 @@ describe('FilterDropdownComponent', () => {
 
     expect(fixture.nativeElement.querySelector('.filter-dropdown-count')?.textContent.trim()).toBe('2');
     expect(clearButton()?.getAttribute('aria-label')).toBeTruthy();
+  });
+
+  it('includes the number of selected options in the trigger name', () => {
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', {
+      filters: { credentialType: 'Credential type', labelWithCount: '{{filter}}, {{count}} selected' },
+    });
+    translate.use('en');
+    const trigger = (): string | null =>
+      fixture.nativeElement.querySelector('.filter-dropdown-trigger').getAttribute('aria-label');
+    fixture.detectChanges();
+    expect(trigger()).toBe('Credential type');
+
+    fixture.componentRef.setInput('selected', ['a', 'b']);
+    fixture.detectChanges();
+    expect(trigger()).toBe('Credential type, 2 selected');
   });
 
   it('emits an empty selection on clear, without opening the menu', () => {

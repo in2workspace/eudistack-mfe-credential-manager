@@ -600,6 +600,7 @@
     "selectAnOption": "Selecciona una opción",
     "clearAll": "Limpiar todo",
     "clearFilter": "Borrar filtro: {{filter}}",
+    "labelWithCount": "{{filter}}, {{count}} seleccionados",
     "close": "Cerrar",
     "confirm": "Confirmar",
     "searchByOrganizationId": "Buscar por ID de organización",
@@ -612,7 +613,9 @@
   "pagination": {
     "back": "Atrás",
     "next": "Siguiente",
-    "resultsPerPage": "Resultados por página"
+    "resultsPerPage": "Resultados por página",
+    "label": "Paginación",
+    "page": "Página {{page}}"
   },
   "sort": {
     "label": "Ordenar por:",

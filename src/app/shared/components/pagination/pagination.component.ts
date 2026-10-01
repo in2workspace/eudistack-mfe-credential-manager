@@ -50,7 +50,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     </mat-paginator>
 
     <div class="pagination-bar">
-      <div class="pagination-left">
+      <nav class="pagination-left" [attr.aria-label]="'pagination.label' | translate">
         <button
           type="button"
           class="pagination-nav-btn"
@@ -67,6 +67,7 @@ import { TranslatePipe } from '@ngx-translate/core';
           class="pagination-page-btn"
           [class.pagination-page-btn--active]="page === currentPageNumber()"
           [attr.aria-current]="page === currentPageNumber() ? 'page' : null"
+          [attr.aria-label]="'pagination.page' | translate: { page }"
           (click)="goToPage(page)">
           {{ page }}
         </button>
@@ -78,6 +79,7 @@ import { TranslatePipe } from '@ngx-translate/core';
             class="pagination-page-btn"
             [class.pagination-page-btn--active]="totalPages() === currentPageNumber()"
             [attr.aria-current]="totalPages() === currentPageNumber() ? 'page' : null"
+            [attr.aria-label]="'pagination.page' | translate: { page: totalPages() }"
             (click)="goToPage(totalPages())">
             {{ totalPages() }}
           </button>
@@ -92,12 +94,12 @@ import { TranslatePipe } from '@ngx-translate/core';
           {{ 'pagination.next' | translate }}
           <mat-icon>arrow_forward</mat-icon>
         </button>
-      </div>
+      </nav>
 
       <div class="pagination-right">
         <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-          <mat-select [value]="paginatorRef.pageSize" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
+          <mat-select [value]="paginatorRef.pageSize" [aria-label]="'pagination.resultsPerPage' | translate" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
             <mat-option *ngFor="let size of pageSizeOptions(); trackBy: trackBySize" [value]="size">{{ size }}</mat-option>
           </mat-select>
         </mat-form-field>
