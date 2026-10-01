@@ -712,16 +712,38 @@ describe('AuthService', () => {
       expect((service as any).isOnPublicRoute()).toBe(false);
     });
 
-    it.each(['/', '/home', '/issuer', '/issuer/', '/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
+    it.each(['/', '/home', '/home/', '/issuer', '/issuer/', '/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
       setPathname(pathname);
       expect((service as any).isOnLandingRoute()).toBe(true);
     });
 
-    it.each(['/organization/credentials', '/issuer/organization/credentials', '/issuerx/home'])(
+    it.each(['/organization/credentials', '/issuer/organization/credentials', '/issuerx/home', '/homepage', '/issuer/homepage'])(
       'isOnLandingRoute(): false per a %s', (pathname) => {
         setPathname(pathname);
         expect((service as any).isOnLandingRoute()).toBe(false);
       });
+
+    describe('amb un altre base href', () => {
+      let base: HTMLBaseElement;
+
+      beforeEach(() => {
+        base = document.createElement('base');
+        base.href = '/console/';
+        document.head.appendChild(base);
+      });
+
+      afterEach(() => base.remove());
+
+      it.each(['/console', '/console/', '/console/home', '/console/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
+        setPathname(pathname);
+        expect((service as any).isOnLandingRoute()).toBe(true);
+      });
+
+      it.each(['/console/organization/credentials', '/consolex/home'])('isOnLandingRoute(): false per a %s', (pathname) => {
+        setPathname(pathname);
+        expect((service as any).isOnLandingRoute()).toBe(false);
+      });
+    });
 
     it('checkAuth$: en recarregar una ruta protegida no redirigeix al llistat encara que router.url sigui "/"', (done) => {
       setPathname('/issuer/organization/credentials');

@@ -280,8 +280,14 @@ export class AuthService{
    * any protected URL (e.g. the credential list with its details drawer open) to the list.
    */
   private isOnLandingRoute(): boolean {
-    const path = globalThis.location.pathname.replace(/^\/issuer(?=\/|$)/, '') || '/';
-    return path === '/' || path.startsWith('/home');
+    const basePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
+    let path = globalThis.location.pathname;
+    // The Portal Console shell serves the app under /issuer whatever this document's <base href>.
+    for (const prefix of [basePath, '/issuer']) {
+      if (prefix && (path === prefix || path.startsWith(`${prefix}/`))) path = path.slice(prefix.length);
+    }
+    path ||= '/';
+    return path === '/' || path === '/home' || path.startsWith('/home/');
   }
 
   /**
