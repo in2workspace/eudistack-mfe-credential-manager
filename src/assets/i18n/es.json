@@ -111,6 +111,7 @@
   },
 "credentialDetails": {
     "revokedOn": "Revocada el",
+    "loadError": "No se ha podido cargar la credencial.",
     "issuedBy": "Emitida por {{organization}}",
     "credentialInformation": "Información de la credencial",
     "format": "Formato",

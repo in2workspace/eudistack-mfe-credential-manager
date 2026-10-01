@@ -25,6 +25,7 @@ export class CredentialDetailsService {
   // CREDENTIAL DATA
   public procedureId$ = signal<string>('');
   public credentialProcedureDetails$ = signal<CredentialProcedureDetails | undefined>(undefined);
+  public loadError$ = signal<'request' | 'missingCredential' | undefined>(undefined);
   public lifeCycleStatus$ = computed<LifeCycleStatus | undefined>(() => {
     return this.credentialProcedureDetails$()?.lifeCycleStatus;
   });
@@ -157,15 +158,21 @@ export class CredentialDetailsService {
     forkJoin([
       this.loadCredentialDetails(),
       this.metadataService.loadMetadata(),
-    ]).subscribe(([data]) => {
-      this.credentialProcedureDetails$.set(data);
-      const vc = this.credential$();
-      if(!vc) throw new Error('No credential found.');
+    ]).subscribe({
+      next: ([data]) => {
+        this.credentialProcedureDetails$.set(data);
+        const vc = this.credential$();
+        if (!vc) {
+          this.loadError$.set('missingCredential');
+          return;
+        }
 
-      // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
-      const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
-      const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
-      this.setViewModels(mappedSchema, injector);
+        // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
+        const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
+        const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
+        this.setViewModels(mappedSchema, injector);
+      },
+      error: () => this.loadError$.set('request'),
     });
   }
 

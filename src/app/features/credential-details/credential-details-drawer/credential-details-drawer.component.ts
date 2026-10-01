@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, Injector, OnInit, Signal, WritableSignal } from '@angular/core';
+import { Component, computed, effect, inject, Injector, OnInit, Signal, WritableSignal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -71,6 +71,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly knowledgeBaseUrl: string;
 
   public readonly revokedAt$: Signal<string | undefined>;
+  public readonly missingCredential$: Signal<boolean>;
 
   private readonly data = inject<CredentialDetailsDrawerData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<CredentialDetailsDrawerComponent>>(MatDialogRef);
@@ -105,7 +106,11 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.revokedAt$ = computed<string | undefined>(() =>
       this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated() : undefined
     );
+    this.missingCredential$ = computed(() => this.detailsService.loadError$() === 'missingCredential');
 
+    effect(() => {
+      if (this.detailsService.loadError$() === 'request') this.close();
+    });
   }
 
   public isPowersSection(section: EvaluatedExtendedDetailsField): boolean {

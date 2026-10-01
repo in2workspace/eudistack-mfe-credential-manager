@@ -10,7 +10,7 @@ import { CredentialActionsService } from './credential-actions.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -425,6 +425,27 @@ describe('Load models', () => {
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
     expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+    expect(svc.loadError$()).toBeUndefined();
+  });
+
+  it('flags a failed request instead of throwing', () => {
+    const svc: any = service;
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(throwError(() => new Error('404')));
+
+    svc.loadCredentialModels(TestBed.inject(Injector));
+
+    expect(svc.loadError$()).toBe('request');
+  });
+
+  it('flags a procedure carrying no credential instead of throwing', () => {
+    const svc: any = service;
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of({ credential: {} }));
+    const templateSpy = jest.spyOn(svc, 'setViewModels');
+
+    svc.loadCredentialModels(TestBed.inject(Injector));
+
+    expect(svc.loadError$()).toBe('missingCredential');
+    expect(templateSpy).not.toHaveBeenCalled();
   });
 });
 

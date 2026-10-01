@@ -100,6 +100,7 @@ describe('CredentialDetailsDrawerComponent', () => {
       showArchiveCredentialButton$: showArchive$,
       setProcedureId: jest.fn(),
       loadCredentialModels: jest.fn(),
+      loadError$: signal<'request' | 'missingCredential' | undefined>(undefined),
       openSignCredentialDialog: jest.fn(),
       openRevokeCredentialDialog: jest.fn(),
       openWithdrawCredentialDialog: jest.fn(),
@@ -240,6 +241,25 @@ describe('CredentialDetailsDrawerComponent', () => {
 
     lastUpdated.set('2026-06-25T16:42:00Z');
     expect(component.revokedAt$()).toBe('2026-06-25T16:42:00Z');
+  });
+
+  it('closes itself when the credential request fails', async () => {
+    await createComponent();
+
+    (detailsService['loadError$'] as WritableSignal<string | undefined>).set('request');
+    fixture.detectChanges();
+
+    expect(dialogRef.close).toHaveBeenCalledWith();
+  });
+
+  it('stays open with a message when the procedure carries no credential', async () => {
+    await createComponent();
+
+    (detailsService['loadError$'] as WritableSignal<string | undefined>).set('missingCredential');
+    fixture.detectChanges();
+
+    expect(dialogRef.close).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('#drawer-load-error')).toBeTruthy();
   });
 
   it('closes without a result, because refreshing the list is not its job', async () => {
