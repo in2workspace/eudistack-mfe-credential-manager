@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
 import { routes } from './app.routes';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 
@@ -76,9 +78,19 @@ describe('App Routes', () => {
     expect(module).toBeDefined();
   });
 
-  it('no longer routes to a credential details page — the list drawer replaced it', () => {
+  it('redirects the old details page to the list with its drawer open', () => {
     const parentRoute = routes.find((route) => route.path === 'organization/credentials');
-    expect(parentRoute?.children?.some((r) => r.path === 'details')).toBe(false);
+    const detailsRoute = parentRoute?.children?.find((r) => r.path === 'details/:id');
+    const redirectTo = detailsRoute?.redirectTo as (snapshot: Pick<ActivatedRouteSnapshot, 'params'>) => UrlTree;
+
+    const target = TestBed.runInInjectionContext(() => redirectTo({ params: { id: 'abc-123' } }));
+
+    expect(TestBed.inject(Router).serializeUrl(target)).toBe('/organization/credentials?id=abc-123');
+  });
+
+  it('redirects the old archived page to the list', () => {
+    const parentRoute = routes.find((route) => route.path === 'organization/credentials');
+    expect(parentRoute?.children?.find((r) => r.path === 'archived')?.redirectTo).toBe('');
   });
 
   it('should define lazy loading for credential creation', () => {

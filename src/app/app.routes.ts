@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
 import { tenantGuard } from './core/guards/tenant.guard';
 import { organizationContactGuard } from './features/organization-contact/organization-contact.guard';
@@ -26,6 +27,12 @@ export const routes: Routes = [
         path: '',
         loadChildren: () => import('./features/credential-management/credential-management.routes').then(m => m.default)
       },
+      {
+        path: 'details/:id',
+        redirectTo: ({ params }) =>
+          inject(Router).createUrlTree(['/organization/credentials'], { queryParams: { id: params['id'] } }),
+      },
+      { path: 'archived', redirectTo: '' },
       {
         path: 'create',
         loadChildren: () => import('./features/credential-issuance/credential-issuance.routes').then(m => m.default)
