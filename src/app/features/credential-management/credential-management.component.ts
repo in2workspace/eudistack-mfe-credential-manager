@@ -25,6 +25,7 @@ import { MatIcon } from '@angular/material/icon';
 import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
+import { getCredentialTypeFamilyKey, getCredentialTypeFamilyLabelKey } from 'src/app/core/helpers/credential-type-family';
 
 import { SubjectComponent } from './components/subject-component/subject-component.component';
 import { FormsModule } from '@angular/forms';
@@ -308,10 +309,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   public getCredentialTypeLabel(credentialType: string): string {
-    switch (this.getTypeFamilyKey(credentialType)) {
-      case 'EMPLOYEE': return this.translate.instant('credentialManagement.typeFamily.employee');
-      case 'MACHINE': return this.translate.instant('credentialManagement.typeFamily.machine');
-      case 'LABEL': return this.translate.instant('credentialManagement.typeFamily.label');
+    const familyLabelKey = getCredentialTypeFamilyLabelKey(credentialType);
+    if (familyLabelKey) {
+      return this.translate.instant(familyLabelKey);
     }
 
     const prefixedKey = `credentialManagement.${credentialType}`;
@@ -444,7 +444,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         organizations.set(procedure.organization_identifier, procedure.organization_identifier);
       }
       if (procedure?.credential_type) {
-        const familyKey = this.getTypeFamilyKey(procedure.credential_type);
+        const familyKey = getCredentialTypeFamilyKey(procedure.credential_type);
         if (!types.has(familyKey)) {
           types.set(familyKey, this.getCredentialTypeLabel(procedure.credential_type));
         }
@@ -461,22 +461,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         .map(([value, label]) => ({ value, label }))
         .sort((a, b) => a.label.localeCompare(b.label))
     );
-  }
-
-  /**
-   * Groups every version — legacy or current — of the employee/machine/label
-   * credential types under one canonical bucket, so the Type filter offers one
-   * "Employee"/"Machine"/"Label Credential" option instead of one per raw
-   * credential_type string (e.g. legacy "LEARCredentialEmployee" vs current
-   * "learcredential.employee.w3c.4" used to show up as two separate options).
-   * Anything outside these three families (doctorid, PID, ...) keeps its own
-   * raw value as its bucket — one option per type.
-   */
-  private getTypeFamilyKey(credentialType: string): string {
-    if (/employee/i.test(credentialType)) return 'EMPLOYEE';
-    if (/machine/i.test(credentialType)) return 'MACHINE';
-    if (/label/i.test(credentialType)) return 'LABEL';
-    return credentialType;
   }
 
   /**
@@ -585,7 +569,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         : true;
 
       const typeMatch = parsed.types?.length
-        ? parsed.types.includes(this.getTypeFamilyKey(procedure?.credential_type ?? ''))
+        ? parsed.types.includes(getCredentialTypeFamilyKey(procedure?.credential_type ?? ''))
         : true;
 
       const statusMatch = parsed.statuses?.length

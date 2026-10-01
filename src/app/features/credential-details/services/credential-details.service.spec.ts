@@ -216,6 +216,21 @@ describe('CredentialDetailsService', () => {
       expect(service.issuerOrganization$()).toBeUndefined();
     });
 
+    it('credentialTypeFamilyLabelKey$() names the family whatever the format and version', () => {
+      service.credentialProcedureDetails$.set({
+        credential_configuration_id: 'learcredential.employee.w3c.1',
+        credential: { vc: mockVc }
+      } as any);
+      expect(service.credentialTypeFamilyLabelKey$()).toBe('credentialManagement.typeFamily.employee');
+    });
+
+    it('credentialTypeFamilyLabelKey$() falls back to the credential type when there is no configuration id', () => {
+      service.credentialProcedureDetails$.set({
+        credential: { vc: { ...mockVc, type: ['VerifiableCredential', 'LEARCredentialMachine'] } }
+      } as any);
+      expect(service.credentialTypeFamilyLabelKey$()).toBe('credentialManagement.typeFamily.machine');
+    });
+
     it('credentialFormat$() reads the format of the credential configuration', () => {
       mockMetadataService.getConfigurationById.mockImplementation((id: string) =>
         id === 'learcredential.employee.sd.1' ? { format: 'dc+sd-jwt' } : undefined);

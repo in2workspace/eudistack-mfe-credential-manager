@@ -45,6 +45,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly credentialValidFrom$: Signal<string>;
   public readonly credentialValidUntil$: Signal<string>;
   public readonly credentialDisplayName$: Signal<string>;
+  public readonly credentialTypeFamilyLabelKey$: Signal<string | undefined>;
   public readonly lifeCycleStatus$: Signal<LifeCycleStatus | undefined>;
   public readonly lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public readonly email$: Signal<string | undefined>;
@@ -84,6 +85,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.credentialValidFrom$ = this.detailsService.credentialValidFrom$;
     this.credentialValidUntil$ = this.detailsService.credentialValidUntil$;
     this.credentialDisplayName$ = this.detailsService.credentialDisplayName$;
+    this.credentialTypeFamilyLabelKey$ = this.detailsService.credentialTypeFamilyLabelKey$;
     this.lifeCycleStatus$ = this.detailsService.lifeCycleStatus$;
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;

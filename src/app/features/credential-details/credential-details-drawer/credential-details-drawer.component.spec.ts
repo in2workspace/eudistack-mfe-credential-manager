@@ -83,7 +83,8 @@ describe('CredentialDetailsDrawerComponent', () => {
       credential$,
       credentialValidFrom$: signal('2025-01-01'),
       credentialValidUntil$: signal('2025-12-31'),
-      credentialDisplayName$: signal('Employee'),
+      credentialDisplayName$: signal('Learcredential.employee.w3c.1'),
+      credentialTypeFamilyLabelKey$: signal<string | undefined>('credentialManagement.typeFamily.employee'),
       lifeCycleStatus$: lifecycle$,
       lifeCycleStatusClass$: signal<StatusClass | undefined>('status-valid'),
       email$: signal('andrea.romano@engineering.it'),
@@ -148,6 +149,21 @@ describe('CredentialDetailsDrawerComponent', () => {
     format$.set(undefined);
     fixture.detectChanges();
     expect(box()?.textContent?.trim()).toBe('-');
+  });
+
+  it('titles the credential with its type family rather than its configuration id', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.drawer__title')?.textContent?.trim())
+      .toBe('credentialManagement.typeFamily.employee');
+  });
+
+  it('titles the credential with its display name when it belongs to no family', async () => {
+    (detailsService['credentialTypeFamilyLabelKey$'] as WritableSignal<string | undefined>).set(undefined);
+    (detailsService['credentialDisplayName$'] as WritableSignal<string>).set('Doctor ID');
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.drawer__title')?.textContent?.trim()).toBe('Doctor ID');
   });
 
   it('names the issuing organization under the credential name', async () => {

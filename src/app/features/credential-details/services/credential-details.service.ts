@@ -17,6 +17,7 @@ import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusH
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
+import { getCredentialTypeFamilyLabelKey } from 'src/app/core/helpers/credential-type-family';
 
 
 @Injectable() //provided in component
@@ -71,6 +72,9 @@ export class CredentialDetailsService {
     }
     return unnamed;
   });
+  public credentialTypeFamilyLabelKey$ = computed<string | undefined>(() =>
+    getCredentialTypeFamilyLabelKey(this.credentialType$() ?? readSpecificCredentialType(this.credential$()) ?? '')
+  );
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
     return this.credential$()?.credentialStatus;
