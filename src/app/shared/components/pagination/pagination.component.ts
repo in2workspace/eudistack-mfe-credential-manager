@@ -1,5 +1,4 @@
 import { AfterViewInit, Component, ViewChild, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,248 +7,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /**
- * Custom numbered-page pagination bar. Angular Material's own MatPaginator UI has no numbered
- * page buttons or ellipsis — only prev/next arrows, a page-size select and a
- * "X-Y of Z" label — so there is no way to get this look from Material alone.
- *
- * Instead of reimplementing pagination state/slicing (which MatTableDataSource
- * already does correctly, including keeping it in sync with sort), this owns a
- * real (CSS-hidden) `MatPaginator` internally and wires it to the caller's
- * `dataSource` itself in ngAfterViewInit — the caller only ever sees this
- * component. That instance IS the source of truth for pageIndex/pageSize/length.
- * Every control here mutates it and re-emits its `page` event, the same event
- * MatTableDataSource listens to — so navigating from this UI re-slices/
- * re-renders the table exactly like the native paginator would.
- *
- * The hidden MatPaginator used to live in the parent's own (already large)
- * template, as a sibling passed in by reference. That measurably destabilized
- * unrelated bindings elsewhere in that template (verified live, not just in
- * theory — the Type/Status filter buttons rendered with empty labels, and at
- * one point the whole table rendered with zero rows, both while this component
- * or its paginator sibling sat unconditionally in that template). Moving the
- * paginator inside this component's own, much smaller template removed the
- * problem in practice. That is not a confirmed root cause — just the fix that
- * held up under repeated verification — so keep this self-contained rather
- * than hoisting the paginator back out.
- *
- * Default (non-OnPush) change detection is relied on deliberately: reading
- * `paginator.pageIndex` etc. directly in the template — rather than through a
- * `computed()`, which only reacts to *signal* reads and would not notice a
- * plain property mutation on the paginator — re-evaluates on every app-wide CD
- * tick, which already happens after every click/event in this tree.
+ * Numbered pagination bar (Material's paginator has no page buttons). It drives a hidden
+ * MatPaginator wired to the caller's data source, so slicing and sort stay with
+ * MatTableDataSource. Keep that paginator inside this template: hoisted into the parent's
+ * template it broke unrelated bindings there. The template reads the paginator's plain
+ * properties, so this relies on default change detection.
  */
 @Component({
   selector: 'app-pagination',
   standalone: true,
-  imports: [CommonModule, MatPaginatorModule, MatIconModule, MatFormFieldModule, MatSelectModule, TranslatePipe],
-  template: `
-    <mat-paginator
-      class="paginator-engine"
-      [pageSize]="defaultPageSize()"
-      [pageSizeOptions]="pageSizeOptions()">
-    </mat-paginator>
-
-    <div class="pagination-bar">
-      <nav class="pagination-left" [attr.aria-label]="'pagination.label' | translate">
-        <button
-          type="button"
-          class="pagination-nav-btn"
-          [disabled]="!hasPrevious()"
-          [attr.aria-label]="'pagination.back' | translate"
-          (click)="previous()">
-          <mat-icon>arrow_back</mat-icon>
-          {{ 'pagination.back' | translate }}
-        </button>
-
-        <button
-          *ngFor="let page of pageWindow(); trackBy: trackByPage"
-          type="button"
-          class="pagination-page-btn"
-          [class.pagination-page-btn--active]="page === currentPageNumber()"
-          [attr.aria-current]="page === currentPageNumber() ? 'page' : null"
-          [attr.aria-label]="'pagination.page' | translate: { page }"
-          (click)="goToPage(page)">
-          {{ page }}
-        </button>
-
-        <ng-container *ngIf="hasLastPageButton()">
-          <button *ngIf="showEllipsis()" type="button" class="pagination-ellipsis" disabled aria-hidden="true">&hellip;</button>
-          <button
-            type="button"
-            class="pagination-page-btn"
-            [class.pagination-page-btn--active]="totalPages() === currentPageNumber()"
-            [attr.aria-current]="totalPages() === currentPageNumber() ? 'page' : null"
-            [attr.aria-label]="'pagination.page' | translate: { page: totalPages() }"
-            (click)="goToPage(totalPages())">
-            {{ totalPages() }}
-          </button>
-        </ng-container>
-
-        <button
-          type="button"
-          class="pagination-nav-btn"
-          [disabled]="!hasNext()"
-          [attr.aria-label]="'pagination.next' | translate"
-          (click)="next()">
-          {{ 'pagination.next' | translate }}
-          <mat-icon>arrow_forward</mat-icon>
-        </button>
-      </nav>
-
-      <div class="pagination-right">
-        <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-          <mat-select [value]="paginatorRef.pageSize" [aria-label]="'pagination.resultsPerPage' | translate" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
-            <mat-option *ngFor="let size of pageSizeOptions(); trackBy: trackBySize" [value]="size">{{ size }}</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </div>
-  `,
-  styles: [`
-    $primary-tint: rgb(var(--primary-color-rgb, 15 43 91) / 0.1);
-
-    .paginator-engine {
-      display: none;
-    }
-
-    .pagination-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .pagination-left {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .pagination-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .pagination-per-page-label {
-      color: var(--text-secondary, #6B7280);
-      font-size: 0.875rem;
-      white-space: nowrap;
-    }
-
-    .pagination-page-size-field {
-      width: 72px;
-      font-size: 0.875rem;
-      --mat-form-field-container-height: 32px;
-      --mat-form-field-container-vertical-padding: 4px;
-      --mdc-outlined-text-field-container-shape: var(--radius-md, 8px);
-      --mdc-outlined-text-field-outline-color: var(--border-default, #D1D5DB);
-      --mdc-outlined-text-field-hover-outline-color: var(--border-strong, #9CA3AF);
-      --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
-    }
-
-    .pagination-nav-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      height: 32px;
-      padding: 0 10px;
-      border: 1px solid var(--primary-color);
-      background: var(--surface-card, #FFFFFF);
-      color: var(--primary-color);
-      font: inherit;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      border-radius: var(--radius-md, 8px);
-
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
-
-      &:hover:not(:disabled) {
-        background: $primary-tint;
-      }
-
-      &:disabled {
-        border-color: var(--border-default, #D1D5DB);
-        color: var(--text-disabled, #9CA3AF);
-        cursor: default;
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--primary-color);
-        outline-offset: 2px;
-      }
-    }
-
-    .pagination-page-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 32px;
-      height: 32px;
-      padding: 0 4px;
-      border: none;
-      border-radius: var(--radius-md, 8px);
-      background: transparent;
-      color: var(--text-primary, #1A1A2E);
-      font: inherit;
-      font-size: 0.875rem;
-      cursor: pointer;
-
-      &:hover:not(&--active) {
-        background: var(--action-secondary, #F3F4F6);
-      }
-
-      &--active {
-        background: var(--surface-selected, #B6CAEC);
-        color: var(--primary-color);
-        font-weight: 600;
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--primary-color);
-        outline-offset: 2px;
-      }
-    }
-
-    .pagination-ellipsis {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 32px;
-      height: 32px;
-      border: none;
-      background: transparent;
-      color: var(--text-disabled, #9CA3AF);
-      font: inherit;
-      cursor: default;
-    }
-
-    @media (width < 590px) {
-      .pagination-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-      }
-
-      .pagination-right {
-        justify-content: flex-end;
-      }
-
-      .pagination-left {
-        justify-content: center;
-      }
-    }
-  `],
+  imports: [MatPaginatorModule, MatIconModule, MatFormFieldModule, MatSelectModule, TranslatePipe],
+  templateUrl: './pagination.component.html',
+  styleUrl: './pagination.component.scss',
 })
 export class PaginationComponent implements AfterViewInit {
   @ViewChild(MatPaginator, { static: true }) protected paginatorRef!: MatPaginator;
@@ -311,14 +80,6 @@ export class PaginationComponent implements AfterViewInit {
   protected showEllipsis(): boolean {
     const window = this.pageWindow();
     return this.hasLastPageButton() && (window.at(-1) ?? 0) < this.totalPages() - 1;
-  }
-
-  protected trackByPage(_index: number, page: number): number {
-    return page;
-  }
-
-  protected trackBySize(_index: number, size: number): number {
-    return size;
   }
 
   protected previous(): void {

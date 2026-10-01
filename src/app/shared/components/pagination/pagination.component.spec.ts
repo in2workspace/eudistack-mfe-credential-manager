@@ -182,13 +182,4 @@ describe('PaginationComponent', () => {
       .toEqual(['Page 1', 'Page 2', 'Page 3', 'Page 4', 'Page 5', 'Page 6', 'Page 10']);
     expect(fixture.nativeElement.querySelector('.pagination-page-size-field mat-select')?.getAttribute('aria-label')).toBe('Results per page');
   });
-
-  it('tracks page and size items by their value', async () => {
-    await setup(1);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const component = fixture.componentInstance as any;
-
-    expect(component.trackByPage(0, 7)).toBe(7);
-    expect(component.trackBySize(0, 50)).toBe(50);
-  });
 });
