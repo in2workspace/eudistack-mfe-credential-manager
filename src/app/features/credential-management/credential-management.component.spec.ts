@@ -1181,6 +1181,22 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
       expect(rendered).toEqual(['soon', 'none']);
     });
+
+    it('keeps the selected sort after the table is rebuilt by a reload', () => {
+      component.onSortOptionChange('expiringSoon');
+      const sortBeforeReload = component.sort;
+      const listResponse = new Subject<CredentialProceduresResponse>();
+      credentialProcedureSpy.mockReturnValue(listResponse);
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+      fixture.detectChanges();
+      listResponse.next({ credential_procedures: [makeProcedure('a', '2025-01-01T00:00:00Z')] } as CredentialProceduresResponse);
+
+      expect(component.sort).not.toBe(sortBeforeReload);
+      expect(component.sortOption()).toBe('expiringSoon');
+      expect(component.sort.active).toBe('expires');
+      expect(component.sort.direction).toBe('asc');
+    });
   });
 
 

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Added
 - **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box and is hidden for single-organization tenants.
 - **Credential management - search**: the subject search box is always visible and has a clear button inside it.
-- **Credential management - sorting**: new "Sort by" selector next to a results count (Recently issued, Recently updated, Expiring soon, Expires later), kept in sync with the column header sort. The table starts sorted by Updated, newest first. Credentials without an expiration date sort last in "Expiring soon".
+- **Credential management - sorting**: new "Sort by" selector next to a results count (Recently issued, Recently updated, Expiring soon, Expires later), kept in sync with the column header sort. The table starts sorted by Updated, newest first. Credentials without an expiration date sort last in "Expiring soon", and the selected sort is kept when the list refreshes after an action.
 - **Credential management - pagination**: numbered pagination bar (Back/Next, page numbers with ellipsis, 10/20/50 results per page) replaces Material's paginator.
 - **Credential management - table header**: the header stays pinned at the top while the page scrolls.
 

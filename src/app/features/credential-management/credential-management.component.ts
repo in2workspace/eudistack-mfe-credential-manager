@@ -359,6 +359,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public onSortOptionChange(option: SortByOption): void {
     this.sortOption.set(option);
     const { active, direction } = SORT_BY_OPTIONS[option];
+    this.applySort(active, direction);
+  }
+
+  private applySort(active: string, direction: SortDirection): void {
     this.sort.active = active;
     this.sort.direction = direction;
     this.sort.sortChange.emit({ active, direction });
@@ -399,6 +403,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   private initializeCredentialTable(): void {
+    const previousSort = this.sort?.active && this.sort.direction
+      ? { active: this.sort.active, direction: this.sort.direction }
+      : undefined;
     this.isLoading = true;
     this.hasLoadError = false;
     this.credentialProcedureService.fetchCredentialProcedures()
@@ -425,6 +432,9 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         // the real MatPaginator internally now — see its doc comment).
         this.setDataSortingAccessor();
         this.dataSource.sort = this.sort;
+        if (previousSort) {
+          this.applySort(previousSort.active, previousSort.direction);
+        }
       },
       error: (error) => {
         console.error('Error fetching credentials for table', error);
