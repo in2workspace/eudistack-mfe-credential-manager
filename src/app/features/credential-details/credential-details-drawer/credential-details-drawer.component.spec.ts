@@ -264,7 +264,7 @@ describe('CredentialDetailsDrawerComponent', () => {
     await createComponent();
 
     const footer: HTMLElement = fixture.nativeElement.querySelector('.drawer__footer');
-    expect(footer.querySelectorAll('button').length).toBe(1);
+    expect(footer.querySelectorAll('button')).toHaveLength(1);
     expect(footer.querySelector('#drawer-close-primary')).toBeTruthy();
   });
 
@@ -288,7 +288,7 @@ describe('CredentialDetailsDrawerComponent', () => {
     await createComponent();
 
     const footer: HTMLElement = fixture.nativeElement.querySelector('.drawer__footer');
-    expect(footer.querySelectorAll('button').length).toBe(2);
+    expect(footer.querySelectorAll('button')).toHaveLength(2);
     expect(footer.querySelector('#drawer-archive')).toBeNull();
   });
 

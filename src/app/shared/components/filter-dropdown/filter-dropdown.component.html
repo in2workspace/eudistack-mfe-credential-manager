@@ -26,12 +26,14 @@
 <mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
   <div class="filter-dropdown-content"
        [class.filter-dropdown-content--wide]="showFooter()"
-       (click)="$event.stopPropagation()">
+       (click)="$event.stopPropagation()"
+       (keydown.enter)="$event.stopPropagation()">
     @if (searchable()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
         <input
           matInput
           [placeholder]="searchPlaceholder() | translate"
+          [attr.aria-label]="searchPlaceholder() | translate"
           [ngModel]="searchTerm()"
           (ngModelChange)="searchTerm.set($event)"
           (click)="$event.stopPropagation()">

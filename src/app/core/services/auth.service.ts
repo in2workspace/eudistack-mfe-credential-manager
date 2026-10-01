@@ -270,7 +270,7 @@ export class AuthService{
     this.refreshRoleFromBackend();
 
     if (this.isOnLandingRoute()) {
-      this.router.navigate([IAM_POST_LOGIN_ROUTE]);
+      void this.router.navigate([IAM_POST_LOGIN_ROUTE]);
     }
   }
 
@@ -305,7 +305,7 @@ export class AuthService{
       // reasoning as rejectCrossTenantSession).
       console.error('Checking authentication: token rejected by the auth library:', validationError);
       if (!this.isOnPublicRoute()) {
-        this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
+        void this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
       }
       return false;
     }
@@ -484,7 +484,7 @@ export class AuthService{
     this.userPowers.set([]);
     this.resetSessionRoleState();
 
-    this.router.navigate(['/home']).finally(() => {
+    void this.router.navigate(['/home']).finally(() => {
       const title = this.translate.instant('error.policy.title');
       const message = this.translate.instant('error.policy.message');
       const dialogRef = this.dialog.openErrorInfoDialog(DialogComponent, message, title);
@@ -513,7 +513,7 @@ export class AuthService{
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
         this.resetLocalAuthState();
-        this.router.navigate(['/home']);
+        void this.router.navigate(['/home']);
       }
     });
   }
