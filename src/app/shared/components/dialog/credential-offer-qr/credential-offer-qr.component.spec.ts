@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { CredentialOfferQrComponent } from './credential-offer-qr.component';
 import { TenantService } from 'src/app/core/services/tenant.service';
@@ -126,10 +126,29 @@ describe('CredentialOfferQrComponent', () => {
       component.copyOfferUri();
 
       expect(writeTextMock).toHaveBeenCalledWith(CREDENTIAL_OFFER_URI);
+      // The confirmation now waits for the write to actually resolve, so it is not yet set.
+      expect(component.copied).toBe(false);
+
+      flushMicrotasks();
       expect(component.copied).toBe(true);
 
       tick(2000);
       expect(component.copied).toBe(false);
+    }));
+
+    it('does not claim the URI was copied when the clipboard write is rejected', fakeAsync(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const writeTextMock = jest.fn().mockRejectedValue(new Error('NotAllowedError'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        configurable: true,
+      });
+
+      component.copyOfferUri();
+      flushMicrotasks();
+
+      expect(component.copied).toBe(false);
+      expect(console.error).toHaveBeenCalled();
     }));
   });
 });

@@ -45,9 +45,12 @@ export class CredentialOfferQrComponent {
   }
 
   public copyOfferUri(): void {
-    navigator.clipboard.writeText(this.credentialOfferUri());
-    this.copied = true;
-    setTimeout(() => this.copied = false, 2000);
+    navigator.clipboard.writeText(this.credentialOfferUri())
+      .then(() => {
+        this.copied = true;
+        setTimeout(() => this.copied = false, 2000);
+      })
+      .catch(err => console.error('Clipboard write failed, the offer URI was not copied', err));
   }
 
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
