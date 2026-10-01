@@ -990,8 +990,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       // 2. Apply a filter that yields 0 results
       component.onStatusFilterChange(['REVOKED']);
       
-      expect(component.dataSource.filteredData.length).toBe(0);
-      expect(component['originData']().length).toBe(1); // origin still has data
+      expect(component.dataSource.filteredData).toHaveLength(0);
+      expect(component['originData']()).toHaveLength(1); // origin still has data
       
       // 3. Verify isEmptyFiltered triggers
       expect(component.isEmptyFiltered).toBe(true);
