@@ -1218,7 +1218,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     it('sorts credentials without an expiration date last in "Expiring soon"', () => {
       const withoutExpiration = makeProcedure('none', '2025-01-01T00:00:00Z');
-      withoutExpiration.credential_procedure.expires_at = null;
+      delete withoutExpiration.credential_procedure.expires_at;
       const expiring = makeProcedure('soon', '2025-01-01T00:00:00Z');
       credentialProcedureSpy.mockReturnValue(of({
         credential_procedures: [withoutExpiration, expiring],
