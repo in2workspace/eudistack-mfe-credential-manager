@@ -280,7 +280,8 @@ export class AuthService{
    * any protected URL (e.g. the credential list with its details drawer open) to the list.
    */
   private isOnLandingRoute(): boolean {
-    const basePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
+    let basePath = new URL(document.baseURI).pathname;
+    while (basePath.endsWith('/')) basePath = basePath.slice(0, -1);
     let path = globalThis.location.pathname;
     if (basePath && (path === basePath || path.startsWith(`${basePath}/`))) path = path.slice(basePath.length);
     path ||= '/';
