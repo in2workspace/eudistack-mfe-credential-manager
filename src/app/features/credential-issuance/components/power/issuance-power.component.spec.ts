@@ -264,7 +264,7 @@ describe('IssuancePowerComponent', () => {
     component.ngOnInit();
     fixture.detectChanges();
 
-    expect(component.scopes.length).toBe(1);
+    expect(component.scopes).toHaveLength(1);
     expect(component.isScopeSelectable).toBe(false);
 
     const tab: HTMLButtonElement = fixture.nativeElement.querySelector('.scope-tab');
