@@ -55,7 +55,7 @@
              <mat-error [id]="errorId" role="alert">{{ getErrorMessage(control) | translate: getErrorsArgs(control) }}</mat-error>
           }
         </mat-form-field>
-        @if(controlSchema?.hint){
+        @if(controlSchema?.hint && !showError){
           <div class="field-hint">
             {{ "credentialIssuance.hint." + controlSchema?.hint | translate }}
           </div>
