@@ -17,29 +17,28 @@
       @if (groupSchema && groupSchema.groupFields && group) {
         <h2 [class]="fieldSchema.classes">{{ "credentialIssuance." + fieldSchema.key | translate | titlecase }}</h2>
         <!-- GROUPS -->
-            @for (field of groupSchema.groupFields; track field.key) {
-              <app-dynamic-field 
-                [fieldName$]="field.key" 
-                [fieldPath$]="fieldPath ? fieldPath + '.' + field.key : field.key"
-                [fieldSchema$]="field" 
-                [parentFormGroup$]="group">
-              </app-dynamic-field>
-            }
+        <div class="group-fields">
+          @for (field of groupSchema.groupFields; track field.key) {
+            <app-dynamic-field 
+              [fieldName$]="field.key" 
+              [fieldPath$]="fieldPath ? fieldPath + '.' + field.key : field.key"
+              [fieldSchema$]="field" 
+              [parentFormGroup$]="group">
+            </app-dynamic-field>
+          }
+        </div>
       } @else if(controlSchema){
         <!-- INDIVIDUAL CONTROLS -->
         <!-- Currently text, number, date and select are included. If other input types are needed in the future, they can be added here or a
           custom component can be used -->
-        @if(controlSchema?.hint){
-          <div class="field-hint">
-            {{ "credentialIssuance.hint." + controlSchema?.hint | translate }}
-          </div>
-        }
         @let showError = control?.invalid && control?.touched;
-        <mat-form-field [formGroup]="parentFormGroup$()">
-          <mat-label appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldSchema.label ?? ("credentialIssuance." + fieldName | translate) }}</mat-label>
+        @let fieldLabel = fieldSchema.label ?? ("credentialIssuance." + fieldName | translate);
+        <label class="field-label" [for]="controlId" appAddAsterisk [formGroup]="parentFormGroup$()" [controlName]="fieldName">{{ fieldLabel }}</label>
+        <mat-form-field appearance="outline" [formGroup]="parentFormGroup$()">
           @let controlType = controlSchema.controlType;
           @if (controlType === 'number' || controlType === 'text' || controlType === 'date') {
             <input matInput [type]="controlType" [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
+                   [placeholder]="'credentialIssuance.placeholder' | translate: { field: fieldLabel }"
                    [attr.aria-describedby]="showError ? errorId : null"/>
           }@else if(controlType === 'selector'){
               <mat-select [formControlName]="fieldName" [id]="controlId" [class]="fieldSchema.classes"
@@ -56,6 +55,11 @@
              <mat-error [id]="errorId" role="alert">{{ getErrorMessage(control) | translate: getErrorsArgs(control) }}</mat-error>
           }
         </mat-form-field>
+        @if(controlSchema?.hint && !showError){
+          <div class="field-hint">
+            {{ "credentialIssuance.hint." + controlSchema?.hint | translate }}
+          </div>
+        }
       }
     }
   }

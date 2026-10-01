@@ -256,4 +256,56 @@ describe('DynamicFieldComponent', () => {
       expect(input.getAttribute('aria-describedby')).toBeNull();
     });
   });
+
+  describe('field hint', () => {
+    const hintText = () => {
+      const el = fixture.nativeElement.querySelector('.field-hint');
+      return el ? el.textContent.trim() : null;
+    };
+
+    const setupHintedField = () => {
+      const control = new FormControl('');
+      const group = new FormGroup({ prop: control });
+      componentRef.setInput('parentFormGroup$', group);
+      componentRef.setInput('fieldSchema$', {
+        type: 'control',
+        controlType: 'text',
+        hint: 'organizationIdentifier',
+        validators: [{ name: 'required' }]
+      } as any);
+      fixture.detectChanges();
+      return control;
+    };
+
+    it('shows the hint while the field is untouched', () => {
+      setupHintedField();
+
+      expect(hintText()).toContain('hint.organizationIdentifier');
+    });
+
+
+    it('gives the strip to the error once the field is invalid and touched', () => {
+      const control = setupHintedField();
+
+      control.setErrors({ required: { value: 'error.required' } });
+      control.markAsTouched();
+      fixture.detectChanges();
+
+      expect(hintText()).toBeNull();
+      expect(fixture.nativeElement.querySelector('mat-error')).toBeTruthy();
+    });
+
+    it('brings the hint back once the error clears', () => {
+      const control = setupHintedField();
+      control.setErrors({ required: { value: 'error.required' } });
+      control.markAsTouched();
+      fixture.detectChanges();
+
+      control.setErrors(null);
+      fixture.detectChanges();
+
+      expect(hintText()).toContain('hint.organizationIdentifier');
+    });
+  });
+
 });
