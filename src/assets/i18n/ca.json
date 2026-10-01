@@ -359,13 +359,13 @@
       "mdoc": "mDOC (pròximament)"
     },
     "grantType": {
-      "tooltip": "Com demostra el titular qui és abans de recollir la credencial. Amb Authorization Code s'identifica davant l'emissor en el moment de recollir-la. Amb Pre-Authorized Code se li envia un codi d'un sol ús al seu correu, i confirmar-lo és tot el que necessita.",
+      "tooltip": "Com s'autoritza el titular a rebre la credencial al seu Wallet. Amb Authorized Code, pot rebre-la sense verificació addicional. Amb Pre-Authorized Code, s'envia un codi d'un sol ús al seu correu, que haurà d'introduir abans de poder afegir la credencial.",
       "label": "Tipus de concessió",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un. Directe retorna aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra un codi per escanejar amb el wallet. Correu electrònic envia al titular un enllaç per recollir-la.",
+      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un. Directe mostra aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra aquí un codi QR i un enllaç, perquè el titular reculli la credencial per qualsevol de les dues vies. Correu electrònic envia al titular un correu amb aquest mateix codi QR i enllaç.",
       "label": "Mètode de lliurament",
       "direct": "Directe",
       "email": "Correu electrònic",

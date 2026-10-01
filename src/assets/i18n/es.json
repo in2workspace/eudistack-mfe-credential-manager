@@ -384,13 +384,13 @@
       "mdoc": "mDOC (próximamente)"
     },
     "grantType": {
-      "tooltip": "Cómo demuestra el titular quién es antes de recoger la credencial. Con Authorization Code se identifica ante el emisor en el momento de recogerla. Con Pre-Authorized Code se le envía un código de un solo uso a su correo, y confirmarlo es todo lo que necesita.",
+      "tooltip": "Cómo se autoriza al titular a recibir la credencial en su Wallet. Con Authorized Code, puede recibirla sin verificación adicional. Con Pre-Authorized Code, se envía un código de un solo uso a su correo, que deberá introducir antes de poder añadir la credencial.",
       "label": "Tipo de concesión",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno. Directo devuelve aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra un código para escanear con el wallet. Correo electrónico envía al titular un enlace para recogerla.",
+      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno. Directo muestra aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra aquí un código QR y un enlace, para que el titular recoja la credencial por cualquiera de las dos vías. Correo electrónico envía al titular un correo con ese mismo código QR y enlace.",
       "label": "Método de entrega",
       "direct": "Directo",
       "email": "Correo electrónico",

@@ -384,13 +384,13 @@
       "mdoc": "mDOC (coming soon)"
     },
     "grantType": {
-      "tooltip": "How the holder proves who they are before collecting the credential. With Authorization Code they identify themselves against the issuer at the moment of collecting it. With Pre-Authorized Code a one-time code is sent to their email, and confirming that code is all they need.",
+      "tooltip": "How the holder is authorized to receive the credential in their Wallet. With Authorized Code, they can receive the credential without further verification. With Pre-Authorized Code, a one-time code is sent to their email, which they must provide before they can add the credential.",
       "label": "Grant type",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct returns the signed credential here, for you to copy and hand over yourself. QR Code shows a code to scan with the wallet. Email sends the holder a link to collect it.",
+      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",
