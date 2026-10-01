@@ -139,12 +139,14 @@ export class LEARCredentialDataNormalizer {
 
   /** SD-JWT VCs carry their validity as JWT `nbf`/`exp` (seconds since epoch), not W3C dates. */
   private normalizeValidityIfNeeded(data: any): void {
-    if (!data.validFrom && typeof data.nbf === 'number') {
-      data.validFrom = new Date(data.nbf * 1000).toISOString();
-    }
-    if (!data.validUntil && typeof data.exp === 'number') {
-      data.validUntil = new Date(data.exp * 1000).toISOString();
-    }
+    data.validFrom ||= this.epochSecondsToIso(data.nbf);
+    data.validUntil ||= this.epochSecondsToIso(data.exp);
+  }
+
+  private epochSecondsToIso(seconds: unknown): string | undefined {
+    if (typeof seconds !== 'number') return undefined;
+    const date = new Date(seconds * 1000);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
   }
 
   private normalizeCertificationIfNeeded(

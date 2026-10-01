@@ -332,6 +332,15 @@ describe('LEARCredentialDataNormalizer', () => {
       expect(out.validUntil).toBe('2027-09-25T08:00:00.000Z');
     });
 
+    it('ignores an nbf/exp outside the representable date range', () => {
+      const input: any = { vct: 'learcredential.employee.sd.1', nbf: 1e13, exp: Number.NaN };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.validFrom).toBeUndefined();
+      expect(out.validUntil).toBeUndefined();
+    });
+
     it('keeps existing W3C validity dates over nbf/exp', () => {
       const input: any = {
         type: ['learcredential.employee.w3c.4'],
