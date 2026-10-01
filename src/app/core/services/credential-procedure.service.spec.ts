@@ -67,8 +67,8 @@ describe('CredentialProcedureService', () => {
 
   it('should fetch credential procedures successfully', () => {
     const mockData: CredentialProceduresResponse = {credential_procedures:[
-      { credential_procedure: {procedure_id: '1', status: {} as LifeCycleStatus, subject: 'John Doe', issued_at: '2022-01-01', expires_at: '2024-01-01', updated: '2023-01-01', credential_type: 'learcredential.employee.w3c.1', email: "aa@bb.com", organization_identifier: "VATES-000000"}},
-      { credential_procedure: { procedure_id: '2', status: {} as LifeCycleStatus, subject: 'Jane Doe', issued_at: '2022-01-02', expires_at: '2024-01-02', updated: '2023-01-02', credential_type: 'VERIFIABLE_CERTIFICATION', email: "aa@bb.com", organization_identifier: "VATES-000000"}}
+      { credential_procedure: {procedure_id: '1', status: {} as LifeCycleStatus, subject: 'John Doe', created_at: '2022-01-01', expires_at: '2024-01-01', updated: '2023-01-01', credential_type: 'learcredential.employee.w3c.1', email: "aa@bb.com", organization_identifier: "VATES-000000"}},
+      { credential_procedure: { procedure_id: '2', status: {} as LifeCycleStatus, subject: 'Jane Doe', created_at: '2022-01-02', expires_at: '2024-01-02', updated: '2023-01-02', credential_type: 'VERIFIABLE_CERTIFICATION', email: "aa@bb.com", organization_identifier: "VATES-000000"}}
     ]};
 
     service.fetchCredentialProcedures().subscribe(data => {
