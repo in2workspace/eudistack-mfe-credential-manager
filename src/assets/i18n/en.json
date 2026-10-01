@@ -649,6 +649,7 @@
     "recentlyIssued": "Recently issued",
     "recentlyUpdated": "Recently updated",
     "expiringSoon": "Expires soon",
-    "expiringLater": "Expires later"
+    "expiringLater": "Expires later",
+    "custom": "Custom"
   }
 }

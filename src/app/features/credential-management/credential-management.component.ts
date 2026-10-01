@@ -103,7 +103,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   /**
    * Currently selected "Sort by" option, kept in sync with the table's MatSort.
    * null when the table is sorted by a header in a way no option describes — the
-   * selector then shows its "-" placeholder.
+   * selector then shows its "Custom" placeholder.
    */
   public readonly sortOption = signal<SortByOption | null>('recentlyUpdated');
   protected readonly sortByOptions = Object.keys(SORT_BY_OPTIONS) as SortByOption[];
