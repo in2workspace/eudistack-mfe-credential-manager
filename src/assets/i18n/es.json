@@ -114,6 +114,17 @@
     "issuedBy": "Emitida por {{organization}}",
     "credentialInformation": "Información de la credencial",
     "format": "Formato",
+    "badge": {
+      "DRAFT": "Credencial en borrador",
+      "PEND_SIGNATURE": "Pendiente de firma",
+      "PEND_DOWNLOAD": "Pendiente de descarga",
+      "ISSUED": "Credencial emitida",
+      "VALID": "Credencial válida",
+      "EXPIRED": "Credencial expirada",
+      "REVOKED": "Credencial revocada",
+      "WITHDRAWN": "Credencial retirada",
+      "ARCHIVED": "Credencial archivada"
+    },
     "title": "Detalles de la credencial",
     "type" : "tipo",
     "DRAFT": "BORRADOR",
