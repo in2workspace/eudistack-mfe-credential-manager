@@ -293,6 +293,7 @@
     "power": "Poderes",
     "domain": "Dominio",
     "function": "Función",
+    "subtitle": "Añade uno o más poderes y selecciona las funciones de cada uno.",
     "marketplace": "Marketplace",
     "add": "Añadir",
     "onboarding": "Alta",
@@ -314,11 +315,25 @@
   },
   "credentialIssuance": {
     "title": "Emisión de credencial",
+    "result": {
+      "title": {
+        "delivered": "Credencial creada correctamente",
+        "pending": "Crear credencial"
+      },
+      "subtitle": {
+        "learcredential.machine": "Tu credencial de máquina se ha creado.",
+        "learcredential.employee": "Tu credencial de empleado se ha creado."
+      },
+      "keyWarning": "Guarda ahora la clave generada. Por seguridad, solo se muestra una vez y no se podrá recuperar después.",
+      "credentialType": "Tipo de credencial"
+    },
+    "backToList": "Volver a la lista de credenciales emitidas",
+    "holderInfo": "Información del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Crear credencial",
-      "message": "¿Estás seguro de que quieres crear esta credencial?",
+      "message": "Una vez creada, esta credencial no se puede editar. Para hacer cambios, tendrás que revocarla y crear una nueva.",
       "defaultLoadingTitle": "Espere mientras se completa el proceso..."
     },
     "create-success-dialog": {
@@ -329,12 +344,17 @@
       "message": "La emisión no se ha completado. Los datos del formulario se han conservado; revísalos y vuelve a intentarlo."
     },
     "creating-credential": "Creando credencial",
-    "create-credential": "Crear credencial",
+    "create-credential": "Crear nueva credencial",
     "credentialType": "Tipo de credencial",
+    "placeholder": "Introduce {{field}}",
     "cancel": "Cancelar",
     "mandatee": "persona mandatada",
     "mandator": "mandante",
     "select-type": "Selecciona el tipo de credencial",
+    "description": {
+      "learcredential.employee": "Identifica a una persona de tu organización y transporta los poderes que le delegas. La recibe en su wallet y la presenta para actuar en nombre de la organización.",
+      "learcredential.machine": "Identifica a un sistema automatizado, no a una persona: se vincula a un par de claves y se identifica por dominio y dirección IP, para operaciones máquina a máquina sin nadie delante."
+    },
     "loadingCatalog": "Cargando los formularios de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No se han encontrado formularios de credencial habilitados para tu organización. Contacta con el administrador de tu tenant para solicitar el alta de un formulario.",
@@ -357,17 +377,20 @@
       "organizationIdentifier": "Introduce solo los caracteres que van después de 'VAT...-'. Por ejemplo, si es 'VATEU-123ABC', introduce '123ABC'."
     },
     "format": {
+      "tooltip": "Modelo de datos con el que se emite la credencial. W3C VC 2.0 es el de interoperabilidad más amplia; SD-JWT VC añade divulgación selectiva, de modo que el titular revela solo parte de sus datos al presentarla.",
       "label": "Formato de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (próximamente)"
     },
     "grantType": {
+      "tooltip": "Cómo se autoriza al titular a recibir la credencial en su Wallet. Con Authorized Code, puede recibirla sin verificación adicional. Con Pre-Authorized Code, se envía un código de un solo uso a su correo, que deberá introducir antes de poder añadir la credencial.",
       "label": "Tipo de concesión",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno. Directo muestra aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra aquí un código QR y un enlace, para que el titular recoja la credencial por cualquiera de las dos vías. Correo electrónico envía al titular un correo con ese mismo código QR y enlace.",
       "label": "Método de entrega",
       "direct": "Directo",
       "email": "Correo electrónico",
@@ -414,6 +437,7 @@
       "credentialLabel": "Credencial firmada",
       "credentialDescription": "Este es el token de la credencial máquina, listo para ser utilizado por un servicio que quiera presentarse ante el verificador para identificarse (login M2M).",
       "done": "Hecho",
+      "pending": "Copia el contenido sensible que se muestra arriba antes de terminar. Solo se muestra una vez y no se puede recuperar una vez cierres este diálogo.",
       "copyFailed": {
         "credential": "No se ha podido copiar la credencial al portapapeles. Inténtalo de nuevo.",
         "privateKey": "No se ha podido copiar la clave privada al portapapeles. Inténtalo de nuevo."

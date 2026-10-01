@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, IssuanceRawPowerScopeForm, POWER_SCOPES, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
 import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -45,9 +45,6 @@ export class IssuanceRequestFactoryService {
     }
 
   private createLearCredentialEmployeeRequest(credentialData: IssuanceRawCredentialPayload): IssuanceLEARCredentialEmployeePayload{
-    // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee');
-
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData) as unknown as EmployeeMandatee;
     
@@ -62,6 +59,9 @@ export class IssuanceRequestFactoryService {
     const orgId = this.createOrganizationId(country, orgIdSuffix);
     const mandatorId = this.createDidElsi(orgId);
     const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
+
+    // Power
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.employee');
 
     // Payload
     const payload: IssuanceLEARCredentialEmployeePayload =    
@@ -87,9 +87,6 @@ export class IssuanceRequestFactoryService {
     credentialData: IssuanceRawCredentialPayload,
     holderBinding?: HolderBinding
   ): IssuanceLEARCredentialMachinePayload{
-    // Power
-    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
-
     // Mandatee
     const mandatee = this.getMandateeFromCredentialData(credentialData);
 
@@ -105,6 +102,9 @@ export class IssuanceRequestFactoryService {
     const mandatorId = this.createDidElsi(orgId);
     const mandatorCommonName = mandator['commonName'] ?? this.formatCommonName(mandator['firstName'], mandator['lastName']);
     const mandatorEmail = mandator['email'];
+
+    // Power
+    const parsedPower = this.parsePower(credentialData.formData['power'], 'learcredential.machine');
 
     // EUD-233 AD-6: the did:key travels as a typed parameter, no longer read out of
     // formData['keys']['didKey'] -- IssuanceHolderKeyService.generateForSubmission() always
@@ -173,26 +173,41 @@ export class IssuanceRequestFactoryService {
     power: IssuanceRawPowerForm,
     credType: IssuanceCredentialType
   ): IssuancePayloadPower[] {
-    return Object.entries(power).reduce<IssuancePayloadPower[]>((acc, [funct, pow]) => {
+    const tenantDomain = this.themeService.tenantDomain;
+    const catalogue = buildPowerMap(tenantDomain)[credType];
+
+    return POWER_SCOPES.flatMap(scope =>
+      this.parsePowerScope(power?.[scope] ?? {}, catalogue, { type: scope, domain: tenantDomain })
+    );
+  }
+
+  private parsePowerScope(
+    scopeForm: IssuanceRawPowerScopeForm,
+    catalogue: Partial<Record<TmfFunction, IssuancePayloadPower>> | undefined,
+    binding: { type: string; domain: string }
+  ): IssuancePayloadPower[] {
+    return Object.entries(scopeForm).reduce<IssuancePayloadPower[]>((acc, [funct, pow]) => {
       const tmfFunc = funct as TmfFunction;
-      const base = buildPowerMap(this.themeService.tenantDomain)[credType]?.[tmfFunc];
+      const base = catalogue?.[tmfFunc];
 
       if (!base) {
-        console.error('Function key found in schema but not in received data: ' + funct);
+        console.error('Function key found in schema but not in received data:', funct);
         return acc;
       }
-      
-      const selectedActions = (Object.entries(pow) as [TmfAction, boolean][])
+
+      const selectedActions = (Object.entries(pow ?? {}) as [TmfAction, boolean][])
         .filter(([_, enabled]) => enabled)
         .map(([action]) => action);
 
       if (selectedActions.length === 0) {
-        console.error('Not actions found for this key: ' + funct);
+        console.error('Not actions found for this key:', funct);
         return acc;
       }
 
       const parsed: IssuancePayloadPower = {
         ...base,
+        type: binding.type,
+        domain: binding.domain,
         action: selectedActions
       };
 

@@ -148,6 +148,18 @@ describe('CredentialOfferDialogComponent', () => {
       expect(actionButton().disabled).toBe(false);
     });
 
+    it('explains why "Done" is blocked, and falls silent once the key is copied', async () => {
+      const hintOf = () => (fixture.componentInstance as any).pendingHintKey();
+
+      expect(hintOf()).toBe('credentialIssuance.direct-result-dialog.pending');
+
+      const field = fixture.debugElement.query(By.directive(CopyableFieldComponent)).componentInstance as CopyableFieldComponent;
+      await field.copy();
+      fixture.detectChanges();
+
+      expect(hintOf()).toBe('');
+    });
+
     it('ES-07.2: a failed key copy is announced and keeps "Done" disabled', async () => {
       Object.defineProperty(navigator, 'clipboard', { value: { writeText: jest.fn(() => Promise.reject(new Error('denied'))) }, configurable: true });
 
@@ -201,11 +213,11 @@ describe('CredentialOfferDialogComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('direct-result-dialog.credentialLabel');
     });
 
-    it('reuses the generic create-success-dialog copy when there is no QR to show', () => {
+    it('keeps the "not delivered yet" title, QR or no QR: only the direct surface claims success', () => {
       expect(fixture.nativeElement.querySelector('app-credential-offer-qr')).toBeNull();
       // TranslateModule.forRoot() with no loader renders the untranslated key -- good enough to
       // assert which copy was picked without reaching into the component's protected members.
-      expect(fixture.nativeElement.querySelector('h2').textContent).toContain('create-success-dialog.title');
+      expect(fixture.nativeElement.querySelector('h2').textContent).toContain('result.title.pending');
     });
   });
 
