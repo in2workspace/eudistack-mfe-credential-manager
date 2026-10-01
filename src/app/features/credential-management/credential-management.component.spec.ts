@@ -1206,11 +1206,11 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     }
 
     it('puts the credential id on the URL instead of opening the drawer directly', () => {
-      component.openCredentialDetails(row('proc-42'));
+      component.openCredentialDetails(row('3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c'));
 
       expect(router.navigate).toHaveBeenCalledWith(
         [],
-        expect.objectContaining({ queryParams: { id: 'proc-42' }, queryParamsHandling: 'merge' })
+        expect.objectContaining({ queryParams: { id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }, queryParamsHandling: 'merge' })
       );
     });
 
@@ -1226,11 +1226,11 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         close: jest.fn(),
       } as never);
 
-      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
 
       expect(open).toHaveBeenCalledWith(
         CredentialDetailsDrawerComponent,
-        expect.objectContaining({ data: expect.objectContaining({ procedureId: 'proc-42' }) })
+        expect.objectContaining({ data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }) })
       );
     });
 
@@ -1241,10 +1241,23 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         close,
       } as never);
 
-      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
       queryParamMap$.next(convertToParamMap({}));
 
       expect(close).toHaveBeenCalled();
+    });
+
+    it('ignores and clears an id that is not a UUID', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open');
+      (TestBed.inject(ActivatedRoute).snapshot as { queryParamMap: ParamMap }).queryParamMap = convertToParamMap({ id: '../../other' });
+
+      queryParamMap$.next(convertToParamMap({ id: '../../other' }));
+
+      expect(open).not.toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { id: null }, replaceUrl: true })
+      );
     });
 
     it('hands the drawer a last-updated date that follows the list once it loads', () => {
@@ -1276,8 +1289,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         close: jest.fn(),
       } as never);
 
-      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
-      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
 
       expect(open).toHaveBeenCalledTimes(1);
     });
@@ -1297,7 +1310,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         afterClosed: () => of(undefined),
         close: jest.fn(),
       } as never);
-      queryParamMap$.next(convertToParamMap({ id: 'proc-42' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
       credentialProcedureSpy.mockClear();
 
       TestBed.inject(CredentialActionsService).actionCompleted$.next();

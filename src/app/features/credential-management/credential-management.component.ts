@@ -35,6 +35,8 @@ import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-load
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
 
 /** Maps each SortByOption to the matSort column id + direction it drives. */
@@ -252,6 +254,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   private openDrawer(procedureId: string): void {
     if (this.drawerRef) return;
+    if (!UUID_PATTERN.test(procedureId)) {
+      this.clearDrawerQueryParam();
+      return;
+    }
 
     const data: CredentialDetailsDrawerData = {
       procedureId,
