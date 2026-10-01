@@ -183,6 +183,12 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(fixture.nativeElement.querySelector('.drawer__title')?.textContent?.trim()).toBe('Doctor ID');
   });
 
+  it('gives the title the id the dialog is labelled by', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('#drawer-title')?.classList).toContain('drawer__title');
+  });
+
   it('names the issuing organization right after the status pill', async () => {
     await createComponent();
 

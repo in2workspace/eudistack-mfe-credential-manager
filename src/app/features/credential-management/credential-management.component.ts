@@ -280,6 +280,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       {
         data,
         autoFocus: false,
+        ariaLabelledBy: 'drawer-title',
         width: 'min(560px, 100vw)',
         maxHeight: '100vh',
         panelClass: 'credential-details-drawer',

@@ -1276,7 +1276,10 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
       expect(open).toHaveBeenCalledWith(
         CredentialDetailsDrawerComponent,
-        expect.objectContaining({ data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }) })
+        expect.objectContaining({
+          data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }),
+          ariaLabelledBy: 'drawer-title',
+        })
       );
     });
 
