@@ -87,17 +87,6 @@
   "credentialDetails": {
     "revokedOn": "Revocada el",
     "issuedBy": "Emesa per {{organization}}",
-    "badge": {
-      "DRAFT": "Credencial en esborrany",
-      "PEND_SIGNATURE": "Pendent de signatura",
-      "PEND_DOWNLOAD": "Pendent de descàrrega",
-      "ISSUED": "Credencial emesa",
-      "VALID": "Credencial vàlida",
-      "EXPIRED": "Credencial expirada",
-      "REVOKED": "Credencial revocada",
-      "WITHDRAWN": "Credencial retirada",
-      "ARCHIVED": "Credencial arxivada"
-    },
     "title": "Detalls de la credencial",
     "DRAFT": "ESBORRANY",
     "PEND_SIGNATURE": "PER SIGNAR",

@@ -138,6 +138,13 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(fixture.nativeElement.querySelector('.drawer__issued-by')).toBeNull();
   });
 
+  it('labels the status pill with the same short status key the table uses', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.drawer__status')?.textContent?.trim())
+      .toBe('credentialDetails.VALID');
+  });
+
   it('renders values as labelled boxes rather than Material form fields', async () => {
     await createComponent();
 
