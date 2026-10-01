@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { CustomTooltipDirective } from 'src/app/shared/directives/custom-tooltip.directive';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
+import { LocalizedDatePipe } from 'src/app/shared/pipes/localized-date.pipe';
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
@@ -32,6 +33,7 @@ export interface CredentialDetailsDrawerData {
     CapitalizePipe,
     CommonModule,
     CustomTooltipDirective,
+    LocalizedDatePipe,
     MatButton,
     MatIcon,
     PortalModule,

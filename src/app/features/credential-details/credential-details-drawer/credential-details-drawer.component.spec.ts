@@ -3,7 +3,7 @@ import { signal, WritableSignal } from '@angular/core';
 import { of, Subject } from 'rxjs';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
@@ -236,6 +236,19 @@ describe('CredentialDetailsDrawerComponent', () => {
 
     lifecycle$.set('REVOKED');
     expect(component.revokedAt$()).toBe('2026-06-25T16:42:00Z');
+  });
+
+  it('writes the revocation date in the active language', async () => {
+    await createComponent({ procedureId: 'the-id', lastUpdated: signal(new Date(2026, 5, 25, 16, 42).toISOString()) });
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('ca', { credentialDetails: { dateAtTime: '{{date}} a les {{time}}' } });
+    translate.use('ca');
+
+    lifecycle$.set('REVOKED');
+    fixture.detectChanges();
+
+    const revokedOn = (fixture.nativeElement as HTMLElement).querySelector('.drawer__revoked-on')!;
+    expect(revokedOn.textContent).toContain('25 juny 2026 a les 16:42');
   });
 
   it('shows the revocation date once the list it comes from has loaded', async () => {

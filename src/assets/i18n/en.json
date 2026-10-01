@@ -111,6 +111,7 @@
   },
   "credentialDetails": {
     "revokedOn": "Revoked on",
+    "dateAtTime": "{{date}} at {{time}}",
     "loadError": "This credential could not be loaded.",
     "issuedBy": "Issued by {{organization}}",
     "credentialInformation": "Credential information",

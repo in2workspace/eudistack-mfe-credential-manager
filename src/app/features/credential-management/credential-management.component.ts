@@ -31,6 +31,7 @@ import { SubjectComponent } from './components/subject-component/subject-compone
 import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
+import { LocalizedDatePipe } from 'src/app/shared/pipes/localized-date.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
 import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdown/filter-dropdown.component';
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
@@ -74,6 +75,7 @@ const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDir
         MatTooltipModule,
         MatSelectModule,
         DatePipe,
+        LocalizedDatePipe,
         SubjectComponent,
         TranslatePipe,
         CapitalizePipe,
