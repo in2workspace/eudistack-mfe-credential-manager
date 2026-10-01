@@ -10,7 +10,7 @@ export interface CredentialProcedureBasicInfo {
     subject: string;
     credential_type: CredentialProcedureType;
     status: LifeCycleStatus;
-    created_at: string;
+    issued_at: string;
     expires_at?: string;
     updated: string;
     email: string;
