@@ -397,10 +397,14 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   describe('EUD-73 — ES-02 fail-closed (no schema means the form does not render)', () => {
-    it('does not render <form> and keeps the submit button disabled when credentialFormSchema$ is null', () => {
+    it('renders neither <form> nor the submit button when credentialFormSchema$ is null', () => {
       // mockService.credentialFormSchema$ is already signal(null) by default in the beforeEach
       expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
-      expect(submitButton().disabled).toBe(true);
+      expect(submitButton()).toBeNull();
+    });
+
+    it('keeps the cancel action reachable while the form is not ready', () => {
+      expect(fixture.nativeElement.querySelector('.cancel-button')).toBeTruthy();
     });
   });
 
