@@ -1302,6 +1302,23 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       );
     });
 
+    it('opens the drawer when the page loads with the id already on the URL', () => {
+      fixture.destroy();
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+
+      TestBed.createComponent(CredentialManagementComponent).detectChanges();
+
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(open).toHaveBeenCalledWith(
+        CredentialDetailsDrawerComponent,
+        expect.objectContaining({ data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }) })
+      );
+    });
+
     it('closes the open drawer when the id leaves the URL', () => {
       const close = jest.fn();
       jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
