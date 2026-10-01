@@ -282,10 +282,7 @@ export class AuthService{
   private isOnLandingRoute(): boolean {
     const basePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
     let path = globalThis.location.pathname;
-    // The Portal Console shell serves the app under /issuer whatever this document's <base href>.
-    for (const prefix of [basePath, '/issuer']) {
-      if (prefix && (path === prefix || path.startsWith(`${prefix}/`))) path = path.slice(prefix.length);
-    }
+    if (basePath && (path === basePath || path.startsWith(`${basePath}/`))) path = path.slice(basePath.length);
     path ||= '/';
     return path === '/' || path === '/home' || path.startsWith('/home/');
   }

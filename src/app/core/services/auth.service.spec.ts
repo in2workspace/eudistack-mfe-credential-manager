@@ -712,34 +712,33 @@ describe('AuthService', () => {
       expect((service as any).isOnPublicRoute()).toBe(false);
     });
 
-    it.each(['/', '/home', '/home/', '/issuer', '/issuer/', '/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
+    it.each(['/', '/home', '/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
       setPathname(pathname);
       expect((service as any).isOnLandingRoute()).toBe(true);
     });
 
-    it.each(['/organization/credentials', '/issuer/organization/credentials', '/issuerx/home', '/homepage', '/issuer/homepage'])(
-      'isOnLandingRoute(): false per a %s', (pathname) => {
-        setPathname(pathname);
-        expect((service as any).isOnLandingRoute()).toBe(false);
-      });
+    it.each(['/organization/credentials', '/homepage', '/issuer/home'])('isOnLandingRoute(): false per a %s', (pathname) => {
+      setPathname(pathname);
+      expect((service as any).isOnLandingRoute()).toBe(false);
+    });
 
-    describe('amb un altre base href', () => {
+    describe('amb el base href /issuer/ dels desplegaments', () => {
       let base: HTMLBaseElement;
 
       beforeEach(() => {
         base = document.createElement('base');
-        base.href = '/console/';
+        base.href = '/issuer/';
         document.head.appendChild(base);
       });
 
       afterEach(() => base.remove());
 
-      it.each(['/console', '/console/', '/console/home', '/console/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
+      it.each(['/issuer', '/issuer/', '/issuer/home', '/issuer/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
         setPathname(pathname);
         expect((service as any).isOnLandingRoute()).toBe(true);
       });
 
-      it.each(['/console/organization/credentials', '/consolex/home'])('isOnLandingRoute(): false per a %s', (pathname) => {
+      it.each(['/issuer/organization/credentials', '/issuerx/home', '/issuer/homepage'])('isOnLandingRoute(): false per a %s', (pathname) => {
         setPathname(pathname);
         expect((service as any).isOnLandingRoute()).toBe(false);
       });
