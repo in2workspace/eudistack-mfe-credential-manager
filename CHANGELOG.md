@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-09-22
 
+
+## [3.8.2] - 2026-10-01
+
+### Fixed
+- **#1060489** Al cambiar el formato de W3C a SD-JWT en el formulario de emisión se pierden los datos introducidos.
+- **#1052196** No se pueden revocar algunas credenciales en estado VALID.
+- **#1052784** El acceso al issuer podía ofrecer credenciales sin el poder necesario para entrar.
+
 ## Changed
 - **LEAR Credential Issuance form - UI redesign**: the whole form was restyled against the new mocks. Everything now lives in a single card behind a "Back to list of issued credentials" link: the mandator moved from a side column to a read-only "Holder information" panel at the top, the credential type selector gained a per-type description and the Credential Format / Grant type / Delivery method blocks became equal-width cards with an explanatory tooltip each. Mandatee fields are laid out in two columns with the label above each input. The Powers section replaced the "select a power + Add" flow with the full function list, one switch per power and its actions as checkboxes, grouped by scope. Focus states are now neutral across the form instead of Material's default blue.
 - **EUD-233 - issuance form**: shortened the label text for the direct delivery checkbox; removed top padding from the title of the form's first field; updated checkboxes to have rounded corners for visual consistency with radio buttons
