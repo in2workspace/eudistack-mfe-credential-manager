@@ -260,11 +260,36 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(text).not.toContain('4242');
   });
 
-  it('offers Close as the primary action when the credential cannot be signed', async () => {
+  it('offers only Close when the status has no action', async () => {
     await createComponent();
 
-    expect(fixture.nativeElement.querySelector('#drawer-close-primary')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('#drawer-sign')).toBeNull();
+    const footer: HTMLElement = fixture.nativeElement.querySelector('.drawer__footer');
+    expect(footer.querySelectorAll('button').length).toBe(1);
+    expect(footer.querySelector('#drawer-close-primary')).toBeTruthy();
+  });
+
+  it.each([
+    ['#drawer-sign', () => showSign$.set(true)],
+    ['#drawer-withdraw', () => showWithdraw$.set(true)],
+    ['#drawer-revoke', () => showRevoke$.set(true)],
+    ['#drawer-archive', () => showArchive$.set(true)],
+  ])('places %s right before Close', async (selector, enable) => {
+    enable();
+    await createComponent();
+
+    const close: HTMLElement = fixture.nativeElement.querySelector('#drawer-close-primary');
+    const previous = close.previousElementSibling as HTMLElement;
+    expect(previous.matches(selector) || previous.querySelector(selector)).toBeTruthy();
+  });
+
+  it('renders a single action even if more than one would apply', async () => {
+    showSign$.set(true);
+    showArchive$.set(true);
+    await createComponent();
+
+    const footer: HTMLElement = fixture.nativeElement.querySelector('.drawer__footer');
+    expect(footer.querySelectorAll('button').length).toBe(2);
+    expect(footer.querySelector('#drawer-archive')).toBeNull();
   });
 
   it.each([
