@@ -166,12 +166,13 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(fixture.nativeElement.querySelector('.drawer__title')?.textContent?.trim()).toBe('Doctor ID');
   });
 
-  it('names the issuing organization under the credential name', async () => {
+  it('names the issuing organization right after the status pill', async () => {
     await createComponent();
 
     const issuedBy: HTMLElement = fixture.nativeElement.querySelector('.drawer__issued-by');
     expect(issuedBy).toBeTruthy();
     expect(issuedBy.textContent).toContain('credentialDetails.issuedBy');
+    expect(issuedBy.previousElementSibling?.classList).toContain('drawer__status');
   });
 
   it('omits the issued-by line when the issuer carries no organization', async () => {
