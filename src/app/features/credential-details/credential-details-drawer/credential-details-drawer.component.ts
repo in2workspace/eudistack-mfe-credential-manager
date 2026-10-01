@@ -56,8 +56,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly showContactEmail = false;
 
   public readonly mainViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
-  public readonly sideViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
-  public readonly showSideTemplateCard$: Signal<boolean>;
 
   public readonly showSignCredentialButton$: Signal<boolean>;
   public readonly showRevokeCredentialButton$: Signal<boolean>;
@@ -95,8 +93,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
       return format ? FORMAT_LABEL_MAP[format as CredentialFormat] ?? format : undefined;
     });
     this.mainViewModel$ = this.detailsService.mainViewModel$;
-    this.sideViewModel$ = this.detailsService.sideViewModel$;
-    this.showSideTemplateCard$ = this.detailsService.showSideTemplateCard$;
     this.showSignCredentialButton$ = this.detailsService.showSignCredentialButton$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;

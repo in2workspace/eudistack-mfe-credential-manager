@@ -232,17 +232,17 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
-  it('renders the issuer and credential-status sections once the credential is validated', async () => {
+  it('does not render the issuer and credential-status sections', async () => {
     showSide$.set(true);
     sideModel$.set([
-      { key: 'issuer', type: 'group', value: [{ key: 'commonName', type: 'key-value', value: 'Engineering' }] },
-      { key: 'credentialStatus', type: 'group', value: [{ key: 'statusListIndex', type: 'key-value', value: '42' }] },
+      { key: 'issuer', type: 'group', value: [{ key: 'commonName', type: 'key-value', value: 'Issuer Seal' }] },
+      { key: 'credentialStatus', type: 'group', value: [{ key: 'statusListIndex', type: 'key-value', value: '4242' }] },
     ] as EvaluatedExtendedDetailsField[]);
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Engineering');
-    expect(text).toContain('42');
+    expect(text).not.toContain('Issuer Seal');
+    expect(text).not.toContain('4242');
   });
 
   it('offers Close as the primary action when the credential cannot be signed', async () => {
