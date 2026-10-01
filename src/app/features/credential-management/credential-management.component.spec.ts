@@ -1137,6 +1137,16 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(icon.getAttribute('aria-hidden')).toBe('false');
       expect(icon.getAttribute('aria-label')).toBe('credentialDetails.REVOKED');
     });
+
+    it('names the view-details button after the credential subject', () => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', { credentialManagement: { viewDetailsOf: 'View details of {{subject}}' } }, true);
+      translate.use('en');
+
+      const button = renderRow('VALID').querySelector('.view-details-btn')!;
+
+      expect(button.getAttribute('aria-label')).toBe('View details of Alice Smith');
+    });
   });
 
   describe('Sort by ↔ table sync', () => {

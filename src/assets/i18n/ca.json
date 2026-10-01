@@ -243,6 +243,7 @@
     "updated": "Actualitzat",
     "action": "Acció",
     "viewDetails": "Veure detalls",
+    "viewDetailsOf": "Veure detalls de {{subject}}",
     "cancel": "Cancel·lar",
     "create" : "Crear Credencial",
     "buttonAdmin": "Nova Credencial (en nom de)",

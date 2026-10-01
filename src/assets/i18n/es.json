@@ -268,6 +268,7 @@
     "updated": "Actualizado",
     "action": "Acción",
     "viewDetails": "Ver detalles",
+    "viewDetailsOf": "Ver detalles de {{subject}}",
     "cancel": "Cancelar",
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
