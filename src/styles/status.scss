@@ -2,7 +2,7 @@
 .status-ellipse {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     padding: 4px 12px;
     min-width: 100px;
     border-radius: var(--radius-full, 9999px);
@@ -11,15 +11,6 @@
     letter-spacing: 0.02em;
     white-space: nowrap;
     text-align: center;
-
-    &::before {
-      content: '';
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: currentColor;
-    }
   }
 
   // Single source of the per-status palette: the table's status icon and the
