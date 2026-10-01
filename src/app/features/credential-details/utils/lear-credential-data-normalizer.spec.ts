@@ -280,6 +280,71 @@ describe('LEARCredentialDataNormalizer', () => {
       expect(out.credentialSubject.mandate.power[0].domain).toBe('DOME');
     });
 
+    it('wraps SD-JWT root mandate of an employee into credentialSubject.mandate', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        mandate: {
+          mandator: { id: 'did:elsi:VATES-123', organizationIdentifier: 'VATES-123', commonName: 'John' },
+          mandatee: { first_name: 'Alice', last_name: 'Wonder', email: 'alice@example.com' },
+          power: [{ action: ['Execute'], domain: 'SANDBOX', function: 'Onboarding', type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate.mandator.organizationIdentifier).toBe('VATES-123');
+      expect(out.credentialSubject.mandate.mandatee.firstName).toBe('Alice');
+      expect(out.credentialSubject.mandate.power[0].domain).toBe('SANDBOX');
+      expect(out.mandate).toBeUndefined();
+    });
+
+    it('wraps SD-JWT root mandate of a machine into credentialSubject.mandate', () => {
+      const input: any = {
+        vct: 'learcredential.machine.sd.1',
+        mandate: {
+          mandator: { id: 'did:elsi:VATES-456', organizationIdentifier: 'VATES-456' },
+          mandatee: { id: 'did:key:abc', domain: 'example.com' },
+          power: [{ tmf_action: 'Execute', tmf_domain: 'SANDBOX', tmf_function: 'Onboarding', tmf_type: 'domain' }]
+        }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate.mandator.organizationIdentifier).toBe('VATES-456');
+      expect(out.credentialSubject.mandate.power[0].action).toBe('Execute');
+      expect(out.mandate).toBeUndefined();
+    });
+
+    it('keeps an existing credentialSubject untouched when a root mandate is also present', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        credentialSubject: { mandate: { mandator: { organizationIdentifier: 'VATES-SUBJECT' } } },
+        mandate: { mandator: { organizationIdentifier: 'VATES-ROOT' } }
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.credentialSubject.mandate.mandator.organizationIdentifier).toBe('VATES-SUBJECT');
+    });
+
+    it('does not mutate the raw credential when wrapping the root mandate', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        mandate: {
+          mandator: { organizationIdentifier: 'VATES-123' },
+          mandatee: { first_name: 'Alice', last_name: 'Wonder', email: 'alice@example.com' },
+          power: [{ tmf_action: 'Execute', tmf_domain: 'SANDBOX', tmf_function: 'Onboarding', tmf_type: 'domain' }]
+        }
+      };
+
+      normalizer.normalizeLearCredential(input);
+
+      expect(input.mandate.mandator.organizationIdentifier).toBe('VATES-123');
+      expect(input.mandate.mandatee.first_name).toBe('Alice');
+      expect(input.mandate.power[0].tmf_action).toBe('Execute');
+      expect(input.credentialSubject).toBeUndefined();
+    });
+
     // The issuer writes `status.status_list` into dc+sd-jwt credentials
     // (GenericCredentialBuilder.injectCredentialStatus) and `credentialStatus` into
     // jwt_vc_json ones. The normalizer bridges the first onto the unified envelope so

@@ -22,3 +22,12 @@ export function convertToOrderedArray<T extends object, K extends keyof T>(
       value: obj[key],
     }));
 }
+
+export const holderPanelFieldsOrder: Array<keyof EmployeeMandator> = [
+  "commonName",
+  "email",
+  "organization",
+  "organizationIdentifier",
+  "serialNumber",
+  "country"
+];

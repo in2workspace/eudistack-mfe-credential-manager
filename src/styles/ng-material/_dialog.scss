@@ -41,6 +41,12 @@
     width: 500px;
     max-width: 100%;
   }
+}
+
+.dialog-custom.result-dialog{
+  div[mat-dialog-content]{
+    width: 100%;
+  }
 } 
 
 .responsive-dialog  {

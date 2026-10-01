@@ -314,6 +314,7 @@
     "power": "Powers",
     "domain": "Domain",
     "function": "Function",
+    "subtitle": "Add one or more powers and select the functions for each one.",
     "onboarding": "Onboarding",
     "marketplace": "Marketplace",
     "productoffering": "Product Offering",
@@ -337,11 +338,25 @@
   },
   "credentialIssuance": {
     "title": "LEAR Credential Issuance",
+    "result": {
+      "title": {
+        "delivered": "Credential created successfully",
+        "pending": "Create credential"
+      },
+      "subtitle": {
+        "learcredential.machine": "Your machine credential has been created.",
+        "learcredential.employee": "Your employee credential has been created."
+      },
+      "keyWarning": "Save the generated key now. For security reasons, it will only be shown once and cannot be retrieved later.",
+      "credentialType": "Credential type"
+    },
+    "backToList": "Back to list of issued credentials",
+    "holderInfo": "Holder information / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Create credential",
-      "message": "Are you sure you want to create this credential?",
+      "message": "Once created, this credential cannot be edited. To make changes, you'll need to revoke it and create a new one.",
       "defaultLoadingTitle": "Please wait while the process is completed..."
     },
     "create-success-dialog": {
@@ -352,12 +367,17 @@
       "message": "The issuance did not complete. Your form data has been kept; review it and try again."
     },
     "creating-credential": "Creating credential",
-    "create-credential": "Create credential",
+    "create-credential": "Create new credential",
     "credentialType": "Credential Type",
+    "placeholder": "Insert {{field}}",
     "cancel": "Cancel",
     "mandatee": "mandatee",
     "mandator": "mandator",
     "select-type": "Select credential type",
+    "description": {
+      "learcredential.employee": "Identifies a person in your organization and carries the powers you delegate to them. They receive it in their wallet and present it to act on the organization's behalf.",
+      "learcredential.machine": "Identifies an automated system rather than a person: it binds to a key pair and is identified by domain and IP address, for machine-to-machine operations with nobody at the keyboard."
+    },
     "loadingCatalog": "Loading the available credential forms...",
     "emptySelector": {
       "noTypes": "There are no credential forms enabled for your organization. Contact your tenant administrator to request one.",
@@ -380,17 +400,20 @@
       "organizationIdentifier": "Enter only the characters after 'VAT...-'. For example, if 'VATEU-123ABC', enter '123ABC'"
     },
     "format": {
+      "tooltip": "Data model the credential is issued in. W3C VC 2.0 is the widely interoperable one; SD-JWT VC adds selective disclosure, letting the holder reveal only some of its claims when presenting it.",
       "label": "Credential format",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (coming soon)"
     },
     "grantType": {
+      "tooltip": "How the holder is authorized to receive the credential in their Wallet. With Authorized Code, they can receive the credential without further verification. With Pre-Authorized Code, a one-time code is sent to their email, which they must provide before they can add the credential.",
       "label": "Grant type",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",
@@ -437,6 +460,7 @@
       "credentialLabel": "Signed credential",
       "credentialDescription": "This is the machine credential's token, ready to be used by a service that wants to present itself to the verifier to identify itself (M2M login).",
       "done": "Done",
+      "pending": "Copy the sensitive content shown above before finishing. It is shown only once and cannot be recovered after you close this dialog.",
       "copyFailed": {
         "credential": "The credential could not be copied to the clipboard. Try again.",
         "privateKey": "The private key could not be copied to the clipboard. Try again."
