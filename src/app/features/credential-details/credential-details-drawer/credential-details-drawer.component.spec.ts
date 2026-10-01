@@ -116,12 +116,13 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(detailsService['loadCredentialModels']).toHaveBeenCalled();
   });
 
-  it('shows the validity window', async () => {
+  it('shows the validity window under Credential information, not in the header', async () => {
     await createComponent();
 
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('01-01-2025');
-    expect(text).toContain('31-12-2025');
+    const section: HTMLElement = fixture.nativeElement.querySelector('#drawer-credential-information');
+    expect(section.textContent).toContain('01-01-2025');
+    expect(section.textContent).toContain('31-12-2025');
+    expect(fixture.nativeElement.querySelector('.drawer__header').textContent).not.toContain('01-01-2025');
   });
 
   it('keeps the contact email hidden for now', async () => {
@@ -135,7 +136,7 @@ describe('CredentialDetailsDrawerComponent', () => {
 
     const section: HTMLElement = fixture.nativeElement.querySelector('#drawer-credential-information');
     expect(section.textContent).toContain('credentialDetails.credentialInformation');
-    expect(section.querySelector('.drawer__field-box')?.textContent?.trim())
+    expect(section.querySelector('#drawer-format')?.textContent?.trim())
       .toBe('credentialIssuance.format.w3cVcDm');
   });
 
@@ -143,7 +144,7 @@ describe('CredentialDetailsDrawerComponent', () => {
     const format$ = detailsService['credentialFormat$'] as WritableSignal<string | undefined>;
     format$.set('ldp_vc');
     await createComponent();
-    const box = () => fixture.nativeElement.querySelector('#drawer-credential-information .drawer__field-box');
+    const box = () => fixture.nativeElement.querySelector('#drawer-format');
     expect(box()?.textContent?.trim()).toBe('ldp_vc');
 
     format$.set(undefined);
