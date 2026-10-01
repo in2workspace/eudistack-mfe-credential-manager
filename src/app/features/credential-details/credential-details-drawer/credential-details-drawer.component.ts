@@ -104,7 +104,8 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showArchiveCredentialButton$ = this.detailsService.showArchiveCredentialButton$;
 
-
+    // Fragile but correct today: the backend exposes no revocation instant, so this is the row's
+    // last update, which matches the revocation only while nothing else writes a revoked record.
     this.revokedAt$ = computed<string | undefined>(() =>
       this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated() : undefined
     );
