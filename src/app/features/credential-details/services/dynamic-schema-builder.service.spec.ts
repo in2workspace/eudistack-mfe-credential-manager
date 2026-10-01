@@ -81,6 +81,28 @@ describe('DynamicSchemaBuilder', () => {
     expect(typeof field.value === 'function' ? field.value(labelCredential) : field.value).toBe('BL');
   });
 
+  it('labels the LEAR mandator commonName from i18n instead of the metadata display', () => {
+    const commonName = (groupKey: string) => ({
+      path: ['credentialSubject', 'mandate', groupKey, 'commonName'],
+      display: [{ name: 'Common name', locale: 'en' }],
+    });
+    const mandatorConfig: CredentialConfigurationDto = {
+      format: 'jwt_vc_json',
+      credential_metadata: {
+        display: [{ name: 'LEAR Credential Employee', locale: 'en' }],
+        claims: [commonName('mandator'), commonName('signer')],
+      },
+    };
+
+    const schema = builder.buildSchema('learcredential.employee.w3c.4', mandatorConfig, credential);
+    const fieldOf = (groupKey: string) =>
+      (schema.main.find(group => group.key === groupKey)?.value as DetailsKeyValueField[])[0];
+
+    expect(fieldOf('mandator').key).toBe('commonName');
+    expect(fieldOf('mandator').label).toBeUndefined();
+    expect(fieldOf('signer').label).toBe('Common name');
+  });
+
   it('yields no main fields when the configuration declares no claims', () => {
     const schema = builder.buildSchema('learcredential.employee.w3c.4', { format: 'jwt_vc_json' }, credential);
 

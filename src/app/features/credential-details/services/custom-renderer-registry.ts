@@ -12,7 +12,15 @@ export interface CustomClaimRenderer {
 export interface SchemaOverride {
   /** Overrides keyed by claim name (last path segment, e.g. "power", "gx:compliantCredentials") */
   claimOverrides?: Record<string, CustomClaimRenderer>;
+  /**
+   * Claims, as `<group>.<claim>`, whose metadata display name is replaced by the
+   * `credentialDetails.<claim>` i18n entry.
+   */
+  i18nLabeledClaims?: readonly string[];
 }
+
+// The mandator is labelled "Name" here, whatever the metadata calls its commonName.
+const LEAR_I18N_LABELED_CLAIMS = ['mandator.commonName'] as const;
 
 /**
  * Renderer for the `power` claim. Exported because the hardcoded fallback schema
@@ -28,15 +36,19 @@ export const POWER_CLAIM_RENDERER: CustomClaimRenderer = {
 const OVERRIDES: Record<string, SchemaOverride> = {
   'learcredential.employee.w3c': {
     claimOverrides: { power: POWER_CLAIM_RENDERER },
+    i18nLabeledClaims: LEAR_I18N_LABELED_CLAIMS,
   },
   'learcredential.employee.sd': {
     claimOverrides: { power: POWER_CLAIM_RENDERER },
+    i18nLabeledClaims: LEAR_I18N_LABELED_CLAIMS,
   },
   'learcredential.machine.w3c': {
     claimOverrides: { power: POWER_CLAIM_RENDERER },
+    i18nLabeledClaims: LEAR_I18N_LABELED_CLAIMS,
   },
   'learcredential.machine.sd': {
     claimOverrides: { power: POWER_CLAIM_RENDERER },
+    i18nLabeledClaims: LEAR_I18N_LABELED_CLAIMS,
   },
   'gx.labelcredential.w3c': {
     claimOverrides: {
