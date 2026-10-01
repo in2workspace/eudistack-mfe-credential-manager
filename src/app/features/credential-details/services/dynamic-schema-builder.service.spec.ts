@@ -103,6 +103,33 @@ describe('DynamicSchemaBuilder', () => {
     expect(fieldOf('signer').label).toBe('Common name');
   });
 
+  it('puts the Label Credential validated criteria last, after the compliant credentials', () => {
+    const claim = (name: string) => ({
+      path: ['credentialSubject', name],
+      display: [{ name, locale: 'en' }],
+    });
+    // Metadata order deliberately differs from the order the sections must render in.
+    const labelConfig: CredentialConfigurationDto = {
+      format: 'jwt_vc_json',
+      credential_metadata: {
+        display: [{ name: 'Gaia-X Label Credential', locale: 'en' }],
+        claims: [claim('gx:validatedCriteria'), claim('gx:compliantCredentials'), claim('gx:labelLevel')],
+      },
+    };
+    const criteria = ['https://example.org/criteria/1'];
+    const labelCredential = { credentialSubject: { 'gx:validatedCriteria': criteria, 'gx:compliantCredentials': [] } };
+
+    const schema = builder.buildSchema('gx.labelcredential.w3c.1', labelConfig, labelCredential);
+    const last = schema.main[schema.main.length - 1];
+
+    expect(schema.main.map(group => group.key)).toEqual([
+      'credentialSubject',
+      'gx:compliantCredentials',
+      'gx:validatedCriteriaReference',
+    ]);
+    expect(last.custom?.value(labelCredential)).toEqual(criteria);
+  });
+
   it('yields no main fields when the configuration declares no claims', () => {
     const schema = builder.buildSchema('learcredential.employee.w3c.4', { format: 'jwt_vc_json' }, credential);
 

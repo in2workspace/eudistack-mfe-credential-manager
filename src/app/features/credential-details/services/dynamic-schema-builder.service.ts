@@ -109,12 +109,13 @@ export class DynamicSchemaBuilder {
   ): void {
     if (!override?.claimOverrides) return;
 
-    for (const [claimKey, claimPath] of overriddenClaims) {
-      const renderer = override.claimOverrides[claimKey];
-      if (!renderer) continue;
+    // Registry order, not metadata order: the override decides where its sections go.
+    for (const [claimKey, renderer] of Object.entries(override.claimOverrides)) {
+      const claimPath = overriddenClaims.get(claimKey);
+      if (!claimPath) continue;
 
       result.push({
-        key: claimKey,
+        key: renderer.titleKey ?? claimKey,
         type: 'group',
         custom: {
           component: renderer.component,

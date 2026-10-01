@@ -1,0 +1,17 @@
+@if (criteria.length > 0) {
+  <ul class="criteria">
+    @for (criterion of criteria; track $index) {
+      <li>
+        <input
+          type="text"
+          class="criteria__input"
+          readonly
+          [value]="criterion"
+          [title]="criterion"
+          [attr.aria-label]="'credentialDetails.gx:validatedCriteria' | translate">
+      </li>
+    }
+  </ul>
+} @else {
+  <div class="no-data">-</div>
+}

@@ -1,16 +1,22 @@
 import { InjectionToken, Type } from '@angular/core';
 import { DetailsPowerComponent, detailsPowerToken } from '../components/details-power/details-power.component';
 import { CompliantCredentialsComponent, compliantCredentialsToken } from '../components/compliant-credentials/compliant-credentials.component';
+import { ValidatedCriteriaComponent, validatedCriteriaToken } from '../components/validated-criteria/validated-criteria.component';
 import { Power, CompliantCredential } from 'src/app/core/models/entity/lear-credential';
 
 export interface CustomClaimRenderer {
   component: Type<any>;
   token: InjectionToken<any>;
   transformValue?: (rawValue: any) => any;
+  /** i18n key (under `credentialDetails.`) for the section title; defaults to the claim name. */
+  titleKey?: string;
 }
 
 export interface SchemaOverride {
-  /** Overrides keyed by claim name (last path segment, e.g. "power", "gx:compliantCredentials") */
+  /**
+   * Overrides keyed by claim name (last path segment, e.g. "power", "gx:compliantCredentials").
+   * Each one is rendered as its own section after the regular claims, in the order declared here.
+   */
   claimOverrides?: Record<string, CustomClaimRenderer>;
   /**
    * Claims, as `<group>.<claim>`, whose metadata display name is replaced by the
@@ -56,6 +62,12 @@ const OVERRIDES: Record<string, SchemaOverride> = {
         component: CompliantCredentialsComponent,
         token: compliantCredentialsToken,
         transformValue: (creds: CompliantCredential[]) => creds ?? [],
+      },
+      'gx:validatedCriteria': {
+        component: ValidatedCriteriaComponent,
+        token: validatedCriteriaToken,
+        transformValue: (criteria: unknown) => (Array.isArray(criteria) ? criteria : []),
+        titleKey: 'gx:validatedCriteriaReference',
       },
     },
   },
