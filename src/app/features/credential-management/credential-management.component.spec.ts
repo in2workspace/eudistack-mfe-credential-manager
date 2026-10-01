@@ -12,7 +12,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { CredentialActionsService } from '../credential-details/services/credential-actions.service';
-import { CredentialDetailsDrawerComponent } from '../credential-details/credential-details-drawer/credential-details-drawer.component';
+import { CredentialDetailsDrawerComponent, CredentialDetailsDrawerData } from '../credential-details/credential-details-drawer/credential-details-drawer.component';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialFilter, CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
@@ -487,13 +487,13 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     beforeEach(() => {
       // Seed datasource with a representative set of credentials
-      component['originData'] = [
+      component['originData'].set([
         makeItem('Alice Smith', 'VALID', 'id-1'),
         makeItem('Bob Jones', 'REVOKED', 'id-2'),
         makeItem('Carol White', 'VALID', 'id-3'),
         makeItem('Dan Brown', 'EXPIRED', 'id-4'),
-      ];
-      component.dataSource.data = [...component['originData']];
+      ]);
+      component.dataSource.data = [...component['originData']()];
       component.ngAfterViewInit(); // sets compound filterPredicate
     });
 
@@ -991,7 +991,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.onStatusFilterChange(['REVOKED']);
       
       expect(component.dataSource.filteredData.length).toBe(0);
-      expect(component['originData'].length).toBe(1); // origin still has data
+      expect(component['originData']().length).toBe(1); // origin still has data
       
       // 3. Verify isEmptyFiltered triggers
       expect(component.isEmptyFiltered).toBe(true);
@@ -1245,6 +1245,29 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       queryParamMap$.next(convertToParamMap({}));
 
       expect(close).toHaveBeenCalled();
+    });
+
+    it('hands the drawer a last-updated date that follows the list once it loads', () => {
+      const id = '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c';
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close: jest.fn(),
+      } as never);
+      const listResponse = new Subject<CredentialProceduresResponse>();
+      credentialProcedureSpy.mockReturnValue(listResponse);
+      component['initializeCredentialTable']();
+
+      queryParamMap$.next(convertToParamMap({ id }));
+      const data = open.mock.calls[0][1]!.data as CredentialDetailsDrawerData;
+      expect(data.lastUpdated()).toBeUndefined();
+
+      listResponse.next({
+        credential_procedures: [
+          { credential_procedure: { procedure_id: id, status: 'REVOKED', updated: '2026-06-25T16:42:00Z' } },
+        ],
+      } as CredentialProceduresResponse);
+
+      expect(data.lastUpdated()).toBe('2026-06-25T16:42:00Z');
     });
 
     it('does not reopen the drawer while it is already showing the same credential', () => {

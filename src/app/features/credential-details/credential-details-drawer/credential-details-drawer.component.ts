@@ -20,7 +20,7 @@ import { CredentialDetailsService } from '../services/credential-details.service
 
 export interface CredentialDetailsDrawerData {
   procedureId: string;
-  lastUpdated?: string;
+  lastUpdated: Signal<string | undefined>;
 }
 
 
@@ -103,7 +103,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
 
 
     this.revokedAt$ = computed<string | undefined>(() =>
-      this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated : undefined
+      this.lifeCycleStatus$() === 'REVOKED' ? this.data.lastUpdated() : undefined
     );
 
   }

@@ -13,7 +13,7 @@ import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialDetailsService } from '../services/credential-details.service';
 import { CredentialActionsService } from '../services/credential-actions.service';
-import { CredentialDetailsDrawerComponent } from './credential-details-drawer.component';
+import { CredentialDetailsDrawerComponent, CredentialDetailsDrawerData } from './credential-details-drawer.component';
 
 describe('CredentialDetailsDrawerComponent', () => {
   let fixture: ComponentFixture<CredentialDetailsDrawerComponent>;
@@ -34,7 +34,7 @@ describe('CredentialDetailsDrawerComponent', () => {
   let detailsService: Record<string, unknown>;
 
   async function createComponent(
-    data: { procedureId: string; lastUpdated?: string } = { procedureId: 'the-id' }
+    data: CredentialDetailsDrawerData = { procedureId: 'the-id', lastUpdated: signal(undefined) }
   ): Promise<void> {
     await TestBed.configureTestingModule({
       imports: [
@@ -110,7 +110,7 @@ describe('CredentialDetailsDrawerComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('loads the credential handed over through the dialog data', async () => {
-    await createComponent({ procedureId: 'proc-42' });
+    await createComponent({ procedureId: 'proc-42', lastUpdated: signal(undefined) });
 
     expect(detailsService['setProcedureId']).toHaveBeenCalledWith('proc-42');
     expect(detailsService['loadCredentialModels']).toHaveBeenCalled();
@@ -223,11 +223,22 @@ describe('CredentialDetailsDrawerComponent', () => {
   });
 
   it('stamps the revocation date only while the credential is revoked', async () => {
-    await createComponent({ procedureId: 'the-id', lastUpdated: '2026-06-25T16:42:00Z' });
+    await createComponent({ procedureId: 'the-id', lastUpdated: signal('2026-06-25T16:42:00Z') });
 
     expect(component.revokedAt$()).toBeUndefined();
 
     lifecycle$.set('REVOKED');
+    expect(component.revokedAt$()).toBe('2026-06-25T16:42:00Z');
+  });
+
+  it('shows the revocation date once the list it comes from has loaded', async () => {
+    const lastUpdated = signal<string | undefined>(undefined);
+    await createComponent({ procedureId: 'the-id', lastUpdated });
+    lifecycle$.set('REVOKED');
+
+    expect(component.revokedAt$()).toBeUndefined();
+
+    lastUpdated.set('2026-06-25T16:42:00Z');
     expect(component.revokedAt$()).toBe('2026-06-25T16:42:00Z');
   });
 

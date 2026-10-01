@@ -148,7 +148,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   protected readonly currentSubjectFilter = signal('');
 
   /** Snapshot of the full dataset after load — used to distinguish "no credentials" from "no matches". */
-  private originData: CredentialProcedureWithClass[] = [];
+  private readonly originData = signal<CredentialProcedureWithClass[]>([]);
 
   private drawerRef?: MatDialogRef<CredentialDetailsDrawerComponent>;
 
@@ -180,13 +180,13 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
  public get isEmptyOrigin(): boolean {
-    return !this.hasLoadError && this.originData.length === 0;
+    return !this.hasLoadError && this.originData().length === 0;
   }
 
  public get isEmptyFiltered(): boolean {
     return (
       !this.hasLoadError &&
-      this.originData.length > 0 &&
+      this.originData().length > 0 &&
       this.dataSource.filteredData.length === 0
     );
   }
@@ -255,7 +255,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
     const data: CredentialDetailsDrawerData = {
       procedureId,
-      lastUpdated: this.findLastUpdated(procedureId),
+      lastUpdated: computed(() => this.findLastUpdated(procedureId)),
     };
 
     this.drawerRef = this.dialog.open<CredentialDetailsDrawerComponent, CredentialDetailsDrawerData>(
@@ -294,7 +294,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   }
 
   private findLastUpdated(procedureId: string): string | undefined {
-    return this.originData.find(row => row.credential_procedure?.procedure_id === procedureId)
+    return this.originData().find(row => row.credential_procedure?.procedure_id === procedureId)
       ?.credential_procedure?.updated;
   }
 
@@ -414,7 +414,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       next: (data: CredentialProceduresResponse) => {
         const withClass = this.statusService.addStatusClass(data.credential_procedures);
         this.dataSource.data = withClass;
-        this.originData = withClass;
+        this.originData.set(withClass);
 
         // Show tenant column when cross-tenant data is present (platform admin view)
         this.hasTenantColumn.set(data.credential_procedures.some(p => !!p.credential_procedure.tenant));
