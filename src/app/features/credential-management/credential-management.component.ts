@@ -512,7 +512,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         }
         case 'expires': {
           const t = Date.parse(procedure?.expires_at ?? '');
-          return Number.isFinite(t) ? t : 0;
+          return Number.isFinite(t) ? t : Infinity;
         }
         case 'updated': {
           return this.updatedTime(item);

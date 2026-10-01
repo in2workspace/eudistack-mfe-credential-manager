@@ -1165,6 +1165,22 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
       expect(component.sortOption()).toBeNull();
     });
+
+    it('sorts credentials without an expiration date last in "Expiring soon"', () => {
+      const withoutExpiration = makeProcedure('none', '2025-01-01T00:00:00Z');
+      withoutExpiration.credential_procedure.expires_at = null;
+      const expiring = makeProcedure('soon', '2025-01-01T00:00:00Z');
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [withoutExpiration, expiring],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      component.onSortOptionChange('expiringSoon');
+
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['soon', 'none']);
+    });
   });
 
 
