@@ -2,6 +2,7 @@ import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal 
 import { forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { CredentialConfigurationDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialStatus, LEARCredential, CredentialProcedureDetails, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -46,20 +47,21 @@ export class CredentialDetailsService {
     const issuer = this.credential$()?.issuer;
     return issuer && typeof issuer === 'object' ? issuer.organization || undefined : undefined;
   });
-  public credentialDisplayName$ = computed<string>(() => {
+  private readonly credentialConfig$ = computed<CredentialConfigurationDto | undefined>(() => {
     const configId = this.credentialType$();
+    const config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
+    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
+    return config ?? matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
+    // --- end LEGACY fallback ---
+  });
+  public credentialFormat$ = computed<string | undefined>(() => this.credentialConfig$()?.format);
+  public credentialDisplayName$ = computed<string>(() => {
     // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
     // The type shown in the header must never be blank, even for a credential carrying no
     // configuration id: its own specific type name is the last thing left to name it by.
-    const unnamed = configId ?? readSpecificCredentialType(this.credential$()) ?? '';
+    const unnamed = this.credentialType$() ?? readSpecificCredentialType(this.credential$()) ?? '';
     // --- end FALLBACK ---
-    let config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
-    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
-    if (!config) {
-      config = matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
-    }
-    // --- end LEGACY fallback ---
-    const displays = config?.credential_metadata?.display;
+    const displays = this.credentialConfig$()?.credential_metadata?.display;
     if (displays?.length) {
       const lang = navigator?.language?.split('-')[0] ?? 'en';
       return displays.find(d => d.locale === lang)?.name

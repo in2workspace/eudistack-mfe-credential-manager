@@ -87,6 +87,8 @@
   "credentialDetails": {
     "revokedOn": "Revocada el",
     "issuedBy": "Emesa per {{organization}}",
+    "credentialInformation": "Informació de la credencial",
+    "format": "Format",
     "title": "Detalls de la credencial",
     "DRAFT": "ESBORRANY",
     "PEND_SIGNATURE": "PER SIGNAR",

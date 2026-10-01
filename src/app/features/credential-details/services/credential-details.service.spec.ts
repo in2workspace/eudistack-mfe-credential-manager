@@ -216,6 +216,22 @@ describe('CredentialDetailsService', () => {
       expect(service.issuerOrganization$()).toBeUndefined();
     });
 
+    it('credentialFormat$() reads the format of the credential configuration', () => {
+      mockMetadataService.getConfigurationById.mockImplementation((id: string) =>
+        id === 'learcredential.employee.sd.1' ? { format: 'dc+sd-jwt' } : undefined);
+      service.credentialProcedureDetails$.set({
+        credential_configuration_id: 'learcredential.employee.sd.1',
+        credential: { vc: mockVc }
+      } as any);
+      expect(service.credentialFormat$()).toBe('dc+sd-jwt');
+    });
+
+    it('credentialFormat$() is undefined when no configuration describes the credential', () => {
+      mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+      service.credentialProcedureDetails$.set({ credential: { vc: mockVc } } as any);
+      expect(service.credentialFormat$()).toBeUndefined();
+    });
+
     it('showSideTemplateCard$() is false by default, true when sideViewModel has items', () => {
       expect(service.showSideTemplateCard$()).toBe(false);
       service.sideViewModel$.set([ { foo: 'bar' } as any ]);

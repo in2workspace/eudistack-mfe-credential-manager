@@ -13,6 +13,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
+import { CredentialFormat, FORMAT_LABEL_MAP } from 'src/app/core/models/entity/lear-credential-issuance';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { CredentialDetailsService } from '../services/credential-details.service';
@@ -48,6 +49,10 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public readonly email$: Signal<string | undefined>;
   public readonly issuerOrganization$: Signal<string | undefined>;
+  /** i18n key of the credential format, or the raw OID4VCI format when it has no label. */
+  public readonly credentialFormatLabel$: Signal<string | undefined>;
+  // Hidden for now: the contact email stays out of the drawer until it is asked for.
+  public readonly showContactEmail = false;
 
   public readonly mainViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   public readonly sideViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
@@ -83,6 +88,10 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;
     this.issuerOrganization$ = this.detailsService.issuerOrganization$;
+    this.credentialFormatLabel$ = computed<string | undefined>(() => {
+      const format = this.detailsService.credentialFormat$();
+      return format ? FORMAT_LABEL_MAP[format as CredentialFormat] ?? format : undefined;
+    });
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.sideViewModel$ = this.detailsService.sideViewModel$;
     this.showSideTemplateCard$ = this.detailsService.showSideTemplateCard$;

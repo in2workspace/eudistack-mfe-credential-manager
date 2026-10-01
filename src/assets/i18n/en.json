@@ -112,6 +112,8 @@
   "credentialDetails": {
     "revokedOn": "Revoked on",
     "issuedBy": "Issued by {{organization}}",
+    "credentialInformation": "Credential information",
+    "format": "Format",
     "title": "Credential details",
     "DRAFT": "DRAFT",
     "PEND_SIGNATURE": "TO SIGN",

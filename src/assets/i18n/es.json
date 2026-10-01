@@ -112,6 +112,8 @@
 "credentialDetails": {
     "revokedOn": "Revocada el",
     "issuedBy": "Emitida por {{organization}}",
+    "credentialInformation": "Información de la credencial",
+    "format": "Formato",
     "title": "Detalles de la credencial",
     "type" : "tipo",
     "DRAFT": "BORRADOR",

@@ -88,6 +88,7 @@ describe('CredentialDetailsDrawerComponent', () => {
       lifeCycleStatusClass$: signal<StatusClass | undefined>('status-valid'),
       email$: signal('andrea.romano@engineering.it'),
       issuerOrganization$: signal<string | undefined>('Engineering S.p.A.'),
+      credentialFormat$: signal<string | undefined>('jwt_vc_json'),
       mainViewModel$: mainModel$,
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
@@ -114,13 +115,39 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(detailsService['loadCredentialModels']).toHaveBeenCalled();
   });
 
-  it('shows the validity window and the contact email the mock was missing', async () => {
+  it('shows the validity window', async () => {
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('01-01-2025');
     expect(text).toContain('31-12-2025');
-    expect(text).toContain('andrea.romano@engineering.it');
+  });
+
+  it('keeps the contact email hidden for now', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).not.toContain('andrea.romano@engineering.it');
+  });
+
+  it('shows the credential format under Credential information', async () => {
+    await createComponent();
+
+    const section: HTMLElement = fixture.nativeElement.querySelector('#drawer-credential-information');
+    expect(section.textContent).toContain('credentialDetails.credentialInformation');
+    expect(section.querySelector('.drawer__field-box')?.textContent?.trim())
+      .toBe('credentialIssuance.format.w3cVcDm');
+  });
+
+  it('falls back to the raw format when it has no label, and to a dash when there is none', async () => {
+    const format$ = detailsService['credentialFormat$'] as WritableSignal<string | undefined>;
+    format$.set('ldp_vc');
+    await createComponent();
+    const box = () => fixture.nativeElement.querySelector('#drawer-credential-information .drawer__field-box');
+    expect(box()?.textContent?.trim()).toBe('ldp_vc');
+
+    format$.set(undefined);
+    fixture.detectChanges();
+    expect(box()?.textContent?.trim()).toBe('-');
   });
 
   it('names the issuing organization under the credential name', async () => {
@@ -150,8 +177,8 @@ describe('CredentialDetailsDrawerComponent', () => {
 
     expect(fixture.nativeElement.querySelector('mat-form-field')).toBeNull();
     expect(fixture.nativeElement.querySelector('.drawer__field-label')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.drawer__field-box')?.textContent?.trim())
-      .toBe('Engineering S.p.A.');
+    expect(fixture.nativeElement.querySelector('section:not(#drawer-credential-information) .drawer__field-box')
+      ?.textContent?.trim()).toBe('Engineering S.p.A.');
   });
 
   it('tints only the powers claim, never any other custom-rendered section', async () => {
