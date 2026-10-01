@@ -54,7 +54,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly issuerOrganization$: Signal<string | undefined>;
   /** i18n key of the credential format, or the raw OID4VCI format when it has no label. */
   public readonly credentialFormatLabel$: Signal<string | undefined>;
-  // Hidden pending a design decision.
+  // Hidden until the design team answers how the credential information section should look.
   public readonly showCredentialInformation = false;
   // Hidden for now: the contact email stays out of the drawer until it is asked for.
   public readonly showContactEmail = false;
