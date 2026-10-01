@@ -191,7 +191,7 @@ export class IssuanceRequestFactoryService {
       const base = catalogue?.[tmfFunc];
 
       if (!base) {
-        console.error('Function key found in schema but not in received data: ' + funct);
+        console.error('Function key found in schema but not in received data:', funct);
         return acc;
       }
 
@@ -200,7 +200,7 @@ export class IssuanceRequestFactoryService {
         .map(([action]) => action);
 
       if (selectedActions.length === 0) {
-        console.error('Not actions found for this key: ' + funct);
+        console.error('Not actions found for this key:', funct);
         return acc;
       }
 

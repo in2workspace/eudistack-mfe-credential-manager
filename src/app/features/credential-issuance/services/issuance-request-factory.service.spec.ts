@@ -167,10 +167,10 @@ describe('IssuanceRequestFactoryService', () => {
 
     expect(parsed).toEqual([]);
     expect(console.error).toHaveBeenCalledWith(
-      'Function key found in schema but not in received data: UnknownFunc'
+      'Function key found in schema but not in received data:', 'UnknownFunc'
     );
     expect(console.error).toHaveBeenCalledWith(
-      'Not actions found for this key: Onboarding'
+      'Not actions found for this key:', 'Onboarding'
     );
   });
 
@@ -195,7 +195,7 @@ describe('IssuanceRequestFactoryService', () => {
     const parsed = (service as any).parsePower(powerForm, 'learcredential.employee');
 
     expect(parsed).toEqual([]);
-    expect(console.error).toHaveBeenCalledWith('Not actions found for this key: Onboarding');
+    expect(console.error).toHaveBeenCalledWith('Not actions found for this key:', 'Onboarding');
   });
 
   it('should return empty array when power form is empty', () => {
