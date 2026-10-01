@@ -20,7 +20,7 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged, map, Subject, take } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIcon } from '@angular/material/icon';
 import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
@@ -114,13 +114,19 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   public selectedStatuses = signal<string[]>([]);
 
   public readonly organizationOptions = signal<FilterOption[]>([]);
-  public readonly typeOptions = signal<FilterOption[]>([]);
-  public readonly statusOptions = computed<FilterOption[]>(() =>
-    this.filterableStatuses.map(status => ({
+  public readonly typeOptions = computed<FilterOption[]>(() => {
+    this.currentLang();
+    return [...this.credentialTypesByFamily().entries()]
+      .map(([value, credentialType]) => ({ value, label: this.getCredentialTypeLabel(credentialType) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
+  public readonly statusOptions = computed<FilterOption[]>(() => {
+    this.currentLang();
+    return this.filterableStatuses.map(status => ({
       value: status,
       label: this.toSentenceCase(this.translate.instant(`credentialDetails.${status}`)),
-    }))
-  );
+    }));
+  });
 
   // computed
   public readonly canWrite = computed(() => this.authService.roleType() !== RoleType.SYSADMIN_READONLY);
@@ -167,6 +173,11 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly zone = inject(NgZone);
   private readonly searchSubject = new Subject<string>();
+  private readonly currentLang = toSignal(
+    this.translate.onLangChange.pipe(map(event => event.lang)),
+    { initialValue: this.translate.currentLang }
+  );
+  private readonly credentialTypesByFamily = signal(new Map<string, string>());
 
   /** FilterConfig map for text-search filters only. Type/status/organization use the checkbox dropdowns. */
   private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
@@ -452,7 +463,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
 
   private computeFilterOptions(rows: CredentialProcedureWithClass[]): void {
     const organizations = new Map<string, string>();
-    const types = new Map<string, string>();
+    const typesByFamily = new Map<string, string>();
 
     for (const row of rows) {
       const procedure = row.credential_procedure;
@@ -461,8 +472,8 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       }
       if (procedure?.credential_type) {
         const familyKey = getCredentialTypeFamilyKey(procedure.credential_type);
-        if (!types.has(familyKey)) {
-          types.set(familyKey, this.getCredentialTypeLabel(procedure.credential_type));
+        if (!typesByFamily.has(familyKey)) {
+          typesByFamily.set(familyKey, procedure.credential_type);
         }
       }
     }
@@ -472,11 +483,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         .map(([value, label]) => ({ value, label }))
         .sort((a, b) => a.label.localeCompare(b.label))
     );
-    this.typeOptions.set(
-      [...types.entries()]
-        .map(([value, label]) => ({ value, label }))
-        .sort((a, b) => a.label.localeCompare(b.label))
-    );
+    this.credentialTypesByFamily.set(typesByFamily);
   }
 
   /**

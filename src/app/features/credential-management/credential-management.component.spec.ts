@@ -1199,6 +1199,21 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
   });
 
+  describe('filter labels', () => {
+    it('follow a language change', () => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', { credentialDetails: { VALID: 'valid' } });
+      translate.setTranslation('es', { credentialDetails: { VALID: 'válida' } });
+      translate.use('en');
+      const validLabel = () => component.statusOptions().find(option => option.value === 'VALID')?.label;
+      expect(validLabel()).toBe('Valid');
+
+      translate.use('es');
+
+      expect(validLabel()).toBe('Válida');
+    });
+  });
+
 
   describe('details drawer routing', () => {
     function row(procedureId: string): CredentialProcedureBasicInfo {
