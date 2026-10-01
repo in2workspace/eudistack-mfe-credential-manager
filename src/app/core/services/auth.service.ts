@@ -269,9 +269,19 @@ export class AuthService{
     this.handleUserAuthentication(userData);
     this.refreshRoleFromBackend();
 
-    if (this.router.url === '/' || this.router.url.startsWith('/home')) {
+    if (this.isOnLandingRoute()) {
       this.router.navigate([IAM_POST_LOGIN_ROUTE]);
     }
+  }
+
+  /**
+   * True on the app root or /home. Reads `location.pathname` for the same reason as
+   * isOnPublicRoute(): at bootstrap `router.url` is still '/', which used to send a reload of
+   * any protected URL (e.g. the credential list with its details drawer open) to the list.
+   */
+  private isOnLandingRoute(): boolean {
+    const path = globalThis.location.pathname.replace(/^\/issuer(?=\/|$)/, '') || '/';
+    return path === '/' || path.startsWith('/home');
   }
 
   /**

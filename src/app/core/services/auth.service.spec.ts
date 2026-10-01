@@ -712,6 +712,31 @@ describe('AuthService', () => {
       expect((service as any).isOnPublicRoute()).toBe(false);
     });
 
+    it.each(['/', '/home', '/issuer', '/issuer/', '/issuer/home'])('isOnLandingRoute(): true per a %s', (pathname) => {
+      setPathname(pathname);
+      expect((service as any).isOnLandingRoute()).toBe(true);
+    });
+
+    it.each(['/organization/credentials', '/issuer/organization/credentials', '/issuerx/home'])(
+      'isOnLandingRoute(): false per a %s', (pathname) => {
+        setPathname(pathname);
+        expect((service as any).isOnLandingRoute()).toBe(false);
+      });
+
+    it('checkAuth$: en recarregar una ruta protegida no redirigeix al llistat encara que router.url sigui "/"', (done) => {
+      setPathname('/issuer/organization/credentials');
+      routerMock.url = '/';
+      jest.spyOn(service as any, 'isAuthorizedForCurrentTenant').mockReturnValue(true);
+      jest.spyOn(service as any, 'handleUserAuthentication').mockImplementation(() => undefined);
+      jest.spyOn(service as any, 'refreshRoleFromBackend').mockImplementation(() => undefined);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({ isAuthenticated: true, userData: {} }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(routerMock.navigate).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
     it('checkAuth$: NO dispara el silent-SSO en ruta pública quan no autenticat', (done) => {
       sessionStorage.clear();
       jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(true);
