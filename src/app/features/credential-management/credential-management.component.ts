@@ -14,7 +14,6 @@ import { MatSort, MatSortHeader, Sort, SortDirection } from '@angular/material/s
 import { MatSelectModule } from '@angular/material/select';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from "../../core/models/dto/credential-procedures-response.dto";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { DatePipe } from '@angular/common';
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -74,7 +73,6 @@ const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDir
         MatRow,
         MatTooltipModule,
         MatSelectModule,
-        DatePipe,
         LocalizedDatePipe,
         SubjectComponent,
         TranslatePipe,
