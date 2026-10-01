@@ -29,7 +29,7 @@
   <div class="filter-dropdown-content"
        [class.filter-dropdown-content--wide]="showFooter()"
        (click)="$event.stopPropagation()"
-       (keydown.enter)="$event.stopPropagation()">
+       (keydown)="onPanelKeydown($event)">
     @if (searchable()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
         <input

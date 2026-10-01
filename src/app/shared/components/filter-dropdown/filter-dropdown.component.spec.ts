@@ -236,5 +236,57 @@ describe('FilterDropdownComponent', () => {
         expect((component as any).draft()).toEqual(['a']);
       });
     });
+
+    describe('keyboard', () => {
+      const KEY_CODES: Record<string, number> = { Tab: 9, Escape: 27, Home: 36, End: 35, ArrowDown: 40 };
+
+      beforeEach(() => {
+        fixture.componentRef.setInput('searchable', true);
+        fixture.componentRef.setInput('showFooter', true);
+        fixture.detectChanges();
+        open();
+      });
+
+      function press(target: Element, key: string, shiftKey = false): KeyboardEvent {
+        const event = new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'keyCode', { get: () => KEY_CODES[key] });
+        target.dispatchEvent(event);
+        fixture.detectChanges();
+        return event;
+      }
+
+      it('keeps the menu open when tabbing between its controls', () => {
+        press(searchInput()!, 'Tab');
+        press(checkboxInputs()[0], 'Tab');
+        press(footerButton('.filter-dropdown-close'), 'Tab', true);
+
+        expect(trigger().menuOpen).toBe(true);
+      });
+
+      it('closes the menu when tabbing past the last control', () => {
+        press(footerButton('[color="primary"]'), 'Tab');
+
+        expect(trigger().menuOpen).toBe(false);
+      });
+
+      it('closes the menu when shift-tabbing before the first control', () => {
+        press(searchInput()!, 'Tab', true);
+
+        expect(trigger().menuOpen).toBe(false);
+      });
+
+      it('lets Home, End and arrows reach the search box', () => {
+        const events = ['Home', 'End', 'ArrowDown'].map(key => press(searchInput()!, key));
+
+        expect(events.map(e => e.defaultPrevented)).toEqual([false, false, false]);
+        expect(trigger().menuOpen).toBe(true);
+      });
+
+      it('still closes on Escape', () => {
+        press(searchInput()!, 'Escape');
+
+        expect(trigger().menuOpen).toBe(false);
+      });
+    });
   });
 });

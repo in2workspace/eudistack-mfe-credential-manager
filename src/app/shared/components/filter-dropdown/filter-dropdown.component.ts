@@ -85,6 +85,15 @@ export class FilterDropdownComponent {
     this.selectionChange.emit([]);
   }
 
+  /**
+   * MatMenu reads every key in its panel as menu navigation (Tab closes it; arrows, Home and End
+   * are swallowed). Only Escape and Tab out of the first or last control still reach it.
+   */
+  protected onPanelKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' || (event.key === 'Tab' && this.leavesPanel(event))) return;
+    event.stopPropagation();
+  }
+
   protected confirm(trigger: MatMenuTrigger): void {
     this.selectionChange.emit(this.draft());
     trigger.closeMenu();
@@ -93,5 +102,10 @@ export class FilterDropdownComponent {
   protected cancel(trigger: MatMenuTrigger): void {
     this.draft.set([...this.selected()]);
     trigger.closeMenu();
+  }
+
+  private leavesPanel(event: KeyboardEvent): boolean {
+    const controls = (event.currentTarget as HTMLElement).querySelectorAll('input, button:not([disabled])');
+    return event.target === controls[event.shiftKey ? 0 : controls.length - 1];
   }
 }
