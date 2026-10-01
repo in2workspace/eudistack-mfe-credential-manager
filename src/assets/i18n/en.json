@@ -254,6 +254,7 @@
     "title": "Issued credentials",
     "button": "New credential",
     "status": "Status",
+    "tenant": "Tenant",
     "organizationId": "Organization ID",
     "organizationIdentifier": "Organization ID",
     "filter-by-org": "Filter by org.",

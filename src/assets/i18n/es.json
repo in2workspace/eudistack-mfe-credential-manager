@@ -254,6 +254,7 @@
     "title": "Credenciales emitidas",
     "button": "Nueva Credencial",
     "status": "Estatus",
+    "tenant": "Tenant",
     "organizationId": "ID de organización",
     "organizationIdentifier": "ID de Organización",
     "filter-by-org": "Filtra por org.",

@@ -229,6 +229,7 @@
     "title": "Credencials emeses",
     "button": "Nova Credencial",
     "status": "Estatus",
+    "tenant": "Tenant",
     "organizationId": "ID de l’organització",
     "organizationIdentifier": "ID d'Organització",
     "filter-by-org": "Filtra per org.",
