@@ -1108,6 +1108,37 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
   });
 
+  describe('row accessibility', () => {
+    function renderRow(status: string): HTMLElement {
+      component.isLoading = false;
+      fixture.detectChanges();
+      component.dataSource.data = [{
+        credential_procedure: {
+          procedure_id: 'id-a11y',
+          subject: 'Alice Smith',
+          status: status as any,
+          updated: '2025-01-01T00:00:00Z',
+          credential_type: 'LEARCredentialEmployee',
+          email: 'a@b.com',
+          organization_identifier: 'VATES-000000',
+          created_at: '2025-01-01T00:00:00Z',
+          expires_at: '2026-01-01T00:00:00Z',
+        },
+        statusClass: `status-${status.toLowerCase()}`,
+      }];
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('announces the status icon to screen readers', () => {
+      const icon = renderRow('REVOKED').querySelector('.status-icon')!;
+
+      expect(icon.getAttribute('role')).toBe('img');
+      expect(icon.getAttribute('aria-hidden')).toBe('false');
+      expect(icon.getAttribute('aria-label')).toBe('credentialDetails.REVOKED');
+    });
+  });
+
   describe('Sort by ↔ table sync', () => {
     const makeProcedure = (id: string, updated: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
