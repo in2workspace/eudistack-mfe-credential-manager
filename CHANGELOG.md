@@ -5,21 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-09-22
+## [Unreleased]
 
-## Added
+### Added
 - **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box and is hidden for single-organization tenants. Filter labels follow a language change, and screen readers announce how many options each filter has selected.
 - **Credential management - search**: the subject search box is always visible and has a clear button inside it.
 - **Credential management - sorting**: new "Sort by" selector next to a results count (Recently issued, Recently updated, Expiring soon, Expires later), kept in sync with the column header sort. The table starts sorted by Updated, newest first. Credentials without an expiration date sort last in "Expiring soon", and the selected sort is kept when the list refreshes after an action. Screen readers announce the selector with its "Sort by" label.
 - **Credential management - pagination**: numbered pagination bar (Back/Next, page numbers with ellipsis, 10/20/50 results per page) replaces Material's paginator. Screen readers announce it as a navigation landmark, with named page buttons and page-size select.
 - **Credential management - table header**: the header stays pinned at the top while the page scrolls.
 
-## Changed
-- **Credential management - single table**: the Active/Archived tabs are gone. Archived is now one more status in the Status filter, and shows up like any other status; the old archived page link leads to the list.
+### Changed
+- **Credential management - single table**: the Active/Archived tabs are gone. Archived is now one more status in the Status filter, and shows up like any other status.
 - **Credential management - columns**: new column order (Organization ID, Subject, Type, Status, Issued on, Expires on, Updated, Action). The Organization ID column is shown for every tenant. The Type column and filter group every version of a credential type under one label (Employee, Machine, Label Credential). The "Updated" column uses the same date format as the other dates, with the full date and time in a tooltip. "Issued on" shows the date the credential was created and "Expires on" shows "-" when there is no expiration date; both are read from the `created_at` and `expires_at` fields of `GET /api/v1/issuances`, which need a matching `eudistack-core-issuer` release.
 - **Credential management - status and details**: the status is shown as a tinted icon with a tooltip instead of a text pill; screen readers announce it. Credential details now open from an eye button in the new Action column, named after the credential subject for screen readers, instead of from a click anywhere on the row.
 - **Credential management - layout**: the page is titled "Issued credentials". The table has fixed column widths and fits laptop screens without horizontal scroll, truncating long values with a tooltip. The table, header, filters and pagination are restyled on the theme tokens. "New credential (on behalf)" is now the primary button. On small screens the create buttons sit in a bar fixed to the bottom of the screen.
-- **Credential details - drawer**: credential details open in a side drawer over the list instead of a separate page, which is gone; old links to that page open the drawer. The drawer is linked from the URL (`?id=`), so it survives a reload and can be shared, and the list refreshes after an action taken from it. A link whose `id` is not a credential identifier is ignored. If the credential cannot be loaded the drawer closes and the error dialog explains why; if the procedure carries no credential, the drawer says so.
+- **Credential details - drawer**: credential details open in a side drawer over the list instead of a separate page, which is gone. The drawer is linked from the URL (`?id=`), so it survives a reload and can be shared, and the list refreshes after an action taken from it. A link whose `id` is not a credential identifier is ignored. If the credential cannot be loaded the drawer closes and the error dialog explains why; if the procedure carries no credential, the drawer says so.
 - **Credential details - header**: the drawer is titled with the credential type (Employee, Machine, Label Credential) whatever its format and version, which also names the drawer for screen readers, followed by a status badge with the same colors as the table (Archived is darkened to meet text contrast) and "Issued by <organization>" when the issuer carries one. A revoked credential shows its revocation date, also when the drawer is opened from a link.
 - **Credential details - content**: the Issuer and Credential Status sections are no longer shown, and the mandator's common name is labelled "Name". A Credential information section (format and validity dates) is ready but hidden until its design is decided.
 - **Credential details - actions**: the footer shows at most one action for the credential's status (Sign, Withdraw, Revoke or Archive) next to a Close button that is always present.
@@ -27,20 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-233 - issuance form**: shortened the label text for the direct delivery checkbox; removed top padding from the title of the form's first field; updated checkboxes to have rounded corners for visual consistency with radio buttons
 - **EUD-233 - post-issuance dialog**: refactored result display to reuse components, ensuring consistent formatting regardless of credential type and number of selected delivery methods; added credential-specific descriptive text for private keys and signed keys, each with its own field description
 
-## Fixed
- 
+### Removed
+- **Credential management - separate pages**: the credential details page (`/organization/credentials/details/:id`) and the archived credentials page (`/organization/credentials/archived`) are gone. Old links redirect to the list, and a details link opens that credential's drawer.
+
+### Fixed
 - **Session - reload**: reloading a protected page sent the user back to the credential list, losing the URL (and the details drawer it had open).
 - **Credential details - SD-JWT validity**: the validity dates of SD-JWT credentials showed "-"; they are now read from the credential's `nbf`/`exp`.
 - **Credential details - powers**: the system / administration power showed raw translation keys instead of its labels.
 - **LEAR Credential Issuance form lost all entered values when switching Credential format (W3C VC Data Model v2.0 <-> SD-JWT VC)**: `form$` was a `computed()` that rebuilt a brand-new `FormGroup` from scratch every time the schema changed identity (which it does on every format switch, since the schema is derived from the selected config's claims) — every field, including Mandatee (First Name, Last Name, Email, Employee ID) and Powers, was reinitialized to empty regardless of what the Operator had already typed. `formBuilder()` now reads the FormGroup it is about to replace and carries over the value — and dirty state, so `canLeave()`'s unsaved-changes guard still fires correctly — of any field that still exists at the same key path in the new schema; a field the destination format does not declare is simply dropped, never copied. Grant type and delivery mode selections, which live outside this FormGroup, were already unaffected by a format switch. Tests: `credential-issuance.service.spec.ts` (W3C -> SD-JWT and the round trip back, a field absent from the destination is dropped, a field new to the destination starts empty, dirty state survives the switch without falsely dirtying untouched fields, grant type/delivery mode untouched).
 - **EUD-233 - Delivery method checkboxes**: Ensured that at least one delivery method option remains selected at all times
 - **EUD-233 - Copyable component**: Prevented loss of copied credentials when the CopyableFieldComponent is destroyed. Implemented centralized clipboard management through ClipBoardService, which renews the clipboard timeout with each copy operation and no longer resets the clipboard on component destruction
-
-
-## [Unreleased]
-
-### Fixed
-
 - **Logging in to the Issuer console could offer credentials lacking the power required to get in**: the login authorization request now carries `access_profile=issuer_access` (via `customParamsAuthRequest`), so the Verifier narrows the wallet's selection to credentials holding the Onboarding/Execute or SysAdmin power instead of any employee credential. The requested scope is unchanged, so no client registration is needed.
 
 ## [3.8.0] - 2026-09-16
