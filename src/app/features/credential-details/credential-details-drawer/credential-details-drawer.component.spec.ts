@@ -116,8 +116,20 @@ describe('CredentialDetailsDrawerComponent', () => {
     expect(detailsService['loadCredentialModels']).toHaveBeenCalled();
   });
 
+  function showCredentialInformation(): void {
+    (component as { showCredentialInformation: boolean }).showCredentialInformation = true;
+    fixture.detectChanges();
+  }
+
+  it('keeps the Credential information section hidden for now', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('#drawer-credential-information')).toBeNull();
+  });
+
   it('shows the validity window under Credential information, not in the header', async () => {
     await createComponent();
+    showCredentialInformation();
 
     const section: HTMLElement = fixture.nativeElement.querySelector('#drawer-credential-information');
     expect(section.textContent).toContain('01-01-2025');
@@ -127,12 +139,14 @@ describe('CredentialDetailsDrawerComponent', () => {
 
   it('keeps the contact email hidden for now', async () => {
     await createComponent();
+    showCredentialInformation();
 
     expect(fixture.nativeElement.textContent).not.toContain('andrea.romano@engineering.it');
   });
 
   it('shows the credential format under Credential information', async () => {
     await createComponent();
+    showCredentialInformation();
 
     const section: HTMLElement = fixture.nativeElement.querySelector('#drawer-credential-information');
     expect(section.textContent).toContain('credentialDetails.credentialInformation');
@@ -144,6 +158,7 @@ describe('CredentialDetailsDrawerComponent', () => {
     const format$ = detailsService['credentialFormat$'] as WritableSignal<string | undefined>;
     format$.set('ldp_vc');
     await createComponent();
+    showCredentialInformation();
     const box = () => fixture.nativeElement.querySelector('#drawer-format');
     expect(box()?.textContent?.trim()).toBe('ldp_vc');
 
