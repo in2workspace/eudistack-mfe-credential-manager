@@ -191,7 +191,7 @@
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
     "revokeCredentialConfirm": {
       "title": "Revocar Credencial",
-      "message": "¿Estás seguro de que deseas revocar la credencial?"
+      "message": "¿Estás seguro de que deseas revocar la credencial? Esta acción es definitiva y no se puede deshacer."
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
@@ -199,7 +199,7 @@
     },
     "withdrawCredentialConfirm": {
       "title": "Retirar Credencial",
-      "message": "¿Estás seguro de que deseas retirar esta credencial?"
+      "message": "¿Estás seguro de que deseas retirar esta credencial? Esta acción es definitiva y no se puede deshacer."
     },
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
