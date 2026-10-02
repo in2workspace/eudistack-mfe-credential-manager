@@ -25,7 +25,6 @@ describe('CredentialDetailsService', () => {
   };
 
   const mockCredentialActionsService = {
-    openSignCredentialDialog: jest.fn(),
     openRevokeCredentialDialog: jest.fn(),
     openArchiveCredentialDialog: jest.fn(),
   };
@@ -76,12 +75,6 @@ describe('CredentialDetailsService', () => {
   it('should set the procedureId$ signal when setProcedureId is called', () => {
     service.setProcedureId('abc123');
     expect(service.procedureId$()).toBe('abc123');
-  });
-
-  it('should call actionsService.openSignCredentialDialog with procedureId', () => {
-    service.procedureId$.set('pid456');
-    service.openSignCredentialDialog();
-    expect(mockCredentialActionsService.openSignCredentialDialog).toHaveBeenCalledWith('pid456');
   });
 
   it('getProcedureId ha de retornar el valor de procedureId$', () => {
@@ -435,18 +428,17 @@ describe('CredentialDetailsService', () => {
       });
 
 
-      it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
-        expect(service.showSignCredentialButton$()).toBe(false);
+      it('showRevokeCredentialButton$ is false by default', () => {
         expect(service.showRevokeCredentialButton$()).toBe(false);
       });
 
       it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
         service.credentialProcedureDetails$.set({
-          lifeCycleStatus: 'PEND_SIGNATURE',
+          lifeCycleStatus: 'DRAFT',
           credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
         } as any);
 
-        expect(service.showSignCredentialButton$()).toBe(true);
+        expect(service.showWithdrawCredentialButton$()).toBe(true);
         expect(service.showActionsButtonsContainer$()).toBe(true);
       });
   });

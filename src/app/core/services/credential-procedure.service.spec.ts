@@ -33,7 +33,6 @@ describe('CredentialProcedureService', () => {
   const apiUrl = `${environment.server_url}${API_PATH.SAVE_CREDENTIAL}`;
   const proceduresURL = `${environment.server_url}${API_PATH.PROCEDURES}`;
   const credentialOfferUrl = `${environment.server_url}${API_PATH.CREDENTIAL_OFFER}`;
-  const signCredentialUrl = `${environment.server_url}${API_PATH.SIGN_CREDENTIAL}`;
   const revokeCredentialUrl = `${environment.server_url}${API_PATH.REVOKE}`;
 
   beforeEach(() => {
@@ -192,33 +191,12 @@ describe('CredentialProcedureService', () => {
   //   req.flush('500 error', errorResponse);
   // });
 
-  it('should sign credential successfully', () => {
-    const procedureId = '1';
-
-    service.signCredential(procedureId).subscribe(data => {
-      expect(data).toBeTruthy();
-    });
-
-    const req = httpMock.expectOne(`${signCredentialUrl}/${procedureId}`);
-    expect(req.request.method).toBe('POST');
-    req.flush({});
-  });
-
-  it('should handle error when revoking or signing credential', () => {
-    const procedureId = '1';
+  it('should handle error when revoking credential', () => {
     const errorResponse = new HttpErrorResponse({
       error: '500 error',
       status: 500,
       statusText: 'Server Error'
     });
-
-    service.signCredential(procedureId).subscribe(
-      data => fail('should have failed with 500 error'),
-      (error: string) => {
-        expect(error).toContain('Server-side error: 500');
-      }
-    );
-
 
     const issuanceId = '1234';
     service.revokeCredential(issuanceId).subscribe(
@@ -230,7 +208,7 @@ describe('CredentialProcedureService', () => {
 
     const requests = httpMock.match(() => true);
 
-    expect(requests.length).toBeGreaterThanOrEqual(2);
+    expect(requests.length).toBeGreaterThanOrEqual(1);
 
     requests.forEach((req) => {
       expect(req.request.method).toBe('POST');
@@ -358,16 +336,15 @@ describe('get credential offer by c-code', () => {
     });
   });
 
-  it('should handle signCredential error for server mail error', () => {
-    const procedureId = '1';
+  it('should handle withdrawCredential error for server mail error', () => {
     const errorResponse = new HttpErrorResponse({
       error: { status: 503, message: 'Error during communication with the mail server' },
       status: 503,
       statusText: 'Service Unavailable',
-      url: signCredentialUrl
+      url: `${proceduresURL}/1`
     });
 
-    service.signCredential(procedureId).subscribe({
+    service.withdrawCredential('1').subscribe({
       next: () => fail('should have failed with a server mail error'),
       error: (err: HttpErrorResponse) => {
         expect(translateSpy.instant).toHaveBeenCalledWith('error.serverMailError.message');
@@ -377,8 +354,8 @@ describe('get credential offer by c-code', () => {
       }
     });
 
-    const req = httpMock.expectOne(`${signCredentialUrl}/${procedureId}`);
-    expect(req.request.method).toBe('POST');
+    const req = httpMock.expectOne(`${proceduresURL}/1`);
+    expect(req.request.method).toBe('PATCH');
     req.flush(
       { message: 'Error during communication with the mail server' },
       errorResponse

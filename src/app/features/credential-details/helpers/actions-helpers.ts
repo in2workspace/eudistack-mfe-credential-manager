@@ -12,14 +12,9 @@ import { CredentialStatus, CredentialStatusType, LifeCycleStatus } from 'src/app
 // mechanism is revocable unless proven otherwise.
 const credentialStatusCannotRevokeSet = new Set<CredentialStatusType>(['PlainListEntity']);
 
-const statusHasSignCredentialButtonSet = new Set<LifeCycleStatus>(['PEND_SIGNATURE']);
 const statusHasRevokeCredentialButtonSet = new Set<LifeCycleStatus>(['VALID']);
 const statusHasWithdrawCredentialButtonSet = new Set<LifeCycleStatus>(['DRAFT']);
 const statusHasArchiveCredentialButtonSet = new Set<LifeCycleStatus>(['WITHDRAWN', 'REVOKED', 'EXPIRED']);
-
-export function statusHasSignCredentialButton(status: LifeCycleStatus): boolean {
-    return statusHasSignCredentialButtonSet.has(status);
-}
 
 export function statusHasRevokeCredentialButton(status: LifeCycleStatus): boolean {
     return statusHasRevokeCredentialButtonSet.has(status);

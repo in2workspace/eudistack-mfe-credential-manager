@@ -61,7 +61,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
 
   public readonly mainViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
 
-  public readonly showSignCredentialButton$: Signal<boolean>;
   public readonly showRevokeCredentialButton$: Signal<boolean>;
   public readonly enableRevokeCredentialButton$: Signal<boolean>;
   public readonly showWithdrawCredentialButton$: Signal<boolean>;
@@ -98,7 +97,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
       return format ? FORMAT_LABEL_MAP[format as CredentialFormat] ?? format : undefined;
     });
     this.mainViewModel$ = this.detailsService.mainViewModel$;
-    this.showSignCredentialButton$ = this.detailsService.showSignCredentialButton$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
     this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
@@ -127,10 +125,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
 
   public close(): void {
     this.dialogRef.close();
-  }
-
-  public openSignCredentialDialog(): void {
-    this.detailsService.openSignCredentialDialog();
   }
 
   public openWithdrawCredentialDialog(): void {

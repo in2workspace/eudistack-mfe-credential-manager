@@ -17,7 +17,6 @@ describe('CredentialActionsService', () => {
 
   beforeEach(() => {
     mockCredentialProcedure = {
-      signCredential: jest.fn().mockReturnValue(of(void 0)),
       revokeCredential: jest.fn().mockReturnValue(of(void 0)),
       archiveCredential: jest.fn().mockReturnValue(of(void 0)),
     };
@@ -57,19 +56,6 @@ describe('CredentialActionsService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
-  });
-
-  describe('openSignCredentialDialog', () => {
-    it('should call openDialogWithCallback with correct DialogData', () => {
-      const procedureId = 'proc456';
-      service.openSignCredentialDialog(procedureId);
-      expect(mockDialog.openDialogWithCallback).toHaveBeenCalledTimes(1);
-      const [_, dialogData, callback] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
-      expect(dialogData.title).toBe('credentialDetails.signCredentialConfirm.title');
-      expect(dialogData.message).toBe('credentialDetails.signCredentialConfirm.message');
-      expect(dialogData.confirmationType).toBe('async');
-      expect(typeof callback).toBe('function');
-    });
   });
 
   describe('openRevokeCredentialDialog', () => {
@@ -144,14 +130,7 @@ describe('CredentialActionsService', () => {
     // });
   });
 
-  describe('signCredential, revokeCredential', () => {
-    it('signCredential should call credentialProcedureService.signCredential', done => {
-      (service as any).signCredential('uvw').subscribe(() => {
-        expect(mockCredentialProcedure.signCredential).toHaveBeenCalledWith('uvw');
-        done();
-      });
-    });
-
+  describe('revokeCredential', () => {
     it('revokeCredential should call credentialProcedureService.revokeCredential', done => {
       (service as any).revokeCredential('abc').subscribe(() => {
         expect(mockCredentialProcedure.revokeCredential).toHaveBeenCalledWith('abc');

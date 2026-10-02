@@ -26,7 +26,6 @@ describe('CredentialDetailsDrawerComponent', () => {
   let mainModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   let sideModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
   let showSide$: WritableSignal<boolean>;
-  let showSign$: WritableSignal<boolean>;
   let showRevoke$: WritableSignal<boolean>;
   let showWithdraw$: WritableSignal<boolean>;
   let showArchive$: WritableSignal<boolean>;
@@ -74,7 +73,6 @@ describe('CredentialDetailsDrawerComponent', () => {
     ] as EvaluatedExtendedDetailsField[]);
     sideModel$ = signal<EvaluatedExtendedDetailsField[] | undefined>([]);
     showSide$ = signal(false);
-    showSign$ = signal(false);
     showRevoke$ = signal(false);
     showWithdraw$ = signal(false);
     showArchive$ = signal(false);
@@ -93,7 +91,6 @@ describe('CredentialDetailsDrawerComponent', () => {
       mainViewModel$: mainModel$,
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
-      showSignCredentialButton$: showSign$,
       showRevokeCredentialButton$: showRevoke$,
       enableRevokeCredentialButton$: signal(true),
       showWithdrawCredentialButton$: showWithdraw$,
@@ -101,7 +98,6 @@ describe('CredentialDetailsDrawerComponent', () => {
       setProcedureId: jest.fn(),
       loadCredentialModels: jest.fn(),
       loadError$: signal<'request' | 'missingCredential' | undefined>(undefined),
-      openSignCredentialDialog: jest.fn(),
       openRevokeCredentialDialog: jest.fn(),
       openWithdrawCredentialDialog: jest.fn(),
       openArchiveCredentialDialog: jest.fn(),
@@ -319,7 +315,6 @@ describe('CredentialDetailsDrawerComponent', () => {
   });
 
   it.each([
-    ['#drawer-sign', () => showSign$.set(true)],
     ['#drawer-withdraw', () => showWithdraw$.set(true)],
     ['#drawer-revoke', () => showRevoke$.set(true)],
     ['#drawer-archive', () => showArchive$.set(true)],
@@ -333,7 +328,7 @@ describe('CredentialDetailsDrawerComponent', () => {
   });
 
   it('renders a single action even if more than one would apply', async () => {
-    showSign$.set(true);
+    showWithdraw$.set(true);
     showArchive$.set(true);
     await createComponent();
 
@@ -343,7 +338,6 @@ describe('CredentialDetailsDrawerComponent', () => {
   });
 
   it.each([
-    ['#drawer-sign', 'openSignCredentialDialog', () => showSign$.set(true)],
     ['#drawer-revoke', 'openRevokeCredentialDialog', () => showRevoke$.set(true)],
     ['#drawer-withdraw', 'openWithdrawCredentialDialog', () => showWithdraw$.set(true)],
     ['#drawer-archive', 'openArchiveCredentialDialog', () => showArchive$.set(true)],

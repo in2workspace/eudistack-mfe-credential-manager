@@ -7,24 +7,10 @@ import {
   credentialStatusHasRevokeCredentialButton,
   statusHasArchiveCredentialButton,
   statusHasRevokeCredentialButton,
-  statusHasSignCredentialButton,
   statusHasWithdrawCredentialButton,
 } from './actions-helpers';
 
 describe('Credential Helpers', () => {
-  describe('statusHasSignCredentialButton', () => {
-    const allowed: LifeCycleStatus[] = ['PEND_SIGNATURE'];
-    const disallowed: LifeCycleStatus = 'DRAFT';
-
-    it.each(allowed)('returns true for allowed status %s', (status) => {
-      expect(statusHasSignCredentialButton(status)).toBeTruthy();
-    });
-
-    it('returns false for a disallowed status', () => {
-      expect(statusHasSignCredentialButton(disallowed)).toBeFalsy();
-    });
-  });
-
   describe('statusHasRevokeCredentialButton', () => {
     it('returns true for VALID', () => {
       expect(statusHasRevokeCredentialButton('VALID')).toBeTruthy();

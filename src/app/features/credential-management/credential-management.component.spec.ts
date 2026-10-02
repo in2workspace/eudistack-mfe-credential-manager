@@ -1376,7 +1376,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   });
 
   describe('refresh after a credential action', () => {
-    it('refetches the table when a sign / revoke / withdraw / archive completes', () => {
+    it('refetches the table when a revoke / withdraw / archive completes', () => {
       credentialProcedureSpy.mockClear();
 
       TestBed.inject(CredentialActionsService).actionCompleted$.next();

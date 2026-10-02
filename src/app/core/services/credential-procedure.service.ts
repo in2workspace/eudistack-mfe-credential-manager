@@ -32,7 +32,6 @@ export class CredentialProcedureService {
   private get organizationProcedures() { return `${this.tenantService.serverUrl}${API_PATH.PROCEDURES}`; }
   private get saveCredential() { return `${this.tenantService.serverUrl}${API_PATH.SAVE_CREDENTIAL}`; }
   private get credentialOfferUrl() { return `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER}`; }
-  private get signCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.SIGN_CREDENTIAL}`; }
   private get revokeCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.REVOKE}`; }
 
   public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
@@ -74,12 +73,6 @@ export class CredentialProcedureService {
       'X-Idempotency-Key': crypto.randomUUID()
     });
     return this.http.post<IssuanceResponseDto>(this.saveCredential, procedureRequest, { headers }).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  public signCredential(procedureId: string): Observable<void> {
-    return this.http.post<void>(`${this.signCredentialUrl}/${encodeURIComponent(procedureId)}`, {} ).pipe(
       catchError(this.handleError)
     );
   }

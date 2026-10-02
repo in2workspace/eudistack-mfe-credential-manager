@@ -13,7 +13,7 @@ import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
+import { statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
@@ -105,11 +105,6 @@ export class CredentialDetailsService {
     return true;
   });
 
-  public showSignCredentialButton$ = computed<boolean>(() => {
-    const status = this.lifeCycleStatus$();
-    return this.canWrite() && !!status && statusHasSignCredentialButton(status);
-  });
-
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
     return this.canWrite() && !!status && statusHasRevokeCredentialButton(status) && credentialStatusHasRevokeCredentialButton(this.credentialStatus$());
@@ -127,7 +122,7 @@ export class CredentialDetailsService {
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
-    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$() || this.showArchiveCredentialButton$()
+    return this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$() || this.showArchiveCredentialButton$()
   });
 
   public showArchiveCredentialButton$ = computed<boolean>(() => {
@@ -223,11 +218,6 @@ export class CredentialDetailsService {
       `No schema available for credential "${configId ?? 'unknown'}". ` +
       `Ensure credential_metadata.claims is configured in the issuer.`
     );
-  }
-
-  public openSignCredentialDialog(): void {
-    const procedureId = this.getProcedureId();
-    return this.actionsService.openSignCredentialDialog(procedureId);
   }
 
   public openWithdrawCredentialDialog(): void {

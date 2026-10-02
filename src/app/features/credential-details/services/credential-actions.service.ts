@@ -13,7 +13,7 @@ import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 export class CredentialActionsService {
 
   /**
-   * Emits once a sign / revoke / withdraw / archive action has actually hit the
+   * Emits once a revoke / withdraw / archive action has actually hit the
    * backend and the user dismissed the success dialog. Consumers that stay mounted
    * across the action — the credential-details drawer and the list behind it — use
    * it to refresh; the details PAGE does not need it because the navigation below
@@ -25,23 +25,6 @@ export class CredentialActionsService {
   private readonly dialog = inject(DialogWrapperService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
-
-  // SIGN CREDENTIAL
-  public openSignCredentialDialog(procedureId: string): void {
-
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialDetails.signCredentialConfirm.title"),
-      message: this.translate.instant("credentialDetails.signCredentialConfirm.message"),
-      confirmationType: 'async',
-      status: 'default'
-    };
-
-    const signCredentialAfterConfirm = (): Observable<boolean> => {
-      return this.signCredential(procedureId);
-    }
-
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, signCredentialAfterConfirm);
-  }
 
   // REVOKE CREDENTIAL
 
@@ -150,15 +133,6 @@ export class CredentialActionsService {
     }
 
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
-  }
-
-  private signCredential(procedureId: string): Observable<boolean> {
-    return this.executeActionByProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.signCredential(procedureId),
-      "credentialDetails.signCredentialSuccess.title",
-      "credentialDetails.signCredentialSuccess.message"
-    );
   }
 
   private revokeCredential(issuanceId: string): Observable<boolean> {

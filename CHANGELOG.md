@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **Credential management - separate pages**: the credential details page (`/organization/credentials/details/:id`) and the archived credentials page (`/organization/credentials/archived`) are gone. Old links redirect to the list, and a details link opens that credential's drawer.
 - **Credential management - list item model**: the list item no longer declares an `email` field. `GET /api/v1/issuances` does not return it and nothing read it; the details drawer keeps reading the email from the procedure details.
+- **Credential details - sign action**: the "Sign Credential" button, its dialogs and the call to `/issuance/v1/retry-sign-credential`. The button only showed for `PEND_SIGNATURE`, a status the Issuer no longer has, and the Issuer exposes no such endpoint.
 
 ### Fixed
 - **Session - reload**: reloading a protected page sent the user back to the credential list, losing the URL (and the details drawer it had open).
