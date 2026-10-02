@@ -22,7 +22,32 @@
   "navbar": {
     "menu": {
       "logout": "Tancar sessió",
-      "settings": "Configuració"
+      "settings": "Configuració",
+      "organization-contact": "Gestionar el contacte"
+    }
+  },
+  "organization-contact": {
+    "title": "Gestionar el contacte de l'organització",
+    "label": {
+      "email": "Correu electrònic de contacte"
+    },
+    "placeholder": {
+      "email": "exemple@empresa.com"
+    },
+    "button": {
+      "save": "Desar"
+    },
+    "loading": "Carregant...",
+    "success": {
+      "update": "El correu electrònic de contacte s'ha actualitzat correctament"
+    },
+    "error": {
+      "load-failed": "No s'ha pogut carregar el correu electrònic de contacte. Torna-ho a provar.",
+      "update-failed": "No s'ha pogut actualitzar el correu electrònic de contacte. Torna-ho a provar."
+    },
+    "validation": {
+      "email-required": "El correu electrònic és obligatori",
+      "email-invalid": "El format del correu electrònic no és vàlid"
     }
   },
   "sidenav": {

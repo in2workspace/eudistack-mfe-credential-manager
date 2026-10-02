@@ -502,7 +502,7 @@
       "notRevocable": "Esta credencial ya está revocada o ha expirado y no puede revocarse de nuevo.",
       "forbidden": "No tienes permiso para revocar esta credencial."
     },
-    "server_mail_error": {
+    "serverMailError": {
       "title": "Error del Servidor de Correo",
       "message": "Se produjo un error con el servidor de correo. Por favor, inténtalo de nuevo más tarde para enviar un recordatorio; si el problema persiste, contacta con nuestro equipo de soporte."
     },
