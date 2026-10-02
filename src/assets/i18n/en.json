@@ -599,6 +599,10 @@
     "success-description": "A new credential offer has been sent to your email. Please check your inbox.",
     "error-title": "Something Went Wrong",
     "error-description": "We were unable to send a new credential offer. Please try again later.",
-    "retry-btn": "Try Again"
+    "retry-btn": "Try Again",
+    "already-active-title": "Credential Already Active",
+    "already-active-description": "This credential is already active and does not require a new verification.",
+    "revoked-title": "Credential Unavailable",
+    "revoked-description": "The credential is no longer available. Please contact your organization to issue a new one."
   }
 }
