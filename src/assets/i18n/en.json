@@ -244,7 +244,7 @@
   },
   "credentialManagement": {
     "title": "Issued credentials",
-    "button": "New credential",
+    "button": "Add credentials",
     "status": "Status",
     "tenant": "Tenant",
     "organizationId": "Organization ID",

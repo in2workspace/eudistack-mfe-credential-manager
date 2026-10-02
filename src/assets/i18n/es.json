@@ -244,7 +244,7 @@
   },
   "credentialManagement": {
     "title": "Credenciales emitidas",
-    "button": "Nueva Credencial",
+    "button": "Añadir credenciales",
     "status": "Estatus",
     "tenant": "Tenant",
     "organizationId": "ID de organización",
