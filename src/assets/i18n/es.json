@@ -601,7 +601,7 @@
     "retry-btn": "Reintentar",
     "already-active-title": "Credencial ya activa",
     "already-active-description": "Esta credencial ya se encuentra activa y no requiere una nueva verificación.",
-    "revoked-title": "Credencial revocada",
-    "revoked-description": "Esta credencial ha sido revocada y ya no puede utilizarse."
+    "revoked-title": "Credencial no disponible",
+    "revoked-description": "La credencial ya no está disponible. Ponte en contacto con tu organización para emitir una nueva."
   }
 }

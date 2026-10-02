@@ -195,17 +195,17 @@ describe('CredentialOfferRefreshComponent', () => {
   describe('revoked screen (410 + credential_offer_gone)', () => {
     beforeEach(() => failWith(410, CREDENTIAL_OFFER_GONE_PROBLEM));
 
-    it('should show "Credencial revocada" as the single page heading', () => {
+    it('should show "Credencial no disponible" as the single page heading', () => {
       const headings = host().querySelectorAll('h1, h2, h3, h4, h5, h6');
 
       expect(headings).toHaveLength(1);
       expect(headings[0].tagName).toBe('H1');
-      expect(headings[0].textContent?.trim()).toBe('Credencial revocada');
+      expect(headings[0].textContent?.trim()).toBe('Credencial no disponible');
     });
 
     it('should show the revoked description', () => {
       expect(host().querySelector('p')?.textContent?.trim())
-        .toBe('Esta credencial ha sido revocada y ya no puede utilizarse.');
+        .toBe('La credencial ya no está disponible. Ponte en contacto con tu organización para emitir una nueva.');
     });
 
     it('should not render the retry button', () => {
@@ -224,16 +224,13 @@ describe('CredentialOfferRefreshComponent', () => {
     it('should announce the title and description to assistive technology', () => {
       const alert = host().querySelector('[role="alert"]');
 
-      expect(alert?.querySelector('h1')?.textContent?.trim()).toBe('Credencial revocada');
+      expect(alert?.querySelector('h1')?.textContent?.trim()).toBe('Credencial no disponible');
       expect(alert?.querySelector('p')?.textContent?.trim())
-        .toBe('Esta credencial ha sido revocada y ya no puede utilizarse.');
+        .toBe('La credencial ya no está disponible. Ponte en contacto con tu organización para emitir una nueva.');
     });
 
-    it('should reuse the error icon styling and hide it from assistive technology', () => {
-      const icon = host().querySelector('.icon');
-
-      expect(icon?.classList).toContain('icon--error');
-      expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    it('should render the message without an icon', () => {
+      expect(host().querySelector('.icon')).toBeNull();
     });
   });
 
@@ -307,7 +304,7 @@ describe('CredentialOfferRefreshComponent (HTTP integration)', () => {
     const el = sendAndRespond(CREDENTIAL_OFFER_GONE_PROBLEM, { status: 410, statusText: 'Gone' });
 
     expect(fixture.componentInstance.state()).toBe('revoked');
-    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Credencial revocada');
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Credencial no disponible');
     expect(el.querySelector('button')).toBeNull();
   });
 

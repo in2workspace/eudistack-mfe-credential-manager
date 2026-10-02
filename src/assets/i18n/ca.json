@@ -576,7 +576,7 @@
     "retry-btn": "Tornar a intentar",
     "already-active-title": "Credencial ja activa",
     "already-active-description": "Aquesta credencial ja es troba activa i no requereix una nova verificació.",
-    "revoked-title": "Credencial revocada",
-    "revoked-description": "Aquesta credencial ha estat revocada i ja no es pot utilitzar."
+    "revoked-title": "Credencial no disponible",
+    "revoked-description": "La credencial ja no està disponible. Posa't en contacte amb la teva organització per emetre'n una de nova."
   }
 }

@@ -601,7 +601,7 @@
     "retry-btn": "Try Again",
     "already-active-title": "Credential Already Active",
     "already-active-description": "This credential is already active and does not require a new verification.",
-    "revoked-title": "Credential Revoked",
-    "revoked-description": "This credential has been revoked and can no longer be used."
+    "revoked-title": "Credential Unavailable",
+    "revoked-description": "The credential is no longer available. Please contact your organization to issue a new one."
   }
 }
