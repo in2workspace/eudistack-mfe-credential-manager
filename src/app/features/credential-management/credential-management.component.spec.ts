@@ -1397,4 +1397,181 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(credentialProcedureSpy).toHaveBeenCalled();
     });
   });
+
+  describe('create credential navigation', () => {
+    it('goes to the create page', () => {
+      component.navigateToCreateCredential();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create']);
+    });
+
+    it('goes to create on behalf for a multi-organization tenant admin', () => {
+      component.navigateToCreateCredentialOnBehalf();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create-on-behalf']);
+    });
+
+    it('goes to the regular create page for any other role', () => {
+      authService.roleType.set(RoleType.LEAR);
+
+      component.navigateToCreateCredentialOnBehalf();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create']);
+    });
+  });
+
+  describe('credential type label fallbacks', () => {
+    it('falls back to the unversioned key', () => {
+      jest.spyOn(TestBed.inject(TranslateService), 'instant').mockImplementation((key: string | string[]) =>
+        key === 'credentialManagement.doctorid.sd' ? 'Doctor ID' : key
+      );
+
+      expect(component.getCredentialTypeLabel('doctorid.sd.3')).toBe('Doctor ID');
+    });
+
+    it('returns the raw type when no translation exists', () => {
+      expect(component.getCredentialTypeLabel('unknown.type.2')).toBe('unknown.type.2');
+    });
+  });
+
+  describe('organization and type filters', () => {
+    function procedure(id: string, organization: string, credentialType: string): CredentialProcedureBasicInfo {
+      return {
+        credential_procedure: { procedure_id: id, status: 'VALID', organization_identifier: organization, credential_type: credentialType },
+      } as CredentialProcedureBasicInfo;
+    }
+
+    beforeEach(() => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          procedure('a', 'ORG-B', 'doctorid.sd.1'),
+          procedure('b', 'ORG-A', 'unknown.type.1'),
+          procedure('c', 'ORG-B', 'doctorid.sd.1'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+    });
+
+    it('offers each organization and type once, sorted by label', () => {
+      expect(component.organizationOptions().map(option => option.label)).toEqual(['ORG-A', 'ORG-B']);
+      expect(component.typeOptions().map(option => option.label)).toEqual(['doctorid.sd.1', 'unknown.type.1']);
+    });
+
+    it('filters by the selected organizations', () => {
+      component.onOrganizationFilterChange(['ORG-B']);
+
+      expect(component.selectedOrganizations()).toEqual(['ORG-B']);
+      expect(component.resultsCount()).toBe(2);
+    });
+
+    it('filters by the selected types', () => {
+      const unknownType = component.typeOptions().find(option => option.label === 'unknown.type.1')!.value;
+
+      component.onTypeFilterChange([unknownType]);
+
+      expect(component.selectedTypes()).toEqual([unknownType]);
+      expect(component.resultsCount()).toBe(1);
+    });
+  });
+
+  describe('sorting accessor edge cases', () => {
+    function sortValue(fields: Record<string, unknown>, property: string): string | number {
+      (component as any).setDataSortingAccessor();
+      return component.dataSource.sortingDataAccessor({ credential_procedure: fields } as never, property);
+    }
+
+    beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => undefined));
+
+    it('sorts by the issue date, with no date first', () => {
+      expect(sortValue({ issued_at: '2025-03-01T00:00:00Z' }, 'issued')).toBe(Date.parse('2025-03-01T00:00:00Z'));
+      expect(sortValue({}, 'issued')).toBe(0);
+    });
+
+    it('sorts by tenant case-insensitively', () => {
+      expect(sortValue({ tenant: 'Acme' }, 'tenant')).toBe('acme');
+    });
+
+    it('sorts a credential type that is not a string as empty', () => {
+      expect(sortValue({ credential_type: 42 }, 'credential_type')).toBe('');
+    });
+  });
+
+  describe('table header pinning', () => {
+    let frames: FrameRequestCallback[];
+
+    function layout(tableTop: number): HTMLElement {
+      const table = fixture.nativeElement.querySelector('.table-container table') as HTMLElement;
+      const header = table.querySelector('thead') as HTMLElement;
+      jest.spyOn(table, 'getBoundingClientRect').mockReturnValue({ top: tableTop } as DOMRect);
+      Object.defineProperty(table, 'offsetHeight', { configurable: true, value: 500 });
+      Object.defineProperty(header, 'offsetHeight', { configurable: true, value: 40 });
+      return header;
+    }
+
+    function scrollPage(): void {
+      document.dispatchEvent(new Event('scroll'));
+      frames.splice(0).forEach(frame => frame(0));
+    }
+
+    beforeEach(() => {
+      frames = [];
+      jest.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => frames.push(callback));
+    });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it('moves the header down to the top of the page once the table scrolls past it', () => {
+      const header = layout(-100);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(100px)');
+    });
+
+    it('never moves the header past the last row', () => {
+      const header = layout(-1000);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(460px)');
+    });
+
+    it('puts the header back when the table top is in view again', () => {
+      const header = layout(-100);
+      scrollPage();
+
+      layout(200);
+      scrollPage();
+
+      expect(header.style.transform).toBe('');
+    });
+
+    it('measures from the top of the nearest scrolling container', () => {
+      const container = fixture.nativeElement as HTMLElement;
+      container.style.overflowY = 'auto';
+      Object.defineProperty(container, 'scrollHeight', { configurable: true, value: 1000 });
+      Object.defineProperty(container, 'clientHeight', { configurable: true, value: 500 });
+      jest.spyOn(container, 'getBoundingClientRect').mockReturnValue({ top: 50 } as DOMRect);
+      const header = layout(-100);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(150px)');
+    });
+
+    it('updates once per frame however many scroll and resize events arrive', () => {
+      document.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('resize'));
+
+      expect(frames).toHaveLength(1);
+    });
+
+    it('does nothing while the table is not rendered', () => {
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      expect(() => scrollPage()).not.toThrow();
+    });
+  });
 });
