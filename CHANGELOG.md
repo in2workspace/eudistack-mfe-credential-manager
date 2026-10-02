@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-233 - Delivery method checkboxes**: Ensured that at least one delivery method option remains selected at all times
 - **EUD-233 - Copyable component**: Prevented loss of copied credentials when the CopyableFieldComponent is destroyed. Implemented centralized clipboard management through ClipBoardService, which renews the clipboard timeout with each copy operation and no longer resets the clipboard on component destruction
 - **Revoke button hidden for SD-JWT credentials to tenant admins in multi-org tenants**: the credential normalizer did not recognise SD-JWT credentials that carry `mandate` at the root, so the organisation check behind the button found no organisation and hid it. It now maps them to the same `credentialSubject.mandate` shape used by W3C credentials. Tests: `lear-credential-data-normalizer.spec.ts` and `credential-details.service.spec.ts`.
+- **Sonar — three unhandled promise rejections**: the two redirects to `/home` in the auth flow (token rejected by the library, logout fallback) and the offer-URI copy button now handle their own failures instead of leaving the rejection floating. The copy button also stopped showing "Copied" when the clipboard write had failed — it now confirms only on success and, on failure, tells the operator to scan the QR code or use the wallet link (new `error.clipboard_copy_failed` in es/en/ca). Tests: `credential-offer-qr.component.spec.ts`.
 
 
 ## [Unreleased]
