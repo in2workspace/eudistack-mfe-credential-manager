@@ -2,7 +2,7 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, switchMap, from, EMPTY } from 'rxjs';
+import { Observable, switchMap, from, EMPTY, Subject } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
@@ -12,27 +12,19 @@ import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 })
 export class CredentialActionsService {
 
+  /**
+   * Emits once a revoke / withdraw / archive action has actually hit the
+   * backend and the user dismissed the success dialog. Consumers that stay mounted
+   * across the action — the credential-details drawer and the list behind it — use
+   * it to refresh; the details PAGE does not need it because the navigation below
+   * remounts the list.
+   */
+  public readonly actionCompleted$ = new Subject<void>();
+
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
-
-  // SIGN CREDENTIAL
-  public openSignCredentialDialog(procedureId: string): void {
-
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialDetails.signCredentialConfirm.title"),
-      message: this.translate.instant("credentialDetails.signCredentialConfirm.message"),
-      confirmationType: 'async',
-      status: 'default'
-    };
-
-    const signCredentialAfterConfirm = (): Observable<boolean> => {
-      return this.signCredential(procedureId);
-    }
-
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, signCredentialAfterConfirm);
-  }
 
   // REVOKE CREDENTIAL
 
@@ -42,7 +34,7 @@ export class CredentialActionsService {
       title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
       confirmationType: 'async',
-      status: 'default'
+      status: 'error'
     };
 
     const revokeCredentialAfterConfirm = (): Observable<boolean> => {
@@ -78,7 +70,7 @@ export class CredentialActionsService {
       title: this.translate.instant("credentialDetails.archiveCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.archiveCredentialConfirm.message"),
       confirmationType: 'async',
-      status: 'error'
+      status: 'default'
     };
 
     const archiveCredentialAfterConfirm = (): Observable<boolean> => {
@@ -108,9 +100,10 @@ export class CredentialActionsService {
         const dialogRef = this.dialog.openDialog(DialogComponent, dialogData);
         return dialogRef.afterClosed();
       }),
-      switchMap(()  =>
-        from(this.router.navigate(['/organization/credentials']))
-      )
+      switchMap(()  => {
+        this.actionCompleted$.next();
+        return from(this.router.navigate(['/organization/credentials']));
+      })
     );
   }
 
@@ -140,15 +133,6 @@ export class CredentialActionsService {
     }
 
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
-  }
-
-  private signCredential(procedureId: string): Observable<boolean> {
-    return this.executeActionByProcedureId(
-      procedureId,
-      (procedureId) => this.credentialProcedureService.signCredential(procedureId),
-      "credentialDetails.signCredentialSuccess.title",
-      "credentialDetails.signCredentialSuccess.message"
-    );
   }
 
   private revokeCredential(issuanceId: string): Observable<boolean> {

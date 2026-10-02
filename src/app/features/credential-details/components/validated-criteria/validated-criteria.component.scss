@@ -1,0 +1,27 @@
+.criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.criteria__input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default, #d1d5db);
+  border-radius: 8px;
+  background: var(--surface-page, #f5f7fa);
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b7280);
+  text-overflow: ellipsis;
+
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -1px;
+    text-overflow: clip;
+  }
+}

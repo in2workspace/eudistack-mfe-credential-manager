@@ -2,6 +2,7 @@ import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal 
 import { forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
+import { CredentialConfigurationDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { CredentialStatus, LEARCredential, CredentialProcedureDetails, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -12,10 +13,11 @@ import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
+import { statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
+import { getCredentialTypeFamilyLabelKey } from 'src/app/core/helpers/credential-type-family';
 
 
 @Injectable() //provided in component
@@ -23,6 +25,7 @@ export class CredentialDetailsService {
   // CREDENTIAL DATA
   public procedureId$ = signal<string>('');
   public credentialProcedureDetails$ = signal<CredentialProcedureDetails | undefined>(undefined);
+  public loadError$ = signal<'request' | 'missingCredential' | undefined>(undefined);
   public lifeCycleStatus$ = computed<LifeCycleStatus | undefined>(() => {
     return this.credentialProcedureDetails$()?.lifeCycleStatus;
   });
@@ -42,20 +45,25 @@ export class CredentialDetailsService {
   public credentialType$ = computed<string | undefined>(() => {
     return this.credentialProcedureDetails$()?.credential_configuration_id;
   });
-  public credentialDisplayName$ = computed<string>(() => {
+  public issuerOrganization$ = computed<string | undefined>(() => {
+    const issuer = this.credential$()?.issuer;
+    return issuer && typeof issuer === 'object' ? issuer.organization || undefined : undefined;
+  });
+  private readonly credentialConfig$ = computed<CredentialConfigurationDto | undefined>(() => {
     const configId = this.credentialType$();
+    const config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
+    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
+    return config ?? matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
+    // --- end LEGACY fallback ---
+  });
+  public credentialFormat$ = computed<string | undefined>(() => this.credentialConfig$()?.format);
+  public credentialDisplayName$ = computed<string>(() => {
     // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
     // The type shown in the header must never be blank, even for a credential carrying no
     // configuration id: its own specific type name is the last thing left to name it by.
-    const unnamed = configId ?? readSpecificCredentialType(this.credential$()) ?? '';
+    const unnamed = this.credentialType$() ?? readSpecificCredentialType(this.credential$()) ?? '';
     // --- end FALLBACK ---
-    let config = configId ? this.metadataService.getConfigurationById(configId) : undefined;
-    // --- LEGACY fallback (see legacy/legacy-credential-support.ts) ---
-    if (!config) {
-      config = matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
-    }
-    // --- end LEGACY fallback ---
-    const displays = config?.credential_metadata?.display;
+    const displays = this.credentialConfig$()?.credential_metadata?.display;
     if (displays?.length) {
       const lang = navigator?.language?.split('-')[0] ?? 'en';
       return displays.find(d => d.locale === lang)?.name
@@ -65,6 +73,9 @@ export class CredentialDetailsService {
     }
     return unnamed;
   });
+  public credentialTypeFamilyLabelKey$ = computed<string | undefined>(() =>
+    getCredentialTypeFamilyLabelKey(this.credentialType$() ?? readSpecificCredentialType(this.credential$()) ?? '')
+  );
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
     return this.credential$()?.credentialStatus;
@@ -94,11 +105,6 @@ export class CredentialDetailsService {
     return true;
   });
 
-  public showSignCredentialButton$ = computed<boolean>(() => {
-    const status = this.lifeCycleStatus$();
-    return this.canWrite() && !!status && statusHasSignCredentialButton(status);
-  });
-
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
     return this.canWrite() && !!status && statusHasRevokeCredentialButton(status) && credentialStatusHasRevokeCredentialButton(this.credentialStatus$());
@@ -116,7 +122,7 @@ export class CredentialDetailsService {
   });
 
   public showActionsButtonsContainer$ = computed<boolean>(() => {
-    return this.showSignCredentialButton$() || this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$() || this.showArchiveCredentialButton$()
+    return this.showRevokeCredentialButton$() || this.showWithdrawCredentialButton$() || this.showArchiveCredentialButton$()
   });
 
   public showArchiveCredentialButton$ = computed<boolean>(() => {
@@ -147,15 +153,21 @@ export class CredentialDetailsService {
     forkJoin([
       this.loadCredentialDetails(),
       this.metadataService.loadMetadata(),
-    ]).subscribe(([data]) => {
-      this.credentialProcedureDetails$.set(data);
-      const vc = this.credential$();
-      if(!vc) throw new Error('No credential found.');
+    ]).subscribe({
+      next: ([data]) => {
+        this.credentialProcedureDetails$.set(data);
+        const vc = this.credential$();
+        if (!vc) {
+          this.loadError$.set('missingCredential');
+          return;
+        }
 
-      // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
-      const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
-      const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
-      this.setViewModels(mappedSchema, injector);
+        // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
+        const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
+        const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
+        this.setViewModels(mappedSchema, injector);
+      },
+      error: () => this.loadError$.set('request'),
     });
   }
 
@@ -206,11 +218,6 @@ export class CredentialDetailsService {
       `No schema available for credential "${configId ?? 'unknown'}". ` +
       `Ensure credential_metadata.claims is configured in the issuer.`
     );
-  }
-
-  public openSignCredentialDialog(): void {
-    const procedureId = this.getProcedureId();
-    return this.actionsService.openSignCredentialDialog(procedureId);
   }
 
   public openWithdrawCredentialDialog(): void {

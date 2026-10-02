@@ -712,6 +712,52 @@ describe('AuthService', () => {
       expect((service as any).isOnPublicRoute()).toBe(false);
     });
 
+    it.each(['/', '/home', '/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
+      setPathname(pathname);
+      expect((service as any).isOnLandingRoute()).toBe(true);
+    });
+
+    it.each(['/organization/credentials', '/homepage', '/issuer/home'])('isOnLandingRoute(): false per a %s', (pathname) => {
+      setPathname(pathname);
+      expect((service as any).isOnLandingRoute()).toBe(false);
+    });
+
+    describe('amb el base href /issuer/ dels desplegaments', () => {
+      let base: HTMLBaseElement;
+
+      beforeEach(() => {
+        base = document.createElement('base');
+        base.href = '/issuer/';
+        document.head.appendChild(base);
+      });
+
+      afterEach(() => base.remove());
+
+      it.each(['/issuer', '/issuer/', '/issuer/home', '/issuer/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
+        setPathname(pathname);
+        expect((service as any).isOnLandingRoute()).toBe(true);
+      });
+
+      it.each(['/issuer/organization/credentials', '/issuerx/home', '/issuer/homepage'])('isOnLandingRoute(): false per a %s', (pathname) => {
+        setPathname(pathname);
+        expect((service as any).isOnLandingRoute()).toBe(false);
+      });
+    });
+
+    it('checkAuth$: en recarregar una ruta protegida no redirigeix al llistat encara que router.url sigui "/"', (done) => {
+      setPathname('/issuer/organization/credentials');
+      routerMock.url = '/';
+      jest.spyOn(service as any, 'isAuthorizedForCurrentTenant').mockReturnValue(true);
+      jest.spyOn(service as any, 'handleUserAuthentication').mockImplementation(() => undefined);
+      jest.spyOn(service as any, 'refreshRoleFromBackend').mockImplementation(() => undefined);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({ isAuthenticated: true, userData: {} }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(routerMock.navigate).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
     it('checkAuth$: NO dispara el silent-SSO en ruta pública quan no autenticat', (done) => {
       sessionStorage.clear();
       jest.spyOn(service as any, 'isOnPublicRoute').mockReturnValue(true);

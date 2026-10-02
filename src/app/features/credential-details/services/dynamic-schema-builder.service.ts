@@ -57,7 +57,7 @@ export class DynamicSchemaBuilder {
         continue;
       }
 
-      this.addClaimToGroup(groups, claim, claimKey, path);
+      this.addClaimToGroup(groups, claim, claimKey, path, override);
     }
 
     const result = this.groupsToFields(groups);
@@ -70,9 +70,13 @@ export class DynamicSchemaBuilder {
     claim: ClaimDefinitionDto,
     claimKey: string,
     path: string[],
+    override?: SchemaOverride,
   ): void {
     const groupKey = path.length > 1 ? path[path.length - 2] : '_root';
-    const label = this.resolveDisplayName(claim);
+    // No label makes the template fall back to the credentialDetails.<claim> i18n entry.
+    const label = override?.i18nLabeledClaims?.includes(`${groupKey}.${claimKey}`)
+      ? undefined
+      : this.resolveDisplayName(claim);
 
     const field: DetailsKeyValueField = {
       key: claimKey,
@@ -105,12 +109,13 @@ export class DynamicSchemaBuilder {
   ): void {
     if (!override?.claimOverrides) return;
 
-    for (const [claimKey, claimPath] of overriddenClaims) {
-      const renderer = override.claimOverrides[claimKey];
-      if (!renderer) continue;
+    // Registry order, not metadata order: the override decides where its sections go.
+    for (const [claimKey, renderer] of Object.entries(override.claimOverrides)) {
+      const claimPath = overriddenClaims.get(claimKey);
+      if (!claimPath) continue;
 
       result.push({
-        key: claimKey,
+        key: renderer.titleKey ?? claimKey,
         type: 'group',
         custom: {
           component: renderer.component,

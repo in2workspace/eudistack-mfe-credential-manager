@@ -3,28 +3,23 @@ import { CredentialManagementComponent } from './credential-management.component
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule, convertToParamMap, ParamMap } from '@angular/router';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideHttpClient } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { CredentialActionsService } from '../credential-details/services/credential-actions.service';
+import { CredentialDetailsDrawerComponent, CredentialDetailsDrawerData } from '../credential-details/credential-details-drawer/credential-details-drawer.component';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { CredentialFilter, CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
-import { ElementRef, signal } from '@angular/core';
-
-// helper to mock search input
-function createMockInput(initialValue = '') {
-  const el = document.createElement('input');
-  el.value = initialValue;
-  const focusSpy = jest.spyOn(el, 'focus').mockImplementation(() => {});
-  const selectSpy = jest.spyOn(el, 'select').mockImplementation(() => {});
-  return { el, focusSpy, selectSpy };
-}
+import { signal } from '@angular/core';
 
 describe('CredentialManagementComponent', () => {
+  let queryParamMap$: BehaviorSubject<ParamMap>;
   let component: CredentialManagementComponent;
   let fixture: ComponentFixture<CredentialManagementComponent>;
   let credentialProcedureService: CredentialProcedureService;
@@ -34,6 +29,7 @@ describe('CredentialManagementComponent', () => {
   let statusService: LifeCycleStatusService;
 
   beforeEach(async () => {
+    queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
     authService = {
       getMandator: () => of(null),
       getName: () => of('Name'),
@@ -62,7 +58,8 @@ describe('CredentialManagementComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: { get: () => '1' } },
+            snapshot: { paramMap: { get: () => '1' }, queryParamMap: convertToParamMap({}) },
+            queryParamMap: queryParamMap$.asObservable(),
           },
         },
         provideHttpClient(),
@@ -129,7 +126,7 @@ describe('CredentialManagementComponent', () => {
     // filter is now a JSON-serialized CredentialFilter
     const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
     expect(parsed.subject).toBe('FOO'); // raw trimmed value; predicate lowercases on eval
-    expect(parsed.status).toBe('');
+    expect(parsed.statuses).toEqual([]);
     expect(paginatorSpy).toHaveBeenCalled();
   }));
 
@@ -179,20 +176,25 @@ describe('CredentialManagementComponent', () => {
   it('should configure compound filterPredicate after ngAfterViewInit', () => {
     component.ngAfterViewInit(); // sets compound predicate
     const mockItem: any = {
-      credential_procedure: { subject: 'My Fancy Subject', status: 'VALID' }
+      credential_procedure: { subject: 'My Fancy Subject', status: 'VALID', organization_identifier: 'ORG-1', credential_type: 'type-a' }
     };
-    // subject match, no status filter
-    const filterAll = JSON.stringify({ subject: 'fancy', status: '' });
+    // subject match, no other filters
+    const filterAll = JSON.stringify({ subject: 'fancy', organizations: [], types: [], statuses: [] });
     expect(component.dataSource.filterPredicate!(mockItem, filterAll)).toBe(true);
     // subject no match
-    const filterNoSubject = JSON.stringify({ subject: 'xyz', status: '' });
+    const filterNoSubject = JSON.stringify({ subject: 'xyz', organizations: [], types: [], statuses: [] });
     expect(component.dataSource.filterPredicate!(mockItem, filterNoSubject)).toBe(false);
-    // status match, no subject filter
-    const filterStatus = JSON.stringify({ subject: '', status: 'VALID' });
+    // status match (OR-within-facet), no subject filter
+    const filterStatus = JSON.stringify({ subject: '', organizations: [], types: [], statuses: ['VALID', 'DRAFT'] });
     expect(component.dataSource.filterPredicate!(mockItem, filterStatus)).toBe(true);
     // status no match
-    const filterStatusNo = JSON.stringify({ subject: '', status: 'REVOKED' });
+    const filterStatusNo = JSON.stringify({ subject: '', organizations: [], types: [], statuses: ['REVOKED'] });
     expect(component.dataSource.filterPredicate!(mockItem, filterStatusNo)).toBe(false);
+    // organization + type facets, AND-across-facets
+    const filterOrgType = JSON.stringify({ subject: '', organizations: ['ORG-1'], types: ['type-a'], statuses: [] });
+    expect(component.dataSource.filterPredicate!(mockItem, filterOrgType)).toBe(true);
+    const filterOrgNoMatch = JSON.stringify({ subject: '', organizations: ['ORG-2'], types: [], statuses: [] });
+    expect(component.dataSource.filterPredicate!(mockItem, filterOrgNoMatch)).toBe(false);
   });
 
   it('should call searchSubject.next with input value when onSearchStringChange is triggered', () => {
@@ -212,47 +214,6 @@ describe('CredentialManagementComponent', () => {
     expect(nextSpy).toHaveBeenCalledWith('searchTerm');
   });
 
-  it('should focus and select input when opening the search bar', () => {
-    component.hideSearchBar = true;
-
-    const { el, focusSpy, selectSpy } = createMockInput();
-    component.searchInput = new ElementRef<HTMLInputElement>(el);
-
-    component.toggleSearchBar();
-
-    expect(component.hideSearchBar).toBe(false);
-    expect(focusSpy).toHaveBeenCalled();
-    expect(selectSpy).toHaveBeenCalled();
-  });
-
-  it('should clear value, push empty filter, and go to first page when closing the search bar', () => {
-    component.hideSearchBar = false;
-
-    const { el } = createMockInput('lorem');
-    component.searchInput = new ElementRef<HTMLInputElement>(el);
-
-    component.dataSource['_paginator'] = { firstPage: jest.fn() } as any;
-    const firstPageSpy = jest.spyOn(component.dataSource.paginator!, 'firstPage');
-
-    const nextSpy = jest.spyOn(component['searchSubject'], 'next');
-    component.toggleSearchBar();
-
-    expect(component.hideSearchBar).toBe(true);
-    expect(el.value).toBe('');
-    expect(nextSpy).toHaveBeenCalledWith('');
-    expect(firstPageSpy).toHaveBeenCalled();
-  });
-
-  it('should toggle searchbar open/close consistently', () => {
-    component.hideSearchBar = true;
-
-    component.toggleSearchBar();
-    expect(component.hideSearchBar).toBeFalsy();
-
-    component.toggleSearchBar();
-    expect(component.hideSearchBar).toBeTruthy();
-  });
-
   it('should load credential data and update dataSource', fakeAsync(() => {
     const mockProc: CredentialProcedureBasicInfo = {
       credential_procedure: {
@@ -261,8 +222,9 @@ describe('CredentialManagementComponent', () => {
         status: 'DRAFT',
         updated: '2025-07-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
-        email: 'email',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
     };
     const mockResponse = { credential_procedures: [mockProc] } as CredentialProceduresResponse;
@@ -303,28 +265,63 @@ describe('CredentialManagementComponent', () => {
   expect(component.searchPlaceholder).toBe(subjectConfig.placeholderTranslationLabel);
 });
 
-it('should return direct translated credential type when key exists', () => {
+it('groups every employee credential_type — legacy or current — under one "Employee" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.learcredential.employee.w3c.4') {
-      return 'LEAR Credential Employee v4';
-    }
+    if (key === 'credentialManagement.typeFamily.employee') return 'Employee';
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee v4');
+  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('Employee');
+  expect(component.getCredentialTypeLabel('learcredential.employee.sd.1')).toBe('Employee');
+  expect(component.getCredentialTypeLabel('LEARCredentialEmployee')).toBe('Employee'); // legacy v2/v3 bare DOME name
 });
 
-it('should fallback to .1 translation when current version key is missing', () => {
+it('groups every machine credential_type — legacy or current — under one "Machine" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.learcredential.employee.w3c.1') {
-      return 'LEAR Credential Employee';
+    if (key === 'credentialManagement.typeFamily.machine') return 'Machine';
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('learcredential.machine.w3c.3')).toBe('Machine');
+  expect(component.getCredentialTypeLabel('LEARCredentialMachine')).toBe('Machine'); // legacy v1/v2 bare DOME name
+});
+
+it('groups every label credential_type — legacy or current — under one "Label Credential" label', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.typeFamily.label') return 'Label Credential';
+    return key;
+  });
+
+  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label Credential');
+  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label Credential'); // legacy v1
+});
+
+it('should return direct translated credential type when key exists (types outside the employee/machine/label families)', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.doctorid.sd.1') {
+      return 'Doctor ID';
     }
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('learcredential.employee.w3c.4')).toBe('LEAR Credential Employee');
+  expect(component.getCredentialTypeLabel('doctorid.sd.1')).toBe('Doctor ID');
+});
+
+it('should fallback to .1 translation when current version key is missing (types outside the employee/machine/label families)', () => {
+  const translate = TestBed.inject(TranslateService);
+  jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
+    if (key === 'credentialManagement.doctorid.sd.1') {
+      return 'Doctor ID';
+    }
+    return key;
+  });
+
+  // No exact key for "doctorid.sd.2" — falls back to the ".1" version key
+  expect(component.getCredentialTypeLabel('doctorid.sd.2')).toBe('Doctor ID');
 });
 
 it('should subscribe to searchSubject and update dataSource.filter (and call firstPage if paginator exists)', fakeAsync(() => {
@@ -359,7 +356,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // no error and no paginator call
 }));
 
-  describe('ARCHIVED filtering in initializeCredentialTable', () => {
+  describe('ARCHIVED handling — no separate view, filtered like any other status', () => {
     const makeProc = (id: string, status: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
         procedure_id: id,
@@ -367,27 +364,16 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         status: status as any,
         updated: '2025-01-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
-        email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
     });
 
-    it('should exclude ARCHIVED credentials from dataSource', fakeAsync(() => {
+    it('loads ARCHIVED credentials into dataSource.data (no separate view/exclusion)', fakeAsync(() => {
       const archivedProc = makeProc('arch-1', 'ARCHIVED');
+      const withClass: CredentialProcedureWithClass[] = [{ ...archivedProc, statusClass: 'status-archived' }];
       const mockResponse = { credential_procedures: [archivedProc] } as CredentialProceduresResponse;
-      credentialProcedureSpy.mockReturnValue(of(mockResponse));
-      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
-
-      component['initializeCredentialTable']();
-      tick();
-
-      expect(component.dataSource.data).toEqual([]);
-    }));
-
-    it('should include non-ARCHIVED credentials in dataSource', fakeAsync(() => {
-      const draftProc = makeProc('draft-1', 'DRAFT');
-      const withClass: CredentialProcedureWithClass[] = [{ ...draftProc, statusClass: 'status-draft' }];
-      const mockResponse = { credential_procedures: [draftProc] } as CredentialProceduresResponse;
       credentialProcedureSpy.mockReturnValue(of(mockResponse));
       jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
 
@@ -397,7 +383,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.dataSource.data).toEqual(withClass);
     }));
 
-    it('should only pass non-ARCHIVED items to addStatusClass', fakeAsync(() => {
+    it('passes ARCHIVED items to addStatusClass together with every other status', fakeAsync(() => {
       const archivedProc = makeProc('arch-2', 'ARCHIVED');
       const validProc = makeProc('valid-1', 'VALID');
       const withdrawnProc = makeProc('withdrawn-1', 'WITHDRAWN');
@@ -411,19 +397,65 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component['initializeCredentialTable']();
       tick();
 
-      expect(statusSpy).toHaveBeenCalledWith([validProc, withdrawnProc]);
-      expect(statusSpy).not.toHaveBeenCalledWith(expect.arrayContaining([archivedProc]));
+      expect(statusSpy).toHaveBeenCalledWith([archivedProc, validProc, withdrawnProc]);
     }));
 
-    it('should show empty dataSource when all credentials are ARCHIVED', fakeAsync(() => {
-      const procs = [makeProc('a1', 'ARCHIVED'), makeProc('a2', 'ARCHIVED'), makeProc('a3', 'ARCHIVED')];
-      jest.spyOn(statusService, 'addStatusClass').mockReturnValue([]);
-      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: procs } as CredentialProceduresResponse));
+    it('shows ARCHIVED rows in filteredData when no status is selected', fakeAsync(() => {
+      const archivedProc = makeProc('arch-3', 'ARCHIVED');
+      const validProc = makeProc('valid-2', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
+
+      // Goes through the real ngOnInit (predicate installed, then data loaded,
+      // then the compound filter explicitly (re)applied against it) rather than
+      // calling initializeCredentialTable() directly, to exercise the actual
+      // production ordering.
+      component.ngOnInit();
+      tick();
+
+      expect(component.dataSource.filteredData).toEqual(withClass);
+    }));
+
+    it('hides ARCHIVED rows when only other statuses are selected', fakeAsync(() => {
+      const archivedProc = makeProc('arch-5', 'ARCHIVED');
+      const validProc = makeProc('valid-4', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
 
       component['initializeCredentialTable']();
       tick();
+      component.ngAfterViewInit();
 
-      expect(component.dataSource.data).toHaveLength(0);
+      component.onStatusFilterChange(['VALID']);
+
+      expect(component.dataSource.filteredData).toEqual([{ ...validProc, statusClass: 'status-valid' }]);
+    }));
+
+    it('shows only ARCHIVED rows when ARCHIVED is the selected status', fakeAsync(() => {
+      const archivedProc = makeProc('arch-4', 'ARCHIVED');
+      const validProc = makeProc('valid-3', 'VALID');
+      const withClass: CredentialProcedureWithClass[] = [
+        { ...archivedProc, statusClass: 'status-archived' },
+        { ...validProc, statusClass: 'status-valid' },
+      ];
+      jest.spyOn(statusService, 'addStatusClass').mockReturnValue(withClass);
+      credentialProcedureSpy.mockReturnValue(of({ credential_procedures: [archivedProc, validProc] } as CredentialProceduresResponse));
+
+      component['initializeCredentialTable']();
+      tick();
+      component.ngAfterViewInit();
+
+      component.onStatusFilterChange(['ARCHIVED']);
+
+      expect(component.dataSource.filteredData).toEqual([{ ...archivedProc, statusClass: 'status-archived' }]);
     }));
   });
 
@@ -443,27 +475,28 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         status: status as any,
         updated: '2025-01-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
-        email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
     });
 
     beforeEach(() => {
       // Seed datasource with a representative set of credentials
-      component['originData'] = [
+      component['originData'].set([
         makeItem('Alice Smith', 'VALID', 'id-1'),
         makeItem('Bob Jones', 'REVOKED', 'id-2'),
         makeItem('Carol White', 'VALID', 'id-3'),
         makeItem('Dan Brown', 'EXPIRED', 'id-4'),
-      ];
-      component.dataSource.data = [...component['originData']];
+      ]);
+      component.dataSource.data = [...component['originData']()];
       component.ngAfterViewInit(); // sets compound filterPredicate
     });
 
     // AC-01: filter by status reduces filteredData to only matching rows
     it('AC-01: filtering by status VALID shows only VALID credentials', () => {
-      component.onStatusFilterChange('VALID');
+      component.onStatusFilterChange(['VALID']);
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(2);
@@ -473,16 +506,16 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
 
     it('AC-01: filtering by status REVOKED shows only REVOKED credentials', () => {
-      component.onStatusFilterChange('REVOKED');
+      component.onStatusFilterChange(['REVOKED']);
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(1);
       expect(filtered[0].credential_procedure.status).toBe('REVOKED');
     });
 
-    it('AC-01: selecting empty status (All) shows all credentials', () => {
-      component.onStatusFilterChange('VALID');  // first apply a filter
-      component.onStatusFilterChange('');        // then clear it
+    it('AC-01: clearing the status selection (empty array) shows all credentials', () => {
+      component.onStatusFilterChange(['VALID']);  // first apply a filter
+      component.onStatusFilterChange([]);          // then clear it
 
       expect(component.dataSource.filteredData.length).toBe(4);
     });
@@ -490,8 +523,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     // AC-03: subject + status + sort applied together (AND combination)
     it('AC-03: subject and status filters are evaluated in AND', () => {
       // Apply subject filter via searchSubject
-      component['selectedStatus'] = 'VALID';
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
 
       const filtered = component.dataSource.filteredData;
       expect(filtered.length).toBe(1);
@@ -500,7 +533,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     });
 
     it('AC-03: subject match + wrong status → no results', () => {
-      component['applyCompoundFilter']('Alice', 'REVOKED');
+      component.selectedStatuses.set(['REVOKED']);
+      component['applyCompoundFilter']('Alice');
 
       expect(component.dataSource.filteredData.length).toBe(0);
     });
@@ -510,21 +544,88 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.dataSource['_paginator'] = { firstPage: jest.fn() } as any;
       const firstPageSpy = jest.spyOn(component.dataSource.paginator!, 'firstPage');
 
-      component.onStatusFilterChange('REVOKED'); // narrow dataset
+      component.onStatusFilterChange(['REVOKED']); // narrow dataset
       component.clearFilters();
       tick(500); // debounce for searchSubject.next('')
 
       const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
       expect(parsed.subject).toBe('');
-      expect(parsed.status).toBe('');
-      expect(component.selectedStatus).toBe('');
+      expect(parsed.statuses).toEqual([]);
+      expect(component.selectedStatuses()).toEqual([]);
       expect(component.dataSource.filteredData.length).toBe(4);
       expect(firstPageSpy).toHaveBeenCalled();
     }));
 
+    // "Clear all" only covers the three checkbox-dropdown facets: the search box
+    // has its own clear button — see hasActiveFilters().
+    it('hasActiveFilters ignores a lone subject search', fakeAsync(() => {
+      component['searchSubject'].next('Alice');
+      tick(500);
+
+      expect(component.hasActiveFilters()).toBe(false);
+    }));
+
+    it('clearDropdownFilters() resets the dropdown facets but keeps the subject search', fakeAsync(() => {
+      component['searchSubject'].next('Alice');
+      tick(500);
+      component.onStatusFilterChange(['VALID']);
+      expect(component.hasActiveFilters()).toBe(true);
+
+      component.clearDropdownFilters();
+
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.statuses).toEqual([]);
+      expect(parsed.subject).toBe('Alice');
+      expect(component.hasActiveFilters()).toBe(false);
+    }));
+
+    it('clearSearch() empties the subject search at once but keeps the dropdown facets', () => {
+      component.onStatusFilterChange(['VALID']);
+      component.onSearchStringChange({ target: { value: 'Alice' } } as unknown as Event);
+
+      component.clearSearch();
+
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.subject).toBe('');
+      expect(parsed.statuses).toEqual(['VALID']);
+    });
+
+    it('clearFilters() resets both the subject search and the dropdown facets', fakeAsync(() => {
+      component['searchSubject'].next('Alice');
+      tick(500);
+      component.onStatusFilterChange(['VALID']);
+
+      component.clearFilters();
+      tick(500);
+
+      const parsed: CredentialFilter = JSON.parse(component.dataSource.filter);
+      expect(parsed.subject).toBe('');
+      expect(parsed.statuses).toEqual([]);
+      expect(component.hasActiveFilters()).toBe(false);
+    }));
+
+    // The actual filtering still debounces (500ms), but the clear button must
+    // show up as soon as there's text in the box.
+    it('shows the search clear button immediately on keystroke and hides it once cleared', () => {
+      component.isLoading = false;
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('#search-clear')).toBeNull();
+
+      component.onSearchStringChange({ target: { value: 'Ali' } } as unknown as Event);
+      fixture.detectChanges();
+      const clearBtn = compiled.querySelector<HTMLButtonElement>('#search-clear');
+      expect(clearBtn).toBeTruthy();
+
+      clearBtn!.click();
+      fixture.detectChanges();
+      expect(compiled.querySelector('#search-clear')).toBeNull();
+      expect(JSON.parse(component.dataSource.filter).subject).toBe('');
+    });
+
     // EC-02: filter leaves exactly one result (no empty state, no error)
     it('EC-02: filter that matches exactly one credential shows one row', () => {
-      component.onStatusFilterChange('EXPIRED');
+      component.onStatusFilterChange(['EXPIRED']);
 
       expect(component.dataSource.filteredData.length).toBe(1);
       expect(component.isEmptyFiltered).toBe(false);
@@ -535,11 +636,12 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     // EC-05: clearing only one filter keeps the other active
     it('EC-05: clearing status filter keeps subject filter active', fakeAsync(() => {
       // Set both filters
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
       expect(component.dataSource.filteredData.length).toBe(1);
 
       // Clear only status; subject stays
-      component.onStatusFilterChange('');
+      component.onStatusFilterChange([]);
       tick(0);
 
       // Now only subject='alice' is active → matches 'Alice Smith'
@@ -550,11 +652,12 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     it('EC-05: clearing subject filter keeps status filter active', fakeAsync(() => {
       // Set both filters
-      component['applyCompoundFilter']('Alice', 'VALID');
+      component.selectedStatuses.set(['VALID']);
+      component['applyCompoundFilter']('Alice');
       expect(component.dataSource.filteredData.length).toBe(1);
 
       // Clear only subject; status stays
-      component['applyCompoundFilter']('', 'VALID');
+      component['applyCompoundFilter']('');
       tick(0);
 
       // All VALID credentials visible
@@ -567,7 +670,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     // ES-01: empty / whitespace / special-char input treated as literal (no filter)
     it('ES-01: empty subject string does not filter (treats as no-filter)', () => {
-      component['applyCompoundFilter']('', '');
+      component['applyCompoundFilter']('');
 
       expect(component.dataSource.filteredData.length).toBe(4);
     });
@@ -583,7 +686,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
     it('ES-01: special characters in subject are treated as literal text (no regex injection)', () => {
       // Input with regex special chars — should not throw and should not match anything
-      component['applyCompoundFilter']('(.*)', '');
+      component['applyCompoundFilter']('(.*)');
 
       // None of our fixture subjects contain '(.*)' literally → 0 results
       expect(component.dataSource.filteredData.length).toBe(0);
@@ -594,9 +697,9 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const predicate = component.dataSource.filterPredicate!;
       const item = makeItem('Alice Smith', 'VALID');
 
-      // Empty filter string → treated as { subject:'', status:'' } → matches everything
+      // Empty filter string → treated as no-filter → matches everything
       expect(predicate(item as any, '')).toBe(true);
-      // Malformed JSON → treated as { subject:'', status:'' } → matches everything
+      // Malformed JSON → treated as no-filter → matches everything
       expect(predicate(item as any, 'not-valid-json')).toBe(true);
     });
   });
@@ -619,8 +722,9 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         status: status as any,
         updated,
         credential_type: credentialType,
-        email: 'a@b.com',
         organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
     });
@@ -659,9 +763,18 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.dataSource.sortingDataAccessor(item, 'updated')).toBe(0);
     });
 
-    it('AC-02: credential_type column uses lowercase credential_type', () => {
-      const item = makeSortItem('Alice', 'VALID', '2025-01-01', 'LEAR_CREDENTIAL_EMPLOYEE');
-      expect(component.dataSource.sortingDataAccessor(item, 'credential_type')).toBe('lear_credential_employee');
+    it('AC-02: credential_type column sorts by the displayed (grouped) label, lowercased', () => {
+      const item = makeSortItem('Alice', 'VALID', '2025-01-01', 'doctorid.sd.1'); // outside employee/machine/label families
+      expect(component.dataSource.sortingDataAccessor(item, 'credential_type'))
+        .toBe(component.getCredentialTypeLabel('doctorid.sd.1').toLowerCase());
+    });
+
+    it('AC-02: credential_type sort groups legacy and current employee types under the same key', () => {
+      const legacy = makeSortItem('Alice', 'VALID', '2025-01-01', 'LEARCredentialEmployee', 'legacy');
+      const current = makeSortItem('Bob', 'VALID', '2025-01-01', 'learcredential.employee.w3c.4', 'current');
+      const legacyKey = component.dataSource.sortingDataAccessor(legacy, 'credential_type');
+      const currentKey = component.dataSource.sortingDataAccessor(current, 'credential_type');
+      expect(legacyKey).toBe(currentKey);
     });
 
     it('AC-02: asc sort by updated puts older date first', () => {
@@ -780,6 +893,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
           updated: '2025-01-01',
           credential_type: 'LEAR_CREDENTIAL_MACHINE',
           organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
           // subject intentionally absent
         },
       } as any;
@@ -852,6 +967,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const proc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'VALID',
+          issued_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -868,10 +984,10 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.isEmptyFiltered).toBe(false);
 
       // 2. Apply a filter that yields 0 results
-      component.onStatusFilterChange('REVOKED');
+      component.onStatusFilterChange(['REVOKED']);
       
-      expect(component.dataSource.filteredData.length).toBe(0);
-      expect(component['originData'].length).toBe(1); // origin still has data
+      expect(component.dataSource.filteredData).toHaveLength(0);
+      expect(component['originData']()).toHaveLength(1); // origin still has data
       
       // 3. Verify isEmptyFiltered triggers
       expect(component.isEmptyFiltered).toBe(true);
@@ -884,6 +1000,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const unknownProc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'UNKNOWN_NEW_STATUS' as any,
+          issued_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -956,19 +1073,505 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(clearSpy).toHaveBeenCalled();
     });
 
-    it('should render the status filter dropdown', () => {
+    it('should render the Organization / Type / Status filter dropdowns in the filter bar', () => {
       component.isLoading = false;
       fixture.detectChanges();
-      
+
       const compiled = fixture.nativeElement as HTMLElement;
-      const select = compiled.querySelector('mat-select#status-filter-select');
-      expect(select).toBeTruthy();
-      
-      const label = compiled.querySelector('mat-label#status-filter-label');
-      expect(label).toBeTruthy();
-      expect(label?.textContent).toContain('credentialManagement.filterByStatus.label');
+      const filterBar = compiled.querySelector('.filter-bar');
+      expect(filterBar).toBeTruthy();
+      expect(filterBar?.querySelectorAll('app-filter-dropdown').length).toBe(3);
+
+      // Every sibling instance gets its own bindings, not just the first one.
+      const triggers = Array.from(filterBar!.querySelectorAll<HTMLButtonElement>('.filter-dropdown-trigger'));
+      expect(triggers.map(t => t.getAttribute('aria-label'))).toEqual([
+        'credentialManagement.organizationId',
+        'filters.credentialType',
+        'filters.credentialStatus',
+      ]);
+
+      const clearAllBtn = compiled.querySelector('#filter-bar-clear-all');
+      expect(clearAllBtn).toBeTruthy();
+    });
+
+    it('should show the Organization ID column for every tenant type, simple included', () => {
+      authService.tenantType.set('simple');
+      expect(component.displayedColumns()).toContain('organization_identifier');
+
+      authService.tenantType.set('multi_org');
+      expect(component.displayedColumns()).toContain('organization_identifier');
     });
 
   });
 
+  describe('row accessibility', () => {
+    function renderRow(status: string): HTMLElement {
+      component.isLoading = false;
+      fixture.detectChanges();
+      component.dataSource.data = [{
+        credential_procedure: {
+          procedure_id: 'id-a11y',
+          subject: 'Alice Smith',
+          status: status as any,
+          updated: '2025-01-01T00:00:00Z',
+          credential_type: 'LEARCredentialEmployee',
+          organization_identifier: 'VATES-000000',
+          issued_at: '2025-01-01T00:00:00Z',
+          expires_at: '2026-01-01T00:00:00Z',
+        },
+        statusClass: `status-${status.toLowerCase()}`,
+      }];
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('announces the status icon to screen readers', () => {
+      const icon = renderRow('REVOKED').querySelector('.status-icon')!;
+
+      expect(icon.getAttribute('role')).toBe('img');
+      expect(icon.getAttribute('aria-hidden')).toBe('false');
+      expect(icon.getAttribute('aria-label')).toBe('credentialDetails.REVOKED');
+    });
+
+    it('names the view-details button after the credential subject', () => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', { credentialManagement: { viewDetailsOf: 'View details of {{subject}}' } }, true);
+      translate.use('en');
+
+      const button = renderRow('VALID').querySelector('.view-details-btn')!;
+
+      expect(button.getAttribute('aria-label')).toBe('View details of Alice Smith');
+    });
+
+    it('labels the sort select with its visible label', () => {
+      const root = renderRow('VALID');
+      const label = root.querySelector('.sort-by-label')!;
+      const select = root.querySelector('.sort-by-field mat-select')!;
+
+      expect(label.id).toBe('sort-by-label');
+      expect(select.getAttribute('aria-labelledby')?.split(' ')).toContain('sort-by-label');
+    });
+  });
+
+  describe('Sort by ↔ table sync', () => {
+    const makeProcedure = (id: string, updated: string): CredentialProcedureBasicInfo => ({
+      credential_procedure: {
+        procedure_id: id,
+        subject: `Subject ${id}`,
+        status: 'VALID' as any,
+        updated,
+        credential_type: 'learcredential.employee.w3c.4',
+        organization_identifier: 'VATES-000000',
+        issued_at: '2025-01-01T00:00:00Z',
+        expires_at: '2026-01-01T00:00:00Z',
+      },
+    });
+
+    it('starts sorted by Updated desc, matching "Recently updated"', () => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          makeProcedure('old', '2024-01-01T00:00:00Z'),
+          makeProcedure('new', '2025-06-01T00:00:00Z'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      expect(component.sortOption()).toBe('recentlyUpdated');
+      expect(component.sort.active).toBe('updated');
+      expect(component.sort.direction).toBe('desc');
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['new', 'old']);
+    });
+
+    it('selector drives the table sort', () => {
+      component.onSortOptionChange('expiringSoon');
+
+      expect(component.sort.active).toBe('expires');
+      expect(component.sort.direction).toBe('asc');
+      expect(component.sortOption()).toBe('expiringSoon');
+    });
+
+    it('header sort matching an option selects that option', () => {
+      component.sort.sort({ id: 'expires', start: 'desc', disableClear: false });
+
+      expect(component.sortOption()).toBe('expiringLater');
+    });
+
+    it('header sort matching no option clears the selector to its placeholder', () => {
+      component.sort.sort({ id: 'subject', start: 'asc', disableClear: false });
+
+      expect(component.sortOption()).toBeNull();
+    });
+
+    it('clearing the header sort clears the selector', () => {
+      component.onTableSortChange({ active: 'updated', direction: '' });
+
+      expect(component.sortOption()).toBeNull();
+    });
+
+    it('sorts credentials without an expiration date last in "Expiring soon"', () => {
+      const withoutExpiration = makeProcedure('none', '2025-01-01T00:00:00Z');
+      delete withoutExpiration.credential_procedure.expires_at;
+      const expiring = makeProcedure('soon', '2025-01-01T00:00:00Z');
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [withoutExpiration, expiring],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      component.onSortOptionChange('expiringSoon');
+
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['soon', 'none']);
+    });
+
+    it('keeps the selected sort after the table is rebuilt by a reload', () => {
+      component.onSortOptionChange('expiringSoon');
+      const sortBeforeReload = component.sort;
+      const listResponse = new Subject<CredentialProceduresResponse>();
+      credentialProcedureSpy.mockReturnValue(listResponse);
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+      fixture.detectChanges();
+      listResponse.next({ credential_procedures: [makeProcedure('a', '2025-01-01T00:00:00Z')] } as CredentialProceduresResponse);
+
+      expect(component.sort).not.toBe(sortBeforeReload);
+      expect(component.sortOption()).toBe('expiringSoon');
+      expect(component.sort.active).toBe('expires');
+      expect(component.sort.direction).toBe('asc');
+    });
+  });
+
+  describe('filter labels', () => {
+    it('follow a language change', () => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', { credentialDetails: { VALID: 'valid' } });
+      translate.setTranslation('es', { credentialDetails: { VALID: 'válida' } });
+      translate.use('en');
+      const validLabel = () => component.statusOptions().find(option => option.value === 'VALID')?.label;
+      expect(validLabel()).toBe('Valid');
+
+      translate.use('es');
+
+      expect(validLabel()).toBe('Válida');
+    });
+  });
+
+
+  describe('details drawer routing', () => {
+    function row(procedureId: string): CredentialProcedureBasicInfo {
+      return { credential_procedure: { procedure_id: procedureId } } as CredentialProcedureBasicInfo;
+    }
+
+    it('puts the credential id on the URL instead of opening the drawer directly', () => {
+      component.openCredentialDetails(row('3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c'));
+
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }, queryParamsHandling: 'merge' })
+      );
+    });
+
+    it('ignores a row carrying no procedure id', () => {
+      component.openCredentialDetails({ credential_procedure: {} } as CredentialProcedureBasicInfo);
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('opens the drawer when the id appears on the URL', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+
+      expect(open).toHaveBeenCalledWith(
+        CredentialDetailsDrawerComponent,
+        expect.objectContaining({
+          data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }),
+          ariaLabelledBy: 'drawer-title',
+        })
+      );
+    });
+
+    it('opens the drawer when the page loads with the id already on the URL', () => {
+      fixture.destroy();
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+
+      TestBed.createComponent(CredentialManagementComponent).detectChanges();
+
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(open).toHaveBeenCalledWith(
+        CredentialDetailsDrawerComponent,
+        expect.objectContaining({ data: expect.objectContaining({ procedureId: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }) })
+      );
+    });
+
+    it('closes the open drawer when the id leaves the URL', () => {
+      const close = jest.fn();
+      jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close,
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+      queryParamMap$.next(convertToParamMap({}));
+
+      expect(close).toHaveBeenCalled();
+    });
+
+    it('ignores and clears an id that is not a UUID', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open');
+      (TestBed.inject(ActivatedRoute).snapshot as { queryParamMap: ParamMap }).queryParamMap = convertToParamMap({ id: '../../other' });
+
+      queryParamMap$.next(convertToParamMap({ id: '../../other' }));
+
+      expect(open).not.toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { id: null }, replaceUrl: true })
+      );
+    });
+
+    it('hands the drawer a last-updated date that follows the list once it loads', () => {
+      const id = '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c';
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close: jest.fn(),
+      } as never);
+      const listResponse = new Subject<CredentialProceduresResponse>();
+      credentialProcedureSpy.mockReturnValue(listResponse);
+      component['initializeCredentialTable']();
+
+      queryParamMap$.next(convertToParamMap({ id }));
+      const data = open.mock.calls[0][1]!.data as CredentialDetailsDrawerData;
+      expect(data.lastUpdated()).toBeUndefined();
+
+      listResponse.next({
+        credential_procedures: [
+          { credential_procedure: { procedure_id: id, status: 'REVOKED', updated: '2026-06-25T16:42:00Z' } },
+        ],
+      } as CredentialProceduresResponse);
+
+      expect(data.lastUpdated()).toBe('2026-06-25T16:42:00Z');
+    });
+
+    it('does not reopen the drawer while it is already showing the same credential', () => {
+      const open = jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => new Subject(),
+        close: jest.fn(),
+      } as never);
+
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+
+      expect(open).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('refresh after a credential action', () => {
+    it('refetches the table when a revoke / withdraw / archive completes', () => {
+      credentialProcedureSpy.mockClear();
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+
+      expect(credentialProcedureSpy).toHaveBeenCalled();
+    });
+
+    it('refetches even while the drawer is open, whatever result it closes with', () => {
+      jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+        afterClosed: () => of(undefined),
+        close: jest.fn(),
+      } as never);
+      queryParamMap$.next(convertToParamMap({ id: '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c' }));
+      credentialProcedureSpy.mockClear();
+
+      TestBed.inject(CredentialActionsService).actionCompleted$.next();
+
+      expect(credentialProcedureSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('create credential navigation', () => {
+    it('goes to the create page', () => {
+      component.navigateToCreateCredential();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create']);
+    });
+
+    it('goes to create on behalf for a multi-organization tenant admin', () => {
+      component.navigateToCreateCredentialOnBehalf();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create-on-behalf']);
+    });
+
+    it('goes to the regular create page for any other role', () => {
+      authService.roleType.set(RoleType.LEAR);
+
+      component.navigateToCreateCredentialOnBehalf();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/organization/credentials/create']);
+    });
+  });
+
+  describe('credential type label fallbacks', () => {
+    it('falls back to the unversioned key', () => {
+      jest.spyOn(TestBed.inject(TranslateService), 'instant').mockImplementation((key: string | string[]) =>
+        key === 'credentialManagement.doctorid.sd' ? 'Doctor ID' : key
+      );
+
+      expect(component.getCredentialTypeLabel('doctorid.sd.3')).toBe('Doctor ID');
+    });
+
+    it('returns the raw type when no translation exists', () => {
+      expect(component.getCredentialTypeLabel('unknown.type.2')).toBe('unknown.type.2');
+    });
+  });
+
+  describe('organization and type filters', () => {
+    function procedure(id: string, organization: string, credentialType: string): CredentialProcedureBasicInfo {
+      return {
+        credential_procedure: { procedure_id: id, status: 'VALID', organization_identifier: organization, credential_type: credentialType },
+      } as CredentialProcedureBasicInfo;
+    }
+
+    beforeEach(() => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          procedure('a', 'ORG-B', 'doctorid.sd.1'),
+          procedure('b', 'ORG-A', 'unknown.type.1'),
+          procedure('c', 'ORG-B', 'doctorid.sd.1'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+    });
+
+    it('offers each organization and type once, sorted by label', () => {
+      expect(component.organizationOptions().map(option => option.label)).toEqual(['ORG-A', 'ORG-B']);
+      expect(component.typeOptions().map(option => option.label)).toEqual(['doctorid.sd.1', 'unknown.type.1']);
+    });
+
+    it('filters by the selected organizations', () => {
+      component.onOrganizationFilterChange(['ORG-B']);
+
+      expect(component.selectedOrganizations()).toEqual(['ORG-B']);
+      expect(component.resultsCount()).toBe(2);
+    });
+
+    it('filters by the selected types', () => {
+      const unknownType = component.typeOptions().find(option => option.label === 'unknown.type.1')!.value;
+
+      component.onTypeFilterChange([unknownType]);
+
+      expect(component.selectedTypes()).toEqual([unknownType]);
+      expect(component.resultsCount()).toBe(1);
+    });
+  });
+
+  describe('sorting accessor edge cases', () => {
+    function sortValue(fields: Record<string, unknown>, property: string): string | number {
+      (component as any).setDataSortingAccessor();
+      return component.dataSource.sortingDataAccessor({ credential_procedure: fields } as never, property);
+    }
+
+    beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => undefined));
+
+    it('sorts by the issue date, with no date first', () => {
+      expect(sortValue({ issued_at: '2025-03-01T00:00:00Z' }, 'issued')).toBe(Date.parse('2025-03-01T00:00:00Z'));
+      expect(sortValue({}, 'issued')).toBe(0);
+    });
+
+    it('sorts by tenant case-insensitively', () => {
+      expect(sortValue({ tenant: 'Acme' }, 'tenant')).toBe('acme');
+    });
+
+    it('sorts a credential type that is not a string as empty', () => {
+      expect(sortValue({ credential_type: 42 }, 'credential_type')).toBe('');
+    });
+  });
+
+  describe('table header pinning', () => {
+    let frames: FrameRequestCallback[];
+
+    function layout(tableTop: number): HTMLElement {
+      const table = fixture.nativeElement.querySelector('.table-container table') as HTMLElement;
+      const header = table.querySelector('thead') as HTMLElement;
+      jest.spyOn(table, 'getBoundingClientRect').mockReturnValue({ top: tableTop } as DOMRect);
+      Object.defineProperty(table, 'offsetHeight', { configurable: true, value: 500 });
+      Object.defineProperty(header, 'offsetHeight', { configurable: true, value: 40 });
+      return header;
+    }
+
+    function scrollPage(): void {
+      document.dispatchEvent(new Event('scroll'));
+      frames.splice(0).forEach(frame => frame(0));
+    }
+
+    beforeEach(() => {
+      frames = [];
+      jest.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => frames.push(callback));
+    });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it('moves the header down to the top of the page once the table scrolls past it', () => {
+      const header = layout(-100);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(100px)');
+    });
+
+    it('never moves the header past the last row', () => {
+      const header = layout(-1000);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(460px)');
+    });
+
+    it('puts the header back when the table top is in view again', () => {
+      const header = layout(-100);
+      scrollPage();
+
+      layout(200);
+      scrollPage();
+
+      expect(header.style.transform).toBe('');
+    });
+
+    it('measures from the top of the nearest scrolling container', () => {
+      const container = fixture.nativeElement as HTMLElement;
+      container.style.overflowY = 'auto';
+      Object.defineProperty(container, 'scrollHeight', { configurable: true, value: 1000 });
+      Object.defineProperty(container, 'clientHeight', { configurable: true, value: 500 });
+      jest.spyOn(container, 'getBoundingClientRect').mockReturnValue({ top: 50 } as DOMRect);
+      const header = layout(-100);
+
+      scrollPage();
+
+      expect(header.style.transform).toBe('translateY(150px)');
+    });
+
+    it('updates once per frame however many scroll and resize events arrive', () => {
+      document.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('resize'));
+
+      expect(frames).toHaveLength(1);
+    });
+
+    it('does nothing while the table is not rendered', () => {
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      expect(() => scrollPage()).not.toThrow();
+    });
+  });
 });

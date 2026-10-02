@@ -81,6 +81,55 @@ describe('DynamicSchemaBuilder', () => {
     expect(typeof field.value === 'function' ? field.value(labelCredential) : field.value).toBe('BL');
   });
 
+  it('labels the LEAR mandator commonName from i18n instead of the metadata display', () => {
+    const commonName = (groupKey: string) => ({
+      path: ['credentialSubject', 'mandate', groupKey, 'commonName'],
+      display: [{ name: 'Common name', locale: 'en' }],
+    });
+    const mandatorConfig: CredentialConfigurationDto = {
+      format: 'jwt_vc_json',
+      credential_metadata: {
+        display: [{ name: 'LEAR Credential Employee', locale: 'en' }],
+        claims: [commonName('mandator'), commonName('signer')],
+      },
+    };
+
+    const schema = builder.buildSchema('learcredential.employee.w3c.4', mandatorConfig, credential);
+    const fieldOf = (groupKey: string) =>
+      (schema.main.find(group => group.key === groupKey)?.value as DetailsKeyValueField[])[0];
+
+    expect(fieldOf('mandator').key).toBe('commonName');
+    expect(fieldOf('mandator').label).toBeUndefined();
+    expect(fieldOf('signer').label).toBe('Common name');
+  });
+
+  it('puts the Label Credential validated criteria last, after the compliant credentials', () => {
+    const claim = (name: string) => ({
+      path: ['credentialSubject', name],
+      display: [{ name, locale: 'en' }],
+    });
+    // Metadata order deliberately differs from the order the sections must render in.
+    const labelConfig: CredentialConfigurationDto = {
+      format: 'jwt_vc_json',
+      credential_metadata: {
+        display: [{ name: 'Gaia-X Label Credential', locale: 'en' }],
+        claims: [claim('gx:validatedCriteria'), claim('gx:compliantCredentials'), claim('gx:labelLevel')],
+      },
+    };
+    const criteria = ['https://example.org/criteria/1'];
+    const labelCredential = { credentialSubject: { 'gx:validatedCriteria': criteria, 'gx:compliantCredentials': [] } };
+
+    const schema = builder.buildSchema('gx.labelcredential.w3c.1', labelConfig, labelCredential);
+    const last = schema.main[schema.main.length - 1];
+
+    expect(schema.main.map(group => group.key)).toEqual([
+      'credentialSubject',
+      'gx:compliantCredentials',
+      'gx:validatedCriteriaReference',
+    ]);
+    expect(last.custom?.value(labelCredential)).toEqual(criteria);
+  });
+
   it('yields no main fields when the configuration declares no claims', () => {
     const schema = builder.buildSchema('learcredential.employee.w3c.4', { format: 'jwt_vc_json' }, credential);
 

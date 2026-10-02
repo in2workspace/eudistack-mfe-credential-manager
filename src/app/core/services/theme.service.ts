@@ -10,6 +10,7 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--surface-page':         '#F5F7FA',
   '--surface-card':         '#FFFFFF',
   '--surface-muted':        '#E8ECF1',
+  '--surface-faint':        '#F7F9FD',
   '--surface-subtle':       '#EDF0F6',
   '--surface-accent':       '#DDE6F6',
   '--surface-selected':     '#B6CAEC',

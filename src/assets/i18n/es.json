@@ -110,6 +110,23 @@
     "email": "Correo electrónico"
   },
 "credentialDetails": {
+    "revokedOn": "Revocada el",
+    "dateAtTime": "{{date}} a las {{time}}",
+    "loadError": "No se ha podido cargar la credencial.",
+    "issuedBy": "Emitida por {{organization}}",
+    "credentialInformation": "Información de la credencial",
+    "format": "Formato",
+    "badge": {
+      "DRAFT": "Credencial en borrador",
+      "PEND_SIGNATURE": "Pendiente de firma",
+      "PEND_DOWNLOAD": "Pendiente de descarga",
+      "ISSUED": "Credencial emitida",
+      "VALID": "Credencial válida",
+      "EXPIRED": "Credencial expirada",
+      "REVOKED": "Credencial revocada",
+      "WITHDRAWN": "Credencial retirada",
+      "ARCHIVED": "Credencial archivada"
+    },
     "title": "Detalles de la credencial",
     "type" : "tipo",
     "DRAFT": "BORRADOR",
@@ -172,17 +189,9 @@
     "withdraw": "retirar",
     "archive": "archivar",
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
-    "signCredentialConfirm": {
-      "title": "Firmar credencial",
-      "message": "¿Estás seguro de que deseas firmar esta credencial?"
-    },
-    "signCredentialSuccess": {
-      "title": "Credencial firmada",
-      "message": "La credencial se firmó correctamente."
-    },
     "revokeCredentialConfirm": {
       "title": "Revocar Credencial",
-      "message": "¿Estás seguro de que deseas revocar la credencial?"
+      "message": "¿Estás seguro de que deseas revocar la credencial? Esta acción es definitiva y no se puede deshacer."
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
@@ -190,7 +199,7 @@
     },
     "withdrawCredentialConfirm": {
       "title": "Retirar Credencial",
-      "message": "¿Estás seguro de que deseas retirar esta credencial?"
+      "message": "¿Estás seguro de que deseas retirar esta credencial? Esta acción es definitiva y no se puede deshacer."
     },
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
@@ -234,21 +243,31 @@
     }
   },
   "credentialManagement": {
-    "title": "Lista de credenciales emitidas",
-    "button": "Nueva Credencial",
+    "title": "Credenciales emitidas",
+    "button": "Añadir credenciales",
     "status": "Estatus",
-    "organization": "Organización",
+    "tenant": "Tenant",
+    "organizationId": "ID de organización",
     "organizationIdentifier": "ID de Organización",
     "filter-by-org": "Filtra por org.",
     "subject": "Sujeto",
-    "credentialType": "Tipo de credencial",
+    "credentialType": "Tipo",
+    "typeFamily": {
+      "employee": "Empleado",
+      "machine": "Máquina",
+      "label": "Credencial de Etiqueta"
+    },
+    "issuedOn": "Emitida el",
+    "expiresOn": "Expira el",
     "updated": "Actualizado",
+    "action": "Acción",
+    "viewDetails": "Ver detalles",
+    "viewDetailsOf": "Ver detalles de {{subject}}",
     "cancel": "Cancelar",
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
-    "tabActive": "Activas",
-    "tabArchived": "Archivadas",
     "search": "Buscar por",
+    "searchLabelSubject": "sujeto",
     "searchPlaceholderSubject": "Juan García",
     "searchPlaceholderOrgID": "VATES-000000",
       "paginator": {
@@ -282,11 +301,6 @@
     "loadError": {
       "title": "Error al cargar las credenciales",
       "description": "No se han podido cargar las credenciales. Por favor, recarga la página o inténtalo de nuevo más tarde."
-    },
-    "archivedTitle": "Credenciales archivadas",
-    "archivedEmptyState": {
-      "title": "Sin credenciales archivadas",
-      "description": "Cuando archives una credencial aparecerá aquí."
     }
   },
   "power": {
@@ -299,12 +313,14 @@
     "onboarding": "Alta",
     "productoffering": "Oferta de producto",
     "certification": "Certificación",
+    "system": "Sistema",
     "execute": "Ejecutar",
     "create": "Crear",
     "update": "Actualizar",
     "delete": "Eliminar",
     "upload": "Subir",
     "attest": "Acreditar",
+    "administration": "Administración",
     "select": "Selecciona un poder",
     "invalid_power_title": "Acceso Denegado",
     "invalid_power_message": "No tienes la política necesaria para acceder",
@@ -480,7 +496,7 @@
       "notRevocable": "Esta credencial ya está revocada o ha expirado y no puede revocarse de nuevo.",
       "forbidden": "No tienes permiso para revocar esta credencial."
     },
-    "server_mail_error": {
+    "serverMailError": {
       "title": "Error del Servidor de Correo",
       "message": "Se produjo un error con el servidor de correo. Por favor, inténtalo de nuevo más tarde para enviar un recordatorio; si el problema persiste, contacta con nuestro equipo de soporte."
     },
@@ -600,5 +616,34 @@
     "error-title": "Algo ha ido mal",
     "error-description": "No hemos podido enviar una nueva oferta de credencial. Por favor, inténtalo de nuevo más tarde.",
     "retry-btn": "Reintentar"
+  },
+  "filters": {
+    "selectAnOption": "Selecciona una opción",
+    "clearAll": "Limpiar todo",
+    "clearFilter": "Borrar filtro: {{filter}}",
+    "labelWithCount": "{{filter}}, {{count}} seleccionados",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "searchByOrganizationId": "Buscar por ID de organización",
+    "clearSearch": "Borrar búsqueda",
+    "noOptions": "Sin opciones",
+    "credentialType": "Tipo de credencial",
+    "credentialStatus": "Estado de la credencial",
+    "resultsCount": "{{count}} resultados"
+  },
+  "pagination": {
+    "back": "Atrás",
+    "next": "Siguiente",
+    "resultsPerPage": "Resultados por página",
+    "label": "Paginación",
+    "page": "Página {{page}}"
+  },
+  "sort": {
+    "label": "Ordenar por:",
+    "recentlyIssued": "Emitidas recientemente",
+    "recentlyUpdated": "Actualizadas recientemente",
+    "expiringSoon": "Expiran pronto",
+    "expiringLater": "Expiran más tarde",
+    "custom": "Personalizado"
   }
 }

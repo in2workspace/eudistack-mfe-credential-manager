@@ -32,7 +32,6 @@ export class CredentialProcedureService {
   private get organizationProcedures() { return `${this.tenantService.serverUrl}${API_PATH.PROCEDURES}`; }
   private get saveCredential() { return `${this.tenantService.serverUrl}${API_PATH.SAVE_CREDENTIAL}`; }
   private get credentialOfferUrl() { return `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER}`; }
-  private get signCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.SIGN_CREDENTIAL}`; }
   private get revokeCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.REVOKE}`; }
 
   public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
@@ -44,7 +43,7 @@ export class CredentialProcedureService {
   // get credential and normalize it
   public fetchCredentialProcedureById(procedureId: string): Observable<CredentialProcedureDetails> {
     return this.http.get<CredentialProcedureDetailsResponse>(
-      `${this.organizationProcedures}/${procedureId}`
+      `${this.organizationProcedures}/${encodeURIComponent(procedureId)}`
     )
     .pipe(
       map(response => {
@@ -78,12 +77,6 @@ export class CredentialProcedureService {
     );
   }
 
-  public signCredential(procedureId: string): Observable<void> {
-    return this.http.post<void>(`${this.signCredentialUrl}/${procedureId}`, {} ).pipe(
-      catchError(this.handleError)
-    );
-  }
-
   public revokeCredential(issuanceId: string): Observable<void>{
     const body: CredentialRevokeRequestDto = { issuanceId };
     return this.http.post<void>(this.revokeCredentialUrl, body).pipe(
@@ -93,13 +86,13 @@ export class CredentialProcedureService {
   }
 
   public withdrawCredential(procedureId: string): Observable<void> {
-    return this.http.patch<void>(`${this.organizationProcedures}/${procedureId}`, { status: 'WITHDRAWN' }).pipe(
+    return this.http.patch<void>(`${this.organizationProcedures}/${encodeURIComponent(procedureId)}`, { status: 'WITHDRAWN' }).pipe(
       catchError(this.handleError)
     );
   }
 
   public archiveCredential(procedureId: string): Observable<void> {
-    return this.http.patch<void>(`${this.organizationProcedures}/${procedureId}`, { status: 'ARCHIVED' }).pipe(
+    return this.http.patch<void>(`${this.organizationProcedures}/${encodeURIComponent(procedureId)}`, { status: 'ARCHIVED' }).pipe(
       catchError(this.handleError)
     );
   }
