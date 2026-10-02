@@ -576,6 +576,8 @@
     "error-description": "We were unable to send a new credential offer. Please try again later.",
     "retry-btn": "Try Again",
     "already-active-title": "Credential Already Active",
-    "already-active-description": "This credential is already active and does not require a new verification."
+    "already-active-description": "This credential is already active and does not require a new verification.",
+    "revoked-title": "Credential Revoked",
+    "revoked-description": "This credential has been revoked and can no longer be used."
   }
 }

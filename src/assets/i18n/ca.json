@@ -551,6 +551,8 @@
     "error-description": "No hem pogut enviar una nova oferta de credencial. Si us plau, torna-ho a intentar més tard.",
     "retry-btn": "Tornar a intentar",
     "already-active-title": "Credencial ja activa",
-    "already-active-description": "Aquesta credencial ja es troba activa i no requereix una nova verificació."
+    "already-active-description": "Aquesta credencial ja es troba activa i no requereix una nova verificació.",
+    "revoked-title": "Credencial revocada",
+    "revoked-description": "Aquesta credencial ha estat revocada i ja no es pot utilitzar."
   }
 }

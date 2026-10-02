@@ -296,17 +296,19 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
   });
 
   // The credential offer refresh screen renders its own outcome (generic error or a
-  // functional one such as CREDENTIAL_ALREADY_ACTIVE), so no global dialog may cover it.
+  // functional one such as CREDENTIAL_ALREADY_ACTIVE or credential_offer_gone), so no
+  // global dialog may cover it.
   describe('credential offer refresh endpoint', () => {
     beforeEach(() => {
       jest.spyOn(console, 'error').mockImplementation(() => undefined);
     });
 
     it.each([
-      ['an absolute path', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`],
-      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`],
-    ])('should rethrow the original error without a dialog for %s', (_label, url) => {
-      const problem = { type: 'CREDENTIAL_ALREADY_ACTIVE', status: 410 };
+      ['an absolute path', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'CREDENTIAL_ALREADY_ACTIVE'],
+      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'CREDENTIAL_ALREADY_ACTIVE'],
+      ['a credential_offer_gone problem', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_offer_gone'],
+    ])('should rethrow the original error without a dialog for %s', (_label, url, type) => {
+      const problem = { type, status: 410 };
       const httpErrorResponse = new HttpErrorResponse({ status: 410, statusText: 'Gone', url, error: problem });
       httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
 
