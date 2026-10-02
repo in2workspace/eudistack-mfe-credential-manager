@@ -430,7 +430,10 @@
       "title": "Credential created",
       "message": "Scan this QR code with your wallet to receive the credential. You can also copy the link if your camera is not available.",
       "copy": "Copy link",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "refresh": "Refresh QR",
+      "refreshing": "Refreshing…",
+      "refreshFailed": "The QR could not be refreshed. The current one may still be valid; try again or close and re-issue."
     },
     "direct-result-dialog": {
       "title": "Credential created",

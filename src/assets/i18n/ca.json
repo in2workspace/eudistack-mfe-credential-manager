@@ -405,7 +405,10 @@
       "title": "Credencial creada",
       "message": "Escaneja aquest codi QR amb la teva wallet per rebre la credencial. També pots copiar l'enllaç si no tens càmera disponible.",
       "copy": "Copiar enllaç",
-      "copied": "Copiat!"
+      "copied": "Copiat!",
+      "refresh": "Actualitza el QR",
+      "refreshing": "Actualitzant…",
+      "refreshFailed": "No s'ha pogut actualitzar el QR. L'actual pot continuar sent vàlid; torna-ho a provar o tanca i torna a emetre."
     },
     "direct-result-dialog": {
       "title": "Credencial creada",
