@@ -675,22 +675,22 @@ export class CredentialIssuanceService {
             const hasAnyWalletDelivered = anyDelivered;
             if (hasAnyWalletDelivered && requiresRequestHolderKey(configId)) {
               const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
-              return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
+              return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), this.extractCredentialOfferRefreshToken(response), true, privateKeyHex, outcomes);
             }
             this.holderPrivateKeyStore.clear();
-            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
+            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), this.extractCredentialOfferRefreshToken(response), false, undefined, outcomes);
           }
           // direct not declared at all
           if (needsHolderKeySection) {
             const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
-            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
+            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), this.extractCredentialOfferRefreshToken(response), true, privateKeyHex, outcomes);
           }
 
           // No key section, direct not declared: ui, email, or both -- always the same extended
           // CredentialOfferDialogComponent, whether or not a QR URI came back, so an email-only
           // emission gets the same per-channel outcome box as the ui+email hybrid case instead of
           // falling back to the old plain "credential created" dialog.
-          return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
+          return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), this.extractCredentialOfferRefreshToken(response), false, undefined, outcomes);
         }),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
@@ -725,6 +725,11 @@ export class CredentialIssuanceService {
    */
   private extractCredentialOfferUri(response: IssuanceResponseDto | undefined): string | undefined {
     return response?.responses?.find(channel => channel.body?.credential_offer_uri)?.body?.credential_offer_uri;
+  }
+
+  private extractCredentialOfferRefreshToken(response: IssuanceResponseDto | undefined): string | undefined {
+    return response?.responses
+      ?.find(channel => channel.body?.credential_offer_refresh_token)?.body?.credential_offer_refresh_token;
   }
 
   /**
@@ -802,12 +807,13 @@ export class CredentialIssuanceService {
 
   private openCredentialOfferDialog(
     credentialOfferUri: string | undefined,
+    credentialOfferRefreshToken: string | undefined,
     requiresHolderKeySection: boolean,
     privateKeyHex: string | undefined,
     outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>
   ): Observable<any> {
     const dialogData: CredentialOfferDialogData = {
-      credentialOfferUri, requiresHolderKeySection, privateKeyHex, outcomes,
+      credentialOfferUri, credentialOfferRefreshToken, requiresHolderKeySection, privateKeyHex, outcomes,
       summary: this.buildIssuedSummary()
     };
     const dialogRef = this.matDialog.open(CredentialOfferDialogComponent, {
@@ -851,6 +857,7 @@ export class CredentialIssuanceService {
       privateKeyHex,
       outcomes,
       credentialOfferUri: this.extractCredentialOfferUri(response),
+      credentialOfferRefreshToken: this.extractCredentialOfferRefreshToken(response),
       summary: this.buildIssuedSummary()
     };
     const dialogRef = this.matDialog.open(DirectCredentialResultDialogComponent, {
