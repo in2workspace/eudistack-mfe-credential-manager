@@ -28,7 +28,7 @@ import { getCredentialTypeFamilyKey, getCredentialTypeFamilyLabelKey } from 'src
 
 import { SubjectComponent } from './components/subject-component/subject-component.component';
 import { FormsModule } from '@angular/forms';
-import { CREDENTIAL_MANAGEMENT_SUBJECT } from 'src/app/core/constants/translations.constants';
+import { CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { LocalizedDatePipe } from 'src/app/shared/pipes/localized-date.pipe';
 import { SkeletonLoaderComponent } from 'src/app/shared/components/skeleton-loader/skeleton-loader.component';
@@ -87,7 +87,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) public sort!: MatSort;
   @ViewChild('searchInput') public searchInput!: ElementRef<HTMLInputElement>;
   public dataSource = new MatTableDataSource<CredentialProcedureWithClass>();
-  public searchLabel = CREDENTIAL_MANAGEMENT_SUBJECT;
+  public searchLabel = CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT;
   public searchPlaceholder = CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT;
   public isLoading = true;
 
@@ -183,7 +183,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
     subject: {
       filterName: "subject",
-      translationLabel: CREDENTIAL_MANAGEMENT_SUBJECT,
+      translationLabel: CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT,
       placeholderTranslationLabel: CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT
     }
    } as const;

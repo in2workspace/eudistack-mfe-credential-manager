@@ -267,6 +267,7 @@
     "create" : "Crear Credencial",
     "buttonAdmin":"Nueva Credencial (en nombre de)",
     "search": "Buscar por",
+    "searchLabelSubject": "sujeto",
     "searchPlaceholderSubject": "Juan García",
     "searchPlaceholderOrgID": "VATES-000000",
       "paginator": {

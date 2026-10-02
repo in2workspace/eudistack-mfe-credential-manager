@@ -267,6 +267,7 @@
     "create": "Create Credential",
     "buttonAdmin": "New credential (on behalf)",
     "search": "Search by",
+    "searchLabelSubject": "subject",
     "searchPlaceholderSubject": "Joe Doe",
     "searchPlaceholderOrgID": "VATES-000000",
     "paginator": {
