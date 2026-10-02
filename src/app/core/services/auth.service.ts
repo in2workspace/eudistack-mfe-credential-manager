@@ -309,7 +309,9 @@ export class AuthService{
       // reasoning as rejectCrossTenantSession).
       console.error('Checking authentication: token rejected by the auth library:', validationError);
       if (!this.isOnPublicRoute()) {
-        void this.router.navigate(['/home']).finally(() => this.notifyTokenValidationFailure(validationError));
+        this.router.navigate(['/home'])
+          .catch(navErr => console.error('Checking authentication: navigation to /home failed:', navErr))
+          .finally(() => this.notifyTokenValidationFailure(validationError));
       }
       return false;
     }
@@ -517,7 +519,8 @@ export class AuthService{
       error: (err) => {
         console.error('RP-Initiated Logout failed, falling back to local navigation', err);
         this.resetLocalAuthState();
-        void this.router.navigate(['/home']);
+        this.router.navigate(['/home'])
+          .catch(navErr => console.error('RP-Initiated Logout fallback: navigation to /home failed', navErr));
       }
     });
   }
