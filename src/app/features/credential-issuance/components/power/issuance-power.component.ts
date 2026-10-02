@@ -1,47 +1,40 @@
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { Component, Input, OnInit, inject } from '@angular/core';
-import { MatSelect, MatSelectTrigger } from '@angular/material/select';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { MatIcon } from '@angular/material/icon';
-import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, UntypedFormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
-import { MatSlideToggle } from '@angular/material/slide-toggle';
-import { MatButton, MatMiniFabButton } from '@angular/material/button';
-import { MatOption } from '@angular/material/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { KeyValuePipe } from '@angular/common';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, UntypedFormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { MatSlideToggle, MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { EMPTY, Observable } from 'rxjs';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { AuthService } from 'src/app/core/services/auth.service';
-import { IssuanceFormPowerSchema } from 'src/app/core/models/entity/lear-credential-issuance';
+import { IssuanceFormPowerSchema, POWER_SCOPES, PowerScope } from 'src/app/core/models/entity/lear-credential-issuance';
 import { BaseIssuanceCustomFormChild } from 'src/app/features/credential-details/components/base-issuance-custom-form-child';
 import { ThemeService } from 'src/app/core/services/theme.service';
-
-export interface TempIssuanceFormPowerSchema extends IssuanceFormPowerSchema{
-  isDisabled: boolean;
-}
-
-export interface NormalizedTempIssuanceFormSchemaPower extends TempIssuanceFormPowerSchema{
-  normalizedActions: NormalizedAction[];
-}
-
-export type NormalizedAction = { action: string; value: boolean };
 
 @Component({
     selector: 'app-issuance-power',
     templateUrl: './issuance-power.component.html',
     styleUrls: ['./issuance-power.component.scss'],
-    imports: [KeyValuePipe, ReactiveFormsModule, MatFormField, MatSelect, MatSelectTrigger, MatOption, MatButton, MatSlideToggle, FormsModule, MatMiniFabButton, MatIcon, MatLabel, MatSelect, TranslatePipe]
+    imports: [ReactiveFormsModule, MatSlideToggle, MatCheckbox, TranslatePipe]
 })
 export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedFormGroup> implements OnInit{
 
+  public readonly scopes = POWER_SCOPES;
+
+  public readonly activeScope = signal<PowerScope>('domain');
+
+  /**
+   * With a single scope on offer the segment is a label, not a choice: it stays visible so the
+   * Operator can see which scope the powers land in, but it must not invite a click that would
+   * do nothing.
+   */
+  public readonly isScopeSelectable = this.scopes.length > 1;
+
   public organizationIdentifierIsAdmin: boolean;
-  public _powersInput: IssuanceFormPowerSchema[] = [];
-  public selectorPowers: TempIssuanceFormPowerSchema[] = [];
-  public selectedPower: TempIssuanceFormPowerSchema | undefined;
+  public selectorPowers: IssuanceFormPowerSchema[] = [];
   private readonly themeService = inject(ThemeService);
   public readonly sysTenant: string = this.themeService.tenantDomain;
-
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
@@ -50,20 +43,29 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
     super();
     this.organizationIdentifierIsAdmin = this.authService.hasAdminOrganizationIdentifier();
   }
-  
-  
-  @Input()
-  public set powersInput(value: IssuanceFormPowerSchema[]) {
-    this.resetForm();
-    this._powersInput = value || [];
-    this.selectorPowers = this.mapToTempPowerSchema(value) || [];
+
+  public scopeGroup(scope: PowerScope): FormGroup {
+    return this.form().get(scope) as FormGroup;
   }
 
-  //this makes keyvaluePipe respect the order
-  public keepOrder = (_: any, _2: any) => 0;
+  public scopeCount(scope: PowerScope): number {
+    return Object.keys(this.scopeGroup(scope)?.controls ?? {}).length;
+  }
 
-  public addPower(funcName: string) {
-    const power = this._powersInput.find(p => p.function === funcName);
+  public isPowerEnabled(scope: PowerScope, funcName: string): boolean {
+    return this.scopeGroup(scope)?.contains(funcName) ?? false;
+  }
+
+  public onPowerToggle(scope: PowerScope, funcName: string, change: MatSlideToggleChange): void {
+    if (change.checked) {
+      this.addPower(scope, funcName);
+      return;
+    }
+    this.removePower(scope, funcName, change.source);
+  }
+
+  public addPower(scope: PowerScope, funcName: string): void {
+    const power = this.selectorPowers.find(p => p.function === funcName);
     const actions = power?.action;
     if(!actions){
       console.error('No actions for this power');
@@ -73,85 +75,79 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
     for (const action of actions) {
       toggleGroup[action] = new FormControl(false);
     }
-    this.form().addControl(funcName, new FormGroup(toggleGroup));
-    this.selectorPowers = [...this.selectorPowers.map(p => {
-      if(p.function === funcName){
-        p = { ...p, isDisabled: true}
-      }
-      return p;
-    })];
-    this.selectedPower = undefined;
+    this.scopeGroup(scope).addControl(funcName, new FormGroup(toggleGroup));
+    this.form().updateValueAndValidity();
   }
 
-  public removePower(funcName: string): void {
-    const translatedPowerName = this.translate.instant(`power.${funcName.toLocaleLowerCase()}`);
-    const dialogData: DialogData = {
-        title: this.translate.instant("power.remove-dialog.title"),
-      message: `${this.translate.instant("power.remove-dialog.message")} (${translatedPowerName})`,
-        confirmationType: 'sync',
-        status: `default`
+  public removePower(scope: PowerScope, funcName: string, toggle?: MatSlideToggle): void {
+    const group = this.scopeGroup(scope);
+    if (!group?.contains(funcName)) {
+      return;
     }
-    const removeAfterClose =  (): Observable<any> => {
-    if (this.form().contains(funcName)) {
-          this.form().removeControl(funcName);
-        }
 
-    this.selectorPowers = this.selectorPowers.map(p => {
-      if (p.function === funcName) {
-        return { ...p, isDisabled: false };
-      }
-      return p;
-    });
+    const selectedActions = group.get(funcName)!.value as Record<string, boolean>;
+    const hasSelection = Object.values(selectedActions).some(Boolean);
+    if (!hasSelection) {
+      group.removeControl(funcName);
+      this.form().updateValueAndValidity();
+      return;
+    }
+
+    const translatedPowerName = this.translate.instant('power.' + funcName.toLocaleLowerCase());
+    const dialogData: DialogData = {
+      title: this.translate.instant("power.remove-dialog.title"),
+      message: this.translate.instant("power.remove-dialog.message") + ' (' + translatedPowerName + ')',
+      confirmationType: 'sync',
+      status: 'default'
+    };
+    const removeAfterClose = (): Observable<any> => {
+      group.removeControl(funcName);
+      this.form().updateValueAndValidity();
       return EMPTY;
     };
+
+    if (toggle) {
+      toggle.checked = true;
+    }
     this.dialog.openDialogWithCallback(DialogComponent, dialogData, removeAfterClose);
-    
   }
 
   public ngOnInit(){
+    this.ensureScopeGroups();
     this.form().addValidators(this.powerRulesValidator);
     this.form().updateValueAndValidity({ emitEvent: false });
-    const selectorPowers = this.data();
-    this._powersInput = selectorPowers || [];
-    this.selectorPowers = this.mapToTempPowerSchema(selectorPowers) || [];
+    this.selectorPowers = this.filterVisiblePowers(this.data() ?? []);
   }
 
-public getPowerByFunction(functionName: string): TempIssuanceFormPowerSchema | undefined {
-  return this.selectorPowers.find(p => p.function === functionName);
-}
-
-public getFormGroup(control: any): FormGroup {
-  return control as FormGroup;
-}
-
-private mapToTempPowerSchema(powers: IssuanceFormPowerSchema[]): TempIssuanceFormPowerSchema[]{
-  return powers
-    .map(p => ({...p, isDisabled: false}))
-    .filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
-}
-
-private resetForm() {
-  this.form().reset();            
-  for (const key of Object.keys(this.form().controls)) {
-    this.form().removeControl(key);
+  private ensureScopeGroups(): void {
+    for (const scope of this.scopes) {
+      if (!this.form().contains(scope)) {
+        this.form().addControl(scope, new FormGroup({}));
+      }
+    }
   }
-}
 
-private readonly powerRulesValidator: ValidatorFn = (ctrl: AbstractControl): ValidationErrors | null => {
-  const group = ctrl as FormGroup;
-  const controls = Object.values(group.controls) as FormGroup[];
+  private filterVisiblePowers(powers: IssuanceFormPowerSchema[]): IssuanceFormPowerSchema[]{
+    return powers.filter(p => this.organizationIdentifierIsAdmin || !p.isAdminRequired);
+  }
 
-  const hasOnePower = controls.length > 0;
-  const hasOneActionPerPower = controls.every(c =>
-    Object.values(c.value as Record<string, boolean>).some(Boolean)
-  );
+  private readonly powerRulesValidator: ValidatorFn = (ctrl: AbstractControl): ValidationErrors | null => {
+    const group = ctrl as FormGroup;
+    const powerGroups = POWER_SCOPES
+      .map(scope => group.get(scope) as FormGroup | null)
+      .filter((g): g is FormGroup => !!g)
+      .flatMap(g => Object.values(g.controls) as FormGroup[]);
 
-  const errors: ValidationErrors = {};
-  if (!hasOnePower) errors['noPower'] = true;
-  if (!hasOneActionPerPower) errors['noActionPerPower'] = true;
+    const hasOnePower = powerGroups.length > 0;
+    const hasOneActionPerPower = powerGroups.every(c =>
+      Object.values(c.value as Record<string, boolean>).some(Boolean)
+    );
 
-  return Object.keys(errors).length ? errors : null;
-};
-  
+    const errors: ValidationErrors = {};
+    if (!hasOnePower) errors['noPower'] = true;
+    if (!hasOneActionPerPower) errors['noActionPerPower'] = true;
+
+    return Object.keys(errors).length ? errors : null;
+  };
 
 }

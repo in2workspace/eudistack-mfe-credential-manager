@@ -83,12 +83,19 @@ export class LEARCredentialDataNormalizer {
 
   /**
    * SD-JWT credentials with "direct" credential_subject_strategy place
-   * mandator/mandatee/power at the credential root (no credentialSubject).
+   * mandator/mandatee/power at the credential root (no credentialSubject);
+   * those with "mandate" strategy place a ready-made `mandate` object there.
    * This creates the credentialSubject.mandate wrapper so downstream code
    * can use the uniform W3C path.
    */
   private wrapTopLevelFlatStructure(data: any): void {
-    if (data.credentialSubject || !('mandator' in data || 'mandatee' in data || 'power' in data)) return;
+    if (data.credentialSubject) return;
+    if (data.mandate && typeof data.mandate === 'object') {
+      data.credentialSubject = { mandate: data.mandate };
+      delete data.mandate;
+      return;
+    }
+    if (!('mandator' in data || 'mandatee' in data || 'power' in data)) return;
     data.credentialSubject = {
       mandate: {
         ...(data.mandator ? { mandator: data.mandator } : {}),

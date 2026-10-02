@@ -15,6 +15,7 @@ import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { LEARCredentialEmployee, LEARCredential } from 'src/app/core/models/entity/lear-credential';
+import { LEARCredentialDataNormalizer } from '../utils/lear-credential-data-normalizer';
 
 describe('CredentialDetailsService', () => {
   let service: CredentialDetailsService;
@@ -338,6 +339,53 @@ describe('CredentialDetailsService', () => {
           } as any);
 
           expect(service.showRevokeCredentialButton$()).toBe(false);
+        });
+
+        describe('multi_org tenant admin on an SD-JWT credential with root mandate', () => {
+          const buildSdCredential = (organizationIdentifier: string) => {
+            const rawSdCredential: any = {
+              vct: 'learcredential.employee.sd.1',
+              status: { status_list: { uri: 'https://issuer.example/token/v1/credentials/status/3', idx: 1 } },
+              mandate: {
+                mandator: { organizationIdentifier },
+                mandatee: { first_name: 'Alice', last_name: 'Wonder', email: 'alice@example.com' },
+                power: [{ action: ['Execute'], domain: 'SANDBOX', function: 'Onboarding', type: 'domain' }],
+              },
+            };
+            return new LEARCredentialDataNormalizer().normalizeLearCredential(rawSdCredential);
+          };
+
+          beforeEach(() => {
+            mockAuthService.roleType.set(RoleType.TENANT_ADMIN);
+            mockAuthService.tenantType.set('multi_org');
+            mockAuthService.isSysAdminRole.set(false);
+            mockAuthService.organizationIdentifier.set('VATES-A15456585');
+          });
+
+          afterEach(() => {
+            mockAuthService.roleType.set(RoleType.LEAR);
+            mockAuthService.tenantType.set('simple');
+            mockAuthService.isSysAdminRole.set(false);
+            mockAuthService.organizationIdentifier.set('');
+          });
+
+          it('showRevokeCredentialButton$() returns true when the credential belongs to the admin organization', () => {
+            service.credentialProcedureDetails$.set({
+              lifeCycleStatus: 'VALID',
+              credential: { vc: buildSdCredential('VATES-A15456585') },
+            } as any);
+
+            expect(service.showRevokeCredentialButton$()).toBe(true);
+          });
+
+          it('showRevokeCredentialButton$() returns false when the credential belongs to another organization', () => {
+            service.credentialProcedureDetails$.set({
+              lifeCycleStatus: 'VALID',
+              credential: { vc: buildSdCredential('VATES-B00000000') },
+            } as any);
+
+            expect(service.showRevokeCredentialButton$()).toBe(false);
+          });
         });
       });
 

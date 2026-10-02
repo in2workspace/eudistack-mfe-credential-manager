@@ -10,7 +10,7 @@ import { CREDENTIAL_SCHEMA_PROVIDERS, IssuanceSchemaBuilder } from './issuance-s
 import { TranslateModule } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NEVER, of, throwError } from 'rxjs';
+import { BehaviorSubject, NEVER, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { IssuanceUiPolicyService } from 'src/app/core/services/issuance-ui-policy.service';
@@ -57,8 +57,10 @@ describe('CredentialIssuanceService', () => {
   let mockSchemaBuilder: { formSchemasBuilder: jest.Mock, getIssuancePowerFormSchema: jest.Mock };
   let dialogService: MockDialogWrapperService;
   let mockMatDialog: { open: jest.Mock };
+  let mandatorSubject: BehaviorSubject<unknown>;
   let mockAuthService: {
-    getMandateeEmail: jest.Mock
+    getMandateeEmail: jest.Mock,
+    getMandator: jest.Mock
   };
   let mockCatalogService: { fetchCatalog: jest.Mock; loadDeliveryEligibility: jest.Mock };
   let mockHolderKeyService: { generateForSubmission: jest.Mock; clear: jest.Mock };
@@ -96,7 +98,11 @@ describe('CredentialIssuanceService', () => {
     mockMatDialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
     mockProcedureService = { createProcedure: jest.fn() }
     mockSchemaBuilder = { formSchemasBuilder: jest.fn(), getIssuancePowerFormSchema: jest.fn() };
-    mockAuthService = { getMandateeEmail: jest.fn(() => 'mandatee@example.com')};
+    mandatorSubject = new BehaviorSubject<unknown>(null);
+    mockAuthService = {
+      getMandateeEmail: jest.fn(() => 'mandatee@example.com'),
+      getMandator: jest.fn(() => mandatorSubject.asObservable())
+    };
     mockCatalogService = {
       fetchCatalog: jest.fn(() => of([])),
       loadDeliveryEligibility: jest.fn(() => of(OPEN_CATALOG_SNAPSHOT)),
@@ -180,6 +186,45 @@ describe('CredentialIssuanceService', () => {
 
   // Replaces 'should expose only employee credential type for KPMG tenant'.
   // AD-1: there are no more per-tenant special cases in the frontend.
+  describe('holderInfo$ (read-only mandator panel)', () => {
+    const aMandator = () => ({
+      id: 'did:elsi:VATES-A15456585',
+      commonName: 'John Doe',
+      email: 'john.doe@altia.es',
+      organization: 'ALTIA CONSULTORES, SA',
+      organizationIdentifier: 'VATES-A15456585',
+      serialNumber: 'A15456585',
+      country: 'ES'
+    });
+
+    it('projects the mandator in the panel order, dropping the keys the panel does not show', () => {
+      mandatorSubject.next(aMandator());
+
+      expect(service.holderInfo$().map(f => f.key)).toEqual([
+        'commonName', 'email', 'organization', 'organizationIdentifier', 'serialNumber', 'country'
+      ]);
+      // `id` is on the entity but never on the panel: it is a DID, not something the Operator reads.
+      expect(service.holderInfo$().some(f => f.key === 'id')).toBe(false);
+    });
+
+    it('stringifies every value, so an absent field renders empty rather than as "null"', () => {
+      mandatorSubject.next({ ...aMandator(), country: null });
+
+      expect(service.holderInfo$().find(f => f.key === 'country')!.value).toBe('');
+    });
+
+    it('is empty while the session carries no mandator', () => {
+      expect(service.holderInfo$()).toEqual([]);
+    });
+
+    it('is empty on behalf of, where the mandator is captured in the form instead', () => {
+      mandatorSubject.next(aMandator());
+      service.onBehalf$.set(true);
+
+      expect(service.holderInfo$()).toEqual([]);
+    });
+  });
+
   describe('credentialTypesArr$ (AD-1)', () => {
     it('should expose the types derived from the issuer metadata', () => {
       expect(service.credentialTypesArr$()).toEqual(['learcredential.employee', 'learcredential.machine']);
@@ -751,7 +796,7 @@ describe('CredentialIssuanceService', () => {
         service.openSubmitDialog();
 
         expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
-          width: '420px',
+          width: '560px',
           disableClose: false,
           closeOnNavigation: true,
         }));

@@ -2,11 +2,13 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
+import { IssuedCredentialSummaryComponent } from '../issued-credential-summary/issued-credential-summary.component';
 import { ArtifactKind, UncopiedArtifactCloseGuard, UncopiedArtifactCloseGuardHandle } from 'src/app/shared/services/uncopied-artifact-close-guard';
-import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryModeToken, IssuedCredentialSummary } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface CredentialOfferDialogData {
@@ -17,6 +19,7 @@ export interface CredentialOfferDialogData {
   /** Present only when `requiresHolderKeySection` and the store still had it (EUD-233 AC-13); absent under `requiresHolderKeySection` is AC-10.2. */
   privateKeyHex?: string;
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
+  summary?: IssuedCredentialSummary;
 }
 
 /**
@@ -35,12 +38,14 @@ export interface CredentialOfferDialogData {
         MatButton,
         MatIconButton,
         MatIcon,
+        MatTooltip,
         MatDialogTitle,
         MatDialogContent,
         MatDialogActions,
         TranslatePipe,
         HolderPrivateKeySectionComponent,
         DeliveryOutcomeListComponent,
+        IssuedCredentialSummaryComponent,
     ],
     templateUrl: './credential-offer-dialog.component.html',
     styleUrl: './credential-offer-dialog.component.scss'
@@ -60,13 +65,15 @@ export class CredentialOfferDialogComponent {
   protected readonly privateKeyCopied = signal(false);
   protected readonly privateKeyCopyFailed = signal(false);
 
-  protected readonly titleKey = this.data.credentialOfferUri
-    ? 'credentialIssuance.credential-offer-dialog.title'
-    : 'credentialIssuance.create-success-dialog.title';
+  protected readonly titleKey = 'credentialIssuance.result.title.pending';
 
   /** AC-13: this surface's only trackable artifact is the key -- there is no credential block here. */
   protected readonly pendingArtifacts = computed<readonly ArtifactKind[]>(() =>
     this.hasKeyArtifact && !this.privateKeyCopied() ? ['privateKey'] : []
+  );
+
+  protected readonly pendingHintKey = computed<string>(() =>
+    this.pendingArtifacts().length > 0 ? 'credentialIssuance.direct-result-dialog.pending' : ''
   );
 
   /**
