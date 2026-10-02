@@ -55,6 +55,7 @@ export class DeliveryOutcomeListComponent {
   public readonly signedCredential = input<string>();
   /** The `ui` box's own artifact, in place of the generic "delivered" text. See class doc. */
   public readonly credentialOfferUri = input<string>();
+  public readonly credentialOfferRefreshToken = input<string>();
 
   /** Bubbles the embedded `app-copyable-field`'s events -- the host still owns Done-gating (AD-16). */
   public readonly credentialCopied = output<void>();

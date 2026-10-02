@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
 import { DeliveryOutcomeListComponent } from './delivery-outcome-list.component';
@@ -23,6 +25,8 @@ describe('DeliveryOutcomeListComponent', () => {
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot(), DeliveryOutcomeListComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         // Only instantiated when credentialOfferUri is set (CredentialOfferQrComponent).
         { provide: TenantService, useValue: { walletUrl: jest.fn(() => 'https://wallet.example'), defaultWalletUrl: jest.fn(() => null) } },
       ],

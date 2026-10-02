@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
@@ -101,6 +103,8 @@ describe('DirectCredentialResultDialogComponent', () => {
         DirectCredentialResultDialogComponent,
       ],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: MAT_DIALOG_DATA,
           useValue: data,

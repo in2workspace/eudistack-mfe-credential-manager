@@ -20,6 +20,7 @@ export interface DirectCredentialResultDialogData {
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
   /** Present only when the `ui` channel delivered (EC-02) -- embeds the QR alongside the credential. */
   credentialOfferUri?: string;
+  credentialOfferRefreshToken?: string;
   summary?: IssuedCredentialSummary;
 }
 
