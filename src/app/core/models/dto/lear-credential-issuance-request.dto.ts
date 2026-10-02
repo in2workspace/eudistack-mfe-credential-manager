@@ -57,6 +57,7 @@ export type IssuanceChannel = 'direct' | 'ui' | 'email';
 export interface IssuanceChannelBody {
     signed_credential?: string;
     credential_offer_uri?: string;
+    credential_offer_refresh_token?: string;
 }
 
 /** RFC 9457 Problem Details, scoped to one channel (EUD-167 D-6). */

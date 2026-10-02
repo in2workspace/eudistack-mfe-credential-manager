@@ -32,6 +32,7 @@ export class CredentialProcedureService {
   private get organizationProcedures() { return `${this.tenantService.serverUrl}${API_PATH.PROCEDURES}`; }
   private get saveCredential() { return `${this.tenantService.serverUrl}${API_PATH.SAVE_CREDENTIAL}`; }
   private get credentialOfferUrl() { return `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER}`; }
+  private get issuanceOfferRefreshUrl() { return `${this.tenantService.serverUrl}${API_PATH.ISSUANCE_CREDENTIAL_OFFER_REFRESH}`; }
   private get signCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.SIGN_CREDENTIAL}`; }
   private get revokeCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.REVOKE}`; }
 
@@ -102,6 +103,15 @@ export class CredentialProcedureService {
     return this.http.patch<void>(`${this.organizationProcedures}/${procedureId}`, { status: 'ARCHIVED' }).pipe(
       catchError(this.handleError)
     );
+  }
+
+  public refreshCredentialOfferUri(refreshToken: string): Observable<string> {
+    return this.http
+      .post<{ credential_offer_uri: string }>(`${this.issuanceOfferRefreshUrl}/${refreshToken}`, null)
+      .pipe(
+        map(response => response.credential_offer_uri),
+        catchError(this.handleError)
+      );
   }
 
   public getCredentialOfferByTransactionCode(transactionCode: string): Observable<CredentialOfferResponse> {
