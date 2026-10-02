@@ -1,9 +1,10 @@
 import { Component, inject, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { TenantService } from 'src/app/core/services/tenant.service';
 import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
+import { ToastService } from 'src/app/core/services/toast.service';
 
 /**
  * The scannable credential offer: QR, copy-link button and the same-device wallet links
@@ -24,6 +25,8 @@ export class CredentialOfferQrComponent {
   public readonly credentialOfferUri = input.required<string>();
 
   private readonly tenantService = inject(TenantService);
+  private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   public copied = false;
   public readonly qrColor = '#000000';
@@ -50,7 +53,10 @@ export class CredentialOfferQrComponent {
         this.copied = true;
         setTimeout(() => this.copied = false, 2000);
       })
-      .catch(err => console.error('Clipboard write failed, the offer URI was not copied', err));
+      .catch(err => {
+        console.error('Clipboard write failed, the offer URI was not copied', err);
+        this.toast.error(this.translate.instant('error.clipboard_copy_failed'));
+      });
   }
 
   private extractCredentialOfferHttpsUrl(oid4vciUri: string): string {
