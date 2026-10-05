@@ -268,6 +268,7 @@
       "power": "Poders",
       "domain": "Domini",
       "function": "Funció",
+      "subtitle": "Afegeix un o més poders i selecciona les funcions de cadascun.",
       "onboarding": "Alta",
       "marketplace": "Marketplace",
       "productoffering": "Oferta de producte",
@@ -295,11 +296,25 @@
     },
    "credentialIssuance": {
     "title": "Emissió de LEAR Credential",
+    "result": {
+      "title": {
+        "delivered": "Credencial creada correctament",
+        "pending": "Crear credencial"
+      },
+      "subtitle": {
+        "learcredential.machine": "La teva credencial de màquina s’ha creat.",
+        "learcredential.employee": "La teva credencial d’empleat s’ha creat."
+      },
+      "keyWarning": "Desa ara la clau generada. Per seguretat, només es mostra un cop i no es podrà recuperar després.",
+      "credentialType": "Tipus de credencial"
+    },
+    "backToList": "Tornar a la llista de credencials emeses",
+    "holderInfo": "Informació del titular / Mandator",
     "learcredential.employee": "LEAR Credential Employee",
     "learcredential.machine": "LEAR Credential Machine",
     "create-confirm-dialog": {
       "title": "Crear credencial",
-      "message": "Segur que vols crear aquesta credencial?",
+      "message": "Un cop creada, aquesta credencial no es pot editar. Per fer canvis, hauràs de revocar-la i crear-ne una de nova.",
       "defaultLoadingTitle": "Esperi mentre es completa el procés..."
     },
     "create-success-dialog": {
@@ -323,12 +338,17 @@
       }
     },
     "creating-credential": "Creant credencial",
-    "create-credential": "Crear credencial",
+    "create-credential": "Crear nova credencial",
     "credentialType": "Tipus de credencial",
+    "placeholder": "Introdueix {{field}}",
     "cancel": "Cancel·lar",
     "mandatee": "persona delegada",
     "mandator": "mandant",
     "select-type": "Selecciona el tipus de credencial",
+    "description": {
+      "learcredential.employee": "Identifica una persona de la teva organització i transporta els poders que li delegues. La rep al seu wallet i la presenta per actuar en nom de l'organització.",
+      "learcredential.machine": "Identifica un sistema automatitzat, no una persona: es vincula a un parell de claus i s'identifica per domini i adreça IP, per a operacions màquina a màquina sense ningú al davant."
+    },
     "loadingCatalog": "S'estan carregant els formularis de credencial disponibles...",
     "emptySelector": {
       "noTypes": "No hi ha cap formulari de credencial habilitat per a la teva organització. Contacta amb l'administrador del teu tenant per sol·licitar-ne l'alta.",
@@ -351,17 +371,20 @@
       "organizationIdentifier": "Introdueix només els caràcters que van després de 'VAT...-'. Per exemple, si és 'VATEU-123ABC', introdueix '123ABC'."
     },
     "format": {
+      "tooltip": "Model de dades amb què s'emet la credencial. W3C VC 2.0 és el d'interoperabilitat més àmplia; SD-JWT VC afegeix divulgació selectiva, de manera que el titular revela només part de les seves dades en presentar-la.",
       "label": "Format de credencial",
       "w3cVcDm": "W3C VC Data Model v2.0",
       "sdJwt": "SD-JWT VC",
       "mdoc": "mDOC (pròximament)"
     },
     "grantType": {
+      "tooltip": "Com s'autoritza el titular a rebre la credencial al seu Wallet. Amb Authorized Code, pot rebre-la sense verificació addicional. Amb Pre-Authorized Code, s'envia un codi d'un sol ús al seu correu, que haurà d'introduir abans de poder afegir la credencial.",
       "label": "Tipus de concessió",
       "authorizationCode": "Authorization Code",
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
+      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un. Directe mostra aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra aquí un codi QR i un enllaç, perquè el titular reculli la credencial per qualsevol de les dues vies. Correu electrònic envia al titular un correu amb aquest mateix codi QR i enllaç.",
       "label": "Mètode de lliurament",
       "direct": "Directe",
       "email": "Correu electrònic",
@@ -408,6 +431,7 @@
       "credentialLabel": "Credencial signada",
       "credentialDescription": "Aquest és el token de la credencial màquina, a punt per ser utilitzat per un servei que vulgui presentar-se davant del verificador per identificar-se (login M2M).",
       "done": "Fet",
+      "pending": "Copia el contingut sensible que es mostra a dalt abans d'acabar. Només es mostra un cop i no es pot recuperar un cop tanquis aquest diàleg.",
       "copyFailed": {
         "credential": "No s'ha pogut copiar la credencial al porta-retalls. Torna-ho a intentar.",
         "privateKey": "No s'ha pogut copiar la clau privada al porta-retalls. Torna-ho a intentar."
@@ -423,6 +447,7 @@
     "internal_server": "S'ha produït un error al servidor. Si us plau, torna-ho a intentar més tard.",
     "credential_submission": "S'ha produït un error en crear la credencial.",
     "one_power_min":"Hi ha d'haver almenys un poder seleccionat, i cada poder requereix almenys una acció.",
+    "clipboard_copy_failed": "No s'ha pogut copiar l'enllaç al porta-retalls. Escaneja el codi QR o fes servir l'enllaç del moneder que apareix a sota.",
     "unknown_error": "S'ha produït un error desconegut. Si us plau, torna-ho a intentar.",
     "issuance_catalog_unavailable": "No s'ha pogut carregar la configuració de credencials emissibles de la teva organització, així que l'emissió de noves credencials no està disponible. Les credencials ja emeses no es veuen afectades: les pots continuar consultant i gestionant. Torna a carregar la pàgina per reintentar-ho; si el problema persisteix, contacta amb l'equip de suport.",
     "policy": {

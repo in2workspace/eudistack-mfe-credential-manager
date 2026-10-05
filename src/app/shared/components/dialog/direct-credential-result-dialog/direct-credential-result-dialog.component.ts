@@ -2,11 +2,13 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HolderPrivateKeySectionComponent } from '../holder-private-key-section/holder-private-key-section.component';
 import { DeliveryOutcomeListComponent } from '../delivery-outcome-list/delivery-outcome-list.component';
+import { IssuedCredentialSummaryComponent } from '../issued-credential-summary/issued-credential-summary.component';
 import { UncopiedArtifactCloseGuard, ArtifactKind } from 'src/app/shared/services/uncopied-artifact-close-guard';
-import { DeliveryModeToken } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryModeToken, IssuedCredentialSummary } from 'src/app/core/models/entity/lear-credential-issuance';
 import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outcome';
 
 export interface DirectCredentialResultDialogData {
@@ -18,6 +20,7 @@ export interface DirectCredentialResultDialogData {
   outcomes: ReadonlyMap<DeliveryModeToken, ChannelOutcome>;
   /** Present only when the `ui` channel delivered (EC-02) -- embeds the QR alongside the credential. */
   credentialOfferUri?: string;
+  summary?: IssuedCredentialSummary;
 }
 
 /**
@@ -39,12 +42,14 @@ export interface DirectCredentialResultDialogData {
     MatButton,
     MatIconButton,
     MatIcon,
+    MatTooltip,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,
     TranslatePipe,
     HolderPrivateKeySectionComponent,
     DeliveryOutcomeListComponent,
+    IssuedCredentialSummaryComponent,
   ],
   templateUrl: './direct-credential-result-dialog.component.html',
   styleUrl: './direct-credential-result-dialog.component.scss'
@@ -84,6 +89,10 @@ export class DirectCredentialResultDialogComponent {
     }
     return pending;
   });
+
+  protected readonly pendingHintKey = computed<string>(() =>
+    this.pendingArtifacts().length > 0 ? 'credentialIssuance.direct-result-dialog.pending' : ''
+  );
 
   // closeOnNavigationDisabled: true -- this dialog is always opened with closeOnNavigation: false
   // (opener contract, see class doc above).

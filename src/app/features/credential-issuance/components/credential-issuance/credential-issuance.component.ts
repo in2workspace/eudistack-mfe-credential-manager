@@ -1,17 +1,18 @@
 
 import { MatButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { TitleCasePipe, KeyValuePipe, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, CanDeactivate, RouterLink } from '@angular/router';
 import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { CanComponentDeactivate, CanDeactivateType } from 'src/app/core/guards/can-component-deactivate.guard';
 import { guardUnloadWhileUnsaved } from 'src/app/shared/services/unsaved-changes.service';
 import { AlertBannerComponent } from 'src/app/shared/components/alert-banner/alert-banner.component';
@@ -32,7 +33,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
     // private key material they handle cannot outlive the form. Inherited from the deleted
     // KeyGeneratorComponent, which used to be the (wrong, component-local) home for the first one.
     providers: [CredentialIssuanceService, KeyGeneratorService, IssuanceHolderKeyService],
-    imports: [AlertBannerComponent, CommonModule, KeyValuePipe, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatLabel, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, RouterLink, TitleCasePipe, TranslatePipe],
+    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, MatTooltip, RouterLink, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
@@ -61,6 +62,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public formSchema$: Signal<CredentialIssuanceViewModelSchemaWithId | null>;
 
   public staticData$: Signal<IssuanceStaticViewModel | null>;
+  public holderInfo$: Signal<{ key: string; value: string }[]>;
   public form$: Signal <FormGroup<Record<string, FormGroup>>>;
   public formValue$: Signal<Record<string, any>>;
   public isFormValid$: Signal<boolean>;
@@ -95,6 +97,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.hasDeliveryCatalogReadFailed$ = this.issuanceService.hasDeliveryCatalogReadFailed$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
+    this.holderInfo$ = this.issuanceService.holderInfo$;
     this.form$ = this.issuanceService.form$;
     this.formValue$ = this.issuanceService.formValue$;
     this.isFormValid$ = this.issuanceService.isFormValid$;

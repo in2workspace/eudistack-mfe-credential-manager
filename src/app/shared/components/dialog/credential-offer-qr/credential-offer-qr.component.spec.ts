@@ -1,7 +1,8 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { CredentialOfferQrComponent } from './credential-offer-qr.component';
 import { TenantService } from 'src/app/core/services/tenant.service';
+import { ToastService } from 'src/app/core/services/toast.service';
 import { WALLET_CALLBACK_PATH } from 'src/app/core/constants/wallet.constants';
 
 /**
@@ -13,6 +14,7 @@ describe('CredentialOfferQrComponent', () => {
   let fixture: ComponentFixture<CredentialOfferQrComponent>;
   let component: CredentialOfferQrComponent;
   let mockTenantService: { walletUrl: jest.Mock; defaultWalletUrl: jest.Mock };
+  let mockToast: { error: jest.Mock };
 
   const HTTPS_OFFER_URL = 'https://example.com/offer/123';
   const ENV_WALLET_BASE = 'https://wallet.env.es';
@@ -31,10 +33,12 @@ describe('CredentialOfferQrComponent', () => {
   }
 
   function setup(credentialOfferUri = CREDENTIAL_OFFER_URI) {
+    mockToast = { error: jest.fn() };
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot(), CredentialOfferQrComponent],
       providers: [
         { provide: TenantService, useValue: mockTenantService },
+        { provide: ToastService, useValue: mockToast },
       ],
     });
 
@@ -126,10 +130,30 @@ describe('CredentialOfferQrComponent', () => {
       component.copyOfferUri();
 
       expect(writeTextMock).toHaveBeenCalledWith(CREDENTIAL_OFFER_URI);
+      // The confirmation now waits for the write to actually resolve, so it is not yet set.
+      expect(component.copied).toBe(false);
+
+      flushMicrotasks();
       expect(component.copied).toBe(true);
 
       tick(2000);
       expect(component.copied).toBe(false);
+    }));
+
+    it('tells the operator instead of silently claiming the URI was copied, when the write is rejected', fakeAsync(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const writeTextMock = jest.fn().mockRejectedValue(new Error('NotAllowedError'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        configurable: true,
+      });
+
+      component.copyOfferUri();
+      flushMicrotasks();
+
+      expect(component.copied).toBe(false);
+      // A console error is invisible to the operator: the failure must surface in the UI.
+      expect(mockToast.error).toHaveBeenCalledWith('error.clipboard_copy_failed');
     }));
   });
 });
