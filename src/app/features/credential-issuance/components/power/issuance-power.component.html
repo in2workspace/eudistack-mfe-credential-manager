@@ -30,10 +30,12 @@
       <div [formGroup]="group">
         @for (power of selectorPowers; track power.function) {
           @let enabled = isPowerEnabled(scope, power.function);
+          @let unavailableReason = getUnavailableReason(power.function);
           <div class="function-row">
             <mat-slide-toggle
               class="function-switch"
               [checked]="enabled"
+              [disabled]="isToggleDisabled(scope, power.function)"
               (change)="onPowerToggle(scope, power.function, $event)">
               {{ ( "power." + power.function.toLocaleLowerCase() | translate )}}
             </mat-slide-toggle>
@@ -55,6 +57,14 @@
                 }
               </div>
             }
+
+            <!-- I-03: explain, before submitting, why an offered power cannot be used right now -->
+            @if (unavailableReason) {
+              <p class="unavailable-hint" role="note">
+                {{ ("power." + power.function.toLocaleLowerCase()) | translate }}:
+                {{ ("power.unavailable." + unavailableReason) | translate }}
+              </p>
+            }
           </div>
         }
       </div>
@@ -66,6 +76,8 @@
       <div class="bottom-alert">{{ "error.form.no_power" | translate }}</div>
     }@else if(form().hasError('noActionPerPower')){
       <div class="bottom-alert">{{ "error.form.no_function" | translate }}</div>
+    }@else if(form().hasError('unavailablePower')){
+      <div class="bottom-alert">{{ "power.unavailable.remove" | translate }}</div>
     }
   </div>
 

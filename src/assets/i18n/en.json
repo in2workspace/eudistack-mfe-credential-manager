@@ -313,7 +313,6 @@
       "message": "Are you sure you want to remove this power?"
     },
     "unavailable": {
-      "tag": "unavailable",
       "requires_multi_org": "can only be granted in multi-organization tenants.",
       "same_org": "unavailable because the target organization is your own; it can only be granted to another organization.",
       "remove": "Remove the unavailable powers to create the credential."

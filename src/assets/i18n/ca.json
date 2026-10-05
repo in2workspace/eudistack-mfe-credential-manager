@@ -288,7 +288,6 @@
         "message": "Segur que vols eliminar aquest poder?"
       },
       "unavailable": {
-        "tag": "no disponible",
         "requires_multi_org": "només es pot concedir en tenants multiorganització.",
         "same_org": "no disponible perquè l'organització destinació és la teva; només es pot concedir a una altra organització.",
         "remove": "Treu els poders no disponibles per poder crear la credencial."

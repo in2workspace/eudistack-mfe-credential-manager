@@ -1,7 +1,6 @@
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { IssuancePowerComponent, TempIssuanceFormPowerSchema } from './issuance-power.component';
 import { IssuancePowerComponent } from './issuance-power.component';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
@@ -10,6 +9,7 @@ import { IssuanceFormPowerSchema } from 'src/app/core/models/entity/lear-credent
 import { of } from 'rxjs';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { CredentialIssuanceService } from '../../services/credential-issuance.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
 
@@ -34,9 +34,6 @@ describe('IssuancePowerComponent', () => {
       updateAlertMessages: jest.fn()
     };
 
-    authService = {
-      hasAdminOrganizationIdentifier: jest.fn()
-    };
     authService = {
       hasAdminOrganizationIdentifier: jest.fn(),
       isSysAdmin: jest.fn().mockReturnValue(false),
@@ -296,41 +293,70 @@ describe('IssuancePowerComponent', () => {
           organizationIdentifier: new FormControl(mandator.organizationIdentifier)
         }));
       }
-      Object.defineProperty(component, 'form', { value: () => powerGroup, configurable: true });
+      (component as any).form = () => powerGroup;
+      (component as any).data = () => [productOffering, onboarding];
       component.organizationIdentifierIsAdmin = true;
-      fixture.detectChanges();
-      component.powersInput = [productOffering, onboarding];
+      component.ngOnInit();
       fixture.detectChanges();
       return { root, powerGroup };
     }
 
-    it('marks Onboarding unavailable when the target organization is the operator own organization', () => {
+    const onboardingToggle = (): HTMLElement =>
+      fixture.debugElement.queryAll(By.css('mat-slide-toggle'))
+        .find(t => t.nativeElement.textContent.includes('power.onboarding'))!.nativeElement;
+
+    it('disables Onboarding, with the reason, when the target organization is the operator own organization', () => {
       setup({ country: 'ES', organizationIdentifier: 'A15456585' });
 
       expect(component.getUnavailableReason('Onboarding')).toBe('same_org');
-      expect(component.isSelectable(component.getPowerByFunction('Onboarding')!)).toBe(false);
-      expect(component.getUnavailablePowers()).toEqual([{ function: 'Onboarding', reason: 'same_org' }]);
-      expect(fixture.nativeElement.querySelector('.unavailable-hint')).not.toBeNull();
+      expect(component.isToggleDisabled('domain', 'Onboarding')).toBe(true);
+      expect((onboardingToggle().querySelector('button') as HTMLButtonElement).disabled).toBe(true);
+      const hint: HTMLElement = fixture.nativeElement.querySelector('.unavailable-hint');
+      expect(hint.textContent).toContain('power.unavailable.same_org');
+    });
+
+    it('compares the organizationIdentifier the request factory will send (already VAT-prefixed)', () => {
+      setup({ country: 'ES', organizationIdentifier: 'VATES-A15456585' });
+
+      expect(component.getUnavailableReason('Onboarding')).toBe('same_org');
     });
 
     it('keeps Onboarding available for another organization, and for an organization not typed yet', () => {
       const { root } = setup({ country: 'ES', organizationIdentifier: 'B12345678' });
       expect(component.getUnavailableReason('Onboarding')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.unavailable-hint')).toBeNull();
 
       root.get('mandator.organizationIdentifier')!.setValue('');
       expect(component.getUnavailableReason('Onboarding')).toBeNull();
     });
 
-    it('invalidates an already added Onboarding power once the operator types their own organization', () => {
+    it('does not add an unavailable power even if asked to', () => {
+      const { powerGroup } = setup({ country: 'ES', organizationIdentifier: 'A15456585' });
+
+      component.addPower('domain', 'Onboarding');
+
+      expect((powerGroup.get('domain') as FormGroup).contains('Onboarding')).toBe(false);
+    });
+
+    it('invalidates an already added Onboarding power once the operator types their own organization, and lets it be removed', () => {
       const { root, powerGroup } = setup({ country: 'ES', organizationIdentifier: 'B12345678' });
-      component.addPower('Onboarding');
-      (powerGroup.get('Onboarding') as FormGroup).get('Execute')!.setValue(true);
+      component.addPower('domain', 'Onboarding');
+      powerGroup.get('domain.Onboarding.Execute')!.setValue(true);
       expect(powerGroup.hasError('unavailablePower')).toBe(false);
 
       root.get('mandator.organizationIdentifier')!.setValue('A15456585');
+      fixture.detectChanges();
 
       expect(powerGroup.hasError('unavailablePower')).toBe(true);
       expect(root.valid).toBe(false);
+      expect(component.isToggleDisabled('domain', 'Onboarding')).toBe(false);
+      expect(fixture.nativeElement.querySelector('.bottom-alert').textContent).toContain('power.unavailable.remove');
+    });
+
+    it('treats a non on-behalf issuance (no mandator group) as the operator own organization', () => {
+      setup(null);
+
+      expect(component.getUnavailableReason('Onboarding')).toBe('same_org');
     });
 
     it('marks Onboarding unavailable outside a multi_org tenant', () => {

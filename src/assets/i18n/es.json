@@ -313,7 +313,6 @@
       "message": "¿Seguro que quieres eliminar este poder?"
     },
     "unavailable": {
-      "tag": "no disponible",
       "requires_multi_org": "solo puede concederse en tenants multiorganización.",
       "same_org": "no disponible porque la organización destino es la tuya; solo puede concederse a otra organización.",
       "remove": "Quita los poderes no disponibles para poder crear la credencial."
