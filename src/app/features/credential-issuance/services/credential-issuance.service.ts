@@ -924,7 +924,9 @@ export class CredentialIssuanceService {
       const fields = businessError.fields
         .map(({ group, field }) => {
           const label = this.translate.instant(`credentialIssuance.${field}`);
-          return group ? `${this.translate.instant(`credentialIssuance.${group}`)}: ${label}` : label;
+          if (!group) return label;
+          const groupLabel = this.translate.instant(`credentialIssuance.${group}`);
+          return `${groupLabel}: ${label}`;
         })
         .join(', ');
       const intro = this.translate.instant("credentialIssuance.create-error-dialog.invalid-fields");

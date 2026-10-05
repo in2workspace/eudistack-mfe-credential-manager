@@ -72,9 +72,9 @@ function toInvalidField(location: unknown): IssuanceInvalidField | null {
     .replace(/\[\d+\]/g, '')
     .split(/[./]/)
     .filter(Boolean);
-  if (segments.length === 0) return null;
-  if (segments.length === 1) return { group: null, field: segments[0] };
-  return { group: segments[0], field: segments[segments.length - 1] };
+  const field = segments.at(-1);
+  if (!field) return null;
+  return { group: segments.length > 1 ? segments[0] : null, field };
 }
 
 function uniqueFields(fields: IssuanceInvalidField[]): IssuanceInvalidField[] {
