@@ -16,6 +16,15 @@ import { statusHasSignCredentialButton, statusHasRevokeCredentialButton, statusH
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
+import { CredentialFormat, FORMAT_LABEL_MAP } from 'src/app/core/models/entity/lear-credential-issuance';
+import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
+import { FORMAT_FAMILY_LABEL_KEYS } from 'src/app/features/settings/catalog/catalog.models';
+
+/** A credential format ready to render: its i18n key, or the raw token when the UI has no label for it. */
+export interface CredentialFormatDisplay {
+  readonly labelKey: string | null;
+  readonly token: string;
+}
 
 
 @Injectable() //provided in component
@@ -64,6 +73,22 @@ export class CredentialDetailsService {
         ?? unnamed;
     }
     return unnamed;
+  });
+  public credentialFormat$ = computed<CredentialFormatDisplay | undefined>(() => {
+    const configId = this.credentialType$();
+    const config = (configId ? this.metadataService.getConfigurationById(configId) : undefined)
+      ?? matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
+    if (config?.format) {
+      return {
+        labelKey: FORMAT_LABEL_MAP[config.format as CredentialFormat] ?? null,
+        token: config.format,
+      };
+    }
+    // Metadata does not describe this credential: the id's format segment is the only signal left.
+    const formatFamily = configId ? parseCredentialConfigurationId(configId)?.formatFamily : undefined;
+    return formatFamily
+      ? { labelKey: FORMAT_FAMILY_LABEL_KEYS[formatFamily] ?? null, token: formatFamily }
+      : undefined;
   });
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {

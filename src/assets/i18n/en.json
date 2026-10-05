@@ -136,6 +136,7 @@
     "commonName": "name",
     "email": "email",
     "contact-email": "Contact email",
+    "format": "format",
     "serialNumber": "Serial number",
     "name": "name",
     "firstName": "first name",
