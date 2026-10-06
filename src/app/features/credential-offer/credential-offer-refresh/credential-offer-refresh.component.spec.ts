@@ -137,7 +137,7 @@ describe('CredentialOfferRefreshComponent', () => {
       refreshService.refreshCredentialOffer.mockReturnValue(throwError(() => new HttpErrorResponse({
         status: 410,
         error: {
-          type: 'CREDENTIAL_ALREADY_ACTIVE',
+          type: 'credential_already_active',
           title: 'Credential already active',
           status: 410,
           detail: 'The credential is already active.',

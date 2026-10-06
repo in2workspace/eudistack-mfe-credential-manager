@@ -296,7 +296,7 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
   });
 
   // The credential offer refresh screen renders its own outcome (generic error or a
-  // functional one such as CREDENTIAL_ALREADY_ACTIVE or credential_offer_gone), so no
+  // functional one such as credential_already_active or credential_offer_gone), so no
   // global dialog may cover it.
   describe('credential offer refresh endpoint', () => {
     beforeEach(() => {
@@ -304,8 +304,8 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
     });
 
     it.each([
-      ['an absolute path', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'CREDENTIAL_ALREADY_ACTIVE'],
-      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'CREDENTIAL_ALREADY_ACTIVE'],
+      ['an absolute path', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_already_active'],
+      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_already_active'],
       ['a credential_offer_gone problem', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_offer_gone'],
     ])('should rethrow the original error without a dialog for %s', (_label, url, type) => {
       const problem = { type, status: 410 };

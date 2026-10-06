@@ -49,7 +49,7 @@ export class ServeErrorInterceptor implements HttpInterceptor {
         }
 
         // The credential offer refresh screen renders its own outcome for every failure —
-        // including functional ones such as CREDENTIAL_ALREADY_ACTIVE — so a generic
+        // including functional ones such as credential_already_active — so a generic
         // "unknown error" dialog on top of it would contradict the in-page message.
         if (this.isCredentialOfferRefreshEndpoint(request.url)) {
           this.logHandledSilentlyError(error);

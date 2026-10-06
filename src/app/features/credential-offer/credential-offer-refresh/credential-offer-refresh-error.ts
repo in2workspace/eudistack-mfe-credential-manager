@@ -9,7 +9,7 @@ export type RefreshErrorState = 'already-active' | 'revoked' | 'error';
  * `detail`, which are human-readable and may change or be localised.
  */
 export const REFRESH_PROBLEM_TYPE = {
-  CREDENTIAL_ALREADY_ACTIVE: 'CREDENTIAL_ALREADY_ACTIVE',
+  CREDENTIAL_ALREADY_ACTIVE: 'credential_already_active',
   CREDENTIAL_OFFER_GONE: 'credential_offer_gone',
 } as const;
 

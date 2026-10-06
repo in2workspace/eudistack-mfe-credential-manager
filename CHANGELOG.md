@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 - **Credential Offer Refresh**: A `410 Gone` with Problem Details `type: credential_offer_gone` now shows a dedicated "Credential unavailable" screen (message only, no icon or action buttons) instead of the generic "Something went wrong" screen with "Try again". Detection uses only the HTTP status and the problem `type`; every other 410 and non-410 error keeps the generic, retryable screen.
-- **Credential Offer Refresh**: Fixed a bug where the `CREDENTIAL_ALREADY_ACTIVE` business error (HTTP 410 Gone) was incorrectly handled as a generic unknown error with unnecessary retry options. The `ServeErrorInterceptor` was corrected to properly exclude this business flow from global error dialogs. The service now correctly identifies RFC7807 problem details, allowing the component to show a specific "already active" message instead of a generic error screen.
+- **Credential Offer Refresh**: Fixed a bug where the `credential_already_active` business error (HTTP 410 Gone) was incorrectly handled as a generic unknown error with unnecessary retry options. The `ServeErrorInterceptor` was corrected to properly exclude this business flow from global error dialogs. The service now correctly identifies RFC7807 problem details, allowing the component to show a specific "already active" message instead of a generic error screen. The problem `type` is matched as `credential_already_active` (snake_case, aligned with the Issuer's `GlobalErrorTypes`; it was briefly `CREDENTIAL_ALREADY_ACTIVE` before release), so this requires an Issuer with the same value.
 
 ## [Unreleased] - 2026-09-22
 
