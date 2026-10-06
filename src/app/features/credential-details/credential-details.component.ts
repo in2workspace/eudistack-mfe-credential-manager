@@ -12,7 +12,7 @@ import { MatButton } from '@angular/material/button';
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
-import { CredentialDetailsService } from './services/credential-details.service';
+import { CredentialDetailsService, CredentialFormatDisplay } from './services/credential-details.service';
 import { PortalModule } from '@angular/cdk/portal';
 import { CredentialStatus, LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { Observable } from 'rxjs';
@@ -46,6 +46,7 @@ export class CredentialDetailsComponent implements OnInit {
   public credentialValidUntil$: Signal<string>
   public credentialType$: Signal<string | undefined>;
   public credentialDisplayName$: Signal<string>;
+  public credentialFormat$: Signal<CredentialFormatDisplay | undefined>;
   public lifeCycleStatus$: Signal<LifeCycleStatus | undefined>;
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public email$: Signal<string | undefined>;
@@ -81,6 +82,7 @@ export class CredentialDetailsComponent implements OnInit {
     this.credentialValidUntil$ = this.detailsService.credentialValidUntil$;
     this.credentialType$ = this.detailsService.credentialType$;
     this.credentialDisplayName$ = this.detailsService.credentialDisplayName$;
+    this.credentialFormat$ = this.detailsService.credentialFormat$;
     this.lifeCycleStatus$ = this.detailsService.lifeCycleStatus$;
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;

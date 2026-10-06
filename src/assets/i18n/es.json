@@ -124,6 +124,7 @@
     "status": "estatus",
     "email": "Correo electrónico",
     "contact-email": "Email de contacto",
+    "format": "formato",
     "valid_from": "válido desde",
     "valid_until": "válido hasta",
     "issuer": "emisor",

@@ -8,7 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { LoaderService } from 'src/app/shared/services/loader.service';
-import { CredentialDetailsService } from './services/credential-details.service';
+import { CredentialDetailsService, CredentialFormatDisplay } from './services/credential-details.service';
 import { CredentialDetailsComponent } from './credential-details.component';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { mockCredentialStatus } from 'src/app/core/mocks/details.mock';
@@ -29,6 +29,7 @@ describe('CredentialDetailsComponent', () => {
     credentialStatus$: ReturnType<typeof signal<any>>;
     lifeCycleStatusClass$: ReturnType<typeof signal<StatusClass | undefined>>;
     email$: ReturnType<typeof signal<any>>;
+    credentialFormat$: ReturnType<typeof signal<CredentialFormatDisplay | undefined>>;
 
     mainViewModel$: ReturnType<typeof signal<EvaluatedExtendedDetailsField[] | undefined>>;
     sideViewModel$: ReturnType<typeof signal<EvaluatedExtendedDetailsField[] | undefined>>;
@@ -79,6 +80,7 @@ describe('CredentialDetailsComponent', () => {
       credentialStatus$: credentialStatus$,
       lifeCycleStatusClass$: statusClass$,
       email$: email$,
+      credentialFormat$: signal<CredentialFormatDisplay | undefined>({ labelKey: 'credentialIssuance.format.sdJwt', token: 'dc+sd-jwt' }),
 
       mainViewModel$: mainModel$,
       sideViewModel$: sideModel$,
@@ -132,6 +134,43 @@ describe('CredentialDetailsComponent', () => {
 
   it('creates component and initializes signals', () => {
     expect(component).toBeTruthy();
+  });
+
+  describe('format field', () => {
+    const formatText = () => fixture.nativeElement.querySelector('.credential-format')?.textContent;
+
+    it('renders the translated format in the header', () => {
+      // Arrange
+      // Default mock format is SD-JWT.
+
+      // Act
+      fixture.detectChanges();
+
+      // Assert
+      expect(formatText()).toContain('credentialIssuance.format.sdJwt');
+    });
+
+    it('renders the raw token when the format has no label key', () => {
+      // Arrange
+      mockDetailsService.credentialFormat$.set({ labelKey: null, token: 'foo' });
+
+      // Act
+      fixture.detectChanges();
+
+      // Assert
+      expect(formatText()).toContain('foo');
+    });
+
+    it('does not render the field when the format is unknown', () => {
+      // Arrange
+      mockDetailsService.credentialFormat$.set(undefined);
+
+      // Act
+      fixture.detectChanges();
+
+      // Assert
+      expect(formatText()).toBeUndefined();
+    });
   });
 
   it('should initialize main signals correctly', () => {
