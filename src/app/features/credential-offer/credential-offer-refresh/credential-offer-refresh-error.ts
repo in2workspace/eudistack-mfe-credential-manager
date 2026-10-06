@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 
 /** Terminal outcomes the refresh screen can show when the POST fails. */
-export type RefreshErrorState = 'already-active' | 'revoked' | 'error';
+export type RefreshErrorState = 'already-active' | 'unavailable' | 'error';
 
 /**
  * Problem Details (RFC 7807) `type` values the refresh endpoint returns for functional
@@ -26,8 +26,9 @@ const RULES: readonly RefreshErrorRule[] = [
   // Matched on `type` alone so the screen keeps working if the backend moves this case
   // from 410 to another status.
   { state: 'already-active', type: REFRESH_PROBLEM_TYPE.CREDENTIAL_ALREADY_ACTIVE },
-  // The offer can no longer be refreshed because the credential was revoked.
-  { state: 'revoked', type: REFRESH_PROBLEM_TYPE.CREDENTIAL_OFFER_GONE, status: HttpStatusCode.Gone },
+  // The offer can no longer be refreshed: the credential behind it is no longer usable
+  // (revoked, withdrawn or expired). The screen stays neutral about which.
+  { state: 'unavailable', type: REFRESH_PROBLEM_TYPE.CREDENTIAL_OFFER_GONE, status: HttpStatusCode.Gone },
 ];
 
 export function resolveRefreshErrorState(error: unknown): RefreshErrorState {

@@ -6,7 +6,7 @@ function httpError(status: number, error: unknown): HttpErrorResponse {
 }
 
 describe('resolveRefreshErrorState', () => {
-  it('should resolve to revoked on 410 + credential_offer_gone', () => {
+  it('should resolve to unavailable on 410 + credential_offer_gone', () => {
     const error = httpError(410, {
       type: 'credential_offer_gone',
       title: 'Credential offer gone',
@@ -15,10 +15,10 @@ describe('resolveRefreshErrorState', () => {
       instance: '2c5f74d6-66cc-4ff1-bb8a-7604232f75e7'
     });
 
-    expect(resolveRefreshErrorState(error)).toBe('revoked');
+    expect(resolveRefreshErrorState(error)).toBe('unavailable');
   });
 
-  it('should not resolve to revoked when credential_offer_gone comes with a status other than 410', () => {
+  it('should not resolve to unavailable when credential_offer_gone comes with a status other than 410', () => {
     expect(resolveRefreshErrorState(httpError(400, { type: REFRESH_PROBLEM_TYPE.CREDENTIAL_OFFER_GONE }))).toBe('error');
     expect(resolveRefreshErrorState(httpError(500, { type: REFRESH_PROBLEM_TYPE.CREDENTIAL_OFFER_GONE }))).toBe('error');
   });

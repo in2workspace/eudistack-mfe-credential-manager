@@ -150,10 +150,10 @@ describe('CredentialOfferRefreshComponent', () => {
       expect(component.state()).toBe('already-active');
     });
 
-    it('should transition to revoked state on 410 + credential_offer_gone problem details', () => {
+    it('should transition to unavailable state on 410 + credential_offer_gone problem details', () => {
       failWith(410, CREDENTIAL_OFFER_GONE_PROBLEM);
 
-      expect(component.state()).toBe('revoked');
+      expect(component.state()).toBe('unavailable');
     });
 
     it.each([
@@ -192,7 +192,7 @@ describe('CredentialOfferRefreshComponent', () => {
     });
   });
 
-  describe('revoked screen (410 + credential_offer_gone)', () => {
+  describe('unavailable screen (410 + credential_offer_gone)', () => {
     beforeEach(() => failWith(410, CREDENTIAL_OFFER_GONE_PROBLEM));
 
     it('should show "Credencial no disponible" as the single page heading', () => {
@@ -203,7 +203,7 @@ describe('CredentialOfferRefreshComponent', () => {
       expect(headings[0].textContent?.trim()).toBe('Credencial no disponible');
     });
 
-    it('should show the revoked description', () => {
+    it('should show the unavailable description', () => {
       expect(host().querySelector('p')?.textContent?.trim())
         .toBe('La credencial ya no está disponible. Ponte en contacto con tu organización para emitir una nueva.');
     });
@@ -243,7 +243,7 @@ describe('CredentialOfferRefreshComponent', () => {
 
       expect(host().querySelector('h1')?.textContent?.trim()).toBe(COPY['error-title']);
       expect(host().querySelector('button')?.textContent?.trim()).toBe(COPY['retry-btn']);
-      expect(host().textContent).not.toContain(COPY['revoked-title']);
+      expect(host().textContent).not.toContain(COPY['unavailable-title']);
     });
 
     it('should retry the request when the retry button is clicked', () => {
@@ -300,10 +300,10 @@ describe('CredentialOfferRefreshComponent (HTTP integration)', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('should show the revoked screen on 410 + credential_offer_gone', () => {
+  it('should show the unavailable screen on 410 + credential_offer_gone', () => {
     const el = sendAndRespond(CREDENTIAL_OFFER_GONE_PROBLEM, { status: 410, statusText: 'Gone' });
 
-    expect(fixture.componentInstance.state()).toBe('revoked');
+    expect(fixture.componentInstance.state()).toBe('unavailable');
     expect(el.querySelector('h1')?.textContent?.trim()).toBe('Credencial no disponible');
     expect(el.querySelector('button')).toBeNull();
   });
