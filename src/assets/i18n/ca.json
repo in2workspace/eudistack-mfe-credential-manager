@@ -469,6 +469,7 @@
     "internal_server": "S'ha produït un error al servidor. Si us plau, torna-ho a intentar més tard.",
     "credential_submission": "S'ha produït un error en crear la credencial.",
     "one_power_min":"Hi ha d'haver almenys un poder seleccionat, i cada poder requereix almenys una acció.",
+    "clipboard_copy_failed": "No s'ha pogut copiar l'enllaç al porta-retalls. Escaneja el codi QR o fes servir l'enllaç del moneder que apareix a sota.",
     "unknown_error": "S'ha produït un error desconegut. Si us plau, torna-ho a intentar.",
     "issuance_catalog_unavailable": "No s'ha pogut carregar la configuració de credencials emissibles de la teva organització, així que l'emissió de noves credencials no està disponible. Les credencials ja emeses no es veuen afectades: les pots continuar consultant i gestionant. Torna a carregar la pàgina per reintentar-ho; si el problema persisteix, contacta amb l'equip de suport.",
     "policy": {

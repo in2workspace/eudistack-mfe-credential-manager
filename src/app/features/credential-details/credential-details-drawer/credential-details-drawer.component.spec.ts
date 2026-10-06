@@ -11,7 +11,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { CredentialDetailsService } from '../services/credential-details.service';
+import { CredentialDetailsService, CredentialFormatDisplay } from '../services/credential-details.service';
 import { CredentialActionsService } from '../services/credential-actions.service';
 import { CredentialDetailsDrawerComponent, CredentialDetailsDrawerData } from './credential-details-drawer.component';
 
@@ -87,7 +87,7 @@ describe('CredentialDetailsDrawerComponent', () => {
       lifeCycleStatusClass$: signal<StatusClass | undefined>('status-valid'),
       email$: signal('andrea.romano@engineering.it'),
       issuerOrganization$: signal<string | undefined>('Engineering S.p.A.'),
-      credentialFormat$: signal<string | undefined>('jwt_vc_json'),
+      credentialFormat$: signal<CredentialFormatDisplay | undefined>({ labelKey: 'credentialIssuance.format.w3cVcDm', token: 'jwt_vc_json' }),
       mainViewModel$: mainModel$,
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
@@ -152,8 +152,8 @@ describe('CredentialDetailsDrawerComponent', () => {
   });
 
   it('falls back to the raw format when it has no label, and to a dash when there is none', async () => {
-    const format$ = detailsService['credentialFormat$'] as WritableSignal<string | undefined>;
-    format$.set('ldp_vc');
+    const format$ = detailsService['credentialFormat$'] as WritableSignal<CredentialFormatDisplay | undefined>;
+    format$.set({ labelKey: null, token: 'ldp_vc' });
     await createComponent();
     showCredentialInformation();
     const box = () => fixture.nativeElement.querySelector('#drawer-format');

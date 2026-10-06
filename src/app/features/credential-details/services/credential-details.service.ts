@@ -18,6 +18,15 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
 import { getCredentialTypeFamilyLabelKey } from 'src/app/core/helpers/credential-type-family';
+import { CredentialFormat, FORMAT_LABEL_MAP } from 'src/app/core/models/entity/lear-credential-issuance';
+import { parseCredentialConfigurationId } from 'src/app/core/helpers/credential-configuration-id';
+import { FORMAT_FAMILY_LABEL_KEYS } from 'src/app/features/settings/catalog/catalog.models';
+
+/** A credential format ready to render: its i18n key, or the raw token when the UI has no label for it. */
+export interface CredentialFormatDisplay {
+  readonly labelKey: string | null;
+  readonly token: string;
+}
 
 
 @Injectable() //provided in component
@@ -56,7 +65,6 @@ export class CredentialDetailsService {
     return config ?? matchLegacyConfig(this.credential$()?.type, this.metadataService.getAllConfigurations())?.config;
     // --- end LEGACY fallback ---
   });
-  public credentialFormat$ = computed<string | undefined>(() => this.credentialConfig$()?.format);
   public credentialDisplayName$ = computed<string>(() => {
     // --- FALLBACK (see fallback/lear-credential-fallback-schema.ts) ---
     // The type shown in the header must never be blank, even for a credential carrying no
@@ -76,6 +84,18 @@ export class CredentialDetailsService {
   public credentialTypeFamilyLabelKey$ = computed<string | undefined>(() =>
     getCredentialTypeFamilyLabelKey(this.credentialType$() ?? readSpecificCredentialType(this.credential$()) ?? '')
   );
+  public credentialFormat$ = computed<CredentialFormatDisplay | undefined>(() => {
+    const format = this.credentialConfig$()?.format;
+    if (format) {
+      return { labelKey: FORMAT_LABEL_MAP[format as CredentialFormat] ?? null, token: format };
+    }
+    // Metadata does not describe this credential: the id's format segment is the only signal left.
+    const configId = this.credentialType$();
+    const formatFamily = configId ? parseCredentialConfigurationId(configId)?.formatFamily : undefined;
+    return formatFamily
+      ? { labelKey: FORMAT_FAMILY_LABEL_KEYS[formatFamily] ?? null, token: formatFamily }
+      : undefined;
+  });
   public lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public credentialStatus$ = computed<CredentialStatus | undefined>(() => {
     return this.credential$()?.credentialStatus;

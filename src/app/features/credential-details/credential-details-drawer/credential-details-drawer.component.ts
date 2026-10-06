@@ -14,10 +14,9 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
 import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
-import { CredentialFormat, FORMAT_LABEL_MAP } from 'src/app/core/models/entity/lear-credential-issuance';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
 import { ThemeService } from 'src/app/core/services/theme.service';
-import { CredentialDetailsService } from '../services/credential-details.service';
+import { CredentialDetailsService, CredentialFormatDisplay } from '../services/credential-details.service';
 
 export interface CredentialDetailsDrawerData {
   procedureId: string;
@@ -52,8 +51,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly lifeCycleStatusClass$: Signal<StatusClass | undefined>;
   public readonly email$: Signal<string | undefined>;
   public readonly issuerOrganization$: Signal<string | undefined>;
-  /** i18n key of the credential format, or the raw OID4VCI format when it has no label. */
-  public readonly credentialFormatLabel$: Signal<string | undefined>;
+  public readonly credentialFormat$: Signal<CredentialFormatDisplay | undefined>;
   // Hidden until the design team answers how the credential information section should look.
   public readonly showCredentialInformation = false;
   // Hidden for now: the contact email stays out of the drawer until it is asked for.
@@ -92,10 +90,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.lifeCycleStatusClass$ = this.detailsService.lifeCycleStatusClass$;
     this.email$ = this.detailsService.email$;
     this.issuerOrganization$ = this.detailsService.issuerOrganization$;
-    this.credentialFormatLabel$ = computed<string | undefined>(() => {
-      const format = this.detailsService.credentialFormat$();
-      return format ? FORMAT_LABEL_MAP[format as CredentialFormat] ?? format : undefined;
-    });
+    this.credentialFormat$ = this.detailsService.credentialFormat$;
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
     this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;

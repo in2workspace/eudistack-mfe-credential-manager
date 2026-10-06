@@ -172,6 +172,107 @@ describe('CredentialDetailsService', () => {
       expect(service.credential$()).toBeUndefined();
     });
 
+    describe('credentialFormat$', () => {
+      const setProcedure = (configId: string | undefined, vcType: string[] = []) =>
+        service.credentialProcedureDetails$.set({
+          credential_configuration_id: configId,
+          credential: { vc: { type: vcType } },
+        } as any);
+
+      it('credentialFormat$() maps a jwt_vc_json configuration to the W3C label key', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue({ format: 'jwt_vc_json' });
+        setProcedure('learcredential.employee.w3c.1');
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result).toEqual({ labelKey: 'credentialIssuance.format.w3cVcDm', token: 'jwt_vc_json' });
+      });
+
+      it('credentialFormat$() maps a dc+sd-jwt configuration to the SD-JWT label key', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue({ format: 'dc+sd-jwt' });
+        setProcedure('learcredential.employee.sd.1');
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result).toEqual({ labelKey: 'credentialIssuance.format.sdJwt', token: 'dc+sd-jwt' });
+      });
+
+      it('credentialFormat$() prefers the metadata format over the one in the configuration id', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue({ format: 'dc+sd-jwt' });
+        setProcedure('learcredential.employee.w3c.1');
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result?.labelKey).toBe('credentialIssuance.format.sdJwt');
+      });
+
+      it('credentialFormat$() falls back to the configuration id format when metadata does not resolve it', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+        mockMetadataService.getAllConfigurations.mockReturnValue(null);
+        setProcedure('learcredential.employee.sd.1');
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result).toEqual({ labelKey: 'credentialIssuance.format.sdJwt', token: 'sd' });
+      });
+
+      it('credentialFormat$() returns the raw token when the format has no label', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+        mockMetadataService.getAllConfigurations.mockReturnValue(null);
+        setProcedure('learcredential.employee.foo.1');
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result).toEqual({ labelKey: null, token: 'foo' });
+      });
+
+      it('credentialFormat$() resolves a legacy credential through its VC type', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+        mockMetadataService.getAllConfigurations.mockReturnValue({
+          'learcredential.employee.w3c.2': {
+            format: 'jwt_vc_json',
+            credential_definition: { type: ['VerifiableCredential', 'LEARCredentialEmployee'] },
+          },
+        });
+        setProcedure('LEAR_CREDENTIAL_EMPLOYEE', ['VerifiableCredential', 'LEARCredentialEmployee']);
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result?.labelKey).toBe('credentialIssuance.format.w3cVcDm');
+      });
+
+      it('credentialFormat$() is undefined when nothing identifies the format', () => {
+        // Arrange
+        mockMetadataService.getConfigurationById.mockReturnValue(undefined);
+        mockMetadataService.getAllConfigurations.mockReturnValue(null);
+        setProcedure(undefined);
+
+        // Act
+        const result = service.credentialFormat$();
+
+        // Assert
+        expect(result).toBeUndefined();
+      });
+    });
+
     it('credentialValidFrom$() and credentialValidUntil$() fallback to empty string', () => {
       expect(service.credentialValidFrom$()).toBe('');
       expect(service.credentialValidUntil$()).toBe('');
@@ -223,22 +324,6 @@ describe('CredentialDetailsService', () => {
         credential: { vc: { ...mockVc, type: ['VerifiableCredential', 'LEARCredentialMachine'] } }
       } as any);
       expect(service.credentialTypeFamilyLabelKey$()).toBe('credentialManagement.typeFamily.machine');
-    });
-
-    it('credentialFormat$() reads the format of the credential configuration', () => {
-      mockMetadataService.getConfigurationById.mockImplementation((id: string) =>
-        id === 'learcredential.employee.sd.1' ? { format: 'dc+sd-jwt' } : undefined);
-      service.credentialProcedureDetails$.set({
-        credential_configuration_id: 'learcredential.employee.sd.1',
-        credential: { vc: mockVc }
-      } as any);
-      expect(service.credentialFormat$()).toBe('dc+sd-jwt');
-    });
-
-    it('credentialFormat$() is undefined when no configuration describes the credential', () => {
-      mockMetadataService.getConfigurationById.mockReturnValue(undefined);
-      service.credentialProcedureDetails$.set({ credential: { vc: mockVc } } as any);
-      expect(service.credentialFormat$()).toBeUndefined();
     });
 
     it('showSideTemplateCard$() is false by default, true when sideViewModel has items', () => {
