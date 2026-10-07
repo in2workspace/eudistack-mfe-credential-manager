@@ -1,7 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatMenuTrigger } from '@angular/material/menu';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FilterDropdownComponent } from './filter-dropdown.component';
 
@@ -56,7 +54,7 @@ describe('FilterDropdownComponent', () => {
     expect(trigger()).toBe('Credential type, 2 selected');
   });
 
-  it('emits an empty selection on clear, without opening the menu', () => {
+  it('emits an empty selection on clear, without opening the panel', () => {
     const emitted: string[][] = [];
     component.selectionChange.subscribe(value => emitted.push(value));
     fixture.componentRef.setInput('selected', ['a']);
@@ -81,7 +79,7 @@ describe('FilterDropdownComponent', () => {
     expect(emitted).toEqual([[]]);
   });
 
-  describe('menu', () => {
+  describe('panel', () => {
     let emitted: string[][];
 
     beforeEach(() => {
@@ -117,8 +115,12 @@ describe('FilterDropdownComponent', () => {
       fixture.detectChanges();
     }
 
-    function trigger(): MatMenuTrigger {
-      return fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger);
+    function triggerButton(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.filter-dropdown-trigger');
+    }
+
+    function isOpen(): boolean {
+      return panel() !== null;
     }
 
     function footerButton(selector: string): HTMLButtonElement {
@@ -187,11 +189,54 @@ describe('FilterDropdownComponent', () => {
       open();
       typeSearch('a');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (component as any).onOpened();
+      triggerButton().click(); // close
+      fixture.detectChanges();
+      open();
+
+      expect(searchInput()!.value).toBe('');
+      expect(optionLabels()).toEqual(['A', 'B']);
+    });
+
+    it('is announced as a dialog popup, named after the filter, and wired to its trigger', () => {
+      expect(triggerButton().getAttribute('aria-haspopup')).toBe('dialog');
+      expect(triggerButton().getAttribute('aria-expanded')).toBe('false');
+      expect(triggerButton().getAttribute('aria-controls')).toBeNull();
+
+      open();
+
+      expect(panel()!.getAttribute('role')).toBe('dialog');
+      expect(panel()!.getAttribute('aria-label')).toBe('filters.credentialType');
+      expect(triggerButton().getAttribute('aria-expanded')).toBe('true');
+      expect(triggerButton().getAttribute('aria-controls')).toBe(panel()!.id);
+      expect(document.querySelector('[role="menu"], [role="menuitem"]')).toBeNull();
+    });
+
+    it('moves focus into the panel on open and back to the trigger on close', () => {
+      open();
+      expect(document.activeElement).toBe(checkboxInputs()[0]);
+
+      triggerButton().click();
       fixture.detectChanges();
 
-      expect(optionLabels()).toEqual(['A', 'B']);
+      expect(isOpen()).toBe(false);
+      expect(document.activeElement).toBe(triggerButton());
+    });
+
+    it('focuses the search box first when there is one', () => {
+      fixture.componentRef.setInput('searchable', true);
+      fixture.detectChanges();
+      open();
+
+      expect(document.activeElement).toBe(searchInput());
+    });
+
+    it('closes on an outside click', () => {
+      open();
+
+      (document.querySelector('.cdk-overlay-backdrop') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(isOpen()).toBe(false);
     });
 
     describe('footer mode', () => {
@@ -220,7 +265,7 @@ describe('FilterDropdownComponent', () => {
         fixture.detectChanges();
 
         expect(emitted).toEqual([['a', 'b']]);
-        expect(trigger().menuOpen).toBe(false);
+        expect(isOpen()).toBe(false);
       });
 
       it('discards the draft on Close', () => {
@@ -231,9 +276,10 @@ describe('FilterDropdownComponent', () => {
         fixture.detectChanges();
 
         expect(emitted).toEqual([]);
-        expect(trigger().menuOpen).toBe(false);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect((component as any).draft()).toEqual(['a']);
+        expect(isOpen()).toBe(false);
+
+        open();
+        expect(checkboxInputs().map(i => i.checked)).toEqual([true, false]);
       });
     });
 
@@ -255,37 +301,42 @@ describe('FilterDropdownComponent', () => {
         return event;
       }
 
-      it('keeps the menu open when tabbing between its controls', () => {
+      it('keeps the panel open when tabbing between its controls', () => {
         press(searchInput()!, 'Tab');
         press(checkboxInputs()[0], 'Tab');
         press(footerButton('.filter-dropdown-close'), 'Tab', true);
 
-        expect(trigger().menuOpen).toBe(true);
+        expect(isOpen()).toBe(true);
       });
 
-      it('closes the menu when tabbing past the last control', () => {
-        press(footerButton('[color="primary"]'), 'Tab');
+      it('closes the panel and refocuses the trigger when tabbing past the last control', () => {
+        const event = press(footerButton('[color="primary"]'), 'Tab');
 
-        expect(trigger().menuOpen).toBe(false);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(triggerButton());
+
+        expect(isOpen()).toBe(false);
       });
 
-      it('closes the menu when shift-tabbing before the first control', () => {
+      it('closes the panel when shift-tabbing before the first control', () => {
         press(searchInput()!, 'Tab', true);
 
-        expect(trigger().menuOpen).toBe(false);
+        expect(isOpen()).toBe(false);
       });
 
       it('lets Home, End and arrows reach the search box', () => {
         const events = ['Home', 'End', 'ArrowDown'].map(key => press(searchInput()!, key));
 
         expect(events.map(e => e.defaultPrevented)).toEqual([false, false, false]);
-        expect(trigger().menuOpen).toBe(true);
+        expect(isOpen()).toBe(true);
       });
 
-      it('still closes on Escape', () => {
+      it('closes on Escape, refocusing the trigger', () => {
         press(searchInput()!, 'Escape');
 
-        expect(trigger().menuOpen).toBe(false);
+        expect(document.activeElement).toBe(triggerButton());
+
+        expect(isOpen()).toBe(false);
       });
     });
   });

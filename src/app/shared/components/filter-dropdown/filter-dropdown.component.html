@@ -1,10 +1,15 @@
-<div class="filter-dropdown-chip" [class.filter-dropdown-chip--active]="selected().length > 0">
+<div class="filter-dropdown-chip"
+     [class.filter-dropdown-chip--active]="selected().length > 0"
+     cdkOverlayOrigin
+     #origin="cdkOverlayOrigin">
   <button
+    #trigger
     type="button"
     class="filter-dropdown-trigger"
-    [matMenuTriggerFor]="menu"
-    #menuTriggerRef="matMenuTrigger"
-    (menuOpened)="onOpened()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? panelId : null"
+    (click)="toggleOpen()"
     [attr.aria-label]="selected().length > 0
       ? ('filters.labelWithCount' | translate: { filter: (label() | translate), count: selected().length })
       : (label() | translate)">
@@ -22,13 +27,26 @@
       <mat-icon>close</mat-icon>
     </button>
   }
-  <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="menuTriggerRef.openMenu()">arrow_drop_down</mat-icon>
+  <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="open()">arrow_drop_down</mat-icon>
 </div>
 
-<mat-menu #menu="matMenu" class="filter-dropdown-panel" [hasBackdrop]="true">
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="isOpen()"
+  [cdkConnectedOverlayPositions]="panelPositions"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  cdkConnectedOverlayPanelClass="filter-dropdown-panel"
+  (backdropClick)="close()"
+  (overlayKeydown)="onOverlayKeydown($event)"
+  (attach)="onAttached()"
+  (detach)="onDetached()">
   <div class="filter-dropdown-content"
+       role="dialog"
+       [id]="panelId"
+       [attr.aria-label]="label() | translate"
        [class.filter-dropdown-content--wide]="showFooter()"
-       (click)="$event.stopPropagation()"
        (keydown)="onPanelKeydown($event)">
     @if (searchable()) {
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
@@ -37,13 +55,12 @@
           [placeholder]="searchPlaceholder() | translate"
           [attr.aria-label]="searchPlaceholder() | translate"
           [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
-          (click)="$event.stopPropagation()">
+          (ngModelChange)="searchTerm.set($event)">
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
     }
 
-     @if (showFooter()) {
+    @if (showFooter()) {
       <div class="filter-dropdown-title-row">
         <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
         @if (draft().length > 0) {
@@ -68,13 +85,13 @@
 
     @if (showFooter()) {
       <div class="filter-dropdown-footer">
-        <button type="button" class="filter-dropdown-close" (click)="cancel(menuTriggerRef)">
+        <button type="button" class="filter-dropdown-close" (click)="cancel()">
           {{ 'filters.close' | translate }}
         </button>
-        <button type="button" mat-flat-button color="primary" (click)="confirm(menuTriggerRef)">
+        <button type="button" mat-flat-button color="primary" (click)="confirm()">
           {{ 'filters.confirm' | translate }}
         </button>
       </div>
     }
   </div>
-</mat-menu>
+</ng-template>
