@@ -151,8 +151,8 @@ describe('CredentialManagementComponent', () => {
     expect(searchSubSpy).toHaveBeenCalledTimes(1);
   });
 
+  // The sorting accessor is installed when the list loads, which ngOnInit does in beforeEach.
   it('should configure sortingDataAccessor correctly (status, subject, updated, credential_type, organization_identifier)', () => {
-    (component as any).setDataSortingAccessor();
     const mockItem: any = {
       credential_procedure: {
         procedure_id: 'id-proc',
@@ -719,10 +719,6 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       statusClass: `status-${status.toLowerCase()}`,
     });
 
-    beforeEach(() => {
-      (component as any).setDataSortingAccessor();
-    });
-
     // AC-02: sortingDataAccessor returns correct sort key for each operational column
 
     it('AC-02: status column uses lowercase status value', () => {
@@ -772,8 +768,6 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const newer = makeSortItem('Bob', 'VALID', '2025-06-01', 'type-a', 'new');
       component.dataSource.data = [newer, older]; // intentionally reversed
       component.dataSource.sort = component.sort;
-      (component as any).setDataSortingAccessor();
-
       const asc = [older, newer].sort((a, b) => {
         const va = component.dataSource.sortingDataAccessor(a, 'updated') as number;
         const vb = component.dataSource.sortingDataAccessor(b, 'updated') as number;
@@ -870,7 +864,6 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // ---------------------------------------------------------------------------
   describe('Safe field access (missing subject / fields)', () => {
     beforeEach(() => {
-      (component as any).setDataSortingAccessor();
       component.ngAfterViewInit(); // sets compound filterPredicate
     });
 
@@ -1526,7 +1519,6 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
   describe('sorting accessor edge cases', () => {
     function sortValue(fields: Record<string, unknown>, property: string): string | number {
-      (component as any).setDataSortingAccessor();
       return component.dataSource.sortingDataAccessor({ credential_procedure: fields } as never, property);
     }
 
