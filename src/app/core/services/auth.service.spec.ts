@@ -10,6 +10,7 @@ import { UserDataAuthenticationResponse } from '../models/dto/user-data-authenti
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
+import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
 
 const mockUserDataWithClaims: UserDataAuthenticationResponse = {
   id: 'id',
@@ -687,6 +688,18 @@ describe('AuthService', () => {
       });
     });
 
+    /** Signs in with the page on `pathname` and reports whether the user is sent on to the credential list. */
+    const signInSendsToList = async (pathname: string): Promise<boolean> => {
+      setPathname(pathname);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: true,
+        userData: mockUserDataWithClaims,
+        accessToken: 'xxx'
+      }));
+      await firstValueFrom(service.checkAuth$());
+      return routerMock.navigate.mock.calls.some(([commands]) => commands[0] === IAM_POST_LOGIN_ROUTE);
+    };
+
     it('isOnPublicRoute(): true per a /issuer/credential-offer', () => {
       setPathname('/issuer/credential-offer');
       expect((service as any).isOnPublicRoute()).toBe(true);
@@ -712,14 +725,12 @@ describe('AuthService', () => {
       expect((service as any).isOnPublicRoute()).toBe(false);
     });
 
-    it.each(['/', '/home', '/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
-      setPathname(pathname);
-      expect((service as any).isOnLandingRoute()).toBe(true);
+    it.each(['/', '/home', '/home/'])('en iniciar sessió a %s porta al llistat', async (pathname) => {
+      expect(await signInSendsToList(pathname)).toBe(true);
     });
 
-    it.each(['/organization/credentials', '/homepage', '/issuer/home'])('isOnLandingRoute(): false per a %s', (pathname) => {
-      setPathname(pathname);
-      expect((service as any).isOnLandingRoute()).toBe(false);
+    it.each(['/organization/credentials', '/homepage', '/issuer/home'])('en iniciar sessió a %s no porta al llistat', async (pathname) => {
+      expect(await signInSendsToList(pathname)).toBe(false);
     });
 
     describe('amb el base href /issuer/ dels desplegaments', () => {
@@ -733,14 +744,12 @@ describe('AuthService', () => {
 
       afterEach(() => base.remove());
 
-      it.each(['/issuer', '/issuer/', '/issuer/home', '/issuer/home/'])('isOnLandingRoute(): true per a %s', (pathname) => {
-        setPathname(pathname);
-        expect((service as any).isOnLandingRoute()).toBe(true);
+      it.each(['/issuer', '/issuer/', '/issuer/home', '/issuer/home/'])('en iniciar sessió a %s porta al llistat', async (pathname) => {
+        expect(await signInSendsToList(pathname)).toBe(true);
       });
 
-      it.each(['/issuer/organization/credentials', '/issuerx/home', '/issuer/homepage'])('isOnLandingRoute(): false per a %s', (pathname) => {
-        setPathname(pathname);
-        expect((service as any).isOnLandingRoute()).toBe(false);
+      it.each(['/issuer/organization/credentials', '/issuerx/home', '/issuer/homepage'])('en iniciar sessió a %s no porta al llistat', async (pathname) => {
+        expect(await signInSendsToList(pathname)).toBe(false);
       });
     });
 
