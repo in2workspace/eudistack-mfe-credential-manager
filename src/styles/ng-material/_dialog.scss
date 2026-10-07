@@ -76,9 +76,11 @@ $action-dialog-font: 'Blinker', 'Arial', sans-serif;
     gap: 16px;
     padding: 8px 24px 24px;
 
+    // A lone button (the success dialog's Close) keeps the width it would have next to a Cancel.
     button {
       flex: 1;
       width: auto;
+      max-width: calc((100% - 16px) / 2);
       height: 44px;
       border-radius: var(--radius-md, 8px);
       font-size: 1rem;
