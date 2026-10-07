@@ -6,6 +6,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
 
+/** Positions in the bar between Back and Next, ellipses included. */
+const MAX_SLOTS = 8;
+
+/** A page number, or the ellipsis before / after the pages around the current one. */
+type PageSlot = number | 'gap-start' | 'gap-end';
+
+function pageRange(from: number, to: number): number[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
+
 /**
  * Numbered pagination bar (Material's paginator has no page buttons). It drives a hidden
  * MatPaginator wired to the caller's data source, so slicing and sort stay with
@@ -51,35 +61,28 @@ export class PaginationComponent implements AfterViewInit {
   }
 
   /**
-   * Sliding window of up to 6 numbered pages. Page 1 always stays the first
-   * button — only the remaining slots slide as the current page moves.
+   * Page buttons and ellipses, always MAX_SLOTS of them once there are more pages than that,
+   * so the bar never changes width while paging. The first and last pages are always shown,
+   * the current page always has a neighbour on each side, and an ellipsis always stands for
+   * two or more pages (a single hidden page is shown instead).
+   *   near the start: 1 2 3 4 5 6 … 20
+   *   in the middle:  1 … 5 6 7 8 … 20
+   *   near the end:   1 … 15 16 17 18 19 20
    */
-  protected pageWindow(): number[] {
+  protected pageSlots(): PageSlot[] {
     const total = this.totalPages();
-    const maxNumbered = 6;
+    if (total <= MAX_SLOTS) return pageRange(1, total);
 
-    if (total <= maxNumbered) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-
-    const slidingCount = maxNumbered - 1;
     const current = this.currentPageNumber();
-    let start = current - Math.floor(slidingCount / 2) + 1;
-    start = Math.max(2, start);
-    start = Math.min(start, total - slidingCount);
-
-    return [1, ...Array.from({ length: slidingCount }, (_, i) => start + i)];
-  }
-
-  /** True whenever the last page isn't already part of the numbered window — it gets its own button. */
-  protected hasLastPageButton(): boolean {
-    return this.totalPages() > 6;
-  }
-
-  /** True only when a real gap separates the window from the last page — never for an adjacent one. */
-  protected showEllipsis(): boolean {
-    const window = this.pageWindow();
-    return this.hasLastPageButton() && (window.at(-1) ?? 0) < this.totalPages() - 1;
+    const edgeCount = MAX_SLOTS - 2;
+    if (current <= edgeCount - 2) {
+      return [...pageRange(1, edgeCount), 'gap-end', total];
+    }
+    if (current >= total - edgeCount + 2) {
+      return [1, 'gap-start', ...pageRange(total - edgeCount + 1, total)];
+    }
+    const middleStart = current - 1;
+    return [1, 'gap-start', ...pageRange(middleStart, middleStart + MAX_SLOTS - 5), 'gap-end', total];
   }
 
   protected previous(): void {

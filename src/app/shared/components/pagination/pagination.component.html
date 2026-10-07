@@ -16,31 +16,20 @@
       {{ 'pagination.back' | translate }}
     </button>
 
-    @for (page of pageWindow(); track page) {
-      <button
-        type="button"
-        class="pagination-page-btn"
-        [class.pagination-page-btn--active]="page === currentPageNumber()"
-        [attr.aria-current]="page === currentPageNumber() ? 'page' : null"
-        [attr.aria-label]="'pagination.page' | translate: { page }"
-        (click)="goToPage(page)">
-        {{ page }}
-      </button>
-    }
-
-    @if (hasLastPageButton()) {
-      @if (showEllipsis()) {
+    @for (slot of pageSlots(); track slot) {
+      @if (slot === 'gap-start' || slot === 'gap-end') {
         <span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>
+      } @else {
+        <button
+          type="button"
+          class="pagination-page-btn"
+          [class.pagination-page-btn--active]="slot === currentPageNumber()"
+          [attr.aria-current]="slot === currentPageNumber() ? 'page' : null"
+          [attr.aria-label]="'pagination.page' | translate: { page: slot }"
+          (click)="goToPage(slot)">
+          {{ slot }}
+        </button>
       }
-      <button
-        type="button"
-        class="pagination-page-btn"
-        [class.pagination-page-btn--active]="totalPages() === currentPageNumber()"
-        [attr.aria-current]="totalPages() === currentPageNumber() ? 'page' : null"
-        [attr.aria-label]="'pagination.page' | translate: { page: totalPages() }"
-        (click)="goToPage(totalPages())">
-        {{ totalPages() }}
-      </button>
     }
 
     <button

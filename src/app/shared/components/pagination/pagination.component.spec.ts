@@ -51,6 +51,12 @@ describe('PaginationComponent', () => {
     return [buttons[0], buttons[1]];
   }
 
+  /** Page numbers and ellipses ('…'), in the order they are shown. */
+  function slotLabels(): string[] {
+    return Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.pagination-page-btn, .pagination-ellipsis'))
+      .map(el => el.textContent!.trim());
+  }
+
   function ellipsis(): HTMLElement | null {
     return fixture.nativeElement.querySelector('.pagination-ellipsis');
   }
@@ -79,39 +85,61 @@ describe('PaginationComponent', () => {
     expect(ellipsis()).toBeNull();
   });
 
-  it('shows every page when there are 6 or fewer', async () => {
-    await setup(55);
+  it('shows every page when there are 8 or fewer', async () => {
+    await setup(80);
 
-    expect(pageLabels()).toEqual(['1', '2', '3', '4', '5', '6']);
+    expect(slotLabels()).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
     expect(ellipsis()).toBeNull();
   });
 
-  it('shows a window, an ellipsis and the last page when there are more than 6 pages', async () => {
+  it('near the start, shows the first 6 pages, an ellipsis and the last page', async () => {
     await setup(200);
 
-    expect(pageLabels()).toEqual(['1', '2', '3', '4', '5', '6', '20']);
-    expect(ellipsis()).toBeTruthy();
+    expect(slotLabels()).toEqual(['1', '2', '3', '4', '5', '6', '…', '20']);
     expect(pageButtons()[0].getAttribute('aria-current')).toBe('page');
     expect(pageButtons()[1].getAttribute('aria-current')).toBeNull();
   });
 
-  it('slides the window around the current page', async () => {
+  it('in the middle, shows an ellipsis on both sides of the pages around the current one', async () => {
     await setup(200);
 
     await clickPage('6');
-    expect(pageLabels()).toEqual(['1', '5', '6', '7', '8', '9', '20']);
+    expect(slotLabels()).toEqual(['1', '…', '5', '6', '7', '8', '…', '20']);
     expect(activePage()).toBe('6');
   });
 
-  it('hides the ellipsis when the window is adjacent to the last page', async () => {
+  it('near the end, shows the first page, an ellipsis and the last 6 pages', async () => {
     await setup(200);
 
     await clickPage('20');
-    expect(pageLabels()).toEqual(['1', '15', '16', '17', '18', '19', '20']);
-    expect(ellipsis()).toBeNull();
+    expect(slotLabels()).toEqual(['1', '…', '15', '16', '17', '18', '19', '20']);
     expect(activePage()).toBe('20');
     expect(pageButtons()[6].getAttribute('aria-current')).toBe('page');
     expect(navButtons()[1].disabled).toBe(true);
+  });
+
+  it.each([9, 10, 11, 20])('keeps 8 slots on every page of %i, with the current page and its neighbours visible', async (total) => {
+    await setup(total * 10);
+    const next = navButtons()[1];
+
+    for (let current = 1; current <= total; current++) {
+      const slots = slotLabels();
+      const pages = slots.filter(s => s !== '…').map(Number);
+      expect(slots).toHaveLength(8);
+      expect(pages[0]).toBe(1);
+      expect(pages.at(-1)).toBe(total);
+      expect(activePage()).toBe(String(current));
+      for (const neighbour of [current - 1, current + 1].filter(p => p >= 1 && p <= total)) {
+        expect(pages).toContain(neighbour);
+      }
+      // An ellipsis never stands for a single page.
+      slots.forEach((slot, i) => {
+        if (slot === '…') expect(Number(slots[i + 1]) - Number(slots[i - 1])).toBeGreaterThan(2);
+      });
+
+      next.click();
+      await settle();
+    }
   });
 
   it('navigates with next and back, emitting page events', async () => {
