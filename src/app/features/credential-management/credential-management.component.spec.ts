@@ -17,6 +17,7 @@ import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-statu
 import { CredentialFilter, CredentialProcedureWithClass } from 'src/app/core/models/entity/lear-credential-management';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from 'src/app/core/models/dto/credential-procedures-response.dto';
 import { signal } from '@angular/core';
+import { Location } from '@angular/common';
 
 describe('CredentialManagementComponent', () => {
   let queryParamMap$: BehaviorSubject<ParamMap>;
@@ -1326,6 +1327,65 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         [],
         expect.objectContaining({ queryParams: { id: null }, replaceUrl: true })
       );
+    });
+
+    it('marks the drawer entry it pushes as opened from the list', () => {
+      component.openCredentialDetails(row('3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c'));
+
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ state: { openedFromList: true } })
+      );
+    });
+
+    describe('closing the drawer from inside', () => {
+      const id = '3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c';
+      let location: Location;
+
+      function closeDrawerWithIdOnUrl(onUrl: boolean): void {
+        (TestBed.inject(ActivatedRoute).snapshot as { queryParamMap: ParamMap }).queryParamMap =
+          convertToParamMap(onUrl ? { id } : {});
+        jest.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+          afterClosed: () => of(undefined),
+          close: jest.fn(),
+        } as never);
+        queryParamMap$.next(convertToParamMap({ id }));
+      }
+
+      beforeEach(() => {
+        location = TestBed.inject(Location);
+        jest.spyOn(location, 'back').mockImplementation(() => undefined);
+      });
+
+      it('steps back to the list entry when the list opened it, leaving no duplicate list entry', () => {
+        jest.spyOn(location, 'getState').mockReturnValue({ openedFromList: true });
+
+        closeDrawerWithIdOnUrl(true);
+
+        expect(location.back).toHaveBeenCalledTimes(1);
+        expect(router.navigate).not.toHaveBeenCalled();
+      });
+
+      it('clears the id in place when it was opened from a link', () => {
+        jest.spyOn(location, 'getState').mockReturnValue(null);
+
+        closeDrawerWithIdOnUrl(true);
+
+        expect(location.back).not.toHaveBeenCalled();
+        expect(router.navigate).toHaveBeenCalledWith(
+          [],
+          expect.objectContaining({ queryParams: { id: null }, replaceUrl: true })
+        );
+      });
+
+      it('leaves history alone when the browser Back button already took the id off the URL', () => {
+        jest.spyOn(location, 'getState').mockReturnValue({ openedFromList: true });
+
+        closeDrawerWithIdOnUrl(false);
+
+        expect(location.back).not.toHaveBeenCalled();
+        expect(router.navigate).not.toHaveBeenCalled();
+      });
     });
 
     it('hands the drawer a last-updated date that follows the list once it loads', () => {

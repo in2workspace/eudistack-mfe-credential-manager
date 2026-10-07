@@ -2,6 +2,7 @@ import { CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT } from './../../core/c
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject, ViewChild, DestroyRef, ElementRef, NgZone, computed, signal } from '@angular/core';
 import { MatTableDataSource, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import {
   CredentialDetailsDrawerComponent,
@@ -35,6 +36,11 @@ import { FilterDropdownComponent } from 'src/app/shared/components/filter-dropdo
 import { PaginationComponent } from 'src/app/shared/components/pagination/pagination.component';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** History state of a drawer entry the list pushed itself, so the list entry sits right below it. */
+interface DrawerHistoryState {
+  openedFromList?: boolean;
+}
 
 type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
 
@@ -161,6 +167,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
   private readonly credentialActions = inject(CredentialActionsService);
@@ -225,6 +232,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       relativeTo: this.route,
       queryParams: { id },
       queryParamsHandling: 'merge',
+      state: { openedFromList: true } satisfies DrawerHistoryState,
     });
   }
 
@@ -273,12 +281,30 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
       .pipe(take(1))
       .subscribe(() => {
         this.drawerRef = undefined;
-        this.clearDrawerQueryParam();
+        this.leaveDrawerEntry();
       });
   }
 
   private closeDrawer(): void {
     this.drawerRef?.close();
+  }
+
+  /**
+   * Takes the URL off the drawer once it closes from inside (Close button, Escape, backdrop).
+   * When the list pushed the drawer's history entry, steps back to the list entry below it:
+   * replacing the drawer entry instead would leave two identical list entries, and the
+   * browser's Back button would seem to do nothing. A drawer opened from a link or bookmark
+   * has no list entry below it, so its id is cleared in place.
+   */
+  private leaveDrawerEntry(): void {
+    // Closed by the browser's Back button: the URL has already left the drawer.
+    if (!this.route.snapshot.queryParamMap.get('id')) return;
+
+    if ((this.location.getState() as DrawerHistoryState | null)?.openedFromList) {
+      this.location.back();
+    } else {
+      this.clearDrawerQueryParam();
+    }
   }
 
   private clearDrawerQueryParam(): void {
