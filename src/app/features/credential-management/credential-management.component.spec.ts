@@ -143,13 +143,10 @@ describe('CredentialManagementComponent', () => {
   }));
 
   it('should run all setup functions inside ngAfterViewInit', () => {
-    const filterPredicateSpy = jest.spyOn(component as any, 'setFilterPredicate');
     const searchSubSpy = jest.spyOn(component as any, 'setStringSearchSubscription');
 
     component.ngAfterViewInit();
 
-    // setFilterPredicate no longer takes a filter argument (compound predicate)
-    expect(filterPredicateSpy).toHaveBeenCalledTimes(1);
     expect(searchSubSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -256,14 +253,6 @@ describe('CredentialManagementComponent', () => {
     expect(consoleSpy).toHaveBeenCalledWith('Error fetching credentials for table', error);
     consoleSpy.mockRestore();
   }));
-
-  it('should set searchLabel and searchPlaceholder according to filter config', () => {
-  // Call private method with "subject"
-  (component as any).setFilterLabelAndPlaceholder('subject');
-  const subjectConfig = component['filtersMap']['subject']!; // subject always exists
-  expect(component.searchLabel).toBe(subjectConfig.translationLabel);
-  expect(component.searchPlaceholder).toBe(subjectConfig.placeholderTranslationLabel);
-});
 
 it('groups every employee credential_type — legacy or current — under one "Employee" label', () => {
   const translate = TestBed.inject(TranslateService);
@@ -630,7 +619,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(component.dataSource.filteredData.length).toBe(1);
       expect(component.isEmptyFiltered).toBe(false);
       expect(component.isEmptyOrigin).toBe(false);
-      expect(component.isLoadError).toBe(false);
+      expect(component.hasLoadError).toBe(false);
     });
 
     // EC-05: clearing only one filter keeps the other active
@@ -940,16 +929,16 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   // ---------------------------------------------------------------------------
   describe('T8 — Empty States & Edge Cases', () => {
     
-    it('ES-02: isLoadError is true when load fails, preventing other empty states', fakeAsync(() => {
+    it('ES-02: hasLoadError is true when load fails, preventing other empty states', fakeAsync(() => {
       // Force load error
       credentialProcedureSpy.mockReturnValue(throwError(() => new Error('API down')));
       jest.spyOn(console, 'error').mockImplementation(() => {});
       component['initializeCredentialTable']();
       tick();
 
-      expect(component.isLoadError).toBe(true);
-      expect(component.isEmptyOrigin).toBe(false); // suppressed by isLoadError
-      expect(component.isEmptyFiltered).toBe(false); // suppressed by isLoadError
+      expect(component.hasLoadError).toBe(true);
+      expect(component.isEmptyOrigin).toBe(false); // suppressed by hasLoadError
+      expect(component.isEmptyFiltered).toBe(false); // suppressed by hasLoadError
     }));
 
     it('EC-01: isEmptyOrigin is true when backend returns 0 credentials', fakeAsync(() => {
@@ -957,7 +946,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component['initializeCredentialTable']();
       tick();
 
-      expect(component.isLoadError).toBe(false);
+      expect(component.hasLoadError).toBe(false);
       expect(component.isEmptyOrigin).toBe(true);
       expect(component.isEmptyFiltered).toBe(false);
     }));
@@ -980,7 +969,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
       // Data loaded correctly
       expect(component.isEmptyOrigin).toBe(false);
-      expect(component.isLoadError).toBe(false);
+      expect(component.hasLoadError).toBe(false);
       expect(component.isEmptyFiltered).toBe(false);
 
       // 2. Apply a filter that yields 0 results
@@ -992,7 +981,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       // 3. Verify isEmptyFiltered triggers
       expect(component.isEmptyFiltered).toBe(true);
       expect(component.isEmptyOrigin).toBe(false); // not overridden
-      expect(component.isLoadError).toBe(false);
+      expect(component.hasLoadError).toBe(false);
     }));
 
     it('ES-03: an unmapped status returns "status-default" class via statusService', fakeAsync(() => {
@@ -1033,9 +1022,9 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(compiled.querySelector('.table-container')).toBeFalsy();
     });
 
-    it('should render the load error empty state when isLoadError is true', () => {
+    it('should render the load error empty state when hasLoadError is true', () => {
       component.isLoading = false;
-      jest.spyOn(component, 'isLoadError', 'get').mockReturnValue(true);
+      component.hasLoadError = true;
       fixture.detectChanges();
       
       const compiled = fixture.nativeElement as HTMLElement;

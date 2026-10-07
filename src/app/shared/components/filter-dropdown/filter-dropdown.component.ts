@@ -1,5 +1,4 @@
 import { Component, computed, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -12,7 +11,7 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
 
 /**
  * Anchored checkbox-dropdown filter. Built on MatMenu rather than a raw CDK Overlay: it already is an
- * anchored, backdrop-less popover that closes on outside click — no need to
+ * anchored popover that closes on outside click — no need to
  * hand-roll overlay positioning for the same result.
  *
  * Two modes, selected by `showFooter`:
@@ -26,7 +25,6 @@ import { FilterOption } from 'src/app/core/models/entity/lear-credential-managem
   selector: 'app-filter-dropdown',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatMenuModule,
     MatCheckboxModule,

@@ -14,20 +14,19 @@ import { MatSort, MatSortHeader, Sort, SortDirection } from '@angular/material/s
 import { MatSelectModule } from '@angular/material/select';
 import { CredentialProcedureBasicInfo, CredentialProceduresResponse } from "../../core/models/dto/credential-procedures-response.dto";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { MatButton, MatButtonModule } from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged, map, Subject, take } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatIcon } from '@angular/material/icon';
-import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, Filter, FilterConfig, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
+import { CredentialFilter, CredentialProcedureWithClass, FILTERABLE_STATUSES, FilterOption } from 'src/app/core/models/entity/lear-credential-management';
 import { LifeCycleStatusService } from 'src/app/shared/services/life-cycle-status.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { getCredentialTypeFamilyKey, getCredentialTypeFamilyLabelKey } from 'src/app/core/helpers/credential-type-family';
 
 import { SubjectComponent } from './components/subject-component/subject-component.component';
-import { FormsModule } from '@angular/forms';
 import { CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT } from 'src/app/core/constants/translations.constants';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { LocalizedDatePipe } from 'src/app/shared/pipes/localized-date.pipe';
@@ -52,8 +51,6 @@ const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDir
     templateUrl: './credential-management.component.html',
     styleUrls: ['./credential-management.component.scss'],
     imports: [
-        FormsModule,
-        MatButton,
         MatButtonModule,
         MatTable,
         MatSort,
@@ -179,19 +176,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
   );
   private readonly credentialTypesByFamily = signal(new Map<string, string>());
 
-  /** FilterConfig map for text-search filters only. Type/status/organization use the checkbox dropdowns. */
-  private readonly filtersMap: Partial<Record<Filter, FilterConfig>> = {
-    subject: {
-      filterName: "subject",
-      translationLabel: CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT,
-      placeholderTranslationLabel: CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT
-    }
-   } as const;
-
- public get isLoadError(): boolean {
-    return this.hasLoadError;
-  }
-
  public get isEmptyOrigin(): boolean {
     return !this.hasLoadError && this.originData().length === 0;
   }
@@ -208,18 +192,15 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     // Installs the compound filter predicate before data loads — with a
     // synchronous data source (e.g. a mock used for local testing)
     // initializeCredentialTable()'s subscribe callback would otherwise run
-    // before ngAfterViewInit() ever sets it, leaving MatTableDataSource's
-    // default predicate (which can't read the serialized CredentialFilter) in
-    // place. setFilter('subject') is idempotent, so ngAfterViewInit() calling
-    // it again is harmless.
-    this.setFilter('subject');
+    // first, leaving MatTableDataSource's default predicate (which can't read
+    // the serialized CredentialFilter) in place.
+    this.setFilterPredicate();
     this.initializeCredentialTable();
     this.syncDrawerWithUrl();
     this.refreshOnCredentialAction();
   }
 
   public ngAfterViewInit(): void {
-    this.setFilter("subject");
     this.setStringSearchSubscription();
     this.pinTableHeaderOnScroll();
   }
@@ -559,11 +540,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     };
   }
 
-  private setFilter(filter: Filter): void{
-    this.setFilterLabelAndPlaceholder(filter);
-    this.setFilterPredicate();
-  }
-
   /**
    * Compound filter predicate
    * dataSource.filter is a JSON-serialized CredentialFilter: subject is AND'd with
@@ -623,13 +599,6 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
-  }
-
-  private setFilterLabelAndPlaceholder(filter: Filter): void{
-    const filterConfig: FilterConfig | undefined = this.filtersMap[filter];
-    if (!filterConfig) return;
-    this.searchLabel = filterConfig.translationLabel;
-    this.searchPlaceholder = filterConfig.placeholderTranslationLabel;
   }
 
   /**

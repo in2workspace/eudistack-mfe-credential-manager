@@ -57,7 +57,7 @@
   <div class="pagination-right">
     <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
-      <mat-select [value]="paginatorRef.pageSize" [aria-label]="'pagination.resultsPerPage' | translate" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
+      <mat-select [value]="paginator().pageSize" [aria-label]="'pagination.resultsPerPage' | translate" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
         @for (size of pageSizeOptions(); track size) {
           <mat-option [value]="size">{{ size }}</mat-option>
         }

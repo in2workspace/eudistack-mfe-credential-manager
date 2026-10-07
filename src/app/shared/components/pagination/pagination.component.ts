@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ViewChild, input } from '@angular/core';
+import { AfterViewInit, Component, input, viewChild } from '@angular/core';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,33 +21,33 @@ import { TranslatePipe } from '@ngx-translate/core';
   styleUrl: './pagination.component.scss',
 })
 export class PaginationComponent implements AfterViewInit {
-  @ViewChild(MatPaginator, { static: true }) protected paginatorRef!: MatPaginator;
-
   /** The MatTableDataSource this pagination bar drives — wired internally on init. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly dataSource = input.required<MatTableDataSource<any>>();
   public readonly pageSizeOptions = input<number[]>([10, 20, 50]);
   public readonly defaultPageSize = input<number>(10);
 
+  protected readonly paginator = viewChild.required(MatPaginator);
+
   public ngAfterViewInit(): void {
-    this.dataSource().paginator = this.paginatorRef;
+    this.dataSource().paginator = this.paginator();
   }
 
   protected totalPages(): number {
-    const { length, pageSize } = this.paginatorRef;
+    const { length, pageSize } = this.paginator();
     return Math.max(1, Math.ceil(length / pageSize));
   }
 
   protected currentPageNumber(): number {
-    return this.paginatorRef.pageIndex + 1;
+    return this.paginator().pageIndex + 1;
   }
 
   protected hasPrevious(): boolean {
-    return this.paginatorRef.pageIndex > 0;
+    return this.paginator().pageIndex > 0;
   }
 
   protected hasNext(): boolean {
-    return this.paginatorRef.pageIndex < this.totalPages() - 1;
+    return this.paginator().pageIndex < this.totalPages() - 1;
   }
 
   /**
@@ -91,16 +91,16 @@ export class PaginationComponent implements AfterViewInit {
   }
 
   protected goToPage(page: number): void {
-    const previousPageIndex = this.paginatorRef.pageIndex;
-    this.paginatorRef.pageIndex = page - 1;
+    const previousPageIndex = this.paginator().pageIndex;
+    this.paginator().pageIndex = page - 1;
     this.emitPageEvent(previousPageIndex);
   }
 
   protected onPageSizeChange(newPageSize: number): void {
-    const previousPageIndex = this.paginatorRef.pageIndex;
-    const startIndex = this.paginatorRef.pageIndex * this.paginatorRef.pageSize;
-    this.paginatorRef.pageSize = newPageSize;
-    this.paginatorRef.pageIndex = Math.floor(startIndex / newPageSize) || 0;
+    const previousPageIndex = this.paginator().pageIndex;
+    const startIndex = this.paginator().pageIndex * this.paginator().pageSize;
+    this.paginator().pageSize = newPageSize;
+    this.paginator().pageIndex = Math.floor(startIndex / newPageSize) || 0;
     this.emitPageEvent(previousPageIndex);
   }
 
@@ -108,10 +108,10 @@ export class PaginationComponent implements AfterViewInit {
   private emitPageEvent(previousPageIndex: number): void {
     const event: PageEvent = {
       previousPageIndex,
-      pageIndex: this.paginatorRef.pageIndex,
-      pageSize: this.paginatorRef.pageSize,
-      length: this.paginatorRef.length,
+      pageIndex: this.paginator().pageIndex,
+      pageSize: this.paginator().pageSize,
+      length: this.paginator().length,
     };
-    this.paginatorRef.page.emit(event);
+    this.paginator().page.emit(event);
   }
 }

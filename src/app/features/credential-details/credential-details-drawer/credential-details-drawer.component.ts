@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, Injector, OnInit, Signal, WritableSignal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
@@ -30,7 +30,8 @@ export interface CredentialDetailsDrawerData {
   imports: [
     AddPrefixPipe,
     CapitalizePipe,
-    CommonModule,
+    AsyncPipe,
+    DatePipe,
     CustomTooltipDirective,
     LocalizedDatePipe,
     MatButton,
