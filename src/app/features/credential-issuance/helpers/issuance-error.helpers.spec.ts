@@ -1,4 +1,7 @@
-import { resolveIssuanceBusinessError, toMandatorOrganizationId } from './issuance-error.helpers';
+import { LEAR_ISSUANCE_POLICY_REASONS, resolveIssuanceBusinessError, toMandatorOrganizationId } from './issuance-error.helpers';
+
+// Jest resolves JSON modules natively; the spec tsconfig has no node typings nor resolveJsonModule.
+declare const require: (id: string) => any;
 
 describe('issuance-error.helpers', () => {
 
@@ -49,6 +52,32 @@ describe('issuance-error.helpers', () => {
     it('falls back when a payload validation carries no usable field', () => {
       expect(resolveIssuanceBusinessError({ status: 400, error: { type: 'payload_validation_error', violations: [{ field: '$' }] } })).toBeNull();
       expect(resolveIssuanceBusinessError({ status: 400, error: { type: 'invalid_request' } })).toBeNull();
+    });
+  });
+
+  describe('LEAR_ISSUANCE_POLICY_REASONS', () => {
+    // Mirrors LearIssuancePolicyException.Reason in eudistack-core-issuer: update both sides together.
+    it('matches the reason codes the Issuer exposes', () => {
+      expect([...LEAR_ISSUANCE_POLICY_REASONS].sort()).toEqual([
+        'certification_delegation_requires_multi_org',
+        'certification_delegation_requires_tenant_admin',
+        'mandator_organization_missing',
+        'on_behalf_requires_multi_org',
+        'on_behalf_requires_tenant_admin',
+        'onboarding_delegation_requires_multi_org',
+        'onboarding_delegation_requires_tenant_admin',
+        'onboarding_delegation_same_org',
+        'operator_lacks_onboarding',
+      ]);
+    });
+
+    it.each(['en', 'es', 'ca'])('has a %s translation for every reason', lang => {
+      const bundle = require(`../../../../assets/i18n/${lang}.json`);
+      const reasons = bundle.credentialIssuance['create-error-dialog'].reasons;
+
+      for (const reason of LEAR_ISSUANCE_POLICY_REASONS) {
+        expect(reasons[reason]).toEqual(expect.any(String));
+      }
     });
   });
 

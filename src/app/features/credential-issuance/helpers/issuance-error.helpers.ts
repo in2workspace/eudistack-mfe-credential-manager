@@ -8,6 +8,11 @@
  * - 403 `insufficient_permission` + `reason` ∈ {@link LEAR_ISSUANCE_POLICY_REASONS}: which LEAR
  *   issuance rule rejected the request.
  * - 400 `payload_validation_error` + `violations[].field`: which form fields the schema rejected.
+ *
+ * Wire contract: these codes mirror `LearIssuancePolicyException.Reason` in eudistack-core-issuer
+ * (pinned there by `LearIssuancePolicyExceptionTest`). A code the Issuer adds or renames without
+ * updating this list degrades safely to the generic message, but nothing warns about it -- keep
+ * both lists and the `credentialIssuance.create-error-dialog.reasons.*` i18n keys in sync.
  */
 export const LEAR_ISSUANCE_POLICY_REASONS = [
   'operator_lacks_onboarding',
@@ -91,6 +96,9 @@ function uniqueFields(fields: IssuanceInvalidField[]): IssuanceInvalidField[] {
  * The organizationIdentifier the request factory will send for this mandator form value (same
  * rule as `IssuanceRequestFactoryService.createOrganizationId`), so the power selector can compare
  * it with the operator's own organization before submitting.
+ *
+ * Keep in sync: the `VAT<country>-` rule is duplicated in the request factory. If one changes,
+ * change the other, or the selector will compare against an id that is not the one sent.
  */
 export function toMandatorOrganizationId(country: string | null | undefined, orgId: string | null | undefined): string | null {
   const id = (orgId ?? '').trim();

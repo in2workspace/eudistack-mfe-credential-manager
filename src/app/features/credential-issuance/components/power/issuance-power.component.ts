@@ -14,16 +14,6 @@ import { BaseIssuanceCustomFormChild } from 'src/app/features/credential-details
 import { ThemeService } from 'src/app/core/services/theme.service';
 import { toMandatorOrganizationId } from '../../helpers/issuance-error.helpers';
 
-export interface TempIssuanceFormPowerSchema extends IssuanceFormPowerSchema{
-  isDisabled: boolean;
-}
-
-export interface NormalizedTempIssuanceFormSchemaPower extends TempIssuanceFormPowerSchema{
-  normalizedActions: NormalizedAction[];
-}
-
-export type NormalizedAction = { action: string; value: boolean };
-
 /**
  * I-03: why a power the schema offers would be rejected by the Issuer's LEAR issuance policy
  * (`RequireLearCredentialIssuanceRule`) for the data currently in the form. SysAdmin bypasses
