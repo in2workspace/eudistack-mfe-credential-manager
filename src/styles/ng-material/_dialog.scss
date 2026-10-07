@@ -43,20 +43,20 @@
   }
 }
 
-// Confirmation of an action taken from the credential details drawer (revoke, withdraw,
-// archive): centered question and warning, two wide buttons, in the app's own font.
-$action-confirm-font: 'Blinker', 'Arial', sans-serif;
+// Confirmation and success dialogs of an action taken from the credential details drawer
+// (revoke, withdraw, archive): centered text and wide buttons, in the app's own font.
+$action-dialog-font: 'Blinker', 'Arial', sans-serif;
 
-.dialog-custom.action-confirm-dialog {
+.dialog-custom.credential-action-dialog {
   width: 676px;
   max-width: calc(100vw - 32px) !important;
   --mat-dialog-container-max-width: 100%;
   --mat-dialog-container-small-max-width: 100%;
   --mat-dialog-container-min-width: 0;
   --mdc-dialog-container-shape: var(--radius-lg, 16px);
-  --mdc-dialog-subhead-font: #{$action-confirm-font};
-  --mdc-dialog-supporting-text-font: #{$action-confirm-font};
-  --mdc-filled-button-label-text-font: #{$action-confirm-font};
+  --mdc-dialog-subhead-font: #{$action-dialog-font};
+  --mdc-dialog-supporting-text-font: #{$action-dialog-font};
+  --mdc-filled-button-label-text-font: #{$action-dialog-font};
 
   .mat-mdc-dialog-container .mdc-dialog__surface {
     border-radius: var(--radius-lg, 16px) !important;
@@ -87,11 +87,10 @@ $action-confirm-font: 'Blinker', 'Arial', sans-serif;
         text-transform: none;
       }
 
-      // Cancel: white with primary text. Confirm: primary with white text, whatever the action.
+      // Cancel: white with primary text. Confirm / Close: primary with white text, whatever the action.
       &.mat-cancel {
         background-color: var(--surface-card, #FFFFFF);
         color: var(--primary-color);
-        border: 1px solid var(--primary-color);
       }
 
       &:not(.mat-cancel) {

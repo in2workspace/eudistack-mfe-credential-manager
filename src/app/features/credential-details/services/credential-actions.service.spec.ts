@@ -82,7 +82,7 @@ describe('CredentialActionsService', () => {
       const [, dialogData] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
       expect(dialogData.confirmationLabel).toBe(`credentialDetails.${action}CredentialConfirm.confirm`);
       expect(dialogData.cancelLabel).toBeUndefined(); // the shared "Cancel"
-      expect(dialogData.style).toBe('action-confirm-dialog');
+      expect(dialogData.style).toBe('credential-action-dialog');
     });
   });
 
@@ -219,6 +219,7 @@ describe('CredentialActionsService', () => {
           expect.objectContaining({
             title: 'credentialDetails.revokeCredentialSuccess.title',
             message: 'credentialDetails.revokeCredentialSuccess.message',
+            style: 'credential-action-dialog',
           })
         );
         expect(mockRouter.navigate).toHaveBeenCalledWith(['/organization/credentials']);

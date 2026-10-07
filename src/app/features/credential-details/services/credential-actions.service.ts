@@ -7,8 +7,8 @@ import { CredentialProcedureService } from 'src/app/core/services/credential-pro
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 
-/** Panel class of the confirmation dialogs below (see styles/ng-material/_dialog.scss). */
-const ACTION_CONFIRM_DIALOG_STYLE = 'action-confirm-dialog';
+/** Panel class of the confirmation and success dialogs below (see styles/ng-material/_dialog.scss). */
+const ACTION_DIALOG_STYLE = 'credential-action-dialog';
 
 @Injectable({
   providedIn: 'root'
@@ -37,7 +37,7 @@ export class CredentialActionsService {
       title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
       confirmationLabel: this.translate.instant("credentialDetails.revokeCredentialConfirm.confirm"),
-      style: ACTION_CONFIRM_DIALOG_STYLE,
+      style: ACTION_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'error'
     };
@@ -57,7 +57,7 @@ export class CredentialActionsService {
       title: this.translate.instant("credentialDetails.withdrawCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.withdrawCredentialConfirm.message"),
       confirmationLabel: this.translate.instant("credentialDetails.withdrawCredentialConfirm.confirm"),
-      style: ACTION_CONFIRM_DIALOG_STYLE,
+      style: ACTION_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'error'
     };
@@ -77,7 +77,7 @@ export class CredentialActionsService {
       title: this.translate.instant("credentialDetails.archiveCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.archiveCredentialConfirm.message"),
       confirmationLabel: this.translate.instant("credentialDetails.archiveCredentialConfirm.confirm"),
-      style: ACTION_CONFIRM_DIALOG_STYLE,
+      style: ACTION_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'default'
     };
@@ -102,6 +102,7 @@ export class CredentialActionsService {
         const dialogData: DialogData = {
           title: this.translate.instant(titleKey),
           message: this.translate.instant(messageKey),
+          style: ACTION_DIALOG_STYLE,
           confirmationType: 'none',
           status: 'default'
         };
