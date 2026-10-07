@@ -190,24 +190,27 @@
     "archive": "archive",
     "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
     "revokeCredentialConfirm": {
-      "title": "Revoke Credential",
-      "message": "Are you sure you want to revoke this credential? This action is permanent and cannot be undone."
+      "title": "Revoke credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, revoke"
     },
     "revokeCredentialSuccess": {
       "title": "Credential revoked",
       "message": "The credential has been revoked and its status has been published to the revocation list."
     },
     "withdrawCredentialConfirm": {
-      "title": "Withdraw Credential",
-      "message": "Are you sure you want to withdraw this credential? This action is permanent and cannot be undone."
+      "title": "Withdraw credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, withdraw"
     },
     "withdrawCredentialSuccess": {
       "title": "Credential withdrawn",
       "message": "The credential was withdrawn successfully."
     },
     "archiveCredentialConfirm": {
-      "title": "Archive Credential",
-      "message": "Are you sure you want to archive this credential? This action is permanent and cannot be undone."
+      "title": "Archive credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, archive"
     },
     "archiveCredentialSuccess": {
       "title": "Credential archived",

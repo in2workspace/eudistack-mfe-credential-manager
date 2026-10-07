@@ -71,6 +71,21 @@ describe('CredentialActionsService', () => {
     });
   });
 
+  describe.each([
+    ['revoke', (id: string) => service.openRevokeCredentialDialog(id)],
+    ['withdraw', (id: string) => service.openWithdrawCredentialDialog(id)],
+    ['archive', (id: string) => service.openArchiveCredentialDialog(id)],
+  ])('%s confirmation dialog', (action, openDialog) => {
+    it('names its confirm button after the action and uses the action confirmation look', () => {
+      openDialog('3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c');
+
+      const [, dialogData] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      expect(dialogData.confirmationLabel).toBe(`credentialDetails.${action}CredentialConfirm.confirm`);
+      expect(dialogData.cancelLabel).toBeUndefined(); // the shared "Cancel"
+      expect(dialogData.style).toBe('action-confirm-dialog');
+    });
+  });
+
   describe('executeActionByProcedureId', () => {
     it('should error and return EMPTY if no procedureId', done => {
       const result$ = service['executeActionByProcedureId']('', jest.fn(), 'tKey', 'mKey');

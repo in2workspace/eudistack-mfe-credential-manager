@@ -7,6 +7,9 @@ import { CredentialProcedureService } from 'src/app/core/services/credential-pro
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
 
+/** Panel class of the confirmation dialogs below (see styles/ng-material/_dialog.scss). */
+const ACTION_CONFIRM_DIALOG_STYLE = 'action-confirm-dialog';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,6 +36,8 @@ export class CredentialActionsService {
     const dialogData: DialogData = {
       title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
+      confirmationLabel: this.translate.instant("credentialDetails.revokeCredentialConfirm.confirm"),
+      style: ACTION_CONFIRM_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'error'
     };
@@ -51,6 +56,8 @@ export class CredentialActionsService {
     const dialogData: DialogData = {
       title: this.translate.instant("credentialDetails.withdrawCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.withdrawCredentialConfirm.message"),
+      confirmationLabel: this.translate.instant("credentialDetails.withdrawCredentialConfirm.confirm"),
+      style: ACTION_CONFIRM_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'error'
     };
@@ -69,6 +76,8 @@ export class CredentialActionsService {
     const dialogData: DialogData = {
       title: this.translate.instant("credentialDetails.archiveCredentialConfirm.title"),
       message: this.translate.instant("credentialDetails.archiveCredentialConfirm.message"),
+      confirmationLabel: this.translate.instant("credentialDetails.archiveCredentialConfirm.confirm"),
+      style: ACTION_CONFIRM_DIALOG_STYLE,
       confirmationType: 'async',
       status: 'default'
     };

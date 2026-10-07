@@ -190,24 +190,27 @@
     "archive": "archivar",
     "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
     "revokeCredentialConfirm": {
-      "title": "Revocar Credencial",
-      "message": "¿Estás seguro de que deseas revocar la credencial? Esta acción es definitiva y no se puede deshacer."
+      "title": "¿Revocar credencial?",
+      "message": "Esta acción no se puede deshacer.",
+      "confirm": "Sí, revocar"
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha quedado revocada y su estado ha sido publicado en la lista de revocación."
     },
     "withdrawCredentialConfirm": {
-      "title": "Retirar Credencial",
-      "message": "¿Estás seguro de que deseas retirar esta credencial? Esta acción es definitiva y no se puede deshacer."
+      "title": "¿Retirar credencial?",
+      "message": "Esta acción no se puede deshacer.",
+      "confirm": "Sí, retirar"
     },
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
       "message": "La credencial ha sido retirada correctamente."
     },
     "archiveCredentialConfirm": {
-      "title": "Archivar Credencial",
-      "message": "¿Estás seguro de que deseas archivar esta credencial? Esta acción es definitiva y no se puede deshacer."
+      "title": "¿Archivar credencial?",
+      "message": "Esta acción no se puede deshacer.",
+      "confirm": "Sí, archivar"
     },
     "archiveCredentialSuccess": {
       "title": "Credencial archivada",

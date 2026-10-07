@@ -190,24 +190,27 @@
     "archive": "arxivar",
         "revokeTooltip": "Aquesta credencial no pot ser revocada perquè és de tipus legacy. Per consultar com revocar aquest tipus de credencial, consulti la nostra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guia</a>.",
     "revokeCredentialConfirm": {
-      "title": "Revocar Credencial",
-      "message": "Estàs segur que vols revocar la credencial? Aquesta acció és definitiva i no es pot desfer."
+      "title": "Vols revocar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, revoca-la"
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha quedat revocada i el seu estat s'ha publicat a la llista de revocació."
     },
     "withdrawCredentialConfirm": {
-      "title": "Retirar Credencial",
-      "message": "Estàs segur que vols retirar aquesta credencial? Aquesta acció és definitiva i no es pot desfer."
+      "title": "Vols retirar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, retira-la"
     },
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
       "message": "La credencial ha estat retirada correctament."
     },
     "archiveCredentialConfirm": {
-      "title": "Arxivar Credencial",
-      "message": "Estàs segur que vols arxivar aquesta credencial? Aquesta acció és definitiva i no es pot desfer."
+      "title": "Vols arxivar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, arxiva-la"
     },
     "archiveCredentialSuccess": {
       "title": "Credencial arxivada",
