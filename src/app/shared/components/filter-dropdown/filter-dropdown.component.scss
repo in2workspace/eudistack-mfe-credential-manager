@@ -98,7 +98,14 @@
 }
 
 // The panel's own surface — what MatMenu's panel used to draw (8px vertical padding of its own).
+// It is a <dialog open>: the browser's dialog styles (absolute, centered, bordered) are reset so
+// the overlay keeps placing it under the chip.
 .filter-dropdown-content {
+  position: static;
+  inset: auto;
+  margin: 0;
+  border: none;
+  color: inherit;
   display: flex;
   flex-direction: column;
   width: 260px;

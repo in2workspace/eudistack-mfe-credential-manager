@@ -42,8 +42,9 @@
   (overlayKeydown)="onOverlayKeydown($event)"
   (attach)="onAttached()"
   (detach)="onDetached()">
-  <div class="filter-dropdown-content"
-       role="dialog"
+  <!-- Non-modal: opened with the open attribute, never showModal(), so it stays inside the
+       overlay instead of the top layer; Escape and outside clicks are handled by the overlay. -->
+  <dialog open class="filter-dropdown-content"
        [id]="panelId"
        [attr.aria-label]="label() | translate"
        [class.filter-dropdown-content--wide]="showFooter()"
@@ -93,5 +94,5 @@
         </button>
       </div>
     }
-  </div>
+  </dialog>
 </ng-template>

@@ -204,7 +204,8 @@ describe('FilterDropdownComponent', () => {
 
       open();
 
-      expect(panel()!.getAttribute('role')).toBe('dialog');
+      expect(panel()!.tagName).toBe('DIALOG');
+      expect(panel()!.hasAttribute('open')).toBe(true);
       expect(panel()!.getAttribute('aria-label')).toBe('filters.credentialType');
       expect(triggerButton().getAttribute('aria-expanded')).toBe('true');
       expect(triggerButton().getAttribute('aria-controls')).toBe(panel()!.id);
