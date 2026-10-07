@@ -600,6 +600,10 @@
     "success-description": "Se ha enviado una nueva oferta de credencial a tu correo electrónico. Por favor, revisa tu bandeja de entrada.",
     "error-title": "Algo ha ido mal",
     "error-description": "No hemos podido enviar una nueva oferta de credencial. Por favor, inténtalo de nuevo más tarde.",
-    "retry-btn": "Reintentar"
+    "retry-btn": "Reintentar",
+    "already-active-title": "Credencial ya activa",
+    "already-active-description": "Esta credencial ya se encuentra activa y no requiere una nueva verificación.",
+    "unavailable-title": "Credencial no disponible",
+    "unavailable-description": "La credencial ya no está disponible. Ponte en contacto con tu organización para emitir una nueva."
   }
 }
