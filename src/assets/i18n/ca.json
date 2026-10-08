@@ -593,6 +593,10 @@
     "success-description": "S'ha enviat una nova oferta de credencial al teu correu electrònic. Si us plau, revisa la teva safata d'entrada.",
     "error-title": "Alguna cosa ha anat malament",
     "error-description": "No hem pogut enviar una nova oferta de credencial. Si us plau, torna-ho a intentar més tard.",
-    "retry-btn": "Tornar a intentar"
+    "retry-btn": "Tornar a intentar",
+    "already-active-title": "Credencial ja activa",
+    "already-active-description": "Aquesta credencial ja es troba activa i no requereix una nova verificació.",
+    "unavailable-title": "Credencial no disponible",
+    "unavailable-description": "La credencial ja no està disponible. Posa't en contacte amb la teva organització per emetre'n una de nova."
   }
 }
