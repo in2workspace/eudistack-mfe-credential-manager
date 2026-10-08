@@ -15,7 +15,10 @@
           (copyFailed)="credentialCopyFailed.emit()">
         </app-copyable-field>
       } @else if (showsOffer(entry)) {
-        <app-credential-offer-qr [credentialOfferUri]="credentialOfferUri()!"></app-credential-offer-qr>
+        <app-credential-offer-qr
+          [credentialOfferUri]="credentialOfferUri()!"
+          [credentialOfferRefreshToken]="credentialOfferRefreshToken()">
+        </app-credential-offer-qr>
       } @else {
         <p class="delivery-outcome-list__body">
           <mat-icon aria-hidden="true">{{ isDelivered(entry.outcome) ? 'check_circle' : 'error' }}</mat-icon>

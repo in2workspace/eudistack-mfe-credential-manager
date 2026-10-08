@@ -14,6 +14,7 @@ import { ChannelOutcome } from 'src/app/core/models/entity/issuance-channel-outc
 export interface CredentialOfferDialogData {
   /** Absent means email-only: no QR to show, the per-channel outcome box carries the acknowledgement instead. */
   credentialOfferUri?: string;
+  credentialOfferRefreshToken?: string;
   /** Host's `requiresRequestHolderKey(configId)` -- true only for the two EUD-233  AD-8 exempt machine types. */
   requiresHolderKeySection?: boolean;
   /** Present only when `requiresHolderKeySection` and the store still had it (EUD-233 AC-13); absent under `requiresHolderKeySection` is AC-10.2. */

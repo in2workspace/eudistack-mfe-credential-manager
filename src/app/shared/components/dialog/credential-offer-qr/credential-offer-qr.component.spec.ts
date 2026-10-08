@@ -1,4 +1,8 @@
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { NEVER, of, throwError } from 'rxjs';
+import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { CredentialOfferQrComponent } from './credential-offer-qr.component';
 import { TenantService } from 'src/app/core/services/tenant.service';
@@ -37,6 +41,8 @@ describe('CredentialOfferQrComponent', () => {
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot(), CredentialOfferQrComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TenantService, useValue: mockTenantService },
         { provide: ToastService, useValue: mockToast },
       ],
@@ -154,6 +160,87 @@ describe('CredentialOfferQrComponent', () => {
       expect(component.copied).toBe(false);
       // A console error is invisible to the operator: the failure must surface in the UI.
       expect(mockToast.error).toHaveBeenCalledWith('error.clipboard_copy_failed');
+    }));
+  });
+
+  describe('refreshing an expired offer', () => {
+    const ORIGINAL = 'openid-credential-offer://original';
+    const REFRESHED = 'openid-credential-offer://refreshed';
+
+    const withToken = (token: string | undefined) => {
+      buildService(ENV_WALLET_BASE, null);
+      setup(ORIGINAL);
+      fixture.componentRef.setInput('credentialOfferRefreshToken', token);
+      fixture.detectChanges();
+    };
+
+    it('offers no refresh control when the backend sent no token', () => {
+      withToken(undefined);
+
+      expect(component.canRefresh()).toBe(false);
+      expect(fixture.nativeElement.querySelectorAll('.copy-button')).toHaveLength(1);
+    });
+
+    it('renders the refresh control once a token is present', () => {
+      withToken('a-refresh-token');
+
+      expect(component.canRefresh()).toBe(true);
+      expect(fixture.nativeElement.querySelectorAll('.copy-button')).toHaveLength(2);
+    });
+
+    it('swaps the offer in place on success, leaving the QR and the links in agreement', () => {
+      withToken('a-refresh-token');
+      const service = TestBed.inject(CredentialProcedureService);
+      jest.spyOn(service, 'refreshCredentialOfferUri').mockReturnValue(of(REFRESHED));
+
+      component.refreshOffer();
+
+      expect(service.refreshCredentialOfferUri).toHaveBeenCalledWith('a-refresh-token');
+      expect(component.activeOfferUri()).toBe(REFRESHED);
+      expect(component.refreshing()).toBe(false);
+      expect(component.walletMainFullUrl).toContain(encodeURIComponent(REFRESHED));
+    });
+
+    it('keeps the current offer standing when the refresh fails', () => {
+      withToken('a-refresh-token');
+      const service = TestBed.inject(CredentialProcedureService);
+      jest.spyOn(service, 'refreshCredentialOfferUri').mockReturnValue(throwError(() => new Error('boom')));
+
+      component.refreshOffer();
+
+      expect(component.refreshFailed()).toBe(true);
+      expect(component.refreshing()).toBe(false);
+      expect(component.activeOfferUri()).toBe(ORIGINAL);
+    });
+
+    it('ignores a second click while one refresh is still in flight', () => {
+      withToken('a-refresh-token');
+      const service = TestBed.inject(CredentialProcedureService);
+      jest.spyOn(service, 'refreshCredentialOfferUri').mockReturnValue(NEVER);
+
+      component.refreshOffer();
+      component.refreshOffer();
+
+      expect(service.refreshCredentialOfferUri).toHaveBeenCalledTimes(1);
+    });
+
+    it('copies the refreshed offer, not the expired one it replaced', fakeAsync(() => {
+      withToken('a-refresh-token');
+      const service = TestBed.inject(CredentialProcedureService);
+      jest.spyOn(service, 'refreshCredentialOfferUri').mockReturnValue(of(REFRESHED));
+      const writeTextMock = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: writeTextMock },
+        configurable: true,
+      });
+
+      component.refreshOffer();
+      component.copyOfferUri();
+      flushMicrotasks();
+
+      expect(writeTextMock).toHaveBeenCalledWith(REFRESHED);
+      expect(component.copied).toBe(true);
+      tick(2000);
     }));
   });
 });
