@@ -155,6 +155,8 @@ export class IssuanceRequestFactoryService {
     return "did:elsi:" + orgId;
   }
 
+  // Keep in sync with `toMandatorOrganizationId` (helpers/issuance-error.helpers.ts), which applies
+  // the same `VAT<country>-` rule so the power selector can predict the mandator org id.
   private createOrganizationId(country: string, orgIdSuffix: string): string{
     const hasVAT = this.checkIfHasVAT(orgIdSuffix);
     return  hasVAT ? orgIdSuffix : ("VAT" + country + '-' + orgIdSuffix);

@@ -294,4 +294,84 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
       expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.not_found');
     });
   });
+
+  // I-03: the issuance submit shows its own business-aware failure dialog
+  // (CredentialIssuanceService) -- a generic one on top would hide the reason.
+  describe('issuance submit endpoint', () => {
+    const url = `https://sandbox.eudistack.net/issuer${API_PATH.PROCEDURES}`;
+
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it('should rethrow a failed POST without a dialog', () => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 403, statusText: 'Forbidden', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ url, method: 'POST' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen?.status).toBe(403);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it('should still show the dialog for a failed GET of the issuance list', () => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 500, statusText: 'Server Error', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+      translateServiceSpy.instant.mockReturnValue('error.internal_server');
+
+      interceptor.intercept({ url, method: 'GET' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: () => undefined,
+      });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.internal_server');
+    });
+  });
+
+  // The credential offer refresh screen renders its own outcome (generic error or a
+  // functional one such as credential_already_active or credential_offer_gone), so no
+  // global dialog may cover it.
+  describe('credential offer refresh endpoint', () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it.each([
+      ['an absolute path', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_already_active'],
+      ['a fully qualified URL', `https://kpmg.eudistack.net/issuer${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_already_active'],
+      ['a credential_offer_gone problem', `${API_PATH.CREDENTIAL_OFFER_REFRESH}/abc-123`, 'credential_offer_gone'],
+    ])('should rethrow the original error without a dialog for %s', (_label, url, type) => {
+      const problem = { type, status: 410 };
+      const httpErrorResponse = new HttpErrorResponse({ status: 410, statusText: 'Gone', url, error: problem });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ ...httpRequest, url, method: 'POST' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen).toBe(httpErrorResponse);
+      expect(seen?.error).toEqual(problem);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it('should still show the dialog for a 410 on an unrelated path', () => {
+      const url = '/issuer/api/v1/issuances';
+      const httpErrorResponse = new HttpErrorResponse({ status: 410, statusText: 'Gone', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+      translateServiceSpy.instant.mockReturnValue('error.unknown_error');
+
+      interceptor.intercept({ ...httpRequest, url } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: () => undefined,
+      });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.unknown_error');
+    });
+  });
 });
