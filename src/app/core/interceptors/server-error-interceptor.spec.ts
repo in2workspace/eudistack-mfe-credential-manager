@@ -295,6 +295,43 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
     });
   });
 
+  // I-03: the issuance submit shows its own business-aware failure dialog
+  // (CredentialIssuanceService) -- a generic one on top would hide the reason.
+  describe('issuance submit endpoint', () => {
+    const url = `https://sandbox.eudistack.net/issuer${API_PATH.PROCEDURES}`;
+
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it('should rethrow a failed POST without a dialog', () => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 403, statusText: 'Forbidden', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ url, method: 'POST' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen?.status).toBe(403);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it('should still show the dialog for a failed GET of the issuance list', () => {
+      const httpErrorResponse = new HttpErrorResponse({ status: 500, statusText: 'Server Error', url });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+      translateServiceSpy.instant.mockReturnValue('error.internal_server');
+
+      interceptor.intercept({ url, method: 'GET' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: () => undefined,
+      });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.internal_server');
+    });
+  });
+
   // The credential offer refresh screen renders its own outcome (generic error or a
   // functional one such as credential_already_active or credential_offer_gone), so no
   // global dialog may cover it.

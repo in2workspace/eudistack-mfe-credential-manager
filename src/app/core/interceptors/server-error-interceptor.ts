@@ -47,6 +47,14 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }
+        // The issuance submit (POST /api/v1/issuances) owns its failure UX: CredentialIssuanceService
+        // opens the "could not create" dialog with the business reason when the Issuer gives one
+        // (I-03). Answering here too would put a generic "forbidden"/"unknown" text in front of it --
+        // the very message the bug report complained about.
+        if (this.isIssuanceSubmit(request)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
 
         // The credential offer refresh screen renders its own outcome for every failure —
         // including functional ones such as credential_already_active — so a generic
@@ -85,6 +93,12 @@ export class ServeErrorInterceptor implements HttpInterceptor {
   private isCredentialCatalogEndpoint(url: string): boolean {
     const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
     return path.endsWith(API_PATH.CREDENTIAL_CATALOG);
+  }
+
+  private isIssuanceSubmit(request: HttpRequest<unknown>): boolean {
+    if (request.method !== 'POST') return false;
+    const path = /^https?:\/\//.test(request.url) ? new URL(request.url).pathname : request.url;
+    return path.endsWith(API_PATH.PROCEDURES);
   }
 
   private isCredentialOfferRefreshEndpoint(url: string): boolean {

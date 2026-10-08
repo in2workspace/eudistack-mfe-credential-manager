@@ -125,3 +125,12 @@
   color: var(--status-error, #DC2626);
   font-size: 13px;
 }
+
+// I-03: full-width line under the switch and its actions (the row wraps).
+.unavailable-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text-secondary, #6B7280);
+  font-size: 13px;
+  font-style: italic;
+}

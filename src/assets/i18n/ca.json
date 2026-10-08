@@ -287,6 +287,11 @@
       "remove-dialog": {
         "title":"Eliminar poder",
         "message": "Segur que vols eliminar aquest poder?"
+      },
+      "unavailable": {
+        "requires_multi_org": "només es pot concedir en tenants multiorganització.",
+        "same_org": "no disponible perquè l'organització destinació és la teva; només es pot concedir a una altra organització.",
+        "remove": "Treu els poders no disponibles per poder crear la credencial."
       }
     },
    "credentialIssuance": {
@@ -317,7 +322,20 @@
     },
     "create-error-dialog": {
       "title": "No s'ha pogut crear la credencial",
-      "message": "L'emissió no s'ha completat. Les dades del formulari s'han conservat; revisa-les i torna-ho a intentar."
+      "message": "L'emissió no s'ha completat. Les dades del formulari s'han conservat; revisa-les i torna-ho a intentar.",
+      "data-kept": "S'han conservat les dades del formulari.",
+      "invalid-fields": "Revisa els camps següents:",
+      "reasons": {
+        "operator_lacks_onboarding": "No tens el poder «Alta» (Onboarding/Executar), necessari per emetre credencials LEAR.",
+        "onboarding_delegation_requires_tenant_admin": "Només l'administrador del tenant pot concedir el poder «Alta».",
+        "onboarding_delegation_requires_multi_org": "El poder «Alta» només es pot concedir en tenants multiorganització.",
+        "onboarding_delegation_same_org": "El poder «Alta» només es pot concedir a una altra organització: l'organització destinació és la teva. Treu aquest poder o canvia l'organització.",
+        "certification_delegation_requires_tenant_admin": "Només l'administrador del tenant pot concedir el poder «Certificació» amb l'acció «Acreditar».",
+        "certification_delegation_requires_multi_org": "El poder «Certificació» amb l'acció «Acreditar» només es pot concedir en tenants multiorganització.",
+        "mandator_organization_missing": "Falta l'identificador de l'organització del mandant.",
+        "on_behalf_requires_tenant_admin": "Només l'administrador del tenant pot emetre credencials en nom d'una altra organització.",
+        "on_behalf_requires_multi_org": "Aquest tenant no permet emetre credencials en nom d'una altra organització."
+      }
     },
     "creating-credential": "Creant credencial",
     "create-credential": "Crear nova credencial",

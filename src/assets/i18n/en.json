@@ -312,6 +312,11 @@
     "remove-dialog": {
       "title": "Remove power",
       "message": "Are you sure you want to remove this power?"
+    },
+    "unavailable": {
+      "requires_multi_org": "can only be granted in multi-organization tenants.",
+      "same_org": "unavailable because the target organization is your own; it can only be granted to another organization.",
+      "remove": "Remove the unavailable powers to create the credential."
     }
   },
   "credentialIssuance": {
@@ -342,7 +347,20 @@
     },
     "create-error-dialog": {
       "title": "The credential could not be created",
-      "message": "The issuance did not complete. Your form data has been kept; review it and try again."
+      "message": "The issuance did not complete. Your form data has been kept; review it and try again.",
+      "data-kept": "The form data has been kept.",
+      "invalid-fields": "Please review the following fields:",
+      "reasons": {
+        "operator_lacks_onboarding": "You do not hold the \"Onboarding\" (Execute) power required to issue LEAR credentials.",
+        "onboarding_delegation_requires_tenant_admin": "Only the tenant administrator can grant the \"Onboarding\" power.",
+        "onboarding_delegation_requires_multi_org": "The \"Onboarding\" power can only be granted in multi-organization tenants.",
+        "onboarding_delegation_same_org": "The \"Onboarding\" power can only be granted to another organization: the target organization is your own. Remove that power or change the organization.",
+        "certification_delegation_requires_tenant_admin": "Only the tenant administrator can grant the \"Certification\" power with the \"Attest\" action.",
+        "certification_delegation_requires_multi_org": "The \"Certification\" power with the \"Attest\" action can only be granted in multi-organization tenants.",
+        "mandator_organization_missing": "The mandator organization identifier is missing.",
+        "on_behalf_requires_tenant_admin": "Only the tenant administrator can issue credentials on behalf of another organization.",
+        "on_behalf_requires_multi_org": "This tenant does not allow issuing credentials on behalf of another organization."
+      }
     },
     "creating-credential": "Creating credential",
     "create-credential": "Create new credential",

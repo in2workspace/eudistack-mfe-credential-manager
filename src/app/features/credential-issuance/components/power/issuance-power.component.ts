@@ -1,5 +1,6 @@
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, UntypedFormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { MatSlideToggle, MatSlideToggleChange } from '@angular/material/slide-toggle';
@@ -11,6 +12,19 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { IssuanceFormPowerSchema, POWER_SCOPES, PowerScope } from 'src/app/core/models/entity/lear-credential-issuance';
 import { BaseIssuanceCustomFormChild } from 'src/app/features/credential-details/components/base-issuance-custom-form-child';
 import { ThemeService } from 'src/app/core/services/theme.service';
+import { toMandatorOrganizationId } from '../../helpers/issuance-error.helpers';
+
+/**
+ * I-03: why a power the schema offers would be rejected by the Issuer's LEAR issuance policy
+ * (`RequireLearCredentialIssuanceRule`) for the data currently in the form. SysAdmin bypasses
+ * that policy, so nothing is ever unavailable for them.
+ * - `requires_multi_org`: Onboarding/Execute can only be delegated in a multi_org tenant.
+ * - `same_org`: Onboarding/Execute can only be delegated on-behalf of ANOTHER organization --
+ *   the target (mandator) organization is the operator's own.
+ */
+export type PowerUnavailableReason = 'requires_multi_org' | 'same_org';
+
+const ONBOARDING = 'Onboarding';
 
 @Component({
     selector: 'app-issuance-power',
@@ -38,6 +52,7 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(DialogWrapperService);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public constructor(){
     super();
@@ -65,6 +80,10 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
   }
 
   public addPower(scope: PowerScope, funcName: string): void {
+    // I-03: the switch of an unavailable power is disabled; this guards any other caller.
+    if (this.getUnavailableReason(funcName) !== null) {
+      return;
+    }
     const power = this.selectorPowers.find(p => p.function === funcName);
     const actions = power?.action;
     if(!actions){
@@ -116,7 +135,53 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
     this.ensureScopeGroups();
     this.form().addValidators(this.powerRulesValidator);
     this.form().updateValueAndValidity({ emitEvent: false });
+    // The target organization lives in the sibling `mandator` group (on-behalf only): an
+    // Onboarding power that was valid a moment ago becomes unavailable as soon as the Operator
+    // types their own organization there, so the power group has to be re-validated then.
+    this.mandatorGroup()?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.form().updateValueAndValidity());
     this.selectorPowers = this.filterVisiblePowers(this.data() ?? []);
+  }
+
+  /**
+   * The reason `functionName` would be rejected by the Issuer for the current form data, or null
+   * when it is viable. Only Onboarding depends on the form (tenant type and target organization);
+   * the rest of the LEAR policy is already enforced by which powers the schema offers at all.
+   */
+  public getUnavailableReason(functionName: string): PowerUnavailableReason | null {
+    if (functionName !== ONBOARDING || this.authService.isSysAdmin()) return null;
+    if (this.authService.tenantType() !== 'multi_org') return 'requires_multi_org';
+    return this.isTargetOperatorOrganization() ? 'same_org' : null;
+  }
+
+  /**
+   * An unavailable power cannot be switched on; one switched on before it became unavailable
+   * (the Operator typed their own organization afterwards) stays switchable so it can be removed.
+   */
+  public isToggleDisabled(scope: PowerScope, funcName: string): boolean {
+    return !this.isPowerEnabled(scope, funcName) && this.getUnavailableReason(funcName) !== null;
+  }
+
+  private mandatorGroup(): AbstractControl | null {
+    return this.form().parent?.get('mandator') ?? null;
+  }
+
+  /**
+   * Whether the credential would be issued to the operator's own organization. Without a
+   * `mandator` group in the form (not on-behalf) the mandator IS the operator. On-behalf, an
+   * organization not fully typed yet is not treated as a match -- nothing to warn about yet.
+   */
+  private isTargetOperatorOrganization(): boolean {
+    const operatorOrgId = this.authService.organizationIdentifier()
+      || this.authService.extractRawMandator()?.organizationIdentifier
+      || null;
+    if (!operatorOrgId) return false;
+    const mandator = this.mandatorGroup();
+    if (!mandator) return true;
+    const value = mandator.value as Record<string, string | null | undefined>;
+    const targetOrgId = toMandatorOrganizationId(value['country'], value['organizationIdentifier']);
+    return targetOrgId !== null && targetOrgId.toUpperCase() === operatorOrgId.toUpperCase();
   }
 
   private ensureScopeGroups(): void {
@@ -133,10 +198,10 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
 
   private readonly powerRulesValidator: ValidatorFn = (ctrl: AbstractControl): ValidationErrors | null => {
     const group = ctrl as FormGroup;
-    const powerGroups = POWER_SCOPES
+    const scopeGroups = POWER_SCOPES
       .map(scope => group.get(scope) as FormGroup | null)
-      .filter((g): g is FormGroup => !!g)
-      .flatMap(g => Object.values(g.controls) as FormGroup[]);
+      .filter((g): g is FormGroup => !!g);
+    const powerGroups = scopeGroups.flatMap(g => Object.values(g.controls) as FormGroup[]);
 
     const hasOnePower = powerGroups.length > 0;
     const hasOneActionPerPower = powerGroups.every(c =>
@@ -146,6 +211,11 @@ export class IssuancePowerComponent extends BaseIssuanceCustomFormChild<UntypedF
     const errors: ValidationErrors = {};
     if (!hasOnePower) errors['noPower'] = true;
     if (!hasOneActionPerPower) errors['noActionPerPower'] = true;
+    // I-03: an added power the Issuer would reject blocks the submit up front, with the reason
+    // shown next to it, instead of a failed request after the Operator confirms.
+    if (scopeGroups.some(g => Object.keys(g.controls).some(fn => this.getUnavailableReason(fn) !== null))) {
+      errors['unavailablePower'] = true;
+    }
 
     return Object.keys(errors).length ? errors : null;
   };
