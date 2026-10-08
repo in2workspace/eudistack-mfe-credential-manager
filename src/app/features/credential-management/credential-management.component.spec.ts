@@ -221,7 +221,7 @@ describe('CredentialManagementComponent', () => {
         updated: '2025-07-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
       },
     };
@@ -355,7 +355,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         updated: '2025-01-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
       },
     });
@@ -466,7 +466,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         updated: '2025-01-01',
         credential_type: 'LEAR_CREDENTIAL_EMPLOYEE',
         organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
@@ -713,7 +713,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         updated,
         credential_type: credentialType,
         organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
       },
       statusClass: `status-${status.toLowerCase()}`,
@@ -876,7 +876,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
           updated: '2025-01-01',
           credential_type: 'LEAR_CREDENTIAL_MACHINE',
           organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
           // subject intentionally absent
         },
@@ -950,7 +950,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const proc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'VALID',
-          issued_at: '2025-01-01', expires_at: '2026-01-01',
+          created_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -983,7 +983,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       const unknownProc = {
         credential_procedure: {
           procedure_id: '1', subject: 'Alice', status: 'UNKNOWN_NEW_STATUS' as any,
-          issued_at: '2025-01-01', expires_at: '2026-01-01',
+          created_at: '2025-01-01', expires_at: '2026-01-01',
           updated: '2025', credential_type: 'type', email: 'a@a', organization_identifier: 'VATES'
         }
       } as CredentialProcedureBasicInfo;
@@ -1099,7 +1099,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
           updated: '2025-01-01T00:00:00Z',
           credential_type: 'LEARCredentialEmployee',
           organization_identifier: 'VATES-000000',
-          issued_at: '2025-01-01T00:00:00Z',
+          created_at: '2025-01-01T00:00:00Z',
           expires_at: '2026-01-01T00:00:00Z',
         },
         statusClass: `status-${status.toLowerCase()}`,
@@ -1145,7 +1145,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         updated,
         credential_type: 'learcredential.employee.w3c.4',
         organization_identifier: 'VATES-000000',
-        issued_at: '2025-01-01T00:00:00Z',
+        created_at: '2025-01-01T00:00:00Z',
         expires_at: '2026-01-01T00:00:00Z',
       },
     });
@@ -1525,7 +1525,7 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
     beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => undefined));
 
     it('sorts by the issue date, with no date first', () => {
-      expect(sortValue({ issued_at: '2025-03-01T00:00:00Z' }, 'issued')).toBe(Date.parse('2025-03-01T00:00:00Z'));
+      expect(sortValue({ created_at: '2025-03-01T00:00:00Z' }, 'issued')).toBe(Date.parse('2025-03-01T00:00:00Z'));
       expect(sortValue({}, 'issued')).toBe(0);
     });
 

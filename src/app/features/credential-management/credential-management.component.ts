@@ -538,7 +538,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return this.getSafeLowerCaseValue(procedure?.subject, 'subject', procedureId);
         }
         case 'issued': {
-          const t = Date.parse(procedure?.issued_at ?? '');
+          const t = Date.parse(procedure?.created_at ?? '');
           return Number.isFinite(t) ? t : 0;
         }
         case 'expires': {
