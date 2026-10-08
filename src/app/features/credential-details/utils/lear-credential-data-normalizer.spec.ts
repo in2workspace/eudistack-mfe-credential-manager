@@ -383,5 +383,42 @@ describe('LEARCredentialDataNormalizer', () => {
       expect(out.credentialStatus.type).toBe('BitstringStatusListEntry');
       expect(out.credentialStatus.statusListIndex).toBe('7');
     });
+
+    it('maps the SD-JWT nbf/exp onto validFrom/validUntil', () => {
+      const input: any = {
+        vct: 'learcredential.employee.sd.1',
+        nbf: Date.parse('2026-09-25T08:00:00Z') / 1000,
+        exp: Date.parse('2027-09-25T08:00:00Z') / 1000,
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.validFrom).toBe('2026-09-25T08:00:00.000Z');
+      expect(out.validUntil).toBe('2027-09-25T08:00:00.000Z');
+    });
+
+    it('ignores an nbf/exp outside the representable date range', () => {
+      const input: any = { vct: 'learcredential.employee.sd.1', nbf: 1e13, exp: Number.NaN };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.validFrom).toBeUndefined();
+      expect(out.validUntil).toBeUndefined();
+    });
+
+    it('keeps existing W3C validity dates over nbf/exp', () => {
+      const input: any = {
+        type: ['learcredential.employee.w3c.4'],
+        validFrom: '2025-01-01T00:00:00Z',
+        validUntil: '2025-12-31T23:59:59Z',
+        nbf: 0,
+        exp: 0,
+      };
+
+      const out = normalizer.normalizeLearCredential(input) as any;
+
+      expect(out.validFrom).toBe('2025-01-01T00:00:00Z');
+      expect(out.validUntil).toBe('2025-12-31T23:59:59Z');
+    });
   });
 });

@@ -1,0 +1,98 @@
+<div class="filter-dropdown-chip"
+     [class.filter-dropdown-chip--active]="selected().length > 0"
+     cdkOverlayOrigin
+     #origin="cdkOverlayOrigin">
+  <button
+    #trigger
+    type="button"
+    class="filter-dropdown-trigger"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? panelId : null"
+    (click)="toggleOpen()"
+    [attr.aria-label]="selected().length > 0
+      ? ('filters.labelWithCount' | translate: { filter: (label() | translate), count: selected().length })
+      : (label() | translate)">
+    <span class="filter-dropdown-trigger-label">{{ label() | translate }}</span>
+    @if (selected().length > 0) {
+      <span class="filter-dropdown-count">{{ selected().length }}</span>
+    }
+  </button>
+  @if (selected().length > 0) {
+    <button
+      type="button"
+      class="filter-dropdown-clear"
+      [attr.aria-label]="'filters.clearFilter' | translate: { filter: (label() | translate) }"
+      (click)="clear()">
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+  <mat-icon class="filter-dropdown-caret" aria-hidden="true" (click)="open()">arrow_drop_down</mat-icon>
+</div>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="isOpen()"
+  [cdkConnectedOverlayPositions]="panelPositions"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  cdkConnectedOverlayPanelClass="filter-dropdown-panel"
+  (backdropClick)="close()"
+  (overlayKeydown)="onOverlayKeydown($event)"
+  (attach)="onAttached()"
+  (detach)="onDetached()">
+  <!-- Non-modal: opened with the open attribute, never showModal(), so it stays inside the
+       overlay instead of the top layer; Escape and outside clicks are handled by the overlay. -->
+  <dialog open class="filter-dropdown-content"
+       [id]="panelId"
+       [attr.aria-label]="label() | translate"
+       [class.filter-dropdown-content--wide]="showFooter()"
+       (keydown)="onPanelKeydown($event)">
+    @if (searchable()) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-dropdown-search">
+        <input
+          matInput
+          [placeholder]="searchPlaceholder() | translate"
+          [attr.aria-label]="searchPlaceholder() | translate"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    }
+
+    @if (showFooter()) {
+      <div class="filter-dropdown-title-row">
+        <span class="filter-dropdown-title">{{ 'filters.selectAnOption' | translate }}</span>
+        @if (draft().length > 0) {
+          <span class="filter-dropdown-count">{{ draft().length }}</span>
+        }
+      </div>
+    }
+
+    <div class="filter-dropdown-options">
+      @for (option of filteredOptions(); track option.value) {
+        <mat-checkbox
+          class="filter-dropdown-option"
+          [checked]="draft().includes(option.value)"
+          (change)="toggle(option.value)">
+          {{ option.label }}
+        </mat-checkbox>
+      }
+      @if (filteredOptions().length === 0) {
+        <span class="filter-dropdown-no-options">{{ 'filters.noOptions' | translate }}</span>
+      }
+    </div>
+
+    @if (showFooter()) {
+      <div class="filter-dropdown-footer">
+        <button type="button" class="filter-dropdown-close" (click)="cancel()">
+          {{ 'filters.close' | translate }}
+        </button>
+        <button type="button" mat-flat-button color="primary" (click)="confirm()">
+          {{ 'filters.confirm' | translate }}
+        </button>
+      </div>
+    }
+  </dialog>
+</ng-template>

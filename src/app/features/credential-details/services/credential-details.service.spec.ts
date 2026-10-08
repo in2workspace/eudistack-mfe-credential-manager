@@ -10,7 +10,7 @@ import { CredentialActionsService } from './credential-actions.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -25,7 +25,6 @@ describe('CredentialDetailsService', () => {
   };
 
   const mockCredentialActionsService = {
-    openSignCredentialDialog: jest.fn(),
     openRevokeCredentialDialog: jest.fn(),
     openArchiveCredentialDialog: jest.fn(),
   };
@@ -76,12 +75,6 @@ describe('CredentialDetailsService', () => {
   it('should set the procedureId$ signal when setProcedureId is called', () => {
     service.setProcedureId('abc123');
     expect(service.procedureId$()).toBe('abc123');
-  });
-
-  it('should call actionsService.openSignCredentialDialog with procedureId', () => {
-    service.procedureId$.set('pid456');
-    service.openSignCredentialDialog();
-    expect(mockCredentialActionsService.openSignCredentialDialog).toHaveBeenCalledWith('pid456');
   });
 
   it('getProcedureId ha de retornar el valor de procedureId$', () => {
@@ -304,6 +297,35 @@ describe('CredentialDetailsService', () => {
       expect(service.credentialType$()).toBe('learcredential.employee.w3c.1');
     });
 
+    it('issuerOrganization$() reads the organization of an object issuer', () => {
+      service.credentialProcedureDetails$.set({
+        credential: { vc: { ...mockVc, issuer: { id: 'did:elsi:x', organization: 'Engineering S.p.A.' } } }
+      } as any);
+      expect(service.issuerOrganization$()).toBe('Engineering S.p.A.');
+    });
+
+    it('issuerOrganization$() is undefined for a string issuer or none at all', () => {
+      service.credentialProcedureDetails$.set({ credential: { vc: { ...mockVc, issuer: 'did:elsi:x' } } } as any);
+      expect(service.issuerOrganization$()).toBeUndefined();
+      service.credentialProcedureDetails$.set({ credential: { vc: mockVc } } as any);
+      expect(service.issuerOrganization$()).toBeUndefined();
+    });
+
+    it('credentialTypeFamilyLabelKey$() names the family whatever the format and version', () => {
+      service.credentialProcedureDetails$.set({
+        credential_configuration_id: 'learcredential.employee.w3c.1',
+        credential: { vc: mockVc }
+      } as any);
+      expect(service.credentialTypeFamilyLabelKey$()).toBe('credentialManagement.typeFamily.employee');
+    });
+
+    it('credentialTypeFamilyLabelKey$() falls back to the credential type when there is no configuration id', () => {
+      service.credentialProcedureDetails$.set({
+        credential: { vc: { ...mockVc, type: ['VerifiableCredential', 'LEARCredentialMachine'] } }
+      } as any);
+      expect(service.credentialTypeFamilyLabelKey$()).toBe('credentialManagement.typeFamily.machine');
+    });
+
     it('showSideTemplateCard$() is false by default, true when sideViewModel has items', () => {
       expect(service.showSideTemplateCard$()).toBe(false);
       service.sideViewModel$.set([ { foo: 'bar' } as any ]);
@@ -491,18 +513,17 @@ describe('CredentialDetailsService', () => {
       });
 
 
-      it('showSignCredentialButton$, showRevokeCredentialButton$ all false by default', () => {
-        expect(service.showSignCredentialButton$()).toBe(false);
+      it('showRevokeCredentialButton$ is false by default', () => {
         expect(service.showRevokeCredentialButton$()).toBe(false);
       });
 
       it('showActionsButtonsContainer$() és true si almenys un botó està visible', () => {
         service.credentialProcedureDetails$.set({
-          lifeCycleStatus: 'PEND_SIGNATURE',
+          lifeCycleStatus: 'DRAFT',
           credential: { vc: { type: ['learcredential.employee.w3c.1'], validFrom: '', validUntil: '', credentialStatus: 'OK' } }
         } as any);
 
-        expect(service.showSignCredentialButton$()).toBe(true);
+        expect(service.showWithdrawCredentialButton$()).toBe(true);
         expect(service.showActionsButtonsContainer$()).toBe(true);
       });
   });
@@ -529,6 +550,27 @@ describe('Load models', () => {
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
     expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+    expect(svc.loadError$()).toBeUndefined();
+  });
+
+  it('flags a failed request instead of throwing', () => {
+    const svc: any = service;
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(throwError(() => new Error('404')));
+
+    svc.loadCredentialModels(TestBed.inject(Injector));
+
+    expect(svc.loadError$()).toBe('request');
+  });
+
+  it('flags a procedure carrying no credential instead of throwing', () => {
+    const svc: any = service;
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of({ credential: {} }));
+    const templateSpy = jest.spyOn(svc, 'setViewModels');
+
+    svc.loadCredentialModels(TestBed.inject(Injector));
+
+    expect(svc.loadError$()).toBe('missingCredential');
+    expect(templateSpy).not.toHaveBeenCalled();
   });
 });
 

@@ -10,6 +10,7 @@ import { UserDataAuthenticationResponse } from '../models/dto/user-data-authenti
 import { RoleType } from '../models/enums/auth-rol-type.enum';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
+import { IAM_POST_LOGIN_ROUTE } from '../constants/iam.constants';
 
 const mockUserDataWithClaims: UserDataAuthenticationResponse = {
   id: 'id',
@@ -687,6 +688,18 @@ describe('AuthService', () => {
       });
     });
 
+    /** Signs in with the page on `pathname` and reports whether the user is sent on to the credential list. */
+    const signInSendsToList = async (pathname: string): Promise<boolean> => {
+      setPathname(pathname);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({
+        isAuthenticated: true,
+        userData: mockUserDataWithClaims,
+        accessToken: 'xxx'
+      }));
+      await firstValueFrom(service.checkAuth$());
+      return routerMock.navigate.mock.calls.some(([commands]) => commands[0] === IAM_POST_LOGIN_ROUTE);
+    };
+
     it('isOnPublicRoute(): true per a /issuer/credential-offer', () => {
       setPathname('/issuer/credential-offer');
       expect((service as any).isOnPublicRoute()).toBe(true);
@@ -710,6 +723,48 @@ describe('AuthService', () => {
     it('isOnPublicRoute(): false quan "credential-offer" no està al principi del path (startsWith, no includes)', () => {
       setPathname('/issuer/organization/credential-offer-audit');
       expect((service as any).isOnPublicRoute()).toBe(false);
+    });
+
+    it.each(['/', '/home', '/home/'])('en iniciar sessió a %s porta al llistat', async (pathname) => {
+      expect(await signInSendsToList(pathname)).toBe(true);
+    });
+
+    it.each(['/organization/credentials', '/homepage', '/issuer/home'])('en iniciar sessió a %s no porta al llistat', async (pathname) => {
+      expect(await signInSendsToList(pathname)).toBe(false);
+    });
+
+    describe('amb el base href /issuer/ dels desplegaments', () => {
+      let base: HTMLBaseElement;
+
+      beforeEach(() => {
+        base = document.createElement('base');
+        base.href = '/issuer/';
+        document.head.appendChild(base);
+      });
+
+      afterEach(() => base.remove());
+
+      it.each(['/issuer', '/issuer/', '/issuer/home', '/issuer/home/'])('en iniciar sessió a %s porta al llistat', async (pathname) => {
+        expect(await signInSendsToList(pathname)).toBe(true);
+      });
+
+      it.each(['/issuer/organization/credentials', '/issuerx/home', '/issuer/homepage'])('en iniciar sessió a %s no porta al llistat', async (pathname) => {
+        expect(await signInSendsToList(pathname)).toBe(false);
+      });
+    });
+
+    it('checkAuth$: en recarregar una ruta protegida no redirigeix al llistat encara que router.url sigui "/"', (done) => {
+      setPathname('/issuer/organization/credentials');
+      routerMock.url = '/';
+      jest.spyOn(service as any, 'isAuthorizedForCurrentTenant').mockReturnValue(true);
+      jest.spyOn(service as any, 'handleUserAuthentication').mockImplementation(() => undefined);
+      jest.spyOn(service as any, 'refreshRoleFromBackend').mockImplementation(() => undefined);
+      oidcSecurityServiceMock.checkAuth.mockReturnValue(of({ isAuthenticated: true, userData: {} }));
+
+      service.checkAuth$().subscribe(() => {
+        expect(routerMock.navigate).not.toHaveBeenCalled();
+        done();
+      });
     });
 
     it('checkAuth$: NO dispara el silent-SSO en ruta pública quan no autenticat', (done) => {

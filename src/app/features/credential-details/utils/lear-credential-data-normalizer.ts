@@ -45,6 +45,7 @@ export class LEARCredentialDataNormalizer {
     const isVerCert  = types.includes('VerifiableCertification');
 
     this.normalizeStatusIfNeeded(normalized);
+    this.normalizeValidityIfNeeded(normalized);
     this.normalizeMandateIfNeeded(normalized, isEmployee, isMachine);
     this.normalizeCertificationIfNeeded(normalized, isVerCert);
 
@@ -141,6 +142,18 @@ export class LEARCredentialDataNormalizer {
       statusListIndex: String(sl.idx),
       statusListCredential: sl.uri,
     };
+  }
+
+  /** SD-JWT VCs carry their validity as JWT `nbf`/`exp` (seconds since epoch), not W3C dates. */
+  private normalizeValidityIfNeeded(data: any): void {
+    data.validFrom ||= this.epochSecondsToIso(data.nbf);
+    data.validUntil ||= this.epochSecondsToIso(data.exp);
+  }
+
+  private epochSecondsToIso(seconds: unknown): string | undefined {
+    if (typeof seconds !== 'number') return undefined;
+    const date = new Date(seconds * 1000);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
   }
 
   private normalizeCertificationIfNeeded(

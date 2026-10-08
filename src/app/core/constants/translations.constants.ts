@@ -1,2 +1,2 @@
-export const CREDENTIAL_MANAGEMENT_SUBJECT = "credentialManagement.subject";
+export const CREDENTIAL_MANAGEMENT_SEARCH_LABEL_SUBJECT = "credentialManagement.searchLabelSubject";
 export const CREDENTIAL_MANAGEMENT_SEARCH_PLACEHOLDER_SUBJECT = "credentialManagement.searchPlaceholderSubject";

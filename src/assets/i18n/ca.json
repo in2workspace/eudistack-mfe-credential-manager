@@ -22,7 +22,32 @@
   "navbar": {
     "menu": {
       "logout": "Tancar sessió",
-      "settings": "Configuració"
+      "settings": "Configuració",
+      "organization-contact": "Gestionar el contacte"
+    }
+  },
+  "organization-contact": {
+    "title": "Gestionar el contacte de l'organització",
+    "label": {
+      "email": "Correu electrònic de contacte"
+    },
+    "placeholder": {
+      "email": "exemple@empresa.com"
+    },
+    "button": {
+      "save": "Desar"
+    },
+    "loading": "Carregant...",
+    "success": {
+      "update": "El correu electrònic de contacte s'ha actualitzat correctament"
+    },
+    "error": {
+      "load-failed": "No s'ha pogut carregar el correu electrònic de contacte. Torna-ho a provar.",
+      "update-failed": "No s'ha pogut actualitzar el correu electrònic de contacte. Torna-ho a provar."
+    },
+    "validation": {
+      "email-required": "El correu electrònic és obligatori",
+      "email-invalid": "El format del correu electrònic no és vàlid"
     }
   },
   "sidenav": {
@@ -85,6 +110,23 @@
     "email": "Correu electrònic"
   },
   "credentialDetails": {
+    "revokedOn": "Revocada el",
+    "dateAtTime": "{{date}} a les {{time}}",
+    "loadError": "No s'ha pogut carregar la credencial.",
+    "issuedBy": "Emesa per {{organization}}",
+    "credentialInformation": "Informació de la credencial",
+    "format": "Format",
+    "badge": {
+      "DRAFT": "Credencial en esborrany",
+      "PEND_SIGNATURE": "Pendent de signatura",
+      "PEND_DOWNLOAD": "Pendent de descàrrega",
+      "ISSUED": "Credencial emesa",
+      "VALID": "Credencial vàlida",
+      "EXPIRED": "Credencial expirada",
+      "REVOKED": "Credencial revocada",
+      "WITHDRAWN": "Credencial retirada",
+      "ARCHIVED": "Credencial arxivada"
+    },
     "title": "Detalls de la credencial",
     "DRAFT": "ESBORRANY",
     "PEND_SIGNATURE": "PER SIGNAR",
@@ -99,7 +141,6 @@
     "status": "estatus",
     "email": "correu electrònic",
     "contact-email": "Email de contacte",
-    "format": "format",
     "valid_from": "vàlid des de",
     "valid_until": "vàlid fins",
     "issuer": "emissor",
@@ -148,33 +189,28 @@
     "withdraw": "retirar",
     "archive": "arxivar",
         "revokeTooltip": "Aquesta credencial no pot ser revocada perquè és de tipus legacy. Per consultar com revocar aquest tipus de credencial, consulti la nostra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guia</a>.",
-    "signCredentialConfirm": {
-      "title": "Signar credencial",
-      "message": "Estàs segur que vols signar aquesta credencial?"
-    },
-    "signCredentialSuccess": {
-      "title": "Credencial signada",
-      "message": "La credencial s'ha signat correctament."
-    },
     "revokeCredentialConfirm": {
-      "title": "Revocar Credencial",
-      "message": "Estàs segur que vols revocar la credencial?"
+      "title": "Vols revocar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, revoca-la"
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
       "message": "La credencial ha quedat revocada i el seu estat s'ha publicat a la llista de revocació."
     },
     "withdrawCredentialConfirm": {
-      "title": "Retirar Credencial",
-      "message": "Estàs segur que vols retirar aquesta credencial?"
+      "title": "Vols retirar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, retira-la"
     },
     "withdrawCredentialSuccess": {
       "title": "Credencial retirada",
       "message": "La credencial ha estat retirada correctament."
     },
     "archiveCredentialConfirm": {
-      "title": "Arxivar Credencial",
-      "message": "Estàs segur que vols arxivar aquesta credencial? Aquesta acció és definitiva i no es pot desfer."
+      "title": "Vols arxivar la credencial?",
+      "message": "Aquesta acció no es pot desfer.",
+      "confirm": "Sí, arxiva-la"
     },
     "archiveCredentialSuccess": {
       "title": "Credencial arxivada",
@@ -210,21 +246,31 @@
     }
   },
   "credentialManagement": {
-    "title": "Llista de credencials emeses",
-    "button": "Nova Credencial",
+    "title": "Credencials emeses",
+    "button": "Afegir credencials",
     "status": "Estatus",
-    "organization": "Organització",
+    "tenant": "Tenant",
+    "organizationId": "ID de l’organització",
     "organizationIdentifier": "ID d'Organització",
     "filter-by-org": "Filtra per org.",
     "subject": "Subjecte",
-    "credentialType": "Tipus de credencial",
+    "credentialType": "Tipus",
+    "typeFamily": {
+      "employee": "Empleat",
+      "machine": "Màquina",
+      "label": "Credencial d'Etiqueta"
+    },
+    "issuedOn": "Emesa el",
+    "expiresOn": "Expira el",
     "updated": "Actualitzat",
+    "action": "Acció",
+    "viewDetails": "Veure detalls",
+    "viewDetailsOf": "Veure detalls de {{subject}}",
     "cancel": "Cancel·lar",
     "create" : "Crear Credencial",
     "buttonAdmin": "Nova Credencial (en nom de)",
-    "tabActive": "Actives",
-    "tabArchived": "Arxivades",
     "search": "Buscar per",
+    "searchLabelSubject": "subjecte",
     "searchPlaceholderSubject": "Joan Garcia",
     "searchPlaceholderOrgID": "VATES-000000",
       "paginator": {
@@ -258,11 +304,6 @@
     "loadError": {
       "title": "Error en carregar les credencials",
       "description": "No s'han pogut carregar les credencials. Si us plau, recarrega la pàgina o torna-ho a intentar més tard."
-    },
-    "archivedTitle": "Credencials arxivades",
-    "archivedEmptyState": {
-      "title": "Sense credencials arxivades",
-      "description": "Quan arxivi una credencial apareixerà aquí."
     }
   },
     "power": {
@@ -274,6 +315,7 @@
       "marketplace": "Marketplace",
       "productoffering": "Oferta de producte",
       "certification": "Certificació",
+      "system": "Sistema",
       "add": "Afegir",
       "execute": "Executar",
       "create": "Crear",
@@ -281,6 +323,7 @@
       "delete": "Eliminar",
       "upload": "Pujar",
       "attest": "Acreditar",
+      "administration": "Administració",
       "select": "Selecciona un poder",
       "invalid_power_title": "Accés Denegat",
       "invalid_power_message": "No teniu la política necessària per accedir",
@@ -598,5 +641,34 @@
     "already-active-description": "Aquesta credencial ja es troba activa i no requereix una nova verificació.",
     "unavailable-title": "Credencial no disponible",
     "unavailable-description": "La credencial ja no està disponible. Posa't en contacte amb la teva organització per emetre'n una de nova."
+  },
+  "filters": {
+    "selectAnOption": "Selecciona una opció",
+    "clearAll": "Netejar-ho tot",
+    "clearFilter": "Esborra el filtre: {{filter}}",
+    "labelWithCount": "{{filter}}, {{count}} seleccionats",
+    "close": "Tancar",
+    "confirm": "Confirmar",
+    "searchByOrganizationId": "Cerca per ID de l’organització",
+    "clearSearch": "Esborra la cerca",
+    "noOptions": "Sense opcions",
+    "credentialType": "Tipus de credencial",
+    "credentialStatus": "Estat de la credencial",
+    "resultsCount": "{{count}} resultats"
+  },
+  "pagination": {
+    "back": "Enrere",
+    "next": "Següent",
+    "resultsPerPage": "Resultats per pàgina",
+    "label": "Paginació",
+    "page": "Pàgina {{page}}"
+  },
+  "sort": {
+    "label": "Ordenar per:",
+    "recentlyIssued": "Emeses recentment",
+    "recentlyUpdated": "Actualitzades recentment",
+    "expiringSoon": "Expiren aviat",
+    "expiringLater": "Expiren més tard",
+    "custom": "Personalitzat"
   }
 }

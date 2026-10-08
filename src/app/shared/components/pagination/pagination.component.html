@@ -1,0 +1,56 @@
+<mat-paginator
+  class="paginator-engine"
+  [pageSize]="defaultPageSize()"
+  [pageSizeOptions]="pageSizeOptions()">
+</mat-paginator>
+
+<div class="pagination-bar">
+  <nav class="pagination-left" [attr.aria-label]="'pagination.label' | translate">
+    <button
+      type="button"
+      class="pagination-nav-btn"
+      [disabled]="!hasPrevious()"
+      [attr.aria-label]="'pagination.back' | translate"
+      (click)="previous()">
+      <mat-icon>arrow_back</mat-icon>
+      {{ 'pagination.back' | translate }}
+    </button>
+
+    @for (slot of pageSlots(); track slot) {
+      @if (slot === 'gap-start' || slot === 'gap-end') {
+        <span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>
+      } @else {
+        <button
+          type="button"
+          class="pagination-page-btn"
+          [class.pagination-page-btn--active]="slot === currentPageNumber()"
+          [attr.aria-current]="slot === currentPageNumber() ? 'page' : null"
+          [attr.aria-label]="'pagination.page' | translate: { page: slot }"
+          (click)="goToPage(slot)">
+          {{ slot }}
+        </button>
+      }
+    }
+
+    <button
+      type="button"
+      class="pagination-nav-btn"
+      [disabled]="!hasNext()"
+      [attr.aria-label]="'pagination.next' | translate"
+      (click)="next()">
+      {{ 'pagination.next' | translate }}
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
+  </nav>
+
+  <div class="pagination-right">
+    <span class="pagination-per-page-label">{{ 'pagination.resultsPerPage' | translate }}</span>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pagination-page-size-field">
+      <mat-select [value]="paginator().pageSize" [aria-label]="'pagination.resultsPerPage' | translate" panelClass="pagination-page-size-panel" (selectionChange)="onPageSizeChange($event.value)">
+        @for (size of pageSizeOptions(); track size) {
+          <mat-option [value]="size">{{ size }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+</div>

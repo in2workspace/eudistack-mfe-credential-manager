@@ -110,6 +110,23 @@
     "email": "Email"
   },
   "credentialDetails": {
+    "revokedOn": "Revoked on",
+    "dateAtTime": "{{date}} at {{time}}",
+    "loadError": "This credential could not be loaded.",
+    "issuedBy": "Issued by {{organization}}",
+    "credentialInformation": "Credential information",
+    "format": "Format",
+    "badge": {
+      "DRAFT": "Draft credential",
+      "PEND_SIGNATURE": "Pending signature",
+      "PEND_DOWNLOAD": "Pending download",
+      "ISSUED": "Credential issued",
+      "VALID": "Credential is valid",
+      "EXPIRED": "Credential expired",
+      "REVOKED": "Credential revoked",
+      "WITHDRAWN": "Credential withdrawn",
+      "ARCHIVED": "Credential archived"
+    },
     "title": "Credential details",
     "DRAFT": "DRAFT",
     "PEND_SIGNATURE": "TO SIGN",
@@ -136,7 +153,6 @@
     "commonName": "name",
     "email": "email",
     "contact-email": "Contact email",
-    "format": "format",
     "serialNumber": "Serial number",
     "name": "name",
     "firstName": "first name",
@@ -173,33 +189,28 @@
     "withdraw": "withdraw",
     "archive": "archive",
     "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
-    "signCredentialConfirm": {
-      "title": "Sign Credential",
-      "message": "Are you sure you want to sign this credential?"
-    },
-    "signCredentialSuccess": {
-      "title": "Credential signed",
-      "message": "The credential was signed successfully."
-    },
     "revokeCredentialConfirm": {
-      "title": "Revoke Credential",
-      "message": "Are you sure you want to revoke this credential?"
+      "title": "Revoke credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, revoke"
     },
     "revokeCredentialSuccess": {
       "title": "Credential revoked",
       "message": "The credential has been revoked and its status has been published to the revocation list."
     },
     "withdrawCredentialConfirm": {
-      "title": "Withdraw Credential",
-      "message": "Are you sure you want to withdraw this credential?"
+      "title": "Withdraw credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, withdraw"
     },
     "withdrawCredentialSuccess": {
       "title": "Credential withdrawn",
       "message": "The credential was withdrawn successfully."
     },
     "archiveCredentialConfirm": {
-      "title": "Archive Credential",
-      "message": "Are you sure you want to archive this credential? This action is permanent and cannot be undone."
+      "title": "Archive credential?",
+      "message": "This action cannot be undone.",
+      "confirm": "Yes, archive"
     },
     "archiveCredentialSuccess": {
       "title": "Credential archived",
@@ -235,21 +246,31 @@
     }
   },
   "credentialManagement": {
-    "title": "List of issued credentials",
-    "button": "New credential",
+    "title": "Issued credentials",
+    "button": "Add credentials",
     "status": "Status",
-    "organization": "Organization",
+    "tenant": "Tenant",
+    "organizationId": "Organization ID",
     "organizationIdentifier": "Organization ID",
     "filter-by-org": "Filter by org.",
     "subject": "Subject",
-    "credentialType": "Credential Type",
+    "credentialType": "Type",
+    "typeFamily": {
+      "employee": "Employee",
+      "machine": "Machine",
+      "label": "Label Credential"
+    },
+    "issuedOn": "Issued on",
+    "expiresOn": "Expires on",
     "updated": "Updated",
+    "action": "Action",
+    "viewDetails": "View details",
+    "viewDetailsOf": "View details of {{subject}}",
     "cancel": "Cancel",
     "create": "Create Credential",
     "buttonAdmin": "New credential (on behalf)",
-    "tabActive": "Active",
-    "tabArchived": "Archived",
     "search": "Search by",
+    "searchLabelSubject": "subject",
     "searchPlaceholderSubject": "Joe Doe",
     "searchPlaceholderOrgID": "VATES-000000",
     "paginator": {
@@ -283,11 +304,6 @@
     "loadError": {
       "title": "Error loading credentials",
       "description": "The credentials could not be loaded. Please reload the page or try again later."
-    },
-    "archivedTitle": "Archived credentials",
-    "archivedEmptyState": {
-      "title": "No archived credentials",
-      "description": "When you archive a credential it will appear here."
     }
   },
   "power": {
@@ -299,6 +315,7 @@
     "marketplace": "Marketplace",
     "productoffering": "Product Offering",
     "certification": "Certification",
+    "system": "System",
     "add": "Add",
     "execute": "Execute",
     "create": "Create",
@@ -306,6 +323,7 @@
     "delete": "Delete",
     "upload": "Upload",
     "attest": "Attest",
+    "administration": "Administration",
     "select": "Select a power",
     "invalid_power_title": "Access Denied",
     "invalid_power_message": "You do not have the required power to access.",
@@ -623,5 +641,34 @@
     "already-active-description": "This credential is already active and does not require a new verification.",
     "unavailable-title": "Credential Unavailable",
     "unavailable-description": "The credential is no longer available. Please contact your organization to issue a new one."
+  },
+  "filters": {
+    "selectAnOption": "Select an option",
+    "clearAll": "Clear all",
+    "clearFilter": "Clear filter: {{filter}}",
+    "labelWithCount": "{{filter}}, {{count}} selected",
+    "close": "Close",
+    "confirm": "Confirm",
+    "searchByOrganizationId": "Search by organization ID",
+    "clearSearch": "Clear search",
+    "noOptions": "No options",
+    "credentialType": "Credential type",
+    "credentialStatus": "Credential status",
+    "resultsCount": "{{count}} results"
+  },
+  "pagination": {
+    "back": "Back",
+    "next": "Next",
+    "resultsPerPage": "Results per page",
+    "label": "Pagination",
+    "page": "Page {{page}}"
+  },
+  "sort": {
+    "label": "Sort by:",
+    "recentlyIssued": "Recently issued",
+    "recentlyUpdated": "Recently updated",
+    "expiringSoon": "Expires soon",
+    "expiringLater": "Expires later",
+    "custom": "Custom"
   }
 }

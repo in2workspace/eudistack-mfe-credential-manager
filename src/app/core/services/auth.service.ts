@@ -269,9 +269,23 @@ export class AuthService{
     this.handleUserAuthentication(userData);
     this.refreshRoleFromBackend();
 
-    if (this.router.url === '/' || this.router.url.startsWith('/home')) {
-      this.router.navigate([IAM_POST_LOGIN_ROUTE]);
+    if (this.isOnLandingRoute()) {
+      void this.router.navigate([IAM_POST_LOGIN_ROUTE]);
     }
+  }
+
+  /**
+   * True on the app root or /home. Reads `location.pathname` for the same reason as
+   * isOnPublicRoute(): at bootstrap `router.url` is still '/', which used to send a reload of
+   * any protected URL (e.g. the credential list with its details drawer open) to the list.
+   */
+  private isOnLandingRoute(): boolean {
+    let basePath = new URL(document.baseURI).pathname;
+    while (basePath.endsWith('/')) basePath = basePath.slice(0, -1);
+    let path = globalThis.location.pathname;
+    if (basePath && (path === basePath || path.startsWith(`${basePath}/`))) path = path.slice(basePath.length);
+    path ||= '/';
+    return path === '/' || path === '/home' || path.startsWith('/home/');
   }
 
   /**
@@ -476,7 +490,7 @@ export class AuthService{
     this.userPowers.set([]);
     this.resetSessionRoleState();
 
-    this.router.navigate(['/home']).finally(() => {
+    void this.router.navigate(['/home']).finally(() => {
       const title = this.translate.instant('error.policy.title');
       const message = this.translate.instant('error.policy.message');
       const dialogRef = this.dialog.openErrorInfoDialog(DialogComponent, message, title);
