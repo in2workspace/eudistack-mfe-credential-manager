@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.3] - 2026-10-09
+
+### Added
+- **#1045910 — issued-credentials list.** Organization, type and status filters, a subject search, sort, numbered pagination and one table in which Archived is a status. Details open in a side drawer. "Issued on" and "Expires on" are read from the Issuer created_at and expires_at fields, so this release has to ship with the matching Issuer.
+
+### Changed
+- **Credential details resolve the format** (W3C VC Data Model v2.0 or SD-JWT VC) from the issuer metadata, and from the configuration id when the metadata does not describe it.
+
+### Fixed
+- **"Issued on" was always empty** after the Issuer renamed issued_at to created_at. The column and the "Recently issued" sort now read created_at.
+- **I-03 — an on-behalf issuance failure explains the business reason** when the Issuer sends a LEAR policy reason or the fields a validation rejected. The Onboarding power cannot be switched on when the Issuer would reject it.
+- **An offer whose credential is already active (410 credential_already_active) shows that message** instead of the generic error screen. It has to ship with the Issuer that returns the same code.
+- **A 410 credential_offer_gone shows "credential no longer available"** with no Retry.
+- **Sonar — unhandled promise rejections** on the auth redirects and the offer-URI copy button. A failed copy no longer says it was copied.
+
 ## [Unreleased]
 
 ### Added
