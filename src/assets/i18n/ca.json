@@ -258,7 +258,7 @@
     "typeFamily": {
       "employee": "Empleat",
       "machine": "Màquina",
-      "label": "Credencial d'Etiqueta"
+      "label": "Etiqueta"
     },
     "issuedOn": "Emesa el",
     "expiresOn": "Expira el",
@@ -285,7 +285,7 @@
     "learcredential.employee.sd.1": "LEAR Credential Employee",
     "learcredential.machine.w3c.1": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
-    "gx.labelcredential.w3c.1": "Label Credential",
+    "gx.labelcredential.w3c.1": "Label",
     "VerifiableCertification": "Verifiable Certification",
     "emptyState": {
       "title": "Encara no hi ha credencials",

@@ -278,15 +278,15 @@ it('groups every machine credential_type — legacy or current — under one "Ma
   expect(component.getCredentialTypeLabel('LEARCredentialMachine')).toBe('Machine'); // legacy v1/v2 bare DOME name
 });
 
-it('groups every label credential_type — legacy or current — under one "Label Credential" label', () => {
+it('groups every label credential_type — legacy or current — under one "Label" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.typeFamily.label') return 'Label Credential';
+    if (key === 'credentialManagement.typeFamily.label') return 'Label';
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label Credential');
-  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label Credential'); // legacy v1
+  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label');
+  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label'); // legacy v1
 });
 
 it('should return direct translated credential type when key exists (types outside the employee/machine/label families)', () => {
