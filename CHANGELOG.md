@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **EUD-305 - Credential offer QR stays scannable with the phone camera**: the QR shown after a `ui` issuance now encodes the link to this portal's wallet (`<wallet>/protocol/callback?credential_offer_uri=...`, the same link as "open in this device") instead of the raw `credential_offer_uri` returned by the API. `eudistack-core-issuer` now returns the standard `openid-credential-offer://` form, which a camera cannot open. The link is built from either form, so the QR works before and after the issuer is upgraded; deploy together with it anyway. The copy button still copies the standard offer, which wallet scanners accept. Tests: `credential-offer-qr.component.spec.ts`.
+
 ### Added
 - **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box. Filter labels follow a language change, and screen readers announce how many options each filter has selected. Inside a dropdown, Tab moves between the search box, the options and the buttons, Home, End and the arrows work in the search box, and the dropdown closes on Escape, on an outside click or when tabbing out of it. Screen readers announce each dropdown as a dialog named after its filter (not as a menu, which its search box, checkboxes and buttons are not); focus moves into it when it opens and back to the filter when it closes.
 - **Credential management - search**: the subject search box is always visible and has a clear button inside it.
