@@ -77,12 +77,18 @@ export class DynamicSchemaBuilder {
     const label = override?.i18nLabeledClaims?.includes(`${groupKey}.${claimKey}`)
       ? undefined
       : this.resolveDisplayName(claim);
+    const valueLabels = override?.claimValueLabels?.[claimKey];
 
     const field: DetailsKeyValueField = {
       key: claimKey,
       label,
       type: 'key-value',
-      value: (c: any) => this.resolvePathValue(c, path),
+      value: (c: any) => {
+        const value = this.resolvePathValue(c, path);
+        return (typeof value === 'string' && valueLabels && Object.hasOwn(valueLabels, value))
+          ? valueLabels[value]
+          : value;
+      },
     };
 
     const existing = groups.get(groupKey) ?? [];
