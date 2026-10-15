@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.9.0] - 2026-10-13
+## [3.8.3] - 2026-10-13
 
 ### Fixed
 - **Credential management - large screens**: from 1600px wide, the credential list scales up gradually with the screen (text, row height and column widths together). From 1850px on it keeps the same proportions to the screen at any larger size, instead of staying small with empty space around it. The table keeps its compact look and the filter bar, results row and pagination follow its width.
