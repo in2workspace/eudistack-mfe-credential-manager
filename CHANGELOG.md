@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.8.3] - 2026-10-13
 
 ### Fixed
-- **Credential management - large screens**: from 1600px wide, the credential list scales up gradually with the screen (text, row height and column widths together). From 1850px on it keeps the same proportions to the screen at any larger size, instead of staying small with empty space around it. The table keeps its compact look and the filter bar, results row and pagination follow its width.
-- **Credential management - large screens, scope**: screens below 1600px are unchanged.
+- **Credential management - large screens**: from 1025px wide, the credential list takes the available width up to a maximum, instead of staying a fixed-width block, and the filter bar, results row and pagination follow it. The extra width goes to the Organization ID, Subject and Type columns, so their values are cut off less, and the Action column is no longer pushed out of view on wide screens.
+- **Credential management - large screens, text size**: from 1600px wide the table text and rows grow slightly, up to a fixed size; on larger screens the size no longer follows the window, so users who want it bigger can zoom the browser.
+- **Credential management - large screens, scope**: screens below 1025px are unchanged.
 
 ### Added
 - **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box. Filter labels follow a language change, and screen readers announce how many options each filter has selected. Inside a dropdown, Tab moves between the search box, the options and the buttons, Home, End and the arrows work in the search box, and the dropdown closes on Escape, on an outside click or when tabbing out of it. Screen readers announce each dropdown as a dialog named after its filter (not as a menu, which its search box, checkboxes and buttons are not); focus moves into it when it opens and back to the filter when it closes.
