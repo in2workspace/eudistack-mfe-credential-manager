@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Credential management - large screens**: from 1025px wide, the credential list takes the available width up to a maximum, with side margins that grow with the screen, instead of staying a fixed-width block. The filter bar, results row and pagination follow it. The extra width goes to the Subject column, so long subjects are cut off less, and the Action column is no longer pushed out of view on wide screens.
 - **Credential management - large screens, Type column**: from 1280px wide the Type column is wide enough for the longest type names in every language, such as "Credencial de Etiqueta", instead of cutting them off.
-- **Credential management - large screens, text size**: from 1600px wide the table text and rows grow slightly, up to a fixed size; on larger screens the size no longer follows the window, so users who want it bigger can zoom the browser. The Status and Action columns follow the text size, so they are not cut off when the browser's default font size is raised.
+- **Credential management - Status and Action columns**: their width follows the text size, so they are not cut off when the browser's default font size is raised.
 - **Credential management - large screens, scope**: screens below 1025px are unchanged.
 
 ### Added
