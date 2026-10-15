@@ -665,10 +665,10 @@
   },
   "sort": {
     "label": "Ordenar per:",
-    "recentlyIssued": "Emeses recentment",
-    "recentlyUpdated": "Actualitzades recentment",
-    "expiringSoon": "Expiren aviat",
-    "expiringLater": "Expiren més tard",
+    "recentlyAdded": "Afegides recentment",
+    "oldestAdded": "Afegides fa més temps",
+    "subjectAsc": "Subjecte (A-Z)",
+    "subjectDesc": "Subjecte (Z-A)",
     "custom": "Personalitzat"
   }
 }

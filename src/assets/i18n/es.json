@@ -665,10 +665,10 @@
   },
   "sort": {
     "label": "Ordenar por:",
-    "recentlyIssued": "Emitidas recientemente",
-    "recentlyUpdated": "Actualizadas recientemente",
-    "expiringSoon": "Expiran pronto",
-    "expiringLater": "Expiran más tarde",
+    "recentlyAdded": "Añadidas recientemente",
+    "oldestAdded": "Añadidas hace más tiempo",
+    "subjectAsc": "Sujeto (A-Z)",
+    "subjectDesc": "Sujeto (Z-A)",
     "custom": "Personalizado"
   }
 }

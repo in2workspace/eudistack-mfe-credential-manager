@@ -42,14 +42,14 @@ interface DrawerHistoryState {
   openedFromList?: boolean;
 }
 
-type SortByOption = 'recentlyIssued' | 'recentlyUpdated' | 'expiringSoon' | 'expiringLater';
+type SortByOption = 'recentlyAdded' | 'oldestAdded' | 'subjectAsc' | 'subjectDesc';
 
 /** Maps each SortByOption to the matSort column id + direction it drives. */
 const SORT_BY_OPTIONS: Record<SortByOption, { active: string; direction: SortDirection }> = {
-  recentlyIssued: { active: 'issued', direction: 'desc' },
-  recentlyUpdated: { active: 'updated', direction: 'desc' },
-  expiringSoon: { active: 'expires', direction: 'asc' },
-  expiringLater: { active: 'expires', direction: 'desc' },
+  recentlyAdded: { active: 'issued', direction: 'desc' },
+  oldestAdded: { active: 'issued', direction: 'asc' },
+  subjectAsc: { active: 'subject', direction: 'asc' },
+  subjectDesc: { active: 'subject', direction: 'desc' },
 };
 
 @Component({
@@ -108,7 +108,7 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
    * null when the table is sorted by a header in a way no option describes — the
    * selector then shows its "Custom" placeholder.
    */
-  public readonly sortOption = signal<SortByOption | null>('recentlyUpdated');
+  public readonly sortOption = signal<SortByOption | null>('recentlyAdded');
   protected readonly sortByOptions = Object.keys(SORT_BY_OPTIONS) as SortByOption[];
 
   /** Selections applied to each multi-checkbox filter facet (AC-2.1/2.3). */

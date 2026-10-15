@@ -1137,20 +1137,20 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   });
 
   describe('Sort by ↔ table sync', () => {
-    const makeProcedure = (id: string, updated: string): CredentialProcedureBasicInfo => ({
+    const makeProcedure = (id: string, createdAt: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
         procedure_id: id,
         subject: `Subject ${id}`,
         status: 'VALID' as any,
-        updated,
+        updated: '2025-01-01T00:00:00Z',
         credential_type: 'learcredential.employee.w3c.4',
         organization_identifier: 'VATES-000000',
-        created_at: '2025-01-01T00:00:00Z',
+        created_at: createdAt,
         expires_at: '2026-01-01T00:00:00Z',
       },
     });
 
-    it('starts sorted by Updated desc, matching "Recently updated"', () => {
+    it('starts sorted by Issued on desc, matching "Recently added"', () => {
       credentialProcedureSpy.mockReturnValue(of({
         credential_procedures: [
           makeProcedure('old', '2024-01-01T00:00:00Z'),
@@ -1160,57 +1160,57 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.ngOnInit();
       fixture.detectChanges();
 
-      expect(component.sortOption()).toBe('recentlyUpdated');
-      expect(component.sort.active).toBe('updated');
+      expect(component.sortOption()).toBe('recentlyAdded');
+      expect(component.sort.active).toBe('issued');
       expect(component.sort.direction).toBe('desc');
       const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
       expect(rendered).toEqual(['new', 'old']);
     });
 
     it('selector drives the table sort', () => {
-      component.onSortOptionChange('expiringSoon');
+      component.onSortOptionChange('subjectAsc');
 
-      expect(component.sort.active).toBe('expires');
+      expect(component.sort.active).toBe('subject');
       expect(component.sort.direction).toBe('asc');
-      expect(component.sortOption()).toBe('expiringSoon');
+      expect(component.sortOption()).toBe('subjectAsc');
+    });
+
+    it('"Oldest added" sorts by Issued on asc', () => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          makeProcedure('new', '2025-06-01T00:00:00Z'),
+          makeProcedure('old', '2024-01-01T00:00:00Z'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      component.onSortOptionChange('oldestAdded');
+
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['old', 'new']);
     });
 
     it('header sort matching an option selects that option', () => {
-      component.sort.sort({ id: 'expires', start: 'desc', disableClear: false });
+      component.sort.sort({ id: 'subject', start: 'desc', disableClear: false });
 
-      expect(component.sortOption()).toBe('expiringLater');
+      expect(component.sortOption()).toBe('subjectDesc');
     });
 
     it('header sort matching no option clears the selector to its placeholder', () => {
-      component.sort.sort({ id: 'subject', start: 'asc', disableClear: false });
+      component.sort.sort({ id: 'expires', start: 'asc', disableClear: false });
 
       expect(component.sortOption()).toBeNull();
     });
 
     it('clearing the header sort clears the selector', () => {
-      component.onTableSortChange({ active: 'updated', direction: '' });
+      component.onTableSortChange({ active: 'issued', direction: '' });
 
       expect(component.sortOption()).toBeNull();
     });
 
-    it('sorts credentials without an expiration date last in "Expiring soon"', () => {
-      const withoutExpiration = makeProcedure('none', '2025-01-01T00:00:00Z');
-      delete withoutExpiration.credential_procedure.expires_at;
-      const expiring = makeProcedure('soon', '2025-01-01T00:00:00Z');
-      credentialProcedureSpy.mockReturnValue(of({
-        credential_procedures: [withoutExpiration, expiring],
-      } as CredentialProceduresResponse));
-      component.ngOnInit();
-      fixture.detectChanges();
-
-      component.onSortOptionChange('expiringSoon');
-
-      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
-      expect(rendered).toEqual(['soon', 'none']);
-    });
-
     it('keeps the selected sort after the table is rebuilt by a reload', () => {
-      component.onSortOptionChange('expiringSoon');
+      component.onSortOptionChange('subjectAsc');
       const sortBeforeReload = component.sort;
       const listResponse = new Subject<CredentialProceduresResponse>();
       credentialProcedureSpy.mockReturnValue(listResponse);
@@ -1220,8 +1220,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       listResponse.next({ credential_procedures: [makeProcedure('a', '2025-01-01T00:00:00Z')] } as CredentialProceduresResponse);
 
       expect(component.sort).not.toBe(sortBeforeReload);
-      expect(component.sortOption()).toBe('expiringSoon');
-      expect(component.sort.active).toBe('expires');
+      expect(component.sortOption()).toBe('subjectAsc');
+      expect(component.sort.active).toBe('subject');
       expect(component.sort.direction).toBe('asc');
     });
   });
