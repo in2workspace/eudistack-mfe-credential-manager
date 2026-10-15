@@ -196,7 +196,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
-      "message": "La credencial ha quedado revocada y su estado ha sido publicado en la lista de revocación."
+      "message": "La credencial ha quedado revocada."
     },
     "withdrawCredentialConfirm": {
       "title": "¿Retirar credencial?",

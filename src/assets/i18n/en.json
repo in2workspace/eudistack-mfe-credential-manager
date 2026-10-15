@@ -196,7 +196,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credential revoked",
-      "message": "The credential has been revoked and its status has been published to the revocation list."
+      "message": "The credential has been revoked."
     },
     "withdrawCredentialConfirm": {
       "title": "Withdraw credential?",
