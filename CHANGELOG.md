@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-10-15
 
+### Changed
+- **EUD-272 — issuance on behalf names the target organization**: `POST /api/v1/issuances` sends `organization` (the mandator's organization identifier) when issuing on behalf of another organization, since the Issuer no longer reads the organization from the content. Needs the matching `eudistack-core-issuer` release.
+- **EUD-272 — powers a tenant administrator can grant**: "Onboarding" is offered to a tenant administrator in any tenant and for any organization, its own included; it is unavailable only to an operator that is not a tenant administrator (`requires_tenant_admin`). The `requires_multi_org` and `same_org` reasons are gone.
+- **EUD-272 — issuance error reasons** follow the Issuer's new codes (`tenant_admin_delegation_requires_platform_admin`, `foreign_domain_delegation_requires_platform_admin`, `certification_power_required`, `platform_tenant_read_only`, `authorization_rule_missing`) in English, Spanish and Catalan; the codes the Issuer no longer sends are removed. `GET /api/v1/me` may answer the role `USER`, handled as an operator without powers.
+
 ### Fixed
 - **Credential management - large screens**: from 1025px wide, the credential list takes the available width up to a maximum, with side margins that grow with the screen, instead of staying a fixed-width block. The filter bar, results row and pagination follow it. The extra width goes to the Subject column, so long subjects are cut off less, and the Action column is no longer pushed out of view on wide screens.
 - **Credential management - large screens, Type column**: from 1280px wide the Type column is wide enough for the longest type names in every language, such as "Credencial de Etiqueta", instead of cutting them off.

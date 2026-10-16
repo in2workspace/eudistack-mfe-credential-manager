@@ -1172,7 +1172,7 @@ describe('CredentialIssuanceService', () => {
         mockProcedureService.createProcedure.mockReturnValue(
           throwError(() => ({
             status: 403,
-            error: { type: 'insufficient_permission', reason: 'onboarding_delegation_same_org', detail: "operator org 'VATES-A15456585'" }
+            error: { type: 'insufficient_permission', reason: 'on_behalf_requires_tenant_admin', detail: "operator org 'VATES-A15456585'" }
           }))
         );
 
@@ -1180,7 +1180,7 @@ describe('CredentialIssuanceService', () => {
 
         const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
         expect(dialogData.title).toBe('credentialIssuance.create-error-dialog.title');
-        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.reasons.onboarding_delegation_same_org');
+        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.reasons.on_behalf_requires_tenant_admin');
         expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.data-kept');
         expect(dialogData.message).not.toContain('VATES-A15456585');
       });

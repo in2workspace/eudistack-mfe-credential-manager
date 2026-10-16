@@ -7,16 +7,16 @@ describe('issuance-error.helpers', () => {
 
   describe('resolveIssuanceBusinessError', () => {
     it('resolves a known LEAR issuance policy reason on a 403 insufficient_permission', () => {
-      const error = { status: 403, error: { type: 'insufficient_permission', reason: 'onboarding_delegation_same_org', detail: 'x' } };
+      const error = { status: 403, error: { type: 'insufficient_permission', reason: 'on_behalf_requires_tenant_admin', detail: 'x' } };
 
-      expect(resolveIssuanceBusinessError(error)).toEqual({ kind: 'policy', reason: 'onboarding_delegation_same_org' });
+      expect(resolveIssuanceBusinessError(error)).toEqual({ kind: 'policy', reason: 'on_behalf_requires_tenant_admin' });
     });
 
     it.each([
       ['an unknown reason', { status: 403, error: { type: 'insufficient_permission', reason: 'something_else' } }],
       ['no reason at all (e.g. configuration not allowed for the tenant, ES-02)', { status: 403, error: { type: 'insufficient_permission', detail: 'not allowed for tenant acme' } }],
-      ['a reason on another status', { status: 409, error: { type: 'insufficient_permission', reason: 'onboarding_delegation_same_org' } }],
-      ['a reason under another type', { status: 403, error: { type: 'tenant_mismatch', reason: 'onboarding_delegation_same_org' } }],
+      ['a reason on another status', { status: 409, error: { type: 'insufficient_permission', reason: 'on_behalf_requires_tenant_admin' } }],
+      ['a reason under another type', { status: 403, error: { type: 'tenant_mismatch', reason: 'on_behalf_requires_tenant_admin' } }],
       ['a 500', { status: 500, error: { type: 'INTERNAL_SERVER_ERROR' } }],
       ['a timeout (no body)', { name: 'TimeoutError' }],
       ['null', null],
@@ -59,15 +59,15 @@ describe('issuance-error.helpers', () => {
     // Mirrors LearIssuancePolicyException.Reason in eudistack-core-issuer: update both sides together.
     it('matches the reason codes the Issuer exposes', () => {
       expect([...LEAR_ISSUANCE_POLICY_REASONS].sort()).toEqual([
-        'certification_delegation_requires_multi_org',
+        'authorization_rule_missing',
         'certification_delegation_requires_tenant_admin',
-        'mandator_organization_missing',
-        'on_behalf_requires_multi_org',
+        'certification_power_required',
+        'foreign_domain_delegation_requires_platform_admin',
         'on_behalf_requires_tenant_admin',
-        'onboarding_delegation_requires_multi_org',
         'onboarding_delegation_requires_tenant_admin',
-        'onboarding_delegation_same_org',
         'operator_lacks_onboarding',
+        'platform_tenant_read_only',
+        'tenant_admin_delegation_requires_platform_admin',
       ]);
     });
 

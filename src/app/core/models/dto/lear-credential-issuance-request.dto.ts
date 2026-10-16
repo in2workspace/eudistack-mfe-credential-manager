@@ -17,6 +17,11 @@ export interface IssuanceLEARCredentialRequestDto {
      * not just `direct`. Omitted for every other type, where the Issuer ignores it.
      */
     holder_key?: { jwk: HolderPublicJwk };
+    /**
+     * Organization the attestation is issued for, only on behalf of another organization (EUD-253
+     * FR-07, action E2 -- tenant administrators only). Omitted, the Issuer files it under the caller's.
+     */
+    organization?: string;
 }
 
 export type IssuanceLEARCredentialPayload = IssuanceLEARCredentialMachinePayload | IssuanceLEARCredentialEmployeePayload;
