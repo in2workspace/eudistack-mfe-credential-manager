@@ -637,8 +637,6 @@
     "error-title": "Something Went Wrong",
     "error-description": "We were unable to send a new credential offer. Please try again later.",
     "retry-btn": "Try Again",
-    "already-active-title": "Credential Already Active",
-    "already-active-description": "This credential is already active and does not require a new verification.",
     "unavailable-title": "Credential Unavailable",
     "unavailable-description": "The credential is no longer available. Please contact your organization to issue a new one."
   },

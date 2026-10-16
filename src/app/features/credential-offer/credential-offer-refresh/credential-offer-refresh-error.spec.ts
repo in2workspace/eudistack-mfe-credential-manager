@@ -37,11 +37,6 @@ describe('resolveRefreshErrorState', () => {
     expect(resolveRefreshErrorState(httpError(410, { type: 'CREDENTIAL_OFFER_GONE' }))).toBe('error');
   });
 
-  it.each([410, 409, 500])('should resolve to already-active on CREDENTIAL_ALREADY_ACTIVE regardless of status (%s)', status => {
-    expect(resolveRefreshErrorState(httpError(status, { type: REFRESH_PROBLEM_TYPE.CREDENTIAL_ALREADY_ACTIVE })))
-      .toBe('already-active');
-  });
-
   it.each([
     ['a 410 with another problem type', httpError(410, { type: 'OFFER_EXPIRED', status: 410 })],
     ['a 410 without body', httpError(410, null)],
