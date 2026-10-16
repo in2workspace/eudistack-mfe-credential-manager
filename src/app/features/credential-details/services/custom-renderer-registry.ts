@@ -24,7 +24,7 @@ export interface SchemaOverride {
    */
   i18nLabeledClaims?: readonly string[];
   /**
-   * Display text for coded claim values, keyed by claim name and then by raw value.
+   * i18n keys for coded claim values, keyed by claim name and then by raw value.
    * Values not listed render as published.
    */
   claimValueLabels?: Record<string, Readonly<Record<string, string>>>;
@@ -63,7 +63,11 @@ const OVERRIDES: Record<string, SchemaOverride> = {
   },
   'gx.labelcredential.w3c': {
     claimValueLabels: {
-      'gx:labelLevel': { BL: 'Base Line', P: 'Professional', 'P+': 'Professional +' },
+      'gx:labelLevel': {
+        BL: 'credentialDetails.labelLevelValue.BL',
+        P: 'credentialDetails.labelLevelValue.P',
+        'P+': 'credentialDetails.labelLevelValue.P+',
+      },
     },
     claimOverrides: {
       'gx:compliantCredentials': {

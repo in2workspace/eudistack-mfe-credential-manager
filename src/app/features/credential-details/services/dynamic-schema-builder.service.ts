@@ -83,6 +83,7 @@ export class DynamicSchemaBuilder {
       key: claimKey,
       label,
       type: 'key-value',
+      translateValue: !!valueLabels || undefined,
       value: (c: any) => {
         const value = this.resolvePathValue(c, path);
         return (typeof value === 'string' && valueLabels && Object.hasOwn(valueLabels, value))

@@ -179,6 +179,7 @@
     "statusListIndex": "índex a la llista",
     "statusPurpose": "propòsit de l'estat",
 	  "gx:labelLevel": "Label Level",
+    "labelLevelValue": { "BL": "Base Line", "P": "Professional", "P+": "Professional +" },
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
     "gx:compliantCredentials": "Credencials conformes",
