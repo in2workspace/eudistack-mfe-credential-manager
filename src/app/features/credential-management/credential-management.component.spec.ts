@@ -1087,6 +1087,36 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
   });
 
+  describe('empty cells', () => {
+    it('show "-" for every column without a value', () => {
+      component.isLoading = false;
+      fixture.detectChanges();
+      (component as any).hasTenantColumn.set(true);
+      component.dataSource.data = [{
+        credential_procedure: {
+          procedure_id: 'id-empty',
+          subject: '',
+          status: 'VALID' as any,
+          updated: null as any,
+          credential_type: null as any,
+          organization_identifier: '',
+          created_at: null as any,
+          expires_at: undefined,
+          tenant: '',
+        },
+        statusClass: 'status-valid',
+      }];
+      fixture.detectChanges();
+
+      const cellText = (column: string) =>
+        (fixture.nativeElement as HTMLElement).querySelector(`td.mat-column-${column}`)!.textContent!.trim();
+
+      for (const column of ['tenant', 'organization_identifier', 'subject', 'credential_type', 'issued', 'expires', 'updated']) {
+        expect({ column, text: cellText(column) }).toEqual({ column, text: '-' });
+      }
+    });
+  });
+
   describe('row accessibility', () => {
     function renderRow(status: string): HTMLElement {
       component.isLoading = false;
