@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { TranslateModule } from '@ngx-translate/core';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { CredentialOfferQrComponent } from './credential-offer-qr.component';
 import { TenantService } from 'src/app/core/services/tenant.service';
 import { ToastService } from 'src/app/core/services/toast.service';
@@ -87,6 +89,31 @@ describe('CredentialOfferQrComponent', () => {
 
     it('walletEnvFullUrl should use the environment wallet URL', () => {
       expect(component.walletEnvFullUrl).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
+    });
+  });
+
+  describe('QR content (EUD-305)', () => {
+    function renderedQrData(): string {
+      return fixture.debugElement.query(By.directive(QRCodeComponent)).componentInstance.qrdata;
+    }
+
+    it('encodes the link to the main wallet, not the standard offer URI', () => {
+      buildService(ENV_WALLET_BASE, DEFAULT_WALLET_BASE);
+      setup();
+      expect(renderedQrData()).toBe(walletCallbackUrl(DEFAULT_WALLET_BASE, HTTPS_OFFER_URL));
+      expect(renderedQrData()).not.toContain('openid-credential-offer://');
+    });
+
+    it('encodes the link to the environment wallet when no defaultEnv is configured', () => {
+      buildService(ENV_WALLET_BASE, null);
+      setup();
+      expect(renderedQrData()).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
+    });
+
+    it('builds the same link from a legacy https wallet link, so it works before the issuer is upgraded', () => {
+      buildService(ENV_WALLET_BASE, null);
+      setup(walletCallbackUrl('https://issuer-side.wallet.es', HTTPS_OFFER_URL));
+      expect(renderedQrData()).toBe(walletCallbackUrl(ENV_WALLET_BASE, HTTPS_OFFER_URL));
     });
   });
 
