@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2026-10-15
+
+### Fixed
+- **Credential management - large screens**: from 1025px wide, the credential list takes the available width up to a maximum, with side margins that grow with the screen, instead of staying a fixed-width block. The filter bar, results row and pagination follow it. The extra width goes to the Subject column, so long subjects are cut off less, and the Action column is no longer pushed out of view on wide screens.
+- **Credential management - large screens, Type column**: from 1280px wide the Type column is wide enough for the longest type names in every language, such as "Credencial de Etiqueta", instead of cutting them off.
+- **Credential management - Status and Action columns**: their width follows the text size, so they are not cut off when the browser's default font size is raised.
+- **Credential management - large screens, scope**: screens below 1025px are unchanged.
 
 ### Added
 - **Credential management - filters**: new filter bar with Organization ID, Credential type and Credential status dropdowns (OR within a filter, AND across filters). Each active filter has its own clear button, and "Clear all" resets them all. The Organization ID filter has a search box. Filter labels follow a language change, and screen readers announce how many options each filter has selected. Inside a dropdown, Tab moves between the search box, the options and the buttons, Home, End and the arrows work in the search box, and the dropdown closes on Escape, on an outside click or when tabbing out of it. Screen readers announce each dropdown as a dialog named after its filter (not as a menu, which its search box, checkboxes and buttons are not); focus moves into it when it opens and back to the filter when it closes.
