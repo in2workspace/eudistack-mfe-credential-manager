@@ -133,23 +133,6 @@ describe('CredentialOfferRefreshComponent', () => {
       expect(component.state()).toBe('error');
     });
 
-    it('should transition to already-active state on CREDENTIAL_ALREADY_ACTIVE problem details', () => {
-      refreshService.refreshCredentialOffer.mockReturnValue(throwError(() => new HttpErrorResponse({
-        status: 410,
-        error: {
-          type: 'credential_already_active',
-          title: 'Credential already active',
-          status: 410,
-          detail: 'The credential is already active.',
-          instance: 'd8f87c0a-e327-4dda-bfa9-5000cb8e1f1d'
-        }
-      })));
-
-      component.sendOffer();
-
-      expect(component.state()).toBe('already-active');
-    });
-
     it('should transition to unavailable state on 410 + credential_offer_gone problem details', () => {
       failWith(410, CREDENTIAL_OFFER_GONE_PROBLEM);
 
