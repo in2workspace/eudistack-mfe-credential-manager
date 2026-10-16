@@ -39,7 +39,7 @@ export class CredentialActionsService {
       confirmationLabel: this.translate.instant("credentialDetails.revokeCredentialConfirm.confirm"),
       style: ACTION_DIALOG_STYLE,
       confirmationType: 'async',
-      status: 'error'
+      status: 'default'
     };
 
     const revokeCredentialAfterConfirm = (): Observable<boolean> => {
@@ -59,7 +59,7 @@ export class CredentialActionsService {
       confirmationLabel: this.translate.instant("credentialDetails.withdrawCredentialConfirm.confirm"),
       style: ACTION_DIALOG_STYLE,
       confirmationType: 'async',
-      status: 'error'
+      status: 'default'
     };
 
     const withdrawCredentialAfterConfirm = (): Observable<boolean> => {
