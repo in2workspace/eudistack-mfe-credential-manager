@@ -155,63 +155,6 @@ describe('IssuanceRequestFactoryService', () => {
     expect(mach.mandatee.id).toBe('did:test');
   });
 
-  describe('blank optional fields are sent as ""', () => {
-    const employeeData = (serialNumber: string | null, employeeId: string | null): any => ({
-      onBehalf: true,
-      formData: {
-        power: { domain: { Onboarding: { Execute: true } } },
-        mandator: {
-          commonName: 'Beta Common',
-          organization: 'Beta Ltd',
-          country: 'FR',
-          organizationIdentifier: 'VATFR-999',
-          serialNumber
-        },
-        mandatee: { firstName: 'Ann', lastName: 'Lee', email: 'ann@example.com', employeeId }
-      }
-    });
-
-    it.each([null, ''])('employee: mandator.serialNumber and mandatee.employeeId as %p', (blank) => {
-      const result = service.createCredentialRequest(employeeData(blank, blank), 'learcredential.employee', 'cfg');
-      const emp = result.payload as IssuanceLEARCredentialEmployeePayload;
-
-      expect(emp.mandator.serialNumber).toBe('');
-      expect((emp.mandatee as any).employeeId).toBe('');
-    });
-
-    it('employee: keeps filled-in values', () => {
-      const result = service.createCredentialRequest(employeeData('SN1', 'E1'), 'learcredential.employee', 'cfg');
-      const emp = result.payload as IssuanceLEARCredentialEmployeePayload;
-
-      expect(emp.mandator.serialNumber).toBe('SN1');
-      expect((emp.mandatee as any).employeeId).toBe('E1');
-    });
-
-    it('employee: does not add employeeId when the form has no such field', () => {
-      const data = employeeData('SN1', null);
-      delete data.formData.mandatee.employeeId;
-
-      const result = service.createCredentialRequest(data, 'learcredential.employee', 'cfg');
-
-      expect('employeeId' in (result.payload as IssuanceLEARCredentialEmployeePayload).mandatee).toBe(false);
-    });
-
-    it('machine: mandator.serialNumber null', () => {
-      const credentialData: any = {
-        onBehalf: true,
-        formData: {
-          power: { domain: { Onboarding: { Execute: true } } },
-          mandator: { commonName: 'MachineCo', organization: 'Org', country: 'DE', organizationIdentifier: 'VATDE-555', serialNumber: null },
-          mandatee: { domain: 'machine.com', ipAddress: '1.2.3.4' }
-        }
-      };
-
-      const result = service.createCredentialRequest(credentialData, 'learcredential.machine', 'cfg', holderBindingWith('did:test'));
-
-      expect((result.payload as IssuanceLEARCredentialMachinePayload).mandator.serialNumber).toBe('');
-    });
-  });
-
   it('should parse power errors for unknown base and no actions', () => {
     const powerForm: IssuanceRawPowerForm = {
       domain: {

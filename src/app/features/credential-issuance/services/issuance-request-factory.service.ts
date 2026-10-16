@@ -72,7 +72,7 @@ export class IssuanceRequestFactoryService {
             organization: mandator['organization'],
             country:  country,
             commonName:  mandatorCommonName,
-            serialNumber:  mandator['serialNumber'] ?? '',
+            serialNumber:  mandator['serialNumber'],
             organizationIdentifier: orgId
         },
         mandatee: {
@@ -120,7 +120,7 @@ export class IssuanceRequestFactoryService {
       {
       mandator: {
         commonName:  mandatorCommonName,
-        serialNumber:  mandator['serialNumber'] ?? '',
+        serialNumber:  mandator['serialNumber'],
         email: mandatorEmail,
         organization: mandator['organization'],
         id: mandatorId,
@@ -227,13 +227,7 @@ private getMandatorFromCredentialData(credentialData: IssuanceRawCredentialPaylo
 }
     
 private getMandateeFromCredentialData(credentialData: IssuanceRawCredentialPayload): Record<string, string>{
-  const rawMandatee = credentialData.formData['mandatee'];
-  const mandatee = this.stripNullValues(rawMandatee);
-  // Optional field: left blank it is sent as "", not dropped.
-  if ('employeeId' in rawMandatee) {
-    mandatee['employeeId'] = mandatee['employeeId'] ?? '';
-  }
-  return mandatee;
+  return this.stripNullValues(credentialData.formData['mandatee']);
 }
 
 private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
