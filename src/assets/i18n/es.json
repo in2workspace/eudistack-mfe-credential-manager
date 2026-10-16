@@ -179,6 +179,7 @@
     "statusListIndex": "índice en la lista",
     "statusPurpose": "propósito del estado",
 	  "gx:labelLevel": "Label Level",
+    "labelLevelValue": { "BL": "Base Line", "P": "Professional", "P+": "Professional +" },
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
     "gx:compliantCredentials": "Credenciales conformes",
@@ -196,7 +197,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
-      "message": "La credencial ha quedado revocada y su estado ha sido publicado en la lista de revocación."
+      "message": "La credencial ha quedado revocada."
     },
     "withdrawCredentialConfirm": {
       "title": "¿Retirar credencial?",
@@ -258,7 +259,7 @@
     "typeFamily": {
       "employee": "Empleado",
       "machine": "Máquina",
-      "label": "Credencial de Etiqueta"
+      "label": "Etiqueta"
     },
     "issuedOn": "Emitida el",
     "expiresOn": "Expira el",
@@ -285,7 +286,7 @@
     "learcredential.employee.sd.1": "LEAR Credential Employee",
     "learcredential.machine.w3c.1": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
-    "gx.labelcredential.w3c.1": "Label Credential",
+    "gx.labelcredential.w3c.1": "Label",
     "VerifiableCertification": "Verifiable Certification",
     "emptyState": {
       "title": "Aún no hay credenciales",
@@ -663,10 +664,10 @@
   },
   "sort": {
     "label": "Ordenar por:",
-    "recentlyIssued": "Emitidas recientemente",
-    "recentlyUpdated": "Actualizadas recientemente",
-    "expiringSoon": "Expiran pronto",
-    "expiringLater": "Expiran más tarde",
+    "recentlyAdded": "Añadidas recientemente",
+    "oldestAdded": "Añadidas hace más tiempo",
+    "subjectAsc": "Sujeto (A-Z)",
+    "subjectDesc": "Sujeto (Z-A)",
     "custom": "Personalizado"
   }
 }
