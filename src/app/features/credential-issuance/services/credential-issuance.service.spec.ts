@@ -429,7 +429,7 @@ describe('CredentialIssuanceService', () => {
       // AC-02: a field the destination format does not declare is dropped, not merely emptied.
       expect(newMandatee.get('employeeId')).toBeNull();
       // A field only SD-JWT declares starts fresh, never inheriting an unrelated value.
-      expect(newMandatee.get('disclosureFrequency')!.value).toBeNull();
+      expect(newMandatee.get('disclosureFrequency')!.value).toBe('');
     });
 
     it('round-trips SD-JWT -> W3C and still has the equivalent values, with the reappearing field empty', () => {
@@ -447,7 +447,30 @@ describe('CredentialIssuanceService', () => {
       expect(newMandatee.get('lastName')!.value).toBe('Roe');
       expect(newMandatee.get('email')!.value).toBe('jane@example.com');
       // employeeId is back (W3C declares it) but empty -- SD-JWT never had a value for it either.
-      expect(newMandatee.get('employeeId')!.value).toBeNull();
+      expect(newMandatee.get('employeeId')!.value).toBe('');
+    });
+
+    it('starts untouched text controls as an empty string and non-text controls as null', () => {
+      // Arrange
+      const mixedSchema = [
+        {
+          id: 1, key: 'mandatee', type: 'group' as const, display: 'main' as const,
+          groupFields: [
+            { key: 'employeeId', type: 'control' as const, controlType: 'text' as const, validators: [] },
+            { key: 'startDate', type: 'control' as const, controlType: 'date' as const, validators: [] }
+          ]
+        },
+        { id: 2, key: 'power', type: 'group' as const, display: 'main' as const, groupFields: [] }
+      ];
+      mockSchemaBuilder.formSchemasBuilder.mockImplementation(() => [mixedSchema, {}]);
+
+      // Act
+      service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+
+      // Assert
+      const mandatee = service.form$().get('mandatee') as FormGroup;
+      expect(mandatee.get('employeeId')!.value).toBe('');
+      expect(mandatee.get('startDate')!.value).toBeNull();
     });
 
     it('marks a carried-over field dirty, so canLeave() still reports unsaved changes after the switch', () => {

@@ -492,7 +492,8 @@ export class CredentialIssuanceService {
       .filter((v): v is ExtendedValidatorFn => !!v);
 
     const hasPreviousValue = previousControl instanceof FormControl;
-    const initialValue = hasPreviousValue ? previousControl.value : (field.staticValueGetter?.() ?? null);
+    const emptyValue = field.controlType === 'text' ? '' : null;
+    const initialValue = hasPreviousValue ? previousControl.value : (field.staticValueGetter?.() ?? emptyValue);
 
     // Preserves the "unsaved changes" signal (canLeave()) across the rebuild: the new
     // control is otherwise pristine even though it carries data the Operator already typed.
