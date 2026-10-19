@@ -46,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Credential details - error dialogs**: when revoke, withdraw or archive failed, the error dialog's Close button showed in the primary color instead of red, like every other error dialog. Their confirmation dialogs keep the primary color.
 - **Credential management - empty cells**: Tenant, Organization ID, Subject, Type and Updated show "-" when a row has no value, instead of an empty cell.
-- **Credential management - status column**: the header is centered over the status icon.
 - **Session - reload**: reloading a protected page sent the user back to the credential list, losing the URL (and the details drawer it had open).
 - **Credential details - powers**: the system / administration power showed raw translation keys instead of its labels.
 - **Translations**: the mail server error showed its raw translation key in Spanish (`es.json` named it `server_mail_error`, the code reads `serverMailError`), and the organization contact page and its menu entry had no Catalan texts.
