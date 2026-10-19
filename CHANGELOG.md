@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Credential management - table header**: the header stays pinned at the top while the page scrolls.
 
 ### Changed
+- **Credential management - Doctor ID**: credentials of type `doctorid.sd.1` show "Doctor ID" in the Type column and filter instead of the raw type id.
 - **Credential management - single table**: the Active/Archived tabs are gone. Archived is now one more status in the Status filter, and shows up like any other status.
 - **Credential management - columns**: new column order (Organization ID, Subject, Type, Status, Issued on, Expires on, Updated, Action). The Organization ID column is shown for every tenant. The Type column and filter group every version of a credential type under one label (Employee, Machine, Label). The "Updated" column uses the same date format as the other dates. Dates are written in the selected language ("Jan 5, 2026", "5 ene 2026", "5 gen 2026"). "Issued on" shows the date the issuance was created and "Expires on" shows "-" when there is no expiration date; both are read from the `created_at` and `expires_at` fields of `GET /api/v1/issuances`, which need a matching `eudistack-core-issuer` release.
 - **Credential management - status and details**: the status is shown as a tinted icon with a tooltip instead of a text pill; screen readers announce it. Credential details now open from an eye button in the new Action column, named after the credential subject for screen readers, instead of from a click anywhere on the row.

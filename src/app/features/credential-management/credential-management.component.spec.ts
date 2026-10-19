@@ -289,6 +289,15 @@ it('groups every label credential_type — legacy or current — under one "Labe
   expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label'); // legacy v1
 });
 
+it('labels doctorid.sd credentials "Doctor ID" with the real translations', () => {
+  const translate = TestBed.inject(TranslateService);
+  translate.setTranslation('en', jest.requireActual('src/assets/i18n/en.json'));
+  translate.use('en');
+
+  expect(component.getCredentialTypeLabel('doctorid.sd.1')).toBe('Doctor ID');
+  expect(component.getCredentialTypeLabel('doctorid.sd.2')).toBe('Doctor ID'); // falls back to .1
+});
+
 it('should return direct translated credential type when key exists (types outside the employee/machine/label families)', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
