@@ -589,7 +589,10 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
         }
         return sign * collator.compare(va, vb);
       }
-      return sign * (va < vb ? -1 : va > vb ? 1 : 0);
+      if (va === vb) {
+        return 0;
+      }
+      return va < vb ? -sign : sign;
     });
   }
 
