@@ -564,6 +564,33 @@ export class CredentialManagementComponent implements OnInit, AfterViewInit {
           return '';
       }
     };
+    this.dataSource.sortData = (data, sort) => this.sortRows(data, sort);
+  }
+
+  /**
+   * Replaces MatTableDataSource's default comparator, which compares strings with
+   * </>: "Álvaro" sorted after "Z" and empty subjects came first in A-Z. Strings are
+   * collated in the current UI language ignoring case and accents, and empty strings
+   * always go last, whatever the direction.
+   */
+  private sortRows(data: CredentialProcedureWithClass[], sort: MatSort): CredentialProcedureWithClass[] {
+    const { active, direction } = sort;
+    if (!active || direction === '') {
+      return data;
+    }
+    const collator = new Intl.Collator(this.currentLang() || undefined, { sensitivity: 'base' });
+    const sign = direction === 'asc' ? 1 : -1;
+    return [...data].sort((a, b) => {
+      const va = this.dataSource.sortingDataAccessor(a, active);
+      const vb = this.dataSource.sortingDataAccessor(b, active);
+      if (typeof va === 'string' && typeof vb === 'string') {
+        if (!va || !vb) {
+          return Number(!va) - Number(!vb);
+        }
+        return sign * collator.compare(va, vb);
+      }
+      return sign * (va < vb ? -1 : va > vb ? 1 : 0);
+    });
   }
 
   /**

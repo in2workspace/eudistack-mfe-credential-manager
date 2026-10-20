@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialManagementComponent } from './credential-management.component';
 import { MatTableModule } from '@angular/material/table';
+import { MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router, ActivatedRoute, RouterModule, convertToParamMap, ParamMap } from '@angular/router';
@@ -823,6 +824,24 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
         return vx > vy ? -1 : vx < vy ? 1 : 0;
       });
       expect(desc.map(i => i.credential_procedure.procedure_id)).toEqual(['c', 'b', 'a']);
+    });
+
+    it('AC-02: subject sort ignores accents and case and keeps empty subjects last', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {}); // empty subject is logged
+      const items = [
+        makeSortItem('Zoe', 'VALID', '2025-01-01', 'type', 'zoe'),
+        makeSortItem('', 'VALID', '2025-01-01', 'type', 'empty'),
+        makeSortItem('Álvaro', 'VALID', '2025-01-01', 'type', 'alvaro'),
+        makeSortItem('èric', 'VALID', '2025-01-01', 'type', 'eric'),
+        makeSortItem('Bernat', 'VALID', '2025-01-01', 'type', 'bernat'),
+      ];
+      const sortBy = (direction: 'asc' | 'desc') => component.dataSource
+        .sortData(items, { active: 'subject', direction } as MatSort)
+        .map(i => i.credential_procedure.procedure_id);
+
+      expect(sortBy('asc')).toEqual(['alvaro', 'bernat', 'eric', 'zoe', 'empty']);
+      expect(sortBy('desc')).toEqual(['zoe', 'eric', 'bernat', 'alvaro', 'empty']);
+      errorSpy.mockRestore();
     });
 
     // EC-03: deterministic and stable order with tied values
