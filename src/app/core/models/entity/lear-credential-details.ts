@@ -23,6 +23,8 @@ export type DetailsKeyValueField = {
   label?: string;
   type: 'key-value';
   value: any;
+  /** The evaluated value is an i18n key; a value with no translation renders as is. */
+  translateValue?: boolean;
   custom?: CustomDetailsField;
 };
 export type DetailsGroupField = {

@@ -1,6 +1,6 @@
 {
   "name": "eudistack-mfe-credential-manager",
-  "version": "3.8.4",
+  "version": "3.9.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
