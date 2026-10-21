@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-10-15
 
 ### Fixed
-- **Credential issuance - empty text fields**: a text field the Operator leaves empty, such as the mandator's serial number or the employee ID, is now sent as an empty string instead of `null`, so the issuance request is no longer rejected.
+- **Credential issuance - empty text fields**: a text field the Operator leaves empty, such as the mandator's serial number or the employee ID, is now sent as an empty string instead of `null`, so the issuance request is no longer rejected. The same applies to the mandator's serial number when it comes from the session token. Side effect: optional mandatee fields left empty (`employeeId` for Employee, `ipAddress` for Machine) used to be left out of the request and are now sent as `""`, so they appear empty in the issued credential (as an empty disclosure in SD-JWT) instead of being absent.
 - **Credential management - large screens**: from 1025px wide, the credential list takes the available width up to a maximum, with side margins that grow with the screen, instead of staying a fixed-width block. The filter bar, results row and pagination follow it. The extra width goes to the Subject column, so long subjects are cut off less, and the Action column is no longer pushed out of view on wide screens.
 - **Credential management - large screens, Type column**: from 1280px wide the Type column is wide enough for the longest type names in every language, such as "Credencial de Etiqueta", instead of cutting them off.
 - **Credential management - Status and Action columns**: their width follows the text size, so they are not cut off when the browser's default font size is raised.

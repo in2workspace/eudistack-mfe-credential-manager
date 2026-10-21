@@ -695,6 +695,48 @@ describe('CredentialIssuanceService', () => {
       jest.restoreAllMocks();
     });
 
+    describe('on behalf of: optional mandator fields', () => {
+      it('sends an untouched serialNumber to createProcedure as an empty string, never null', () => {
+        // Arrange
+        const textControl = (key: string) => ({ key, type: 'control' as const, controlType: 'text' as const, validators: [] });
+        mockSchemaBuilder.formSchemasBuilder.mockReturnValue([
+          [
+            { id: 1, key: 'mandatee', type: 'group', display: 'main', groupFields: [textControl('email')] },
+            {
+              id: 2, key: 'mandator', type: 'group', display: 'pref_side',
+              groupFields: ['commonName', 'country', 'organization', 'organizationIdentifier', 'email', 'serialNumber'].map(textControl)
+            },
+            { id: 3, key: 'power', type: 'group', display: 'main', groupFields: [] }
+          ],
+          {}
+        ]);
+        service.onBehalf$.set(true);
+        service.updateSelectedFormat({ configId: 'learcredential.employee.sd.1', format: 'dc+sd-jwt', labelKey: 'k' });
+        TestBed.flushEffects();
+        const mandator = service.form$().get('mandator') as FormGroup;
+        mandator.patchValue({
+          commonName: 'Jane Doe',
+          country: 'ES',
+          organization: 'Acme Corp',
+          organizationIdentifier: 'B12345678',
+          email: 'mandator@acme.example'
+        });
+        service.form$().get('mandatee')!.patchValue({ email: 'mandatee@acme.example' });
+        TestBed.flushEffects();
+        markDeliveryModes('direct');
+        mockProcedureService.createProcedure.mockReturnValue(of({
+          responses: [{ channel: 'direct', status: 200, body: { signed_credential: 'signed-jwt' } }]
+        }));
+
+        // Act
+        service.openSubmitDialog();
+
+        // Assert
+        const [request] = mockProcedureService.createProcedure.mock.calls[0];
+        expect(request.payload.mandator.serialNumber).toBe('');
+      });
+    });
+
     describe('base outcome matrix', () => {
       it('Direct solo (non-machine) opens DirectCredentialResultDialogComponent with the credential only', () => {
         markDeliveryModes('direct');

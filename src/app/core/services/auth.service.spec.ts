@@ -568,6 +568,21 @@ describe('AuthService', () => {
     expect(service.roleType()).toBe(RoleType.LEAR);
   });
 
+  it('handleFlatClaimsLogin_tokenMandatorWithoutSerialNumber_emitsEmptyString', () => {
+    // Arrange
+    const nextSpy = jest.spyOn((service as any).mandatorSubject, 'next');
+    const userData = {
+      ...mockUserDataWithClaims,
+      mandator: { ...mockUserDataWithClaims.mandator, serialNumber: null }
+    };
+
+    // Act
+    (service as any).handleFlatClaimsLogin(userData);
+
+    // Assert
+    expect(nextSpy).toHaveBeenCalledWith(expect.objectContaining({ serialNumber: '' }));
+  });
+
   it('extractDataFromCertificate extreu dades correctament', () => {
     const result = (service as any).extractDataFromCertificate(mockUserDataWithCert);
     expect(result).toEqual({

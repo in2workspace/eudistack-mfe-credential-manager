@@ -693,7 +693,7 @@ export class AuthService{
       organization: userData.mandator!.organization,
       commonName: userData.mandator!.commonName,
       email: userData.mandator!.email,
-      serialNumber: userData.mandator!.serialNumber,
+      serialNumber: userData.mandator!.serialNumber ?? '',
       country: userData.mandator!.country
     };
     this.mandatorSubject.next(mandator);
