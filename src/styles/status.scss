@@ -36,12 +36,8 @@
   }
 
   .status-draft,
-  .status-withdrawn {
+  .status-withdrawn,
+  .status-archived {
     color: #666B76;
     background-color: #EBECEE;
-  }
-
-  .status-archived {
-    color: #5F6368;
-    background-color: rgba(107, 114, 128, 0.12);
   }

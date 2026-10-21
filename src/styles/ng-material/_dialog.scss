@@ -89,13 +89,15 @@ $action-dialog-font: 'Blinker', 'Arial', sans-serif;
         text-transform: none;
       }
 
-      // Cancel: white with primary text. Confirm / Close: primary with white text, whatever the action.
+      // Cancel: white with primary text. Confirm / Close: primary with white text, whatever the
+      // action -- except an error dialog's (mat-warn) Close, e.g. a failed revoke reusing this
+      // dialog, which keeps the theme's red like every other error dialog.
       &.mat-cancel {
         background-color: var(--surface-card, #FFFFFF);
         color: var(--primary-color);
       }
 
-      &:not(.mat-cancel) {
+      &:not(.mat-cancel):not(.mat-warn) {
         background-color: var(--primary-color);
         color: var(--primary-contrast-color, #FFFFFF);
       }

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CredentialManagementComponent } from './credential-management.component';
 import { MatTableModule } from '@angular/material/table';
+import { MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router, ActivatedRoute, RouterModule, convertToParamMap, ParamMap } from '@angular/router';
@@ -278,15 +279,24 @@ it('groups every machine credential_type — legacy or current — under one "Ma
   expect(component.getCredentialTypeLabel('LEARCredentialMachine')).toBe('Machine'); // legacy v1/v2 bare DOME name
 });
 
-it('groups every label credential_type — legacy or current — under one "Label Credential" label', () => {
+it('groups every label credential_type — legacy or current — under one "Label" label', () => {
   const translate = TestBed.inject(TranslateService);
   jest.spyOn(translate, 'instant').mockImplementation((key: string | string[]) => {
-    if (key === 'credentialManagement.typeFamily.label') return 'Label Credential';
+    if (key === 'credentialManagement.typeFamily.label') return 'Label';
     return key;
   });
 
-  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label Credential');
-  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label Credential'); // legacy v1
+  expect(component.getCredentialTypeLabel('gx.labelcredential.w3c.2')).toBe('Label');
+  expect(component.getCredentialTypeLabel('gx:LabelCredential')).toBe('Label'); // legacy v1
+});
+
+it('labels doctorid.sd credentials "Doctor ID" with the real translations', () => {
+  const translate = TestBed.inject(TranslateService);
+  translate.setTranslation('en', jest.requireActual('src/assets/i18n/en.json'));
+  translate.use('en');
+
+  expect(component.getCredentialTypeLabel('doctorid.sd.1')).toBe('Doctor ID');
+  expect(component.getCredentialTypeLabel('doctorid.sd.2')).toBe('Doctor ID'); // falls back to .1
 });
 
 it('should return direct translated credential type when key exists (types outside the employee/machine/label families)', () => {
@@ -816,6 +826,24 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       expect(desc.map(i => i.credential_procedure.procedure_id)).toEqual(['c', 'b', 'a']);
     });
 
+    it('AC-02: subject sort ignores accents and case and keeps empty subjects last', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {}); // empty subject is logged
+      const items = [
+        makeSortItem('Zoe', 'VALID', '2025-01-01', 'type', 'zoe'),
+        makeSortItem('', 'VALID', '2025-01-01', 'type', 'empty'),
+        makeSortItem('Álvaro', 'VALID', '2025-01-01', 'type', 'alvaro'),
+        makeSortItem('èric', 'VALID', '2025-01-01', 'type', 'eric'),
+        makeSortItem('Bernat', 'VALID', '2025-01-01', 'type', 'bernat'),
+      ];
+      const sortBy = (direction: 'asc' | 'desc') => component.dataSource
+        .sortData(items, { active: 'subject', direction } as MatSort)
+        .map(i => i.credential_procedure.procedure_id);
+
+      expect(sortBy('asc')).toEqual(['alvaro', 'bernat', 'eric', 'zoe', 'empty']);
+      expect(sortBy('desc')).toEqual(['zoe', 'eric', 'bernat', 'alvaro', 'empty']);
+      errorSpy.mockRestore();
+    });
+
     // EC-03: deterministic and stable order with tied values
 
     it('EC-03: WITHDRAWN and DRAFT items sort to the same key "draft" (tied group)', () => {
@@ -1087,6 +1115,36 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
 
   });
 
+  describe('empty cells', () => {
+    it('show "-" for every column without a value', () => {
+      component.isLoading = false;
+      fixture.detectChanges();
+      (component as any).hasTenantColumn.set(true);
+      component.dataSource.data = [{
+        credential_procedure: {
+          procedure_id: 'id-empty',
+          subject: '',
+          status: 'VALID' as any,
+          updated: null as any,
+          credential_type: null as any,
+          organization_identifier: '',
+          created_at: null as any,
+          expires_at: undefined,
+          tenant: '',
+        },
+        statusClass: 'status-valid',
+      }];
+      fixture.detectChanges();
+
+      const cellText = (column: string) =>
+        (fixture.nativeElement as HTMLElement).querySelector(`td.mat-column-${column}`)!.textContent!.trim();
+
+      for (const column of ['tenant', 'organization_identifier', 'subject', 'credential_type', 'issued', 'expires', 'updated']) {
+        expect({ column, text: cellText(column) }).toEqual({ column, text: '-' });
+      }
+    });
+  });
+
   describe('row accessibility', () => {
     function renderRow(status: string): HTMLElement {
       component.isLoading = false;
@@ -1137,20 +1195,20 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
   });
 
   describe('Sort by ↔ table sync', () => {
-    const makeProcedure = (id: string, updated: string): CredentialProcedureBasicInfo => ({
+    const makeProcedure = (id: string, createdAt: string): CredentialProcedureBasicInfo => ({
       credential_procedure: {
         procedure_id: id,
         subject: `Subject ${id}`,
         status: 'VALID' as any,
-        updated,
+        updated: '2025-01-01T00:00:00Z',
         credential_type: 'learcredential.employee.w3c.4',
         organization_identifier: 'VATES-000000',
-        created_at: '2025-01-01T00:00:00Z',
+        created_at: createdAt,
         expires_at: '2026-01-01T00:00:00Z',
       },
     });
 
-    it('starts sorted by Updated desc, matching "Recently updated"', () => {
+    it('starts sorted by Issued on desc, matching "Recently added"', () => {
       credentialProcedureSpy.mockReturnValue(of({
         credential_procedures: [
           makeProcedure('old', '2024-01-01T00:00:00Z'),
@@ -1160,57 +1218,57 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       component.ngOnInit();
       fixture.detectChanges();
 
-      expect(component.sortOption()).toBe('recentlyUpdated');
-      expect(component.sort.active).toBe('updated');
+      expect(component.sortOption()).toBe('recentlyAdded');
+      expect(component.sort.active).toBe('issued');
       expect(component.sort.direction).toBe('desc');
       const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
       expect(rendered).toEqual(['new', 'old']);
     });
 
     it('selector drives the table sort', () => {
-      component.onSortOptionChange('expiringSoon');
+      component.onSortOptionChange('subjectAsc');
 
-      expect(component.sort.active).toBe('expires');
+      expect(component.sort.active).toBe('subject');
       expect(component.sort.direction).toBe('asc');
-      expect(component.sortOption()).toBe('expiringSoon');
+      expect(component.sortOption()).toBe('subjectAsc');
+    });
+
+    it('"Oldest added" sorts by Issued on asc', () => {
+      credentialProcedureSpy.mockReturnValue(of({
+        credential_procedures: [
+          makeProcedure('new', '2025-06-01T00:00:00Z'),
+          makeProcedure('old', '2024-01-01T00:00:00Z'),
+        ],
+      } as CredentialProceduresResponse));
+      component.ngOnInit();
+      fixture.detectChanges();
+
+      component.onSortOptionChange('oldestAdded');
+
+      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
+      expect(rendered).toEqual(['old', 'new']);
     });
 
     it('header sort matching an option selects that option', () => {
-      component.sort.sort({ id: 'expires', start: 'desc', disableClear: false });
+      component.sort.sort({ id: 'subject', start: 'desc', disableClear: false });
 
-      expect(component.sortOption()).toBe('expiringLater');
+      expect(component.sortOption()).toBe('subjectDesc');
     });
 
     it('header sort matching no option clears the selector to its placeholder', () => {
-      component.sort.sort({ id: 'subject', start: 'asc', disableClear: false });
+      component.sort.sort({ id: 'expires', start: 'asc', disableClear: false });
 
       expect(component.sortOption()).toBeNull();
     });
 
     it('clearing the header sort clears the selector', () => {
-      component.onTableSortChange({ active: 'updated', direction: '' });
+      component.onTableSortChange({ active: 'issued', direction: '' });
 
       expect(component.sortOption()).toBeNull();
     });
 
-    it('sorts credentials without an expiration date last in "Expiring soon"', () => {
-      const withoutExpiration = makeProcedure('none', '2025-01-01T00:00:00Z');
-      delete withoutExpiration.credential_procedure.expires_at;
-      const expiring = makeProcedure('soon', '2025-01-01T00:00:00Z');
-      credentialProcedureSpy.mockReturnValue(of({
-        credential_procedures: [withoutExpiration, expiring],
-      } as CredentialProceduresResponse));
-      component.ngOnInit();
-      fixture.detectChanges();
-
-      component.onSortOptionChange('expiringSoon');
-
-      const rendered = component.dataSource.connect().value.map(r => r.credential_procedure.procedure_id);
-      expect(rendered).toEqual(['soon', 'none']);
-    });
-
     it('keeps the selected sort after the table is rebuilt by a reload', () => {
-      component.onSortOptionChange('expiringSoon');
+      component.onSortOptionChange('subjectAsc');
       const sortBeforeReload = component.sort;
       const listResponse = new Subject<CredentialProceduresResponse>();
       credentialProcedureSpy.mockReturnValue(listResponse);
@@ -1220,8 +1278,8 @@ it('should update filter even if paginator is undefined', fakeAsync(() => {
       listResponse.next({ credential_procedures: [makeProcedure('a', '2025-01-01T00:00:00Z')] } as CredentialProceduresResponse);
 
       expect(component.sort).not.toBe(sortBeforeReload);
-      expect(component.sortOption()).toBe('expiringSoon');
-      expect(component.sort.active).toBe('expires');
+      expect(component.sortOption()).toBe('subjectAsc');
+      expect(component.sort.active).toBe('subject');
       expect(component.sort.direction).toBe('asc');
     });
   });

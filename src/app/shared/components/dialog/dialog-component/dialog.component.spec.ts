@@ -185,4 +185,40 @@ describe('DialogComponent', () => {
       expect(renderDialogRef.close).toHaveBeenCalledWith(true); // confirm, still onConfirm()
     });
   });
+
+  // A failed revoke/withdraw/archive turns its open confirmation into the error dialog
+  // (DialogWrapperService.openErrorInfoDialog -> updateData). Its Close must carry mat-warn,
+  // the class the credential-action-dialog style leaves red (styles/ng-material/_dialog.scss).
+  describe('credential action dialog turned into an error', () => {
+    it('renders the Close button with the warn color', () => {
+      const confirmation: DialogData = {
+        title: 'Revoke',
+        message: 'Sure?',
+        style: 'credential-action-dialog',
+        confirmationType: 'async',
+        status: 'default',
+      };
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DialogComponent, TranslateModule.forRoot(), NoopAnimationsModule],
+        providers: [
+          { provide: MAT_DIALOG_DATA, useValue: confirmation },
+          { provide: MatDialogRef, useValue: { close: jest.fn(), addPanelClass: jest.fn(), removePanelClass: jest.fn() } },
+          { provide: LoaderService, useValue: { isLoading$: of(false) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(DialogComponent);
+      fixture.detectChanges();
+
+      fixture.componentInstance.updateData({ title: 'Error', message: 'Boom', confirmationType: 'none', status: 'error' });
+      fixture.detectChanges();
+
+      const buttons = fixture.debugElement.queryAll(By.directive(MatButton));
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].injector.get(MatButton).color).toBe('warn');
+      expect(buttons[0].nativeElement.classList).toContain('mat-warn');
+
+      TestBed.resetTestingModule();
+    });
+  });
 });

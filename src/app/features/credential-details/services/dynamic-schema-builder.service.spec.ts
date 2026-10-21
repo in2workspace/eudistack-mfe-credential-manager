@@ -60,9 +60,7 @@ describe('DynamicSchemaBuilder', () => {
     expect(evaluate(schema.main, 'Email')).toBe('admin@example.com');
   });
 
-  it('renders the value as published, without mapping it through anything', () => {
-    // OID4VCI 1.0 Final Appendix B.1 defines path, display and mandatory — nothing that
-    // relabels a value. What the issuer puts in the credential is what the user reads.
+  describe('Label Credential level', () => {
     const labelConfig: CredentialConfigurationDto = {
       format: 'jwt_vc_json',
       credential_metadata: {
@@ -73,12 +71,33 @@ describe('DynamicSchemaBuilder', () => {
         }],
       },
     };
-    const labelCredential = { credentialSubject: { 'gx:labelLevel': 'BL' } };
+    const levelFieldOf = (configId: string, level: string) => {
+      const labelCredential = { credentialSubject: { 'gx:labelLevel': level } };
+      const schema = builder.buildSchema(configId, labelConfig, labelCredential);
+      return { field: (schema.main[0].value as DetailsKeyValueField[])[0], labelCredential };
+    };
+    const levelOf = (configId: string, level: string) => {
+      const { field, labelCredential } = levelFieldOf(configId, level);
+      return typeof field.value === 'function' ? field.value(labelCredential) : field.value;
+    };
 
-    const schema = builder.buildSchema('gx.labelcredential.w3c.2', labelConfig, labelCredential);
-    const field = (schema.main[0].value as DetailsKeyValueField[])[0];
+    it.each([
+      ['BL', 'credentialDetails.labelLevelValue.BL'],
+      ['P', 'credentialDetails.labelLevelValue.P'],
+      ['P+', 'credentialDetails.labelLevelValue.P+'],
+    ])('shows %s through the i18n key "%s"', (level, expected) => {
+      expect(levelOf('gx.labelcredential.w3c.2', level)).toBe(expected);
+      expect(levelFieldOf('gx.labelcredential.w3c.2', level).field.translateValue).toBe(true);
+    });
 
-    expect(typeof field.value === 'function' ? field.value(labelCredential) : field.value).toBe('BL');
+    it('renders an unknown level as published', () => {
+      expect(levelOf('gx.labelcredential.w3c.2', 'X')).toBe('X');
+    });
+
+    it('does not map the value for other credential types', () => {
+      expect(levelOf('some.other.w3c.1', 'BL')).toBe('BL');
+      expect(levelFieldOf('some.other.w3c.1', 'BL').field.translateValue).toBeUndefined();
+    });
   });
 
   it('labels the LEAR mandator commonName from i18n instead of the metadata display', () => {
