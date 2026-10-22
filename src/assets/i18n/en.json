@@ -179,6 +179,7 @@
     "statusListIndex": "status list index",
     "statusPurpose": "status purpose",
     "gx:labelLevel": "Label Level",
+    "labelLevelValue": { "BL": "Base Line", "P": "Professional", "P+": "Professional +" },
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
     "gx:compliantCredentials": "Compliant Credentials",
@@ -196,7 +197,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credential revoked",
-      "message": "The credential has been revoked and its status has been published to the revocation list."
+      "message": "The credential has been revoked."
     },
     "withdrawCredentialConfirm": {
       "title": "Withdraw credential?",
@@ -258,7 +259,7 @@
     "typeFamily": {
       "employee": "Employee",
       "machine": "Machine",
-      "label": "Label Credential"
+      "label": "Label"
     },
     "issuedOn": "Issued on",
     "expiresOn": "Expires on",
@@ -285,8 +286,9 @@
     "learcredential.employee.sd.1": "LEAR Credential Employee",
     "learcredential.machine.w3c.1": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
-    "gx.labelcredential.w3c.1": "Label Credential",
+    "gx.labelcredential.w3c.1": "Label",
     "VerifiableCertification": "Verifiable Certification",
+    "doctorid.sd.1": "Doctor ID",
     "emptyState": {
       "title": "No credentials yet",
       "description": "Create your first credential to get started.",
@@ -637,8 +639,6 @@
     "error-title": "Something Went Wrong",
     "error-description": "We were unable to send a new credential offer. Please try again later.",
     "retry-btn": "Try Again",
-    "already-active-title": "Credential Already Active",
-    "already-active-description": "This credential is already active and does not require a new verification.",
     "unavailable-title": "Credential Unavailable",
     "unavailable-description": "The credential is no longer available. Please contact your organization to issue a new one."
   },
@@ -665,10 +665,10 @@
   },
   "sort": {
     "label": "Sort by:",
-    "recentlyIssued": "Recently issued",
-    "recentlyUpdated": "Recently updated",
-    "expiringSoon": "Expires soon",
-    "expiringLater": "Expires later",
+    "recentlyAdded": "Recently added",
+    "oldestAdded": "Oldest added",
+    "subjectAsc": "Subject (A-Z)",
+    "subjectDesc": "Subject (Z-A)",
     "custom": "Custom"
   }
 }

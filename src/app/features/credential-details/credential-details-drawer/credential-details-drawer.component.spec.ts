@@ -217,6 +217,23 @@ describe('CredentialDetailsDrawerComponent', () => {
       ?.textContent?.trim()).toBe('Engineering S.p.A.');
   });
 
+  it('translates a value the schema marks as an i18n key', async () => {
+    mainModel$.set([
+      { key: '_root', type: 'group', value: [
+        { key: 'gx:labelLevel', type: 'key-value', translateValue: true, value: 'credentialDetails.labelLevelValue.P+' },
+      ] },
+    ] as EvaluatedExtendedDetailsField[]);
+    await createComponent();
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { credentialDetails: { labelLevelValue: { 'P+': 'Professional +' } } });
+    translate.use('en');
+    fixture.detectChanges();
+
+    const box = fixture.nativeElement.querySelector('section:not(#drawer-credential-information) .drawer__field-box');
+    expect(box?.textContent?.trim()).toBe('Professional +');
+    expect(box?.getAttribute('title')).toBe('Professional +');
+  });
+
   it('tints only the powers claim, never any other custom-rendered section', async () => {
     await createComponent();
 
