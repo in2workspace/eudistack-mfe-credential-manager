@@ -14,6 +14,11 @@ import { ToastService } from 'src/app/core/services/toast.service';
  * (Task 22) can embed the same block without duplicating the wallet-link derivation -- which of
  * the tenant's two wallet URLs is the main one, unwrapping the https offer URL out of the
  * `openid-credential-offer://` URI -- fiddly enough that a second copy would drift.
+ *
+ * The QR encodes the link to this portal's wallet (`walletMainFullUrl`), not the raw API value
+ * (EUD-305): the issuer returns the standard `openid-credential-offer://` form, which a phone
+ * camera cannot open, so the client -- this portal -- builds the https link to its own wallet.
+ * The copy button still copies the standard offer, which wallet scanners accept.
  */
 @Component({
   selector: 'app-credential-offer-qr',
