@@ -464,7 +464,7 @@ describe('CredentialDetailsService', () => {
           expect(service.showRevokeCredentialButton$()).toBe(false);
         });
 
-        describe('multi_org tenant admin on an SD-JWT credential with root mandate', () => {
+        describe('multi_org tenant admin on an SD-JWT credential with root mandate (EUD-253 R1, AC-03)', () => {
           const buildSdCredential = (organizationIdentifier: string) => {
             const rawSdCredential: any = {
               vct: 'learcredential.employee.sd.1',
@@ -501,13 +501,13 @@ describe('CredentialDetailsService', () => {
             expect(service.showRevokeCredentialButton$()).toBe(true);
           });
 
-          it('showRevokeCredentialButton$() returns false when the credential belongs to another organization', () => {
+          it('showRevokeCredentialButton$() returns true when the credential belongs to another organization of the tenant', () => {
             service.credentialProcedureDetails$.set({
               lifeCycleStatus: 'VALID',
               credential: { vc: buildSdCredential('VATES-B00000000') },
             } as any);
 
-            expect(service.showRevokeCredentialButton$()).toBe(false);
+            expect(service.showRevokeCredentialButton$()).toBe(true);
           });
         });
       });

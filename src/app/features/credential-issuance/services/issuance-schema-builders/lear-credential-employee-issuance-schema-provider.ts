@@ -49,7 +49,9 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
       }
     ];
 
-    if (isSysAdmin || onBehalf) {
+    // EUD-253 FR-10 (E3, E5): a tenant administrator grants these in any tenant and for any
+    // organization, its own included -- not only on behalf of another one.
+    if (isSysAdmin || onBehalf || this.authService.hasAdminOrganizationIdentifier()) {
       powersData.push({
         "action": ["Execute"],
         "function": "Onboarding",

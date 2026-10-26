@@ -30,6 +30,7 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     authMock = {
       extractRawMandator: jest.fn(),
       isSysAdmin: jest.fn(),
+      hasAdminOrganizationIdentifier: jest.fn().mockReturnValue(false),
     } as any;
 
     countryMock = {
@@ -146,7 +147,7 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
       });
     });
 
-    it('should include LIMITED powers if user is NOT sysAdmin (TenantAdmin or LEAR)', () => {
+    it('should include LIMITED powers if user is neither sysAdmin nor TenantAdmin (LEAR)', () => {
       (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
       const schema = service.getSchema();
 
@@ -168,6 +169,34 @@ describe('LearCredentialEmployeeSchemaProvider', () => {
     it('should include ALL powers if user is NOT sysAdmin but is acting onBehalf', () => {
       (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
       const schema = service.getSchema(true);
+      const power = schema.schema.find(f => f.key === 'power');
+      expect(power).toBeDefined();
+
+      expect(power?.custom).toMatchObject({
+        component: IssuancePowerComponent,
+        data: [
+          {
+            action: ['Create', 'Update', 'Delete'],
+            function: 'ProductOffering',
+            isAdminRequired: false,
+          },
+          {
+            action: ['Execute'],
+            function: 'Onboarding',
+            isAdminRequired: true,
+          },
+          {
+            action: ['Upload', 'Attest'],
+            function: 'Certification',
+            isAdminRequired: true,
+          },
+        ],
+      });
+    });
+    it('should include ALL powers for a TenantAdmin issuing for its own organization (EUD-253 E3, E5)', () => {
+      (authMock.isSysAdmin as jest.Mock).mockReturnValue(false);
+      (authMock.hasAdminOrganizationIdentifier as jest.Mock).mockReturnValue(true);
+      const schema = service.getSchema();
       const power = schema.schema.find(f => f.key === 'power');
       expect(power).toBeDefined();
 
