@@ -23,6 +23,11 @@ export interface SchemaOverride {
    * `credentialDetails.<claim>` i18n entry.
    */
   i18nLabeledClaims?: readonly string[];
+  /**
+   * i18n keys for coded claim values, keyed by claim name and then by raw value.
+   * Values not listed render as published.
+   */
+  claimValueLabels?: Record<string, Readonly<Record<string, string>>>;
 }
 
 // The mandator is labelled "Name" here, whatever the metadata calls its commonName.
@@ -57,6 +62,13 @@ const OVERRIDES: Record<string, SchemaOverride> = {
     i18nLabeledClaims: LEAR_I18N_LABELED_CLAIMS,
   },
   'gx.labelcredential.w3c': {
+    claimValueLabels: {
+      'gx:labelLevel': {
+        BL: 'credentialDetails.labelLevelValue.BL',
+        P: 'credentialDetails.labelLevelValue.P',
+        'P+': 'credentialDetails.labelLevelValue.P+',
+      },
+    },
     claimOverrides: {
       'gx:compliantCredentials': {
         component: CompliantCredentialsComponent,

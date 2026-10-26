@@ -56,8 +56,8 @@ export const STATUS_ICON_MAP: Record<string, string> = {
   VALID: 'verified',
   EXPIRED: 'warning',
   REVOKED: 'warning',
-  WITHDRAWN: 'unpublished',
-  ARCHIVED: 'archive',
+  WITHDRAWN: 'do_not_disturb_on',
+  ARCHIVED: 'delete_forever',
 };
 
 export const DEFAULT_STATUS_ICON = 'help_outline';

@@ -84,6 +84,15 @@ describe('CredentialActionsService', () => {
       expect(dialogData.cancelLabel).toBeUndefined(); // the shared "Cancel"
       expect(dialogData.style).toBe('credential-action-dialog');
     });
+
+    // An 'error' status would paint the confirm button red (mat-warn), which the
+    // credential-action-dialog style no longer overrides so that a failed action's Close stays red.
+    it('opens with the default status so its confirm button stays primary', () => {
+      openDialog('3f1c2a9e-7b4d-4e2a-9c1f-5d6e7f8a9b0c');
+
+      const [, dialogData] = (mockDialog.openDialogWithCallback as jest.Mock).mock.calls[0];
+      expect(dialogData.status).toBe('default');
+    });
   });
 
   describe('executeActionByProcedureId', () => {

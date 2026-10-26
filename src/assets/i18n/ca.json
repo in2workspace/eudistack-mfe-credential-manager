@@ -179,6 +179,7 @@
     "statusListIndex": "índex a la llista",
     "statusPurpose": "propòsit de l'estat",
 	  "gx:labelLevel": "Label Level",
+    "labelLevelValue": { "BL": "Base Line", "P": "Professional", "P+": "Professional +" },
     "gx:rulesVersion": "Rules Version",
     "gx:engineVersion": "Engine Version",
     "gx:compliantCredentials": "Credencials conformes",
@@ -196,7 +197,7 @@
     },
     "revokeCredentialSuccess": {
       "title": "Credencial revocada",
-      "message": "La credencial ha quedat revocada i el seu estat s'ha publicat a la llista de revocació."
+      "message": "La credencial ha quedat revocada."
     },
     "withdrawCredentialConfirm": {
       "title": "Vols retirar la credencial?",
@@ -258,7 +259,7 @@
     "typeFamily": {
       "employee": "Empleat",
       "machine": "Màquina",
-      "label": "Credencial d'Etiqueta"
+      "label": "Etiqueta"
     },
     "issuedOn": "Emesa el",
     "expiresOn": "Expira el",
@@ -285,8 +286,9 @@
     "learcredential.employee.sd.1": "LEAR Credential Employee",
     "learcredential.machine.w3c.1": "LEAR Credential Machine",
     "learcredential.machine.sd.1": "LEAR Credential Machine",
-    "gx.labelcredential.w3c.1": "Label Credential",
+    "gx.labelcredential.w3c.1": "Label",
     "VerifiableCertification": "Verifiable Certification",
+    "doctorid.sd.1": "Doctor ID",
     "emptyState": {
       "title": "Encara no hi ha credencials",
       "description": "Crea la teva primera credencial per començar.",
@@ -662,10 +664,10 @@
   },
   "sort": {
     "label": "Ordenar per:",
-    "recentlyIssued": "Emeses recentment",
-    "recentlyUpdated": "Actualitzades recentment",
-    "expiringSoon": "Expiren aviat",
-    "expiringLater": "Expiren més tard",
+    "recentlyAdded": "Afegides recentment",
+    "oldestAdded": "Afegides fa més temps",
+    "subjectAsc": "Subjecte (A-Z)",
+    "subjectDesc": "Subjecte (Z-A)",
     "custom": "Personalitzat"
   }
 }

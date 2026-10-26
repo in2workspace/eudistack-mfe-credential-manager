@@ -22,7 +22,8 @@ export class SubjectComponent {
   public displayValue$ = computed<string>(() => {
    const type = this.type$();
    const subject = this.subject$();
-    
+    if (!subject) return '-';
+
     return this.handleSubject(subject, type);
   });
 
