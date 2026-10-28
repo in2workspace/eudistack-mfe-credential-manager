@@ -3,7 +3,7 @@ import { CredentialIssuanceTypedViewModelSchema, CredentialIssuanceSchemaProvide
 import { AuthService } from "src/app/core/services/auth.service";
 import { CountryService } from "src/app/shared/services/country.service";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
-import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
+import { emailField, firstNameField, issuablePowers, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
 import { IssuancePowerComponent } from '../../components/power/issuance-power.component';
 
 @Injectable({ providedIn: 'root' })
@@ -16,28 +16,7 @@ export class LearCredentialMachineIssuanceSchemaProvider implements CredentialIs
     const countriesSelectorOptions = this.countryService.getCountriesAsSelectorOptions();
     const isSysAdmin = this.authService.isSysAdmin();
 
-    const powersData: any[] = [
-      {
-        "action": ["Create", "Update", "Delete"],
-        "function": "ProductOffering",
-        isAdminRequired: false
-      }
-    ];
-
-    // EUD-253 FR-10 (E3, E5): a tenant administrator grants these in any tenant and for any
-    // organization, its own included -- not only on behalf of another one.
-    if (isSysAdmin || onBehalf || this.authService.hasAdminOrganizationIdentifier()) {
-      powersData.push({
-        "action": ["Execute"],
-        "function": "Onboarding",
-        isAdminRequired: true
-      });
-      powersData.push({
-        "action": ["Upload", "Attest"],
-        "function": "Certification",
-        isAdminRequired: true
-      });
-    }
+    const powersData = issuablePowers(isSysAdmin || onBehalf || this.authService.hasAdminOrganizationIdentifier());
 
     return {
       type: 'learcredential.machine',

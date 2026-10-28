@@ -27,3 +27,19 @@ export const organizationIdentifierField: CredentialIssuanceViewModelField = {
               validators: [ ...orgIdValidatorEntries ],
               hint: 'organizationIdentifier',
             }
+
+/**
+ * Powers the issuance form offers (EUD-253 FR-10). Anyone who can issue grants ProductOffering;
+ * administering an organization and certifying (E3, E5) are granted by a tenant administrator, in any
+ * tenant and for any organization, its own included -- not only on behalf of another one.
+ */
+export function issuablePowers(canGrantAdministrationPowers: boolean): any[] {
+  const powers: any[] = [
+    { "action": ["Create", "Update", "Delete"], "function": "ProductOffering", isAdminRequired: false }
+  ];
+  if (canGrantAdministrationPowers) {
+    powers.push({ "action": ["Execute"], "function": "Onboarding", isAdminRequired: true });
+    powers.push({ "action": ["Upload", "Attest"], "function": "Certification", isAdminRequired: true });
+  }
+  return powers;
+}

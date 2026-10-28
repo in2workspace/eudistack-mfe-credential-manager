@@ -6,7 +6,7 @@ import { ClaimDefinitionDto } from "src/app/core/models/dto/credential-issuer-me
 import { CredentialIssuanceTypedViewModelSchema, CredentialIssuanceSchemaProvider, CredentialIssuanceViewModelField } from "src/app/core/models/entity/lear-credential-issuance";
 import { convertToOrderedArray, employeeMandatorFieldsOrder } from "../../helpers/fields-order-helpers";
 import { claimKey, mapClaimsToFields } from "../../helpers/claims-to-schema.mapper";
-import { emailField, firstNameField, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
+import { emailField, firstNameField, issuablePowers, lastNameField, organizationField, organizationIdentifierField, serialNumberField } from "./common-issuance-schema-fields";
 import { IssuancePowerComponent } from "../../components/power/issuance-power.component";
 import { baseNameLengthValidatorEntries } from "src/app/shared/validators/credential-issuance/validators-entries";
 import { PROVISIONAL_FIELD_VALIDATION_RULE_RESOLVER } from "src/app/shared/validators/credential-issuance/field-validation-rule.resolver";
@@ -41,28 +41,7 @@ export class LearCredentialEmployeeSchemaProvider implements CredentialIssuanceS
     const countriesSelectorOptions = this.countriesService.getCountriesAsSelectorOptions();
     const isSysAdmin = this.authService.isSysAdmin();
 
-    const powersData: any[] = [
-      {
-        "action": ["Create", "Update", "Delete"],
-        "function": "ProductOffering",
-        isAdminRequired: false
-      }
-    ];
-
-    // EUD-253 FR-10 (E3, E5): a tenant administrator grants these in any tenant and for any
-    // organization, its own included -- not only on behalf of another one.
-    if (isSysAdmin || onBehalf || this.authService.hasAdminOrganizationIdentifier()) {
-      powersData.push({
-        "action": ["Execute"],
-        "function": "Onboarding",
-        isAdminRequired: true
-      });
-      powersData.push({
-        "action": ["Upload", "Attest"],
-        "function": "Certification",
-        isAdminRequired: true
-      });
-    }
+    const powersData = issuablePowers(isSysAdmin || onBehalf || this.authService.hasAdminOrganizationIdentifier());
 
     return {
       type: 'learcredential.employee',
