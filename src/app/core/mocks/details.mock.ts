@@ -66,10 +66,10 @@ export const mockCredentialEmployee: any = {
             serialNumber: 'SN-EMP'
           },
           power: [
-            { id: 'p1', action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'Domain' },
-            { id: 'p2', action: ['Update'], domain: 'DOME', function: 'ProductOffering', type: 'Domain' },
-            { id: 'p3', action: ['Reload'], domain: 'DOME', function: 'ProductOffering', type: 'Domain' },
-            { id: 'p3', action: ['Delete'], domain: 'DOME', function: 'ProductOffering', type: 'Domain' }
+            { id: 'p1', action: ['Execute'], domain: 'DOME', function: 'Onboarding', type: 'domain' },
+            { id: 'p2', action: ['Update'], domain: 'DOME', function: 'ProductOffering', type: 'domain' },
+            { id: 'p3', action: ['Reload'], domain: 'DOME', function: 'ProductOffering', type: 'domain' },
+            { id: 'p3', action: ['Delete'], domain: 'DOME', function: 'ProductOffering', type: 'domain' }
           ],
           signer: {
             commonName: 'Signer EMP',
