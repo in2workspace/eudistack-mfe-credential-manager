@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-10-28
+
+### Fixed
+- **Large screens.** From 1025 px the credential list uses the available width, the Subject column takes the extra space, and from 1280 px the Type column fits the longest names. Status and Action follow the text size.
+- **EUD-305 — the offer QR stays scannable.** It encodes the link to this portal's wallet instead of the raw `openid-credential-offer://` value, which a phone camera cannot open. Deploy together with the matching Issuer.
+- **A non-DRAFT offer no longer has its own "already active" screen.** Those cases show "credential not available", matching the Issuer `credential_offer_gone` response.
+
+### Changed
+- **Issued-credentials list.** Withdrawn and archived use the circle-minus and bin icons. Sort by is Recently added, Oldest added, or subject. The Label type name drops the extra "Credential" word. The revoke success message no longer mentions the revocation list. Doctor ID is shown as "Doctor ID" instead of the raw type id.
+
 ## [Unreleased] - 2026-10-15
 
 ### Fixed
