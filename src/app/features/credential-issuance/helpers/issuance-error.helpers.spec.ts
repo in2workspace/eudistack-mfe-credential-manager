@@ -62,6 +62,7 @@ describe('issuance-error.helpers', () => {
         'authorization_rule_missing',
         'certification_delegation_requires_tenant_admin',
         'certification_power_required',
+        'credential_type_not_enabled',
         'foreign_domain_delegation_requires_platform_admin',
         'on_behalf_requires_tenant_admin',
         'onboarding_delegation_requires_tenant_admin',

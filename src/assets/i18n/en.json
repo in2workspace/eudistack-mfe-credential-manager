@@ -378,7 +378,8 @@
         "on_behalf_requires_tenant_admin": "Only the tenant administrator can issue credentials on behalf of another organization.",
         "certification_power_required": "You need the \"Certification\" power with the \"Attest\" action in this tenant to issue product certifications.",
         "platform_tenant_read_only": "From the platform tenant you can only consult.",
-        "authorization_rule_missing": "This action is not allowed."
+        "authorization_rule_missing": "This action is not allowed.",
+        "credential_type_not_enabled": "This credential type is not enabled in this tenant."
       }
     },
     "creating-credential": "Creating credential",

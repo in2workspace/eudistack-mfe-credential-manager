@@ -378,7 +378,8 @@
         "on_behalf_requires_tenant_admin": "Només l'administrador del tenant pot emetre credencials en nom d'una altra organització.",
         "certification_power_required": "Necessites el poder «Certificació» amb l'acció «Acreditar» en aquest tenant per emetre certificacions de producte.",
         "platform_tenant_read_only": "Des del tenant de la plataforma només pots consultar.",
-        "authorization_rule_missing": "Aquesta acció no està permesa."
+        "authorization_rule_missing": "Aquesta acció no està permesa.",
+        "credential_type_not_enabled": "Aquest tipus de credencial no està habilitat en aquest tenant."
       }
     },
     "creating-credential": "Creant credencial",
