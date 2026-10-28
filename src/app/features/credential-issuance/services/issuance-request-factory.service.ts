@@ -32,7 +32,10 @@ export class IssuanceRequestFactoryService {
   ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType, holderBinding);
         const email = this.getCredentialEmail(credentialData, credentialType);
-        return this.buildRequestDto(configId, toDeliveryCsv(deliveryModes), payload, email, grantType);
+        // EUD-253 FR-07: the Issuer files the attestation under the caller's organization unless the
+        // request names another one -- it never reads it from the mandator. On-behalf must say so.
+        const organization = credentialData.onBehalf ? payload.mandator?.organizationIdentifier : undefined;
+        return this.buildRequestDto(configId, toDeliveryCsv(deliveryModes), payload, email, grantType, organization);
       }
 
   public createCredentialRequestPayload(
@@ -236,13 +239,14 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: DeliveryCsv, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, delivery: DeliveryCsv, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, organization?: string): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,
       delivery,
       email,
-      grant_type: grantType
+      grant_type: grantType,
+      ...(organization ? { organization } : {})
     };
   }
 }

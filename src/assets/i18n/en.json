@@ -334,8 +334,7 @@
       "message": "Are you sure you want to remove this power?"
     },
     "unavailable": {
-      "requires_multi_org": "can only be granted in multi-organization tenants.",
-      "same_org": "unavailable because the target organization is your own; it can only be granted to another organization.",
+      "requires_tenant_admin": "can only be granted by the tenant administrator.",
       "remove": "Remove the unavailable powers to create the credential."
     }
   },
@@ -371,15 +370,16 @@
       "data-kept": "The form data has been kept.",
       "invalid-fields": "Please review the following fields:",
       "reasons": {
-        "operator_lacks_onboarding": "You do not hold the \"Onboarding\" (Execute) power required to issue LEAR credentials.",
+        "operator_lacks_onboarding": "You do not hold the \"Onboarding\" (Execute) power in this tenant, required to issue credentials.",
         "onboarding_delegation_requires_tenant_admin": "Only the tenant administrator can grant the \"Onboarding\" power.",
-        "onboarding_delegation_requires_multi_org": "The \"Onboarding\" power can only be granted in multi-organization tenants.",
-        "onboarding_delegation_same_org": "The \"Onboarding\" power can only be granted to another organization: the target organization is your own. Remove that power or change the organization.",
         "certification_delegation_requires_tenant_admin": "Only the tenant administrator can grant the \"Certification\" power with the \"Attest\" action.",
-        "certification_delegation_requires_multi_org": "The \"Certification\" power with the \"Attest\" action can only be granted in multi-organization tenants.",
-        "mandator_organization_missing": "The mandator organization identifier is missing.",
+        "tenant_admin_delegation_requires_platform_admin": "Only the platform administrator can grant the tenant administrator power.",
+        "foreign_domain_delegation_requires_platform_admin": "Only the platform administrator can grant powers of a domain other than the tenant.",
         "on_behalf_requires_tenant_admin": "Only the tenant administrator can issue credentials on behalf of another organization.",
-        "on_behalf_requires_multi_org": "This tenant does not allow issuing credentials on behalf of another organization."
+        "certification_power_required": "You need the \"Certification\" power with the \"Attest\" action in this tenant to issue product certifications.",
+        "platform_tenant_read_only": "From the platform tenant you can only consult.",
+        "authorization_rule_missing": "This action is not allowed.",
+        "credential_type_not_enabled": "This credential type is not enabled in this tenant."
       }
     },
     "creating-credential": "Creating credential",

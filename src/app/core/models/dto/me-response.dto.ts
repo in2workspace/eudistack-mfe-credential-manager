@@ -7,10 +7,11 @@
  *   SYSADMIN + tenant !== 'platform'  → TENANT_ADMIN
  *   TENANT_ADMIN                      → TENANT_ADMIN
  *   LEAR                              → LEAR
+ *   USER (no admin power, EUD-253)    → LEAR, then denied by the Onboarding power guard
  */
 export interface MeResponse {
   organizationIdentifier: string;
-  role: 'SYSADMIN' | 'TENANT_ADMIN' | 'LEAR';
+  role: 'SYSADMIN' | 'TENANT_ADMIN' | 'LEAR' | 'USER';
   readOnly: boolean;
   tenant: string;
   tenantType: string;
