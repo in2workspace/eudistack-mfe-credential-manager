@@ -109,21 +109,12 @@ export class CredentialDetailsService {
     Boolean(this.sideViewModel$()?.length)
   );
 
-  //BUTTONS — hidden when platform read-only view or multi-org tenant admin (Caso A, SoD)
+  //BUTTONS — hidden only in the platform read-only view. Which credentials an administrator may act on
+  // is the Issuer's decision (EUD-253 R1/E7/R2): a tenant administrator acts on every organization of
+  // its tenant, an organization administrator only lists its own, and the attestation content never
+  // takes part (FR-07).
   private readonly authService = inject(AuthService);
-  private readonly canWrite = computed<boolean>(() => {
-    if (this.authService.roleType() === RoleType.SYSADMIN_READONLY) return false;
-    if (this.authService.roleType() === RoleType.TENANT_ADMIN
-      && this.authService.tenantType() === 'multi_org'
-      && !this.authService.isSysAdminRole()) {
-      // Caso A: can only action on credentials from their own organization
-      const userOrg = this.authService.organizationIdentifier();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const credentialOrg = (this.credential$() as any)?.credentialSubject?.mandate?.mandator?.organizationIdentifier as string | undefined;
-      return !!userOrg && !!credentialOrg && userOrg === credentialOrg;
-    }
-    return true;
-  });
+  private readonly canWrite = computed<boolean>(() => this.authService.roleType() !== RoleType.SYSADMIN_READONLY);
 
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();

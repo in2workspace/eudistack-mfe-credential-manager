@@ -85,6 +85,44 @@ describe('IssuanceRequestFactoryService', () => {
     expect(emp.mandator.organizationIdentifier).toBe('VATFR-999');
   });
 
+  // EUD-253 FR-07: the Issuer files the attestation under the organization the request names, never
+  // under the mandator of the content -- an on-behalf request must therefore name it.
+  it('names the target organization on behalf of another organization', () => {
+    const credentialData: any = {
+      onBehalf: true,
+      formData: {
+        power: { domain: { Onboarding: { Execute: true } } },
+        mandator: { organization: 'Beta Ltd', country: 'FR', commonName: 'Beta', serialNumber: 'SN', organizationIdentifier: 'VATFR-999' },
+        mandatee: { id: 'M2', domain: 'beta.com' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg');
+
+    expect(result.organization).toBe('VATFR-999');
+  });
+
+  it('does not name an organization when issuing for the operator own one', () => {
+    const credentialData: any = {
+      onBehalf: false,
+      staticData: {
+        mandator: [
+          { key: 'organizationIdentifier', value: 'VATES-123' },
+          { key: 'organization', value: 'Tech Corp' },
+          { key: 'country', value: 'ES' }
+        ]
+      },
+      formData: {
+        power: { domain: { Onboarding: { Execute: true } } },
+        mandatee: { id: 'M3', domain: 'tech.com' }
+      }
+    };
+
+    const result = service.createCredentialRequest(credentialData, 'learcredential.employee', 'cfg');
+
+    expect('organization' in result).toBe(false);
+  });
+
   it('should create machine request with did and mandatee fields', () => {
     const credentialData: any = {
       onBehalf: true,

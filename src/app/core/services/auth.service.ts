@@ -400,9 +400,8 @@ export class AuthService{
 
   /**
    * Fetches the authoritative role from the Issuer (`GET /api/v1/me`) and
-   * resolves `resolvedRole`. The backend resolves TenantAdmin using
-   * `tenant_config.admin_organization_id`, so this is the single source of
-   * truth. UI components read `roleType()`; guards use `resolveRole$()`.
+   * resolves `resolvedRole`. The backend recognizes the role from the caller's
+   * powers (EUD-253), so this is the single source of truth. UI components read `roleType()`; guards use `resolveRole$()`.
    *
    * A failed call still *resolves* (to LEAR): "we asked and could not tell" is a
    * final answer, otherwise `resolveRole$()` would hang and block navigation.

@@ -334,8 +334,7 @@
       "message": "¿Seguro que quieres eliminar este poder?"
     },
     "unavailable": {
-      "requires_multi_org": "solo puede concederse en tenants multiorganización.",
-      "same_org": "no disponible porque la organización destino es la tuya; solo puede concederse a otra organización.",
+      "requires_tenant_admin": "solo puede concederlo el administrador del tenant.",
       "remove": "Quita los poderes no disponibles para poder crear la credencial."
     }
   },
@@ -371,15 +370,16 @@
       "data-kept": "Los datos del formulario se han conservado.",
       "invalid-fields": "Revisa los siguientes campos:",
       "reasons": {
-        "operator_lacks_onboarding": "No tienes el poder «Alta» (Onboarding/Ejecutar), necesario para emitir credenciales LEAR.",
+        "operator_lacks_onboarding": "No tienes el poder «Alta» (Onboarding/Ejecutar) en este tenant, necesario para emitir credenciales.",
         "onboarding_delegation_requires_tenant_admin": "Solo el administrador del tenant puede conceder el poder «Alta».",
-        "onboarding_delegation_requires_multi_org": "El poder «Alta» solo puede concederse en tenants multiorganización.",
-        "onboarding_delegation_same_org": "El poder «Alta» solo puede concederse a otra organización: la organización destino es la tuya. Quita ese poder o cambia la organización.",
         "certification_delegation_requires_tenant_admin": "Solo el administrador del tenant puede conceder el poder «Certificación» con la acción «Acreditar».",
-        "certification_delegation_requires_multi_org": "El poder «Certificación» con la acción «Acreditar» solo puede concederse en tenants multiorganización.",
-        "mandator_organization_missing": "Falta el identificador de la organización del mandante.",
+        "tenant_admin_delegation_requires_platform_admin": "Solo el administrador de la plataforma puede conceder el poder de administrador del tenant.",
+        "foreign_domain_delegation_requires_platform_admin": "Solo el administrador de la plataforma puede conceder poderes de un dominio distinto del tenant.",
         "on_behalf_requires_tenant_admin": "Solo el administrador del tenant puede emitir credenciales en nombre de otra organización.",
-        "on_behalf_requires_multi_org": "Este tenant no permite emitir credenciales en nombre de otra organización."
+        "certification_power_required": "Necesitas el poder «Certificación» con la acción «Acreditar» en este tenant para emitir certificaciones de producto.",
+        "platform_tenant_read_only": "Desde el tenant de la plataforma solo puedes consultar.",
+        "authorization_rule_missing": "Esta acción no está permitida.",
+        "credential_type_not_enabled": "Este tipo de credencial no está habilitado en este tenant."
       }
     },
     "creating-credential": "Creando credencial",

@@ -25,7 +25,7 @@ describe('schema providers ↔ ISSUANCE_CREDENTIAL_TYPES_ARRAY', () => {
       providers: [
         // Both providers read these while building their schema; the schema itself is not
         // what this test is about, only the type each one claims.
-        { provide: AuthService, useValue: { isSysAdmin: () => false, extractRawMandator: () => ({}) } },
+        { provide: AuthService, useValue: { isSysAdmin: () => false, hasAdminOrganizationIdentifier: () => false, extractRawMandator: () => ({}) } },
         { provide: CountryService, useValue: { getCountriesAsSelectorOptions: () => [] } },
         // The same registration main.ts performs.
         { provide: CREDENTIAL_SCHEMA_PROVIDERS, useClass: LearCredentialEmployeeSchemaProvider, multi: true },
