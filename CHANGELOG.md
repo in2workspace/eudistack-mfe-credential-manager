@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.0] - 2026-11-13
+
+### Changed
+- **EUD-272 — issuance follows the Issuer power matrix.** An on-behalf issuance sends `organization`. A tenant administrator can grant Onboarding and Certification for their own organization too. Revoke, withdraw and archive stay available for every attestation of the tenant, including those issued for another organization. Error texts follow the Issuer's new reason codes. Deploy together with the matching Issuer.
+
 ## [Unreleased] - 2026-10-15
 
 ### Changed
