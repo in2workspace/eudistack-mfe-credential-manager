@@ -67,25 +67,18 @@ export interface IssuanceChannelBody {
     credential_offer_uri?: string;
 }
 
-/** RFC 9457 Problem Details, scoped to one channel (EUD-167 D-6). */
-export interface IssuanceChannelError {
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
-}
-
 /**
- * One item of `responses[]` (EUD-167 D-5/D-6): `body` on success (`status: 200`) or `error` on
- * failure (`status: 503`, or `504` for a timed-out wallet leg) -- never both.
+ * The one item of `responses[]`: the requested mode, delivered. A failed delivery never arrives
+ * here -- the Issuer answers it as an RFC 9457 error (503 + `Retry-After`, or 500), which reaches
+ * the `catchError` of the submit flow (EUD-268).
  */
 export interface IssuanceChannelResponse {
     channel: IssuanceChannel;
     status: number;
     body?: IssuanceChannelBody;
-    error?: IssuanceChannelError;
 }
 
+/** Always 200 with exactly one entry in `responses[]`; no 207 since EUD-268. */
 export interface IssuanceResponseDto {
     responses?: IssuanceChannelResponse[];
 }

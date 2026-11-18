@@ -604,7 +604,6 @@ export class CredentialIssuanceService {
 
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const deliveryModes: readonly DeliveryModeToken[] = [deliveryMode];
       // AD-6: one submission, one crypto.randomUUID() -- correlates the private-key handoff's seal
       // (HolderPrivateKeyStore) with this exact attempt, never with a prior or later one. Not the
       // same value as X-Idempotency-Key, which CredentialProcedureService mints on its own, per
@@ -627,66 +626,36 @@ export class CredentialIssuanceService {
           timeout(CredentialIssuanceService.ISSUANCE_REQUEST_TIMEOUT_MS)
         )),
         switchMap((response) => {
-          // AD-7 (EUD-233): a 207 Multi-Status is still a 2xx to HttpClient (EUD-167 D-5/D-6), so it never
-          // reaches catchError -- each requested channel's outcome is read out of the body here,
-          // on the success path.
-          const outcomes = resolveChannelOutcomes(response?.responses ?? [], deliveryModes);
-          const anyDelivered = [...outcomes.values()].includes('delivered');
-          const directDeclared = deliveryModes.includes('direct');
-          const needsHolderKeySection = !directDeclared && requiresRequestHolderKey(configId);
-
-          // EUD-233 AD-8's one exception to "nothing delivered => total failure": a machine type's
-          // wallet-only emission that produced a credential (envelope present -- guaranteed by
-          // reaching this success branch at all) still owes the key even if the one Wallet channel
-          // it declared failed to trigger.
-          const isTotalFailure = !anyDelivered && !needsHolderKeySection;
-          if (isTotalFailure) {
+          // EUD-268: a success is always 200 with the one requested mode in responses[]. A failed
+          // delivery never lands here: it is a problem+json error (503 + Retry-After, or 500) that
+          // reaches catchError below, after the Issuer has withdrawn the process -- no credential
+          // exists, so there is no partial success and no key owed. Defensive (ES-02): a 200 whose
+          // entry is missing, or a direct entry with no signed_credential, is not a delivery either.
+          const outcomes = resolveChannelOutcomes(response?.responses ?? [], [deliveryMode]);
+          if (outcomes.get(deliveryMode) !== 'delivered') {
             this.holderPrivateKeyStore.clear();
             this.openFailedCreateDialog();
             return EMPTY;
           }
-          // EUD-233: hasSubmitted$ is now fixed on the envelope being present, not on "some channel
-          // delivered" (AD-8): a 207 where direct was not requested but a wallet channel failed
-          // still means a credential exists in server, and canLeave() must stay true so the
-          // Operator's own canDeactivateGuard does not fight the close-guard AC-14 puts on the
-          // post-emission surface (carrera nº 6, §3.4).
+          // A credential exists in server: canLeave() must stay true so the Operator's own
+          // canDeactivateGuard does not fight the close-guard AC-14 puts on the post-emission
+          // surface (carrera nº 6, §3.4).
           this.hasSubmitted$.set(true);
           this.holderKeyStore.clear();
 
-          if (directDeclared && outcomes.get('direct') === 'delivered') {
-            const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
-            return this.openDirectCredentialResultDialog(response, requiresRequestHolderKey(configId), privateKeyHex, outcomes);
-          }
-          if (directDeclared) {
-            // direct was declared but failed/missing (the delivered case above already returned).
-            // EUD-233 AD-8's second exception (AC-09's exception clause, added 2026-09-17): a
-            // hybrid emission whose direct channel failed still owes the key when at least one
-            // Wallet channel delivered and the type is one of the two AD-8 machine types -- the
-            // credential exists (its cnf already binds to this attempt's key) and discarding it
-            // would leave it permanently unusable. `anyDelivered` can only be reflecting a Wallet
-            // channel here, since direct's own outcome is not 'delivered' in this branch --
-            // derived from the same resolveChannelOutcomes() projection already computed above,
-            // never a second inspection of responses[] (AD-7). Any other type, or no Wallet
-            // channel delivered, keeps the AC-08 behavior: clear() with no key section.
-            const hasAnyWalletDelivered = anyDelivered;
-            if (hasAnyWalletDelivered && requiresRequestHolderKey(configId)) {
-              const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
-              return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
-            }
-            this.holderPrivateKeyStore.clear();
-            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
-          }
-          // direct not declared at all
-          if (needsHolderKeySection) {
-            const privateKeyHex = this.takeSealedPrivateKey(configId, submissionId);
-            return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), true, privateKeyHex, outcomes);
-          }
+          // The two AD-8 machine types bind to this attempt's key in every delivery mode, so the
+          // key is owed wherever the credential went; any other type has none to hand over.
+          const requiresHolderKeySection = requiresRequestHolderKey(configId);
+          const privateKeyHex = requiresHolderKeySection
+            ? this.takeSealedPrivateKey(configId, submissionId)
+            : undefined;
 
-          // No key section, direct not declared: ui, email, or both -- always the same extended
-          // CredentialOfferDialogComponent, whether or not a QR URI came back, so an email-only
-          // emission gets the same per-channel outcome box as the ui+email hybrid case instead of
-          // falling back to the old plain "credential created" dialog.
-          return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), false, undefined, outcomes);
+          if (deliveryMode === 'direct') {
+            return this.openDirectCredentialResultDialog(response, requiresHolderKeySection, privateKeyHex, outcomes);
+          }
+          // ui or email: the extended CredentialOfferDialogComponent, whether or not a QR URI came
+          // back, so an email emission still gets its outcome box.
+          return this.openCredentialOfferDialog(this.extractCredentialOfferUri(response), requiresHolderKeySection, privateKeyHex, outcomes);
         }),
         switchMap(() => from(this.navigateToCredentials())),
         catchError((error: unknown) => this.handleIssuanceFailure(error))
@@ -886,7 +855,8 @@ export class CredentialIssuanceService {
       console.error('POST /api/v1/issuances failed', error);
     }
     // AD-6 cleanup point 2: a transport failure (incl. ES-09's HolderKeyGenerationError, which
-    // reaches this same catchError) leaves nothing to hand over on any surface.
+    // reaches this same catchError) leaves nothing to hand over on any surface. Neither does a
+    // failed delivery (EUD-268): the Issuer withdrew the process, so no credential binds to the key.
     this.holderPrivateKeyStore.clear();
     this.openFailedCreateDialog(resolveIssuanceBusinessError(error));
     return EMPTY;

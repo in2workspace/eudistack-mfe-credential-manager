@@ -702,11 +702,11 @@ describe('CredentialIssuanceService', () => {
         expect(service.hasSubmitted$()).toBe(true);
       });
 
-      it('Direct solo, direct fails -- no result dialog, generic failure surfaces (ES-04-shaped)', () => {
+      it('Direct fails (EUD-268: a 503 problem+json, not a 2xx item) -- no result dialog, failure surfaces', () => {
         markDeliveryModes('direct');
-        mockProcedureService.createProcedure.mockReturnValue(of({
-          responses: [{ channel: 'direct', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }]
-        }));
+        mockProcedureService.createProcedure.mockReturnValue(
+          throwError(() => ({ status: 503, error: { type: 'signing_failed', status: 503 } }))
+        );
         const router = TestBed.inject(Router);
 
         service.openSubmitDialog();
@@ -716,6 +716,18 @@ describe('CredentialIssuanceService', () => {
         expect(router.navigate).not.toHaveBeenCalled();
         expect(service.hasSubmitted$()).toBe(false);
       });
+
+      it.each(['direct', 'ui', 'email'] as const)(
+        'defensive: a 200 with no item for the requested %s mode is not a delivery -- failure surfaces', mode => {
+          markDeliveryModes(mode);
+          mockProcedureService.createProcedure.mockReturnValue(of({ responses: [] }));
+
+          service.openSubmitDialog();
+
+          expect(mockMatDialog.open).not.toHaveBeenCalled();
+          expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+          expect(service.hasSubmitted$()).toBe(false);
+        });
 
       it('EUD-233 regression: single ui channel, no artifact to gate -- unchanged AS-IS dialog options', () => {
         markDeliveryModes('ui');
@@ -732,7 +744,7 @@ describe('CredentialIssuanceService', () => {
         }));
       });
 
-      it('EC-03: email-only 207 with no error at all behaves like a plain 200 (no total failure)', () => {
+      it('email delivered -- the extended offer dialog, no QR, the email outcome delivered', () => {
         markDeliveryModes('email');
         mockProcedureService.createProcedure.mockReturnValue(of({
           responses: [{ channel: 'email', status: 200 }]
@@ -870,23 +882,21 @@ describe('CredentialIssuanceService', () => {
         }));
       });
 
-      it('EC-09.1: the one declared Wallet channel fails, but the envelope is present -- key section still shown, not total failure', async () => {
+      it('EUD-268: the wallet delivery fails (500 delivery_failed) -- the Issuer withdrew the process, so no key section and the private key is cleared', async () => {
         markDeliveryModes('email');
-        mockProcedureService.createProcedure.mockReturnValue(of({
-          responses: [{ channel: 'email', status: 503, error: { type: 'delivery_failed', title: 'x', status: 503, detail: 'x' } }]
-        }));
+        mockProcedureService.createProcedure.mockReturnValue(
+          throwError(() => ({ status: 500, error: { type: 'delivery_failed', status: 500 } }))
+        );
         const router = TestBed.inject(Router);
 
         service.openSubmitDialog();
         await flushMicrotasks();
 
-        expect(dialogService.openDialog).not.toHaveBeenCalledWith(expect.anything(), errorDialogData);
-        expect(mockMatDialog.open).toHaveBeenCalledWith(CredentialOfferDialogComponent, expect.objectContaining({
-          data: expect.objectContaining({ requiresHolderKeySection: true, privateKeyHex: 'mock-private-key-hex' })
-        }));
-        expect(mockMatDialog.open.mock.calls[0][1].data.outcomes.get('email')).toBe('failed');
-        expect(service.hasSubmitted$()).toBe(true);
-        expect(router.navigate).toHaveBeenCalled();
+        expect(mockMatDialog.open).not.toHaveBeenCalled();
+        expect(dialogService.openDialog).toHaveBeenCalledWith(expect.anything(), errorDialogData);
+        expect(TestBed.inject(HolderPrivateKeyStore).take()).toBeUndefined();
+        expect(service.hasSubmitted$()).toBe(false);
+        expect(router.navigate).not.toHaveBeenCalled();
       });
 
       it('EC-09.2: the emission fails outright (no envelope) -- generic error, no key section anywhere', async () => {
