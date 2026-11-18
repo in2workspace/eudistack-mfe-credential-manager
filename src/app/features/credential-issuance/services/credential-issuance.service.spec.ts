@@ -770,7 +770,8 @@ describe('CredentialIssuanceService', () => {
           'learcredential.machine.w3c.3', expect.any(String)
         );
         const [request] = mockProcedureService.createProcedure.mock.calls[0] as any[];
-        expect(request.holder_key).toEqual({ jwk: { kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' } });
+        // EUD-268 (EUD-254 AD-7): the bare JWK, never the { jwk: … } envelope.
+        expect(request.holder_key).toEqual({ kty: 'EC', crv: 'P-256', x: 'x-coord', y: 'y-coord' });
         expect(request.payload.mandatee.id).toBe('did:key:zMock');
       });
 

@@ -752,7 +752,7 @@ export class CredentialIssuanceService {
       return request;
     }
     const sealMatches = entry.credentialConfigurationId === configId && entry.submissionId === submissionId;
-    return sealMatches ? { ...request, holder_key: { jwk: entry.publicJwk } } : request;
+    return sealMatches ? { ...request, holder_key: entry.publicJwk } : request;
   }
 
   /**

@@ -34,7 +34,7 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
 ];
 
 /**
- * The public half of a holder key, in the only shape the Issuer accepts on `holder_key.jwk`.
+ * The public half of a holder key, in the only shape the Issuer accepts as `holder_key` (the bare JWK, EUD-268).
  *
  * Deliberately narrower than WebCrypto's JWK export: `ext` and `key_ops` are browser bookkeeping,
  * not key material, and have no business on the wire.
@@ -185,6 +185,6 @@ export interface IssuanceFormPowerSchema{
 export interface KeyState {
   desmosPrivateKeyValue: string,
   desmosDidKeyValue: string,
-  /** The public half, for `holder_key.jwk` (EUD-168 AD-8). */
+  /** The public half, for `holder_key` (EUD-168 AD-8). */
   desmosPublicJwk?: HolderPublicJwk
 }
