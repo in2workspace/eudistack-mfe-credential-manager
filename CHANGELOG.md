@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **EUD-268 — one delivery mode per issuance**: the delivery selector is a radio group instead of checkboxes, and `POST /api/v1/issuances` sends that single mode in `delivery`. The Issuer 3.15.0 answers a list of modes with `400 invalid_delivery_mode`. The default is unchanged: Direct if the type offers it, otherwise Email, otherwise none until the Operator picks one.
+- **EUD-268 — issuance result**: the Issuer answers `200` with a single `responses[]` entry, or an error when the delivery fails; there is no `207` and no per-channel `error`. The form opens the direct or the offer dialog for that entry. A failed delivery shows the error dialog and discards the generated machine key: the Issuer has withdrawn the process, so no credential binds to it. Machine types still show their key in every mode on success.
+
+### Fixed
+- **EUD-268 — `holder_key` is the bare JWK**: the machine credential request sends the public JWK itself, not `{ "jwk": … }`, which the Issuer 3.15.0 rejects with `400 invalid_holder_key`.
+- **EUD-268 — error messages for the Issuer's new codes**: a type not enabled in the tenant is now `400 unsupported_credential_type` (the `403` reason `credential_type_not_enabled` is gone), `400 unknown_organization` explains that the organization does not belong to the tenant, and a failed delivery says whether to retry in a few seconds (`503`: `signing_failed`, `status_list_unavailable`, `wallet_delivery_timeout`) or not (`500`: `delivery_failed`, `persistence_failed`). Texts in es, en and ca.
+
 ## [Unreleased] - 2026-10-15
 
 ### Changed
