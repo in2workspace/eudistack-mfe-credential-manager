@@ -164,7 +164,8 @@ export class CredentialIssuanceService {
     return configId ? this.resolveOfferableModes(configId) : [];
   });
 
-  public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>> = signal(new Set());
+  // EUD-268: one mode per issuance -- the Issuer answers a list with 400 invalid_delivery_mode.
+  public selectedDeliveryMode$: WritableSignal<DeliveryModeToken | undefined> = signal(undefined);
 
   // ES-08: the single trigger for the "catalogue unreadable" banner. States 1/2/3 show nothing --
   // only a fully failed read (state 4) does. Gated on `!isLoadingCatalog$`: `_deliveryEligibility$`
@@ -318,29 +319,24 @@ export class CredentialIssuanceService {
       )
       .subscribe();
 
+    // Keeps the selected mode among the offerable ones: a mode the new type or format no longer
+    // offers is replaced by the default -- direct, else email, else none (the Operator picks one).
     effect(() => {
-      const offerableOptions = this.offerableModes$();
-      const offerable = new Set(offerableOptions.map(option => option.value));
-      const current = this.selectedDeliveryModes$();
-      const pruned = new Set([...current].filter(mode => offerable.has(mode)));
-
-      if (pruned.size === 0) {
-        let defaultMode: DeliveryModeToken | undefined;
-
-        if (offerable.has('direct')) {
-          defaultMode = 'direct';
-        } else if (offerable.has('email')) {
-          defaultMode = 'email';
-        }
-
-        if (defaultMode) {
-          pruned.add(defaultMode);
-        }
+      const offerable = new Set(this.offerableModes$().map(option => option.value));
+      const current = this.selectedDeliveryMode$();
+      if (current && offerable.has(current)) {
+        return;
       }
 
-      const unchanged = pruned.size === current.size && [...pruned].every(mode => current.has(mode));
-      if (!unchanged) {
-        this.selectedDeliveryModes$.set(pruned);
+      let next: DeliveryModeToken | undefined;
+      if (offerable.has('direct')) {
+        next = 'direct';
+      } else if (offerable.has('email')) {
+        next = 'email';
+      }
+
+      if (next !== current) {
+        this.selectedDeliveryMode$.set(next);
       }
     });
   }
@@ -369,16 +365,9 @@ export class CredentialIssuanceService {
     this.selectedGrantType$.set(option);
   }
 
-  /** AD-4/AD-13: a checkbox toggle, never a value swap -- no path exists that unmarks another mode. */
-  public toggleDeliveryMode(token: DeliveryModeToken, checked: boolean): void {
-    const current = this.selectedDeliveryModes$();
-    const next = new Set(current);
-    if (checked) {
-      next.add(token);
-    } else {
-      next.delete(token);
-    }
-    this.selectedDeliveryModes$.set(next);
+  /** EUD-268: a radio choice -- picking a mode replaces the previous one. */
+  public selectDeliveryMode(token: DeliveryModeToken): void {
+    this.selectedDeliveryMode$.set(token);
   }
 
   // if the message is new, add it; otherwise, delete it
@@ -607,9 +596,15 @@ export class CredentialIssuanceService {
         onBehalf: this.onBehalf$()
       }
 
+      const deliveryMode = this.selectedDeliveryMode$();
+      if(!deliveryMode){
+        console.error('SubmitCredential: delivery mode missing!');
+        return of(EMPTY);
+      }
+
       const configId = formatOption?.configId ?? credentialType;
       const grantType = this.selectedGrantType$().value;
-      const deliveryModes = [...this.selectedDeliveryModes$()];
+      const deliveryModes: readonly DeliveryModeToken[] = [deliveryMode];
       // AD-6: one submission, one crypto.randomUUID() -- correlates the private-key handoff's seal
       // (HolderPrivateKeyStore) with this exact attempt, never with a prior or later one. Not the
       // same value as X-Idempotency-Key, which CredentialProcedureService mints on its own, per
@@ -624,7 +619,7 @@ export class CredentialIssuanceService {
 
       return holderBinding$.pipe(
         map(holderBinding => this.attachHolderKey(
-          this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryModes, grantType, holderBinding),
+          this.buildCredentialRequest(rawCredentialPayload, credentialType, configId, deliveryMode, grantType, holderBinding),
           configId,
           submissionId
         )),
@@ -784,11 +779,11 @@ export class CredentialIssuanceService {
     credentialData: IssuanceRawCredentialPayload,
     credentialType: IssuanceCredentialType,
     configId: string,
-    deliveryModes: readonly DeliveryModeToken[],
+    deliveryMode: DeliveryModeToken,
     grantType: IssuanceGrantType,
     holderBinding: HolderBinding | undefined,
   ): IssuanceLEARCredentialRequestDto {
-    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, holderBinding, deliveryModes, grantType);
+    return this.credentialRequestFactory.createCredentialRequest(credentialData, credentialType, configId, holderBinding, deliveryMode, grantType);
   }
 
 

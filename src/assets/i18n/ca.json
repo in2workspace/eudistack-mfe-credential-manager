@@ -429,7 +429,7 @@
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal pel qual s'envia la credencial. Pots triar-ne més d'un. Directe mostra aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra aquí un codi QR i un enllaç, perquè el titular reculli la credencial per qualsevol de les dues vies. Correu electrònic envia al titular un correu amb aquest mateix codi QR i enllaç.",
+      "tooltip": "Canal pel qual s'envia la credencial. Se n'escull un. Directe mostra aquí la credencial signada, perquè la copiïs i la lliuris tu. Codi QR mostra aquí un codi QR i un enllaç, perquè el titular reculli la credencial per qualsevol de les dues vies. Correu electrònic envia al titular un correu amb aquest mateix codi QR i enllaç.",
       "label": "Mètode de lliurament",
       "direct": "Directe",
       "email": "Correu electrònic",

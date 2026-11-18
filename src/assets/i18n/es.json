@@ -429,7 +429,7 @@
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Canal por el que se envía la credencial. Puedes elegir más de uno. Directo muestra aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra aquí un código QR y un enlace, para que el titular recoja la credencial por cualquiera de las dos vías. Correo electrónico envía al titular un correo con ese mismo código QR y enlace.",
+      "tooltip": "Canal por el que se envía la credencial. Se elige uno. Directo muestra aquí la credencial firmada, para que la copies y la entregues tú. Código QR muestra aquí un código QR y un enlace, para que el titular recoja la credencial por cualquiera de las dos vías. Correo electrónico envía al titular un correo con ese mismo código QR y enlace.",
       "label": "Método de entrega",
       "direct": "Directo",
       "email": "Correo electrónico",

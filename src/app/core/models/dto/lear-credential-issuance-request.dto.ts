@@ -1,13 +1,13 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
+import { DeliveryModeToken, HolderPublicJwk } from "../entity/lear-credential-issuance";
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    /** Built exclusively by {@link toDeliveryCsv} -- never a hand-written string (EUD-233 AD-3). */
-    delivery: DeliveryCsv;
+    /** A single delivery mode: the Issuer answers a list with 400 `invalid_delivery_mode` (EUD-268). */
+    delivery: DeliveryModeToken;
     email: string;
     grant_type: IssuanceGrantType;
     /**

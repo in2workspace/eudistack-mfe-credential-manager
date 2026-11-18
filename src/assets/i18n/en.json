@@ -429,7 +429,7 @@
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
+      "tooltip": "Channel the credential is sent through. Pick one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",
