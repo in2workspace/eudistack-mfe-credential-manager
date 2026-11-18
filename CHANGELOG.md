@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.10.1] - 2026-11-18
+
 ### Changed
 - **EUD-268 — one delivery mode per issuance**: the delivery selector is a radio group instead of checkboxes, and `POST /api/v1/issuances` sends that single mode in `delivery`. The Issuer 3.15.0 answers a list of modes with `400 invalid_delivery_mode`. The default is unchanged: Direct if the type offers it, otherwise Email, otherwise none until the Operator picks one.
 - **EUD-268 — issuance result**: the Issuer answers `200` with a single `responses[]` entry, or an error when the delivery fails; there is no `207` and no per-channel `error`. The form opens the direct or the offer dialog for that entry. A failed delivery shows the error dialog and discards the generated machine key: the Issuer has withdrawn the process, so no credential binds to it. Machine types still show their key in every mode on success.
