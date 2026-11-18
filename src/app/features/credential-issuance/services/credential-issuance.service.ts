@@ -897,7 +897,9 @@ export class CredentialIssuanceService {
     // code would leak to the Operator which configurations are enabled for their tenant. I-03's
     // only exception: a business rejection the Issuer names with a stable code (a LEAR issuance
     // policy reason, or the fields a payload validation rejected), which says nothing about the
-    // tenant's configuration and is exactly what the Operator needs to fix the request.
+    // tenant's configuration and is exactly what the Operator needs to fix the request. Since
+    // EUD-268 also the 400 rejections the Issuer names (type not enabled, unknown organization) and
+    // the delivery failures (503 worth retrying, 500 not), always by code, never by `detail`.
     const dialogData: DialogData = {
       title: this.translate.instant("credentialIssuance.create-error-dialog.title"),
       message: this.buildFailedCreateMessage(businessError),
@@ -914,6 +916,15 @@ export class CredentialIssuanceService {
     if (businessError?.kind === 'policy') {
       const reason = this.translate.instant(`credentialIssuance.create-error-dialog.reasons.${businessError.reason}`);
       return `${reason} ${keep}`;
+    }
+    if (businessError?.kind === 'rejection') {
+      const rejection = this.translate.instant(`credentialIssuance.create-error-dialog.rejections.${businessError.type}`);
+      return `${rejection} ${keep}`;
+    }
+    if (businessError?.kind === 'delivery') {
+      const outcome = businessError.retryable ? 'retryable' : 'final';
+      const delivery = this.translate.instant(`credentialIssuance.create-error-dialog.delivery.${outcome}`);
+      return `${delivery} ${keep}`;
     }
     if (businessError?.kind === 'validation') {
       const fields = businessError.fields

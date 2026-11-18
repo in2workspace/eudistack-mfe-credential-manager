@@ -378,8 +378,15 @@
         "on_behalf_requires_tenant_admin": "Només l'administrador del tenant pot emetre credencials en nom d'una altra organització.",
         "certification_power_required": "Necessites el poder «Certificació» amb l'acció «Acreditar» en aquest tenant per emetre certificacions de producte.",
         "platform_tenant_read_only": "Des del tenant de la plataforma només pots consultar.",
-        "authorization_rule_missing": "Aquesta acció no està permesa.",
-        "credential_type_not_enabled": "Aquest tipus de credencial no està habilitat en aquest tenant."
+        "authorization_rule_missing": "Aquesta acció no està permesa."
+      },
+      "rejections": {
+        "unsupported_credential_type": "Aquest tipus de credencial no està habilitat en aquest tenant.",
+        "unknown_organization": "L'organització indicada no pertany a aquest tenant."
+      },
+      "delivery": {
+        "retryable": "No s'ha pogut completar l'emissió per un problema temporal i s'ha cancel·lat. Torna-ho a provar d'aquí a uns segons.",
+        "final": "No s'ha pogut completar l'emissió i s'ha cancel·lat."
       }
     },
     "creating-credential": "Creant credencial",

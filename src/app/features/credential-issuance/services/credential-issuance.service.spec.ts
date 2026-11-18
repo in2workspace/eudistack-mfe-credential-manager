@@ -1031,6 +1031,34 @@ describe('CredentialIssuanceService', () => {
         expect(dialogData.message).not.toContain('VATES-A15456585');
       });
 
+      it.each(['unsupported_credential_type', 'unknown_organization'])(
+        'should explain a 400 %s with its own message, not its detail (EUD-268)', type => {
+          mockProcedureService.createProcedure.mockReturnValue(
+            throwError(() => ({ status: 400, error: { type, detail: "organization 'VATES-A15456585'" } }))
+          );
+
+          service.openSubmitDialog();
+
+          const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
+          expect(dialogData.message).toContain(`credentialIssuance.create-error-dialog.rejections.${type}`);
+          expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.data-kept');
+          expect(dialogData.message).not.toContain('VATES-A15456585');
+        });
+
+      it.each([
+        [503, 'signing_failed', 'retryable'],
+        [503, 'wallet_delivery_timeout', 'retryable'],
+        [500, 'delivery_failed', 'final'],
+      ])('should explain a %s %s delivery failure as %s (EUD-268)', (status, type, outcome) => {
+        mockProcedureService.createProcedure.mockReturnValue(throwError(() => ({ status, error: { type } })));
+
+        service.openSubmitDialog();
+
+        const [, dialogData] = dialogService.openDialog.mock.calls[0] as any[];
+        expect(dialogData.message).toContain(`credentialIssuance.create-error-dialog.delivery.${outcome}`);
+        expect(dialogData.message).toContain('credentialIssuance.create-error-dialog.data-kept');
+      });
+
       it('should name the fields a payload validation rejected (I-03)', () => {
         mockProcedureService.createProcedure.mockReturnValue(
           throwError(() => ({

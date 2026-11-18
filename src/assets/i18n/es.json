@@ -378,8 +378,15 @@
         "on_behalf_requires_tenant_admin": "Solo el administrador del tenant puede emitir credenciales en nombre de otra organización.",
         "certification_power_required": "Necesitas el poder «Certificación» con la acción «Acreditar» en este tenant para emitir certificaciones de producto.",
         "platform_tenant_read_only": "Desde el tenant de la plataforma solo puedes consultar.",
-        "authorization_rule_missing": "Esta acción no está permitida.",
-        "credential_type_not_enabled": "Este tipo de credencial no está habilitado en este tenant."
+        "authorization_rule_missing": "Esta acción no está permitida."
+      },
+      "rejections": {
+        "unsupported_credential_type": "Este tipo de credencial no está habilitado en este tenant.",
+        "unknown_organization": "La organización indicada no pertenece a este tenant."
+      },
+      "delivery": {
+        "retryable": "No se ha podido completar la emisión por un problema temporal y se ha cancelado. Vuelve a intentarlo en unos segundos.",
+        "final": "No se ha podido completar la emisión y se ha cancelado."
       }
     },
     "creating-credential": "Creando credencial",
