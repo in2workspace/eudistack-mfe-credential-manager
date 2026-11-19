@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, retry, timer } from 'rxjs';
+import { API_PATH } from '../constants/api-paths.constants';
 import { ENV_SUFFIXES, FALLBACK_TENANT, KNOWN_TENANTS, MFE_HOME_PATH } from '../constants/tenants.constants';
 import { WALLET_ORIGIN_BASE_URL } from '../constants/wallet.constants';
 import { environment } from 'src/environments/environment';
@@ -22,6 +23,8 @@ export class TenantService {
   /** Main wallet base URL from the tenant's defaultEnv. Null when defaultEnv is not configured. */
   readonly defaultWalletUrl = this._defaultWalletUrl.asReadonly();
   readonly serverUrl = environment.server_url || (window.location.origin + "/issuer");
+  /** Audit API of the tenant (EUD-293): same origin as the page, under `/audit`. */
+  readonly auditUrl = window.location.origin + API_PATH.AUDIT_BASE;
 
   /**
    * Memoizes the in-flight/completed resolution *within a single page load*.

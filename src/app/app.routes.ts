@@ -19,6 +19,11 @@ export const routes: Routes = [
     canActivate: [tenantGuard, settingsGuard],
   },
   {
+    path: 'audit',
+    canActivate: [tenantGuard],
+    loadChildren: () => import('./features/audit/audit.routes').then(m => m.default)
+  },
+  {
     path: 'organization/credentials',
     canActivate: [tenantGuard],
     canActivateChild: [basicGuard],

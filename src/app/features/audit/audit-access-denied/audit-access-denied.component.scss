@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+.audit-denied {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem;
+
+  p {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary, #6B7280);
+  }
+}

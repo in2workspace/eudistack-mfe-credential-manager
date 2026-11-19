@@ -63,6 +63,12 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           this.logHandledSilentlyError(error);
           return throwError(() => error);
         }
+        // The audit section (EUD-293) renders its own message for every error the API answers,
+        // rate limiting included, so a dialog on top would hide it.
+        if (this.isAuditEndpoint(request.url)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
         let errorMessage: string;
         if (error.error instanceof ErrorEvent) {
           errorMessage = `Error: ${error.error.message}`;
@@ -104,6 +110,11 @@ export class ServeErrorInterceptor implements HttpInterceptor {
   private isCredentialOfferRefreshEndpoint(url: string): boolean {
     const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
     return path.includes(`${API_PATH.CREDENTIAL_OFFER_REFRESH}/`);
+  }
+
+  private isAuditEndpoint(url: string): boolean {
+    const path = /^https?:\/\//.test(url) ? new URL(url).pathname : url;
+    return path.startsWith(`${API_PATH.AUDIT_BASE}/`);
   }
 
   private getServerErrorMessage(error: HttpErrorResponse): string {

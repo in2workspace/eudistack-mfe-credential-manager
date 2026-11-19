@@ -48,6 +48,52 @@ describe('ServeErrorInterceptor', () => {
     expect(interceptor).toBeTruthy();
   });
 
+  // The audit section (EUD-293) renders its own message for every error of the audit API, rate limiting
+  // included, so a dialog on top would hide it.
+  describe('when the audit API answers an error', () => {
+    it.each([400, 401, 403, 409, 429, 500])('opens no dialog for status %s and rethrows the error', (status: number, done: jest.DoneCallback) => {
+      const request = { url: 'https://sandbox.dev.eudistack.net/audit/api/v1/events', method: 'GET' } as HttpRequest<unknown>;
+      const error = new HttpErrorResponse({ status });
+      httpHandler.handle.mockReturnValue(throwError(() => error));
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      interceptor.intercept(request, httpHandler).subscribe({
+        next: () => done(new Error('expected an error, not a response')),
+        error: (err: HttpErrorResponse) => {
+          expect(err).toBe(error);
+          expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it('also recognises the audit API by a relative URL', done => {
+      const request = { url: '/audit/api/v1/events', method: 'GET' } as HttpRequest<unknown>;
+      httpHandler.handle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      interceptor.intercept(request, httpHandler).subscribe({
+        error: () => {
+          expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it('still opens the dialog for an API outside /audit that merely contains the word', done => {
+      const request = { url: 'https://sandbox.dev.eudistack.net/issuer/api/v1/audit-log', method: 'GET' } as HttpRequest<unknown>;
+      httpHandler.handle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      translateServiceSpy.instant.mockReturnValue('error.internal_server');
+
+      interceptor.intercept(request, httpHandler).subscribe({
+        error: () => {
+          expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+  });
+
   describe('when HttpErrorResponse is received', () => {
     it('should call showAlert with the proper message for 404 error', fakeAsync(() => {
       const httpErrorResponse = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });

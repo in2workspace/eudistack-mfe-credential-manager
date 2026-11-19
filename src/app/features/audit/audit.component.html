@@ -1,0 +1,142 @@
+<section class="audit" aria-labelledby="audit-title">
+  <header class="audit__header">
+    <h1 id="audit-title">{{ "audit.title" | translate }}</h1>
+    <p class="audit__description">{{ "audit.description" | translate }}</p>
+  </header>
+
+  <div class="audit__period">
+    <div class="audit__field">
+      <label for="audit-from">{{ "audit.period.from" | translate }}</label>
+      <input
+        #fromInput
+        id="audit-from"
+        type="date"
+        [value]="fromDate()"
+        [min]="oldestValue"
+        [max]="todayValue"
+        aria-describedby="audit-period-hint"
+        (change)="onDateChange('from', $event)" />
+    </div>
+    <div class="audit__field">
+      <label for="audit-to">{{ "audit.period.to" | translate }}</label>
+      <input
+        id="audit-to"
+        type="date"
+        [value]="toDate()"
+        [min]="oldestValue"
+        [max]="todayValue"
+        aria-describedby="audit-period-hint"
+        (change)="onDateChange('to', $event)" />
+    </div>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      id="audit-consult-btn"
+      [disabled]="loading() || periodError() !== null"
+      (click)="consult()">
+      {{ "audit.consult" | translate }}
+    </button>
+  </div>
+  <p class="audit__hint" id="audit-period-hint">
+    {{ "audit.period.hint" | translate: { days: maxPeriodDays, oldest: (oldestValue | localizedDate) } }}
+  </p>
+  @if (periodError(); as period) {
+    <p class="audit__period-error" role="alert" id="audit-period-error">
+      {{ "audit.period.error." + period | translate }}
+    </p>
+  }
+
+  @if (error(); as failure) {
+    <div class="audit__state audit__state--error" role="alert" aria-live="assertive" id="audit-error">
+      <p>{{ failure.key | translate: failure.params }}</p>
+      @if (failure.sessionExpired) {
+        <button mat-stroked-button type="button" id="audit-login-btn" (click)="login()">
+          {{ "audit.login" | translate }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (loading() && events().length === 0) {
+    <div class="audit__skeleton" id="audit-skeleton">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <app-skeleton-loader variant="text" width="100%" height="18px"></app-skeleton-loader>
+      }
+    </div>
+  } @else if (events().length > 0) {
+    <div class="audit__table-wrap">
+      <table class="audit__table" id="audit-table">
+        <caption class="audit__sr-only">{{ "audit.table.caption" | translate }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ "audit.table.moment" | translate }}</th>
+            <th scope="col">{{ "audit.table.event" | translate }}</th>
+            <th scope="col">{{ "audit.table.result" | translate }}</th>
+            <th scope="col">{{ "audit.table.actor" | translate }}</th>
+            <th scope="col">{{ "audit.table.object" | translate }}</th>
+            <th scope="col" class="audit__organization">{{ "audit.table.organization" | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of events(); track event.event_id) {
+            @let object = resourceLabel(event.resource);
+            @let actorKind = actorKindKey(event.actor.kind);
+            <tr>
+              <td class="audit__moment">
+                <time [attr.datetime]="event.occurred_at">
+                  {{ event.occurred_at | localizedDate }} {{ event.occurred_at | localizedDate: 'time' }}
+                </time>
+              </td>
+              <td>{{ eventTypeKey(event.event_type) | translate }}</td>
+              <td>
+                <span class="audit__result" [attr.data-result]="event.result">
+                  {{ resultKey(event.result) | translate }}
+                </span>
+                @if (event.reason) {
+                  <span class="audit__sub">{{ reasonKey(event.reason) | translate }}</span>
+                }
+              </td>
+              <td>
+                {{ actorLabel(event.actor) }}
+                @if (actorKind) {
+                  <span class="audit__sub">{{ actorKind | translate }}</span>
+                }
+              </td>
+              <td>
+                @if (object.kindKey) {
+                  {{ object.kindKey | translate }}
+                } @else if (object.kind) {
+                  {{ object.kind }}
+                }
+                <span class="audit__sub audit__id" [attr.title]="object.id">{{ object.id }}</span>
+              </td>
+              <td class="audit__organization">{{ event.organization ?? "—" }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (nextCursor()) {
+      <button
+        mat-stroked-button
+        type="button"
+        id="audit-next-btn"
+        class="audit__next"
+        [disabled]="loading()"
+        (click)="loadMore()">
+        {{ "audit.next-page" | translate }}
+      </button>
+    }
+  } @else if (searched() && !error()) {
+    <div class="audit__state" id="audit-empty">
+      <p>{{ "audit.empty" | translate }}</p>
+      <button mat-stroked-button type="button" id="audit-change-period-btn" (click)="changePeriod()">
+        {{ "audit.change-period" | translate }}
+      </button>
+    </div>
+  }
+
+  <p class="audit__footer" id="audit-footer">{{ "audit.footer" | translate }}</p>
+</section>

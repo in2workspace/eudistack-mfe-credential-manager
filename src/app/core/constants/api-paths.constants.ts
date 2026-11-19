@@ -8,5 +8,7 @@ export const API_PATH = Object.freeze({
     CREDENTIAL_ISSUER_METADATA: '/.well-known/openid-credential-issuer',
     CREDENTIAL_CATALOG: '/api/v1/backoffice/credential-catalog',
     ME: '/api/v1/me',
-    ORGANIZATIONS: '/api/v1/organizations'
+    ORGANIZATIONS: '/api/v1/organizations',
+    AUDIT_BASE: '/audit',
+    AUDIT_EVENTS: '/api/v1/events'
 });

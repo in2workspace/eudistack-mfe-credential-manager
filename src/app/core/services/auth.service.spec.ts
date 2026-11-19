@@ -275,6 +275,85 @@ describe('AuthService', () => {
   });
 
   // --------------------------------------------------------------------------
+  // canAccessAudit() (EUD-293)
+  // Gates the "Audit" menu entry and `auditAccessGuard`. `hasPower` cannot be used: it ignores
+  // the power type, and `Audit · Read` of type `organization` or `domain` is what counts.
+  // --------------------------------------------------------------------------
+  describe('canAccessAudit', () => {
+    const auditPower = (type: string, domain: string, action: string | string[] = 'Read', fn = 'Audit') =>
+      ({ type, domain, function: fn, action });
+
+    beforeEach(() => {
+      tenantServiceMock.tenant.mockReturnValue('sandbox');
+      (service as any).userPowers.set([]);
+    });
+
+    it('true with organization · <tenant> · Audit · Read', () => {
+      (service as any).userPowers.set([auditPower('organization', 'sandbox')]);
+      expect(service.canAccessAudit()).toBe(true);
+    });
+
+    it('true with domain · <tenant> · Audit · Read', () => {
+      (service as any).userPowers.set([auditPower('domain', 'sandbox')]);
+      expect(service.canAccessAudit()).toBe(true);
+    });
+
+    it('does not tell upper from lower case in the domain', () => {
+      (service as any).userPowers.set([auditPower('organization', 'SANDBOX')]);
+      expect(service.canAccessAudit()).toBe(true);
+    });
+
+    it('true when Read is one of several actions', () => {
+      (service as any).userPowers.set([auditPower('organization', 'sandbox', ['Write', 'Read'])]);
+      expect(service.canAccessAudit()).toBe(true);
+    });
+
+    it('true for the system administrator, who needs no Audit · Read', () => {
+      (service as any).userPowers.set([auditPower('organization', 'EUDISTACK', 'Administration', 'System')]);
+      expect(service.canAccessAudit()).toBe(true);
+    });
+
+    it('false with Audit · Read of another tenant', () => {
+      (service as any).userPowers.set([auditPower('organization', 'cgcom')]);
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('false with a power type that is neither organization nor domain', () => {
+      (service as any).userPowers.set([auditPower('system', 'sandbox')]);
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('false with Audit · Write only', () => {
+      (service as any).userPowers.set([auditPower('organization', 'sandbox', 'Write')]);
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('false with Read of another function', () => {
+      (service as any).userPowers.set([auditPower('organization', 'sandbox', 'Read', 'Onboarding')]);
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('false without powers', () => {
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('false while the tenant is unresolved, even for a power with an empty domain', () => {
+      tenantServiceMock.tenant.mockReturnValue('');
+      (service as any).userPowers.set([auditPower('organization', '')]);
+      expect(service.canAccessAudit()).toBe(false);
+    });
+
+    it('follows the powers once the ID token fills them, so a computed() menu entry updates', () => {
+      const entry = computed(() => service.canAccessAudit());
+      expect(entry()).toBe(false);
+
+      (service as any).userPowers.set([auditPower('organization', 'sandbox')]);
+
+      expect(entry()).toBe(true);
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // canAccessSettings()
   // The one predicate shared by settingsGuard, the navbar entry and the Settings
   // sidenav (EUD-72 §2.3/§7.2). Menu and guard must not be able to disagree.

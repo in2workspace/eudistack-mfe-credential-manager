@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
 import { routes } from './app.routes';
 import { basicGuard, settingsGuard } from './core/guards/accessLevel.guard';
+import { tenantGuard } from './core/guards/tenant.guard';
 
 describe('App Routes', () => {
   it('should contain a default redirect to home', () => {
@@ -35,6 +36,19 @@ describe('App Routes', () => {
     const settingsRoute = routes.find(r => r.path === 'settings')!;
     const settingsModule = await settingsRoute.loadChildren!();
     expect(settingsModule).toBeDefined();
+  });
+
+  it('should define lazy loading for audit behind the tenant guard (EUD-293)', () => {
+    const auditRoute = routes.find((route) => route.path === 'audit');
+    expect(auditRoute).toBeTruthy();
+    expect(typeof auditRoute?.loadChildren).toBe('function');
+    expect(auditRoute?.canActivate).toContain(tenantGuard);
+  });
+
+  it('should actually load the audit routes', async () => {
+    const auditRoute = routes.find(r => r.path === 'audit')!;
+    const auditRoutes = await auditRoute.loadChildren!();
+    expect(auditRoutes).toBeDefined();
   });
 
   it('should define lazy loading for credential-offer', () => {

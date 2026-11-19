@@ -7,7 +7,7 @@ import {
   IAM_REDIRECT_URI,
 } from '../constants/iam.constants';
 
-export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: string, canonical: boolean): OpenIdConfiguration {
+export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: string, canonical: boolean, auditUrl: string): OpenIdConfiguration {
   if (environment.client_id_prefix && !tenant) {
     throw new Error('Cannot build OIDC config because tenant could not be resolved.');
   }
@@ -47,6 +47,7 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     // callback — which used to surface as a silent redirect to /home. The OIDC
     // replay-window check stays ON: `disableIatOffsetValidation` is unset.
     maxIdTokenIatOffsetAllowedInSeconds: environment.max_id_token_iat_offset_seconds,
-    secureRoutes: [serverUrl || '/'].filter((r): r is string => !!r),
+    // The audit API (EUD-293) accepts the session token, so it is a secure route too.
+    secureRoutes: [serverUrl || '/', auditUrl].filter((r): r is string => !!r),
   };
 }

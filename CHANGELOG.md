@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-11-19
+
+### Added
+- **EUD-293 — Audit section**: "Audit" in the user menu and the `/audit` route, for whoever holds `Audit · Read` of type `organization` or `domain` for the tenant, or `organization · EUDISTACK · System · Administration`. Anyone else who reaches `/audit` sees the access-denied notice, with no request to the audit API. What each caller sees is decided by the API.
+- **EUD-293 — audit listing**: the events of the last 30 days, newest first, 100 per request, with moment, event, result and its reason, actor, object and organization. "Next page" adds the older events while the API reports more. The period selector explains the limits (31 days, and not before 90 days ago) next to the field and does not query outside them. It also has an empty state with "Change period", a message for each API error (with the seconds to wait when it is rate limited, and a sign-in button when the session has expired), and a footer saying that queries are recorded.
+- **EUD-293 — translations** in Spanish and English of the 37 event types, the results and the 105 reasons of the event catalogue 2.4.0, and of the section's texts; the catalogue codes are never shown. Catalan and Finnish fall back to the default language.
+
+### Changed
+- **EUD-293 — the session token reaches the audit API**: `<page origin>/audit` is a secure route (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`) and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
+- Needs `eudistack-core-audit` 0.2.0 (descending order, system administrator from a tenant host, audience of the portal's client) and `AUDIT_SECURITY_AUDIENCE` in the IaC: deploy the API first, then the IaC, then this portal.
+
 ## [Unreleased] - 2026-10-15
 
 ### Changed

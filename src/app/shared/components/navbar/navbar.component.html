@@ -16,6 +16,12 @@
               <mat-icon>{{ isMenuOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
             </button>
             <mat-menu #menu="matMenu">
+              @if(canSeeAudit()){
+                <button mat-menu-item [routerLink]="'/audit'">
+                  <mat-icon>fact_check</mat-icon>
+                  <span>{{ "navbar.menu.audit" | translate }}</span>
+                </button>
+              }
               @if(canSeeSettings()){
                 <button mat-menu-item  [routerLink]="'/settings'">
                   <mat-icon>settings</mat-icon>

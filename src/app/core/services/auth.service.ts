@@ -16,6 +16,8 @@ import { MeService } from './me.service';
 import { MeResponse } from '../models/dto/me-response.dto';
 import { TenantService } from './tenant.service';
 
+const AUDIT_READ_POWER_TYPES = ['organization', 'domain'];
+
 @Injectable({
   providedIn: 'root'
 })
@@ -750,6 +752,26 @@ export class AuthService{
    */
   public canAccessSettings(): boolean {
     return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
+  }
+
+  /**
+   * Gates the audit section (EUD-293): `Audit · Read` of type `organization` or `domain` for this
+   * tenant, or the platform `System · Administration` power. Read from the ID-token powers, like
+   * `isSysAdmin()`, so a `computed()` menu entry follows it. What the caller then sees is decided
+   * by the audit API, never here. `hasPower` cannot serve: it ignores the power type.
+   */
+  public canAccessAudit(): boolean {
+    const tenant = this.tenantService.tenant().toLowerCase();
+    return this.isSysAdmin() || (tenant !== '' && this.userPowers().some((p: Power) =>
+      AUDIT_READ_POWER_TYPES.includes(p.type)
+      && p.function === 'Audit'
+      && this.includesAction(p, 'Read')
+      && typeof p.domain === 'string' && p.domain.toLowerCase() === tenant
+    ));
+  }
+
+  private includesAction(power: Power, action: string): boolean {
+    return power.action === action || (Array.isArray(power.action) && power.action.includes(action));
   }
 
   /**
