@@ -16,7 +16,7 @@ import { MeService } from './me.service';
 import { MeResponse } from '../models/dto/me-response.dto';
 import { TenantService } from './tenant.service';
 
-const AUDIT_READ_POWER_TYPES = ['organization', 'domain'];
+const AUDIT_READ_POWER_TYPES = new Set(['organization', 'domain']);
 
 @Injectable({
   providedIn: 'root'
@@ -763,7 +763,7 @@ export class AuthService{
   public canAccessAudit(): boolean {
     const tenant = this.tenantService.tenant().toLowerCase();
     return this.isSysAdmin() || (tenant !== '' && this.userPowers().some((p: Power) =>
-      AUDIT_READ_POWER_TYPES.includes(p.type)
+      AUDIT_READ_POWER_TYPES.has(p.type)
       && p.function === 'Audit'
       && this.includesAction(p, 'Read')
       && typeof p.domain === 'string' && p.domain.toLowerCase() === tenant
