@@ -11,3 +11,13 @@ describe('API_PATH.CREDENTIAL_CATALOG', () => {
     expect(API_PATH.CREDENTIAL_CATALOG).toBe('/api/v1/backoffice/credential-catalog');
   });
 });
+
+// EUD-293: the audit API lives next to the page, under `/audit`; the interceptor and `TenantService.auditUrl`
+// both derive from these, so their literal values are pinned here.
+describe('API_PATH audit paths', () => {
+
+  it('serves the audit API under /audit, at /api/v1/events', () => {
+    expect(API_PATH.AUDIT_BASE).toBe('/audit');
+    expect(API_PATH.AUDIT_EVENTS).toBe('/api/v1/events');
+  });
+});

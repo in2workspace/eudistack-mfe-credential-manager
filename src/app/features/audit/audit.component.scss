@@ -1,0 +1,148 @@
+// Semantic tokens are injected at runtime by ThemeService (see theme.service.ts).
+// Fallbacks keep the screen readable before the tenant theme resolves.
+
+:host {
+  display: block;
+  box-sizing: border-box;
+}
+
+.audit {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+
+  &__description {
+    color: var(--text-secondary, #6B7280);
+    margin: 0 0 1.5rem;
+  }
+
+  &__period {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    input {
+      min-height: 40px;
+      box-sizing: border-box;
+      padding: 0 0.5rem;
+      border: 1px solid var(--border-default, #D1D5DB);
+      border-radius: 4px;
+      font: inherit;
+    }
+  }
+
+  &__hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  &__period-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--error, #B91C1C);
+  }
+
+  &__state {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid var(--border-default, #D1D5DB);
+    border-radius: 4px;
+
+    p {
+      margin: 0 0 0.75rem;
+    }
+
+    &--error {
+      border-color: var(--error, #B91C1C);
+    }
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  &__table-wrap {
+    margin: 1.5rem 0 1rem;
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+
+    th,
+    td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border-default, #D1D5DB);
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+
+  &__moment {
+    white-space: nowrap;
+  }
+
+  &__sub {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  &__id {
+    max-width: 14ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__result[data-result='Denied'],
+  &__result[data-result='Failure'] {
+    font-weight: 600;
+  }
+
+  &__next {
+    margin-bottom: 1rem;
+  }
+
+  &__footer {
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  // Hidden on narrow screens (wireframe, Listado).
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    &__organization {
+      display: none;
+    }
+  }
+
+  &__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}

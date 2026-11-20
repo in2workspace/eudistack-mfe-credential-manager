@@ -70,6 +70,9 @@ export class NavbarComponent implements OnInit {
    */
   public readonly canSeeSettings = computed(() => this.authService.canAccessSettings());
 
+  /** Gates the "Audit" entry (EUD-293); same predicate as `auditAccessGuard`. */
+  public readonly canSeeAudit = computed(() => this.authService.canAccessAudit());
+
   /**
    * Gates the "Organization Contact" entry of the user menu (EUD-226).
    * Visible if feature flag enabled + user has write capability (not Caso A).

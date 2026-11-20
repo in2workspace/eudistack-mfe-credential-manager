@@ -34,6 +34,10 @@ describe('AppComponent', () => {
     canAccessSettings() {
       return this.roleType() !== RoleType.LEAR || this.isSysAdmin();
     },
+    // Read by the embedded navbar to gate its "Audit" entry (EUD-293).
+    canAccessAudit() {
+      return false;
+    },
     // Read by the embedded navbar to gate its "Organization Contact" entry (EUD-226).
     canAccessOrganizationContact() {
       return false;

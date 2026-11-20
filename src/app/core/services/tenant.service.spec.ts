@@ -38,6 +38,12 @@ describe('TenantService', () => {
     });
   });
 
+  describe('auditUrl (EUD-293)', () => {
+    it('is the origin of the page followed by /audit', () => {
+      expect(service.auditUrl).toBe(`${window.location.origin}/audit`);
+    });
+  });
+
   // --------------------------------------------------------------------------
   // Memoization — resolve() must fire the custom-domain.json fetch at most
   // once per instance, regardless of how many independent callers await it

@@ -33,6 +33,16 @@ class MockAuthService {
     return this.sysAdminByToken();
   }
 
+  /**
+   * `AuthService.canAccessAudit()` (EUD-293): `Audit · Read` or the platform administrator, from the ID token.
+   * Signal-backed for the same reason as `sysAdminByToken`.
+   */
+  auditAccess = signal(false);
+
+  canAccessAudit() {
+    return this.auditAccess();
+  }
+
   // Mirrors the real implementation rather than stubbing a boolean, so these specs
   // exercise the predicate the guard uses instead of a parallel one.
   canAccessSettings() {
@@ -213,6 +223,37 @@ describe('NavbarComponent', () => {
       (authService as unknown as MockAuthService).sysAdminByToken.set(true);
       await openMenu();
       expect(settingsEntry()).toBeTruthy();
+    });
+  });
+
+  describe('audit menu entry (EUD-293)', () => {
+    const openMenu = async () => {
+      (fixture.nativeElement.querySelector('button[mat-icon-button]') as HTMLElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    const auditEntry = () =>
+      Array.from(overlayContainerElement.querySelectorAll('button[mat-menu-item]'))
+        .find(b => b.textContent?.includes('navbar.menu.audit'));
+
+    it('is hidden without the audit power', async () => {
+      await openMenu();
+      expect(auditEntry()).toBeUndefined();
+    });
+
+    it('is visible with the audit power', async () => {
+      (authService as unknown as MockAuthService).auditAccess.set(true);
+      await openMenu();
+      expect(auditEntry()).toBeTruthy();
+    });
+
+    it('reads the same predicate as the audit guard', () => {
+      const spy = jest.spyOn(authService as unknown as MockAuthService, 'canAccessAudit');
+      (authService as unknown as MockAuthService).auditAccess.set(true);
+
+      expect(component.canSeeAudit()).toBe(true);
+      expect(spy).toHaveBeenCalled();
     });
   });
 
