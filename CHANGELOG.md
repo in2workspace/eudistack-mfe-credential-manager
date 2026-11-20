@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **EUD-293 — the session token reaches the audit API**: `<page origin>/audit/` is a secure route, with the trailing slash so a path that merely starts with `/audit` gets no token (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`), and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself; it logs only their status and problem type to the console. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
 - Needs `eudistack-core-audit` 0.2.0 (descending order, system administrator from a tenant host, audience of the portal's client) and `AUDIT_SECURITY_AUDIENCE` in the IaC: deploy the API first, then the IaC, then this portal.
+## [Unreleased]
+
+## [3.10.1] - 2026-11-18
+
+### Changed
+- **EUD-268 — one delivery mode per issuance**: the delivery selector is a radio group instead of checkboxes, and `POST /api/v1/issuances` sends that single mode in `delivery`. The Issuer 3.15.0 answers a list of modes with `400 invalid_delivery_mode`. The default is unchanged: Direct if the type offers it, otherwise Email, otherwise none until the Operator picks one.
+- **EUD-268 — issuance result**: the Issuer answers `200` with a single `responses[]` entry, or an error when the delivery fails; there is no `207` and no per-channel `error`. The form opens the direct or the offer dialog for that entry. A failed delivery shows the error dialog and discards the generated machine key: the Issuer has withdrawn the process, so no credential binds to it. Machine types still show their key in every mode on success.
+
+### Fixed
+- **EUD-268 — `holder_key` is the bare JWK**: the machine credential request sends the public JWK itself, not `{ "jwk": … }`, which the Issuer 3.15.0 rejects with `400 invalid_holder_key`.
+- **EUD-268 — error messages for the Issuer's new codes**: a type not enabled in the tenant is now `400 unsupported_credential_type` (the `403` reason `credential_type_not_enabled` is gone), `400 unknown_organization` explains that the organization does not belong to the tenant, and a failed delivery says whether to retry in a few seconds (`503`: `signing_failed`, `status_list_unavailable`, `wallet_delivery_timeout`) or not (`500`: `delivery_failed`, `persistence_failed`). Texts in es, en and ca.
 
 ## [Unreleased] - 2026-10-15
 

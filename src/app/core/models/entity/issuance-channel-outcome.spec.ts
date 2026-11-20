@@ -7,7 +7,7 @@ describe('resolveChannelOutcomes', () => {
     return { channel: 'direct', status: 200, ...overrides };
   }
 
-  it('resolves a direct-only delivery as delivered', () => {
+  it('resolves a direct delivery with a signed credential as delivered', () => {
     const outcomes = resolveChannelOutcomes(
       [response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } })],
       ['direct']
@@ -16,71 +16,25 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('direct')).toBe('delivered');
   });
 
-  it('resolves a hybrid direct + ui as both delivered', () => {
+  it('resolves a ui delivery as delivered', () => {
     const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
-        response({ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://...' } }),
-      ],
-      ['direct', 'ui']
+      [response({ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://...' } })],
+      ['ui']
     );
 
-    expect(outcomes.get('direct')).toBe('delivered');
     expect(outcomes.get('ui')).toBe('delivered');
   });
 
-  it('resolves a hybrid direct + email as both delivered', () => {
-    const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
-        response({ channel: 'email', status: 200 }),
-      ],
-      ['direct', 'email']
-    );
+  it('resolves an email delivery as delivered, with no body', () => {
+    const outcomes = resolveChannelOutcomes([response({ channel: 'email', status: 200 })], ['email']);
 
-    expect(outcomes.get('direct')).toBe('delivered');
     expect(outcomes.get('email')).toBe('delivered');
   });
 
-  it('resolves all three modes as delivered when all three succeed', () => {
-    const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
-        response({ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://...' } }),
-        response({ channel: 'email', status: 200 }),
-      ],
-      ['direct', 'ui', 'email']
-    );
+  it('has exactly one entry: the requested mode (EUD-268)', () => {
+    const outcomes = resolveChannelOutcomes([response({ channel: 'email', status: 200 })], ['email']);
 
-    expect(outcomes.get('direct')).toBe('delivered');
-    expect(outcomes.get('ui')).toBe('delivered');
-    expect(outcomes.get('email')).toBe('delivered');
-  });
-
-  it('resolves direct delivered + wallet failed independently, without hiding direct', () => {
-    const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
-        response({ channel: 'ui', status: 504, error: { type: 'about:blank', title: 'Gateway Timeout', status: 504, detail: 'wallet timeout' } }),
-      ],
-      ['direct', 'ui']
-    );
-
-    expect(outcomes.get('direct')).toBe('delivered');
-    expect(outcomes.get('ui')).toBe('failed');
-  });
-
-  it('resolves direct failed + wallet delivered independently', () => {
-    const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'direct', status: 503, error: { type: 'about:blank', title: 'Service Unavailable', status: 503, detail: 'signer down' } }),
-        response({ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://...' } }),
-      ],
-      ['direct', 'ui']
-    );
-
-    expect(outcomes.get('direct')).toBe('failed');
-    expect(outcomes.get('ui')).toBe('delivered');
+    expect([...outcomes.keys()]).toEqual(['email']);
   });
 
   it('resolves a 2xx direct item without signed_credential as missing, not delivered or failed (ES-02)', () => {
@@ -92,27 +46,15 @@ describe('resolveChannelOutcomes', () => {
     expect(outcomes.get('direct')).toBe('missing');
   });
 
-  it('resolves a requested mode with no matching item at all as missing', () => {
-    const outcomes = resolveChannelOutcomes(
-      [response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } })],
-      ['direct', 'email']
-    );
+  it('resolves the requested mode as missing when responses[] has no item for it', () => {
+    const outcomes = resolveChannelOutcomes([], ['email']);
 
     expect(outcomes.get('email')).toBe('missing');
   });
 
-  it('resolves each item from a 207 independently of the others, regardless of array order (EC-03, EC-07)', () => {
-    const outcomes = resolveChannelOutcomes(
-      [
-        response({ channel: 'email', status: 503, error: { type: 'about:blank', title: 'Service Unavailable', status: 503, detail: 'smtp down' } }),
-        response({ channel: 'ui', status: 200, body: { credential_offer_uri: 'openid-credential-offer://...' } }),
-        response({ channel: 'direct', status: 200, body: { signed_credential: 'jwt' } }),
-      ],
-      ['direct', 'ui', 'email']
-    );
+  it('resolves a non-2xx item as failed (defensive: the Issuer answers a failed delivery as an error)', () => {
+    const outcomes = resolveChannelOutcomes([response({ channel: 'ui', status: 503 })], ['ui']);
 
-    expect(outcomes.get('direct')).toBe('delivered');
-    expect(outcomes.get('ui')).toBe('delivered');
-    expect(outcomes.get('email')).toBe('failed');
+    expect(outcomes.get('ui')).toBe('failed');
   });
 });

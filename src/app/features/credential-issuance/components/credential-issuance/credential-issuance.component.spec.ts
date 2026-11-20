@@ -43,12 +43,12 @@ describe('CredentialIssuanceComponent', () => {
         { value: 'ui', labelKey: 'credentialIssuance.delivery.qrCode' },
         { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
       ]) as WritableSignal<any>,
-      selectedDeliveryModes$: signal(new Set()) as WritableSignal<any>,
+      selectedDeliveryMode$: signal(undefined) as WritableSignal<any>,
       hasDeliveryCatalogReadFailed$: signal(false) as Signal<boolean>,
       // Methods
       updateSelectedType: jest.fn(),
       updateSelectedGrantType: jest.fn(),
-      toggleDeliveryMode: jest.fn(),
+      selectDeliveryMode: jest.fn(),
       canLeave: jest.fn().mockReturnValue(true),
       canDeactivate: jest.fn().mockReturnValue('canDeactivateReturn'),
       openLeaveConfirm: jest.fn().mockReturnValue(true),
@@ -175,7 +175,7 @@ describe('CredentialIssuanceComponent', () => {
       (mockService.isFormValid$ as WritableSignal<boolean>).set(form.valid);
       // A delivery mode must be marked for the submit gate in isolation from ES-01's own gate --
       // this suite is about the required-field validator, not the delivery selector.
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['email']));
+      (mockService.selectedDeliveryMode$ as WritableSignal<any>).set('email');
       fixture.detectChanges();
     });
 
@@ -200,8 +200,11 @@ describe('CredentialIssuanceComponent', () => {
   });
 
   describe('delivery selector', () => {
-    const checkboxInputs = (): HTMLInputElement[] =>
-      Array.from(fixture.nativeElement.querySelectorAll('mat-checkbox input[type="checkbox"]'));
+    // The delivery group is the last radio group of the metadata selectors (format, grant, delivery).
+    const deliveryRadioInputs = (): HTMLInputElement[] => {
+      const groups: Element[] = Array.from(fixture.nativeElement.querySelectorAll('mat-radio-group'));
+      return Array.from(groups.at(-1)?.querySelectorAll('input[type="radio"]') ?? []);
+    };
     const submitButton = (): HTMLButtonElement =>
       fixture.nativeElement.querySelector('button[type="submit"]');
 
@@ -216,56 +219,56 @@ describe('CredentialIssuanceComponent', () => {
       fixture.detectChanges();
     });
 
-    it('renders one checkbox per offerable mode, from offerableModes$', () => {
-      expect(checkboxInputs()).toHaveLength(3);
+    it('renders one radio option per offerable mode, from offerableModes$', () => {
+      expect(deliveryRadioInputs()).toHaveLength(3);
     });
 
-    it('renders no checkbox for a mode absent from offerableModes$', () => {
+    it('renders no option for a mode absent from offerableModes$', () => {
       (mockService.offerableModes$ as WritableSignal<any>).set([
         { value: 'email', labelKey: 'credentialIssuance.delivery.email' },
       ]);
       fixture.detectChanges();
 
-      expect(checkboxInputs()).toHaveLength(1);
+      expect(deliveryRadioInputs()).toHaveLength(1);
     });
 
-    it("renders the service's default selection as checked", () => {
-      // The component only renders whatever selectedDeliveryModes$ reports; the defaulting rule
+    it("renders the service's selection as the only checked option (EUD-268: a single mode)", () => {
+      // The component only renders whatever selectedDeliveryMode$ reports; the defaulting rule
       // itself lives in, and is unit-tested against, CredentialIssuanceService. offerableModes$ is
-      // mocked in order [direct, ui, email], so index 0 is the 'direct' checkbox.
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['direct']));
+      // mocked in order [direct, ui, email], so index 0 is the 'direct' option.
+      (mockService.selectedDeliveryMode$ as WritableSignal<any>).set('direct');
       fixture.detectChanges();
 
-      const inputs = checkboxInputs();
+      const inputs = deliveryRadioInputs();
       expect(inputs[0].checked).toBe(true);
       expect(inputs.slice(1).every(input => !input.checked)).toBe(true);
     });
 
-    it('toggling a checkbox calls service.toggleDeliveryMode with the mode and checked state', () => {
-      checkboxInputs()[0].click();
+    it('picking an option calls service.selectDeliveryMode with that mode', () => {
+      deliveryRadioInputs()[2].click();
       fixture.detectChanges();
 
-      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith('direct', true);
+      expect(mockService.selectDeliveryMode).toHaveBeenCalledWith('email');
     });
 
-    it('disables submit while no delivery mode is marked, even with a valid form (ES-01)', () => {
+    it('disables submit while no delivery mode is selected, even with a valid form (ES-01)', () => {
       expect(submitButton().disabled).toBe(true);
     });
 
-    it('enables submit once a delivery mode is marked and the form is valid', () => {
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(new Set(['email']));
+    it('enables submit once a delivery mode is selected and the form is valid', () => {
+      (mockService.selectedDeliveryMode$ as WritableSignal<any>).set('email');
       fixture.detectChanges();
 
       expect(submitButton().disabled).toBe(false);
     });
 
-    it('refuses to submit and logs, rather than auto-marking a mode, when triggered with none marked (ES-01)', () => {
+    it('refuses to submit and logs, rather than picking a mode, when triggered with none selected (ES-01)', () => {
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
       component.onSubmit();
 
       expect(mockService.openSubmitDialog).not.toHaveBeenCalled();
-      expect(mockService.toggleDeliveryMode).not.toHaveBeenCalled();
+      expect(mockService.selectDeliveryMode).not.toHaveBeenCalled();
     });
   });
 
@@ -377,7 +380,7 @@ describe('CredentialIssuanceComponent', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'learcredential.machine' as any;
-      (component as any).selectedDeliveryModes$ = () => new Set(['email']);
+      (component as any).selectedDeliveryMode$ = () => 'email';
 
       component.onSubmit();
 
@@ -388,7 +391,7 @@ describe('CredentialIssuanceComponent', () => {
       (component as any).isFormValid$ = () => true;
       (component as any).formValue$ = () => ({ foo: 'bar' });
       (component as any).selectedCredentialType$ = () => 'type1' as any;
-      (component as any).selectedDeliveryModes$ = () => new Set(['email']);
+      (component as any).selectedDeliveryMode$ = () => 'email';
 
       component.onSubmit();
 
@@ -408,58 +411,11 @@ describe('CredentialIssuanceComponent', () => {
     });
   });
 
-  describe('onDeliveryModeToggle', () => {
-    it('should prevent removing the last selected delivery mode and re-check the checkbox', () => {
-      const token = 'email' as any;
-      const checkbox = { checked: false } as MatCheckbox;
+  describe('onDeliveryModeSelectionChange', () => {
+    it('should delegate the picked mode to the service', () => {
+      component.onDeliveryModeSelectionChange('ui');
 
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
-        new Set([token])
-      );
-
-      component.onDeliveryModeToggle(token, false, checkbox);
-
-      expect(checkbox.checked).toBe(true);
-      expect(mockService.toggleDeliveryMode).not.toHaveBeenCalled();
-    });
-
-    it('should delegate to the service when adding a delivery mode', () => {
-      const token = 'email' as any;
-      const checkbox = { checked: true } as MatCheckbox;
-
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
-        new Set()
-      );
-
-      component.onDeliveryModeToggle(token, true, checkbox);
-
-      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, true);
-    });
-
-    it('should delegate to the service when removing a delivery mode and other modes remain selected', () => {
-      const token = 'email' as any;
-      const checkbox = { checked: false } as MatCheckbox;
-
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
-        new Set([token, 'direct'])
-      );
-
-      component.onDeliveryModeToggle(token, false, checkbox);
-
-      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, false);
-    });
-
-    it('should delegate to the service when unchecked token is not selected', () => {
-      const token = 'email' as any;
-      const checkbox = { checked: false } as MatCheckbox;
-
-      (mockService.selectedDeliveryModes$ as WritableSignal<any>).set(
-        new Set(['direct'])
-      );
-
-      component.onDeliveryModeToggle(token, false, checkbox);
-
-      expect(mockService.toggleDeliveryMode).toHaveBeenCalledWith(token, false);
+      expect(mockService.selectDeliveryMode).toHaveBeenCalledWith('ui');
     });
   });
 

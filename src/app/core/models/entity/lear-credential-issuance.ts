@@ -34,7 +34,7 @@ export const GRANT_TYPE_OPTIONS: GrantTypeOption[] = [
 ];
 
 /**
- * The public half of a holder key, in the only shape the Issuer accepts on `holder_key.jwk`.
+ * The public half of a holder key, in the only shape the Issuer accepts as `holder_key` (the bare JWK, EUD-268).
  *
  * Deliberately narrower than WebCrypto's JWK export: `ext` and `key_ops` are browser bookkeeping,
  * not key material, and have no business on the wire.
@@ -66,7 +66,7 @@ export interface DeliveryModeOption {
 }
 
 /**
- * Descriptors for the nominal path: one checkbox per mode, rendered only for the modes the resolved
+ * Descriptors for the nominal path: one radio option per mode, rendered only for the modes the resolved
  * delivery-eligibility snapshot actually offers for (tenant, credential type) (EUD-233 AD-1/AD-4).
  * This catalogue is the full universe `offerableModes$` narrows from -- it is never filtered by hand
  * to represent "what this tenant allows", that narrowing happens against the snapshot, not here.
@@ -89,23 +89,6 @@ export const WALLET_DELIVERY_MODE_OPTIONS: readonly DeliveryModeOption[] = [
 ];
 
 export const DELIVERY_RESULT_ORDER: readonly DeliveryModeToken[] = ['direct', 'ui', 'email'];
-
-declare const deliveryCsvBrand: unique symbol;
-
-/**
- * The `delivery` field of `POST /api/v1/issuances`, in the only shape the Issuer accepts: a
- * deduplicated, canonically ordered CSV of {@link DeliveryModeToken}s (EUD-233 AD-3). Branded so the
- * compiler refuses a hand-built string -- the only way to obtain one is {@link toDeliveryCsv}.
- */
-export type DeliveryCsv = string & { readonly [deliveryCsvBrand]: true };
-
-export function toDeliveryCsv(modes: Iterable<DeliveryModeToken>): DeliveryCsv {
-  const requested = new Set(modes);
-  if (requested.size === 0) {
-    throw new Error('toDeliveryCsv requires at least one delivery mode');
-  }
-  return DELIVERY_RESULT_ORDER.filter(mode => requested.has(mode)).join(',') as DeliveryCsv;
-}
 
 export const MDOC_DISABLED_OPTION: CredentialFormatOption = {
   configId: 'mso_mdoc',
@@ -202,6 +185,6 @@ export interface IssuanceFormPowerSchema{
 export interface KeyState {
   desmosPrivateKeyValue: string,
   desmosDidKeyValue: string,
-  /** The public half, for `holder_key.jwk` (EUD-168 AD-8). */
+  /** The public half, for `holder_key` (EUD-168 AD-8). */
   desmosPublicJwk?: HolderPublicJwk
 }
