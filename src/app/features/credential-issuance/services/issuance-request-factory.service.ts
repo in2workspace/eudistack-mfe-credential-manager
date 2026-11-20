@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { IssuancePayloadPower, IssuanceLEARCredentialEmployeePayload, IssuanceLEARCredentialPayload, IssuanceLEARCredentialMachinePayload, IssuanceLEARCredentialRequestDto, IssuanceGrantType } from 'src/app/core/models/dto/lear-credential-issuance-request.dto';
 import { EmployeeMandatee, TmfAction, TmfFunction } from 'src/app/core/models/entity/lear-credential';
-import { DeliveryCsv, DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, IssuanceRawPowerScopeForm, POWER_SCOPES, toDeliveryCsv } from 'src/app/core/models/entity/lear-credential-issuance';
+import { DeliveryModeToken, IssuanceCredentialType, IssuanceRawCredentialPayload, IssuanceRawPowerForm, IssuanceRawPowerScopeForm, POWER_SCOPES } from 'src/app/core/models/entity/lear-credential-issuance';
 import { HolderBinding } from 'src/app/core/models/entity/holder-binding';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { ThemeService } from 'src/app/core/services/theme.service';
@@ -27,7 +27,7 @@ export class IssuanceRequestFactoryService {
       credentialType: IssuanceCredentialType,
       configId: string,
       holderBinding?: HolderBinding,
-      deliveryModes: readonly DeliveryModeToken[] = ['email'],
+      deliveryMode: DeliveryModeToken = 'email',
       grantType: IssuanceGrantType = 'authorization_code'
   ): IssuanceLEARCredentialRequestDto {
         const payload = this.createCredentialRequestPayload(credentialData, credentialType, holderBinding);
@@ -35,7 +35,7 @@ export class IssuanceRequestFactoryService {
         // EUD-253 FR-07: the Issuer files the attestation under the caller's organization unless the
         // request names another one -- it never reads it from the mandator. On-behalf must say so.
         const organization = credentialData.onBehalf ? payload.mandator?.organizationIdentifier : undefined;
-        return this.buildRequestDto(configId, toDeliveryCsv(deliveryModes), payload, email, grantType, organization);
+        return this.buildRequestDto(configId, deliveryMode, payload, email, grantType, organization);
       }
 
   public createCredentialRequestPayload(
@@ -239,7 +239,7 @@ private stripNullValues(obj: Record<string, unknown>): Record<string, string> {
   ) as Record<string, string>;
 }
 
-  private buildRequestDto(configId: string, delivery: DeliveryCsv, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, organization?: string): IssuanceLEARCredentialRequestDto {
+  private buildRequestDto(configId: string, delivery: DeliveryModeToken, payload: IssuanceLEARCredentialPayload, email: string, grantType: IssuanceGrantType, organization?: string): IssuanceLEARCredentialRequestDto {
     return {
       credential_configuration_id: configId,
       payload,

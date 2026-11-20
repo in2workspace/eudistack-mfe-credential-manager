@@ -8,11 +8,16 @@
  * - 403 `insufficient_permission` + `reason` ∈ {@link LEAR_ISSUANCE_POLICY_REASONS}: which LEAR
  *   issuance rule rejected the request.
  * - 400 `payload_validation_error` + `violations[].field`: which form fields the schema rejected.
+ * - 400 `type` ∈ {@link ISSUANCE_REJECTION_TYPES}: the type is not enabled in the tenant, or the
+ *   organization named on behalf is not one of the tenant's (EUD-268).
+ * - 503 `type` ∈ {@link RETRYABLE_DELIVERY_FAILURES} or 500 `type` ∈ {@link DELIVERY_FAILURES}: the
+ *   delivery could not be completed and the Issuer withdrew the process (EUD-268). A 503 is worth
+ *   retrying in a few seconds (`Retry-After`); a 500 is not.
  *
- * Wire contract: these codes mirror `LearIssuancePolicyException.Reason` in eudistack-core-issuer
- * (pinned there by `LearIssuancePolicyExceptionTest`). A code the Issuer adds or renames without
- * updating this list degrades safely to the generic message, but nothing warns about it -- keep
- * both lists and the `credentialIssuance.create-error-dialog.reasons.*` i18n keys in sync.
+ * Wire contract: these codes mirror `LearIssuancePolicyException.Reason`, `GlobalErrorTypes` and
+ * `DeliveryErrorCode` in eudistack-core-issuer. A code the Issuer adds or renames without updating
+ * these lists degrades safely to the generic message, but nothing warns about it -- keep the lists
+ * and the `credentialIssuance.create-error-dialog.*` i18n keys in sync.
  */
 export const LEAR_ISSUANCE_POLICY_REASONS = [
   'operator_lacks_onboarding',
@@ -23,15 +28,27 @@ export const LEAR_ISSUANCE_POLICY_REASONS = [
   'on_behalf_requires_tenant_admin',
   'certification_power_required',
   'platform_tenant_read_only',
-  'authorization_rule_missing',
-  'credential_type_not_enabled'
+  'authorization_rule_missing'
 ] as const;
 
 export type LearIssuancePolicyReason = typeof LEAR_ISSUANCE_POLICY_REASONS[number];
 
+/** 400 rejections of the request itself that the Operator can act on (EUD-268). */
+export const ISSUANCE_REJECTION_TYPES = ['unsupported_credential_type', 'unknown_organization'] as const;
+
+export type IssuanceRejectionType = typeof ISSUANCE_REJECTION_TYPES[number];
+
+/** 503 + `Retry-After`: a dependency of the delivery was temporarily unavailable. */
+export const RETRYABLE_DELIVERY_FAILURES = ['signing_failed', 'status_list_unavailable', 'wallet_delivery_timeout'] as const;
+
+/** 500: the delivery failed and a retry would not fix it. */
+export const DELIVERY_FAILURES = ['delivery_failed', 'persistence_failed'] as const;
+
 export type IssuanceBusinessError =
   | { kind: 'policy'; reason: LearIssuancePolicyReason }
-  | { kind: 'validation'; fields: IssuanceInvalidField[] };
+  | { kind: 'validation'; fields: IssuanceInvalidField[] }
+  | { kind: 'rejection'; type: IssuanceRejectionType }
+  | { kind: 'delivery'; retryable: boolean };
 
 /** A rejected field, as translation keys: `group` is the payload section, `field` its key. */
 export interface IssuanceInvalidField {
@@ -59,11 +76,27 @@ export function resolveIssuanceBusinessError(error: unknown): IssuanceBusinessEr
     return fields.length > 0 ? { kind: 'validation', fields } : null;
   }
 
+  if (status === 400 && isOneOf(ISSUANCE_REJECTION_TYPES, body.type)) {
+    return { kind: 'rejection', type: body.type };
+  }
+
+  if (status === 503 && isOneOf(RETRYABLE_DELIVERY_FAILURES, body.type)) {
+    return { kind: 'delivery', retryable: true };
+  }
+
+  if (status === 500 && isOneOf(DELIVERY_FAILURES, body.type)) {
+    return { kind: 'delivery', retryable: false };
+  }
+
   return null;
 }
 
 function isPolicyReason(value: unknown): value is LearIssuancePolicyReason {
-  return typeof value === 'string' && (LEAR_ISSUANCE_POLICY_REASONS as readonly string[]).includes(value);
+  return isOneOf(LEAR_ISSUANCE_POLICY_REASONS, value);
+}
+
+function isOneOf<T extends string>(codes: readonly T[], value: unknown): value is T {
+  return typeof value === 'string' && (codes as readonly string[]).includes(value);
 }
 
 /**

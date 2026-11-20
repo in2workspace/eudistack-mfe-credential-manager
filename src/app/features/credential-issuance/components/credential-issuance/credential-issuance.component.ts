@@ -1,6 +1,5 @@
 
 import { MatButton } from '@angular/material/button';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { Component, inject, WritableSignal, Signal } from '@angular/core';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -33,7 +32,7 @@ import { CredentialFormatOption, CredentialIssuanceViewModelSchemaWithId, Delive
     // private key material they handle cannot outlive the form. Inherited from the deleted
     // KeyGeneratorComponent, which used to be the (wrong, component-local) home for the first one.
     providers: [CredentialIssuanceService, KeyGeneratorService, IssuanceHolderKeyService],
-    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatCheckbox, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, MatTooltip, RouterLink, TranslatePipe],
+    imports: [AlertBannerComponent, CommonModule, ReactiveFormsModule, DynamicFieldComponent, MatButton, MatCard, MatCardContent, MatFormField, MatIcon, MatOption, MatProgressSpinner, MatRadioButton, MatRadioGroup, MatSelect, MatTooltip, RouterLink, TranslatePipe],
     templateUrl: './credential-issuance.component.html',
     styleUrl: './credential-issuance.component.scss'
 })
@@ -53,9 +52,9 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
   public readonly grantTypeOptions: Readonly<GrantTypeOption[]>;
   public selectedGrantType$: WritableSignal<GrantTypeOption>;
 
-  // DELIVERY SELECTOR (EUD-233 AD-4/AD-13: three independent checkboxes, not a radio group)
+  // DELIVERY SELECTOR (EUD-268: a radio group -- the Issuer takes a single delivery mode)
   public readonly offerableModes$: Signal<readonly DeliveryModeOption[]>;
-  public selectedDeliveryModes$: WritableSignal<ReadonlySet<DeliveryModeToken>>;
+  public selectedDeliveryMode$: WritableSignal<DeliveryModeToken | undefined>;
   public readonly hasDeliveryCatalogReadFailed$: Signal<boolean>;
 
   // FORM STATE
@@ -93,7 +92,7 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.grantTypeOptions = this.issuanceService.grantTypeOptions;
     this.selectedGrantType$ = this.issuanceService.selectedGrantType$;
     this.offerableModes$ = this.issuanceService.offerableModes$;
-    this.selectedDeliveryModes$ = this.issuanceService.selectedDeliveryModes$;
+    this.selectedDeliveryMode$ = this.issuanceService.selectedDeliveryMode$;
     this.hasDeliveryCatalogReadFailed$ = this.issuanceService.hasDeliveryCatalogReadFailed$;
     this.formSchema$ = this.issuanceService.credentialFormSchema$;
     this.staticData$ = this.issuanceService.staticData$;
@@ -118,19 +117,8 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     this.issuanceService.updateSelectedGrantType(option);
   }
 
-  public onDeliveryModeToggle(token: DeliveryModeToken, checked: boolean, checkbox: MatCheckbox): void {
-    const selectedModes = this.selectedDeliveryModes$();
-
-    // Prevent removing the last selected delivery mode. MatCheckbox already flips its own
-    // internal state on click before this handler runs; since the bound [checked] expression
-    // re-evaluates to the same value (true) when we don't touch the model, Angular's dirty
-    // check skips re-applying it, leaving the checkbox visually unchecked. Revert it explicitly.
-    if (!checked && selectedModes.size === 1 && selectedModes.has(token)) {
-      checkbox.checked = true;
-      return;
-    }
-
-    this.issuanceService.toggleDeliveryMode(token, checked);
+  public onDeliveryModeSelectionChange(token: DeliveryModeToken): void {
+    this.issuanceService.selectDeliveryMode(token);
   }
 
   public canLeave(): boolean{
@@ -141,14 +129,14 @@ export class CredentialIssuanceComponent implements CanDeactivate<CanComponentDe
     return this.issuanceService.canDeactivate();
   }
 
-  /** ES-01: an empty delivery selection must never reach submit, and never auto-marks a mode. */
+  /** ES-01: an empty delivery selection must never reach submit. */
   public isSubmitDisabled(): boolean {
-    return !this.isFormValid$() || this.selectedDeliveryModes$().size === 0;
+    return !this.isFormValid$() || this.selectedDeliveryMode$() === undefined;
   }
 
   public onSubmit(): void {
     const isFormValid = this.isFormValid$();
-    if (!isFormValid || this.selectedDeliveryModes$().size === 0) {
+    if (!isFormValid || this.selectedDeliveryMode$() === undefined) {
       // Do not dump formValue$(): it's the holder's data (PII) — must never end up in the console.
       console.error('Invalid form or no delivery mode selected: ');
       return;

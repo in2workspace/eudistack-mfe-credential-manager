@@ -56,7 +56,7 @@ describe('IssuanceHolderKeyService', () => {
       expect(binding).toEqual({ didKey: mockDidKey, publicJwk: mockPublicJwk });
     });
 
-    it('writes the public JWK to HolderKeyStoreService, sealed to this exact attempt (holder_key.jwk consumer)', async () => {
+    it('writes the public JWK to HolderKeyStoreService, sealed to this exact attempt (holder_key consumer)', async () => {
       stubSuccessfulGeneration();
 
       await service.generateForSubmission(CONFIG_ID, SUBMISSION_ID);

@@ -378,8 +378,15 @@
         "on_behalf_requires_tenant_admin": "Only the tenant administrator can issue credentials on behalf of another organization.",
         "certification_power_required": "You need the \"Certification\" power with the \"Attest\" action in this tenant to issue product certifications.",
         "platform_tenant_read_only": "From the platform tenant you can only consult.",
-        "authorization_rule_missing": "This action is not allowed.",
-        "credential_type_not_enabled": "This credential type is not enabled in this tenant."
+        "authorization_rule_missing": "This action is not allowed."
+      },
+      "rejections": {
+        "unsupported_credential_type": "This credential type is not enabled in this tenant.",
+        "unknown_organization": "The organization you entered does not belong to this tenant."
+      },
+      "delivery": {
+        "retryable": "The issuance could not be completed because of a temporary problem and has been cancelled. Try again in a few seconds.",
+        "final": "The issuance could not be completed and has been cancelled."
       }
     },
     "creating-credential": "Creating credential",
@@ -429,7 +436,7 @@
       "preAuthorizedCode": "Pre-Authorized Code"
     },
     "delivery": {
-      "tooltip": "Channel the credential is sent through. You can pick more than one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
+      "tooltip": "Channel the credential is sent through. Pick one. Direct displays the signed credential here, so you can copy and hand it over yourself. QR Code displays a QR code and a link here, so the holder can use either option to collect the credential. Email sends the holder an email with the same QR code and link.",
       "label": "Delivery method",
       "direct": "Direct",
       "email": "Email",

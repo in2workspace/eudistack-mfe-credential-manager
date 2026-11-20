@@ -1,13 +1,13 @@
 import { EmployeeMandatee, EmployeeMandator, Power, TmfAction } from "../entity/lear-credential";
-import { DeliveryCsv, HolderPublicJwk } from "../entity/lear-credential-issuance";
+import { DeliveryModeToken, HolderPublicJwk } from "../entity/lear-credential-issuance";
 
 export type IssuanceGrantType = 'authorization_code' | 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 
 export interface IssuanceLEARCredentialRequestDto {
     credential_configuration_id: string;
     payload: IssuanceLEARCredentialPayload;
-    /** Built exclusively by {@link toDeliveryCsv} -- never a hand-written string (EUD-233 AD-3). */
-    delivery: DeliveryCsv;
+    /** A single delivery mode: the Issuer answers a list with 400 `invalid_delivery_mode` (EUD-268). */
+    delivery: DeliveryModeToken;
     email: string;
     grant_type: IssuanceGrantType;
     /**
@@ -15,8 +15,11 @@ export interface IssuanceLEARCredentialRequestDto {
      * `proof_types_supported` yet still bind to a holder key (EUD-168 AD-8). No wallet key proof
      * will ever arrive for those, so the request is the only source of one — in every delivery mode,
      * not just `direct`. Omitted for every other type, where the Issuer ignores it.
+     *
+     * The JWK itself, not wrapped in `{ "jwk": … }`: the Issuer answers the envelope with 400
+     * `invalid_holder_key` (EUD-254 `design.md` AD-7, EUD-268).
      */
-    holder_key?: { jwk: HolderPublicJwk };
+    holder_key?: HolderPublicJwk;
     /**
      * Organization the attestation is issued for, only on behalf of another organization (EUD-253
      * FR-07, action E2 -- tenant administrators only). Omitted, the Issuer files it under the caller's.
@@ -64,25 +67,18 @@ export interface IssuanceChannelBody {
     credential_offer_uri?: string;
 }
 
-/** RFC 9457 Problem Details, scoped to one channel (EUD-167 D-6). */
-export interface IssuanceChannelError {
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
-}
-
 /**
- * One item of `responses[]` (EUD-167 D-5/D-6): `body` on success (`status: 200`) or `error` on
- * failure (`status: 503`, or `504` for a timed-out wallet leg) -- never both.
+ * The one item of `responses[]`: the requested mode, delivered. A failed delivery never arrives
+ * here -- the Issuer answers it as an RFC 9457 error (503 + `Retry-After`, or 500), which reaches
+ * the `catchError` of the submit flow (EUD-268).
  */
 export interface IssuanceChannelResponse {
     channel: IssuanceChannel;
     status: number;
     body?: IssuanceChannelBody;
-    error?: IssuanceChannelError;
 }
 
+/** Always 200 with exactly one entry in `responses[]`; no 207 since EUD-268. */
 export interface IssuanceResponseDto {
     responses?: IssuanceChannelResponse[];
 }
