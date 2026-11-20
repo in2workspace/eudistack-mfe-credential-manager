@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-293 — translations** in Spanish and English of the 37 event types, the results and the 105 reasons of the event catalogue 2.4.0, and of the section's texts; the catalogue codes are never shown. Catalan and Finnish fall back to the default language.
 
 ### Changed
-- **EUD-293 — the session token reaches the audit API**: `<page origin>/audit` is a secure route (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`) and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
+- **EUD-293 — the session token reaches the audit API**: `<page origin>/audit/` is a secure route, with the trailing slash so a path that merely starts with `/audit` gets no token (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`), and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself; it logs only their status and problem type to the console. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
 - Needs `eudistack-core-audit` 0.2.0 (descending order, system administrator from a tenant host, audience of the portal's client) and `AUDIT_SECURITY_AUDIENCE` in the IaC: deploy the API first, then the IaC, then this portal.
 
 ## [Unreleased] - 2026-10-15

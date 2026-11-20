@@ -33,13 +33,20 @@ describe('buildOidcConfig', () => {
     it('carries the session token to the Issuer and to the audit API (EUD-293)', () => {
       const config = buildOidcConfig('sandbox', 'https://sandbox.example.com/issuer', 'https://sandbox.example.com/verifier', true, 'https://sandbox.example.com/audit');
 
-      expect(config.secureRoutes).toEqual(['https://sandbox.example.com/issuer', 'https://sandbox.example.com/audit']);
+      expect(config.secureRoutes).toEqual(['https://sandbox.example.com/issuer', 'https://sandbox.example.com/audit/']);
     });
 
     it('keeps the audit API when the Issuer URL is empty, falling back to the root for the Issuer', () => {
       const config = buildOidcConfig('sandbox', '', 'https://sandbox.example.com/verifier', true, 'https://sandbox.example.com/audit');
 
-      expect(config.secureRoutes).toEqual(['/', 'https://sandbox.example.com/audit']);
+      expect(config.secureRoutes).toEqual(['/', 'https://sandbox.example.com/audit/']);
+    });
+
+    it('declares the audit route with a trailing slash, so a path that only starts with /audit gets no token', () => {
+      const config = buildOidcConfig('sandbox', 'https://sandbox.example.com/issuer', 'https://sandbox.example.com/verifier', true, 'https://sandbox.example.com/audit');
+
+      expect(config.secureRoutes).toContain('https://sandbox.example.com/audit/');
+      expect(config.secureRoutes).not.toContain('https://sandbox.example.com/audit');
     });
 
     it('drops an empty audit URL instead of declaring an empty secure route', () => {
