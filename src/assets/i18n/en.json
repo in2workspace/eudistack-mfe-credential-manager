@@ -190,15 +190,26 @@
     "revoke": "revoke",
     "withdraw": "withdraw",
     "archive": "archive",
-    "revokeTooltip": "This credential cannot be revoked because it was issued using a legacy type. To learn how to revoke this type of credential, please check our <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guide</a>.",
-    "revokeCredentialConfirm": {
-      "title": "Revoke credential?",
-      "message": "This action cannot be undone.",
-      "confirm": "Yes, revoke"
+    "revokeDialog": {
+      "title": "Revoke attestation",
+      "warning": "This action cannot be undone.",
+      "reasonLabel": "Reason for the revocation",
+      "remaining": "{{count}} characters left",
+      "internalNote": "The reason is internal: it is recorded and is not shared with the holder.",
+      "confirm": "Revoke"
     },
     "revokeCredentialSuccess": {
-      "title": "Credential revoked",
-      "message": "The credential has been revoked."
+      "title": "Attestation revoked",
+      "message": "The attestation has been revoked.",
+      "alreadyRevoked": "This attestation was already revoked. The detail is being updated."
+    },
+    "revokeError": {
+      "notRevocable": "This attestation cannot be revoked in its current state.",
+      "forbidden": "You cannot revoke this attestation.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "badRequest": "Check the reason: it is required and can have up to 280 characters.",
+      "retryLater": "The attestation could not be revoked right now. Please try again in a few minutes.",
+      "generic": "The attestation could not be revoked. Nothing has been changed."
     },
     "withdrawCredentialConfirm": {
       "title": "Withdraw credential?",
@@ -515,10 +526,6 @@
       "unexpected": "An unexpected error occurred. Please try again later or contact your company's Legal Representative to get a new credential.",
       "not-found": "This credential offer is invalid. It may have already been downloaded, expired, or replaced by a new one. If you received a new offer, please check your email. If it has expired or you cannot find a valid offer, contact your company's Legal Representative to request a new one.",
       "conflict": "The credential offer is invalid. It may have already been downloaded or replaced by a new one. If you received a new offer, please check your email."
-    },
-    "revocation": {
-      "notRevocable": "This credential is already revoked or has expired and cannot be revoked again.",
-      "forbidden": "You don't have permission to revoke this credential."
     },
     "serverMailError": {
       "title": "Mail server error",

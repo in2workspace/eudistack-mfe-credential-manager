@@ -33,7 +33,6 @@ describe('CredentialProcedureService', () => {
   const apiUrl = `${environment.server_url}${API_PATH.SAVE_CREDENTIAL}`;
   const proceduresURL = `${environment.server_url}${API_PATH.PROCEDURES}`;
   const credentialOfferUrl = `${environment.server_url}${API_PATH.CREDENTIAL_OFFER}`;
-  const revokeCredentialUrl = `${environment.server_url}${API_PATH.REVOKE}`;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -216,22 +215,6 @@ describe('CredentialProcedureService', () => {
     });
   });
 
-  //  it('should revoke credential successfully', () => {
-  //   const credentialId = '1234';
-  //   const listId = '1111';
-  //   const body = { credentialId, listId };
-
-  //   service.revokeCredential(credentialId, listId).subscribe(data => {
-  //     expect(data).toBeTruthy();
-  //   });
-
-  //   const req = httpMock.expectOne(`${revokeCredentialUrl}`);
-  //   expect(req.request.method).toBe('POST');
-  //   expect(req.request.body).toEqual(body);
-  //   req.flush({});
-  // });
-
-
   describe('Get credential offer by transaction code', () => {
   it('should get credential offer successfully', () => {
     const transactionCode = 'abc123';
@@ -405,76 +388,50 @@ describe('get credential offer by c-code', () => {
     });
   });
 
-  describe('handleRevocationError', () => {
-    it('should show notRevocable message on 409 without redirecting', () => {
-      const error = new HttpErrorResponse({ status: 409, error: {} });
-
-      service['handleRevocationError'](error).subscribe({
-        error: err => {
-          expect(translateSpy.instant).toHaveBeenCalledWith('error.revocation.notRevocable');
-          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.notRevocable');
-          expect(routerSpy.navigate).not.toHaveBeenCalled();
-          expect(err).toBe(error);
-        }
-      });
-    });
-
-    it('should show forbidden message on 403 without redirecting', () => {
-      const error = new HttpErrorResponse({ status: 403, error: {} });
-
-      service['handleRevocationError'](error).subscribe({
-        error: err => {
-          expect(translateSpy.instant).toHaveBeenCalledWith('error.revocation.forbidden');
-          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.forbidden');
-          expect(routerSpy.navigate).not.toHaveBeenCalled();
-          expect(err).toBe(error);
-        }
-      });
-    });
-
-    it('should not show a dialog for other statuses', () => {
-      const error = new HttpErrorResponse({ status: 500, error: {} });
-
-      service['handleRevocationError'](error).subscribe({
-        error: err => {
-          expect(dialogSpy.openErrorInfoDialog).not.toHaveBeenCalled();
-          expect(err).toBe(error);
-        }
-      });
-    });
-  });
-
   describe('revokeCredential', () => {
-    it('should show notRevocable dialog and propagate the error on 409', () => {
-      const issuanceId = 'issuance-1';
-      const error = new HttpErrorResponse({ status: 409, error: {} });
+    const issuanceId = '3f2b8c1e-0a52-4d0e-9b7a-0a1b2c3d4e5f';
 
-      service.revokeCredential(issuanceId).subscribe({
-        next: () => fail('Expected error'),
-        error: err => {
-          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.notRevocable');
-          expect(err).toBe(error);
-        }
-      });
+    it('posts the reason to the revocation route of the issuance and completes with the 204', () => {
+      let completed = false;
 
-      const req = httpMock.expectOne(revokeCredentialUrl);
-      req.flush({}, error);
+      service.revokeCredential(issuanceId, 'Holder left the organization').subscribe({ complete: () => (completed = true) });
+
+      const req = httpMock.expectOne(`${proceduresURL}/${issuanceId}/revocation`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ reason: 'Holder left the organization' });
+      req.flush(null, { status: 204, statusText: 'No Content' });
+      expect(completed).toBe(true);
     });
 
-    it('should show forbidden dialog and propagate the error on 403', () => {
-      const issuanceId = 'issuance-1';
-      const error = new HttpErrorResponse({ status: 403, error: {} });
+    it('encodes the identifier of the process in the route', () => {
+      service.revokeCredential('a/b c', 'reason').subscribe();
 
-      service.revokeCredential(issuanceId).subscribe({
-        next: () => fail('Expected error'),
-        error: err => {
-          expect(dialogSpy.openErrorInfoDialog).toHaveBeenCalledWith('error.revocation.forbidden');
-          expect(err).toBe(error);
-        }
-      });
+      const req = httpMock.expectOne(`${proceduresURL}/a%2Fb%20c/revocation`);
+      expect(req.request.method).toBe('POST');
+      req.flush(null, { status: 204, statusText: 'No Content' });
+    });
 
-      const req = httpMock.expectOne(revokeCredentialUrl);
-      req.flush({}, error);
+    it('does not use the retired status revoke route', () => {
+      service.revokeCredential(issuanceId, 'reason').subscribe();
+
+      const req = httpMock.expectOne(`${proceduresURL}/${issuanceId}/revocation`);
+      expect(req.request.url).not.toContain('/w3c/v1/credentials/status/revoke');
+      req.flush(null, { status: 204, statusText: 'No Content' });
+    });
+
+    it('propagates the problem untouched and opens no dialog, so the caller shows a single message', () => {
+      const problem = { type: 'already_revoked', status: 409 };
+      let received: HttpErrorResponse | undefined;
+
+      service.revokeCredential(issuanceId, 'reason').subscribe({ error: (err: HttpErrorResponse) => (received = err) });
+
+      httpMock.expectOne(`${proceduresURL}/${issuanceId}/revocation`)
+        .flush(problem, { status: 409, statusText: 'Conflict' });
+
+      expect(received?.status).toBe(409);
+      expect(received?.error).toEqual(problem);
+      expect(dialogSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+      expect(routerSpy.navigate).not.toHaveBeenCalled();
     });
   });
 

@@ -2,10 +2,16 @@ import { DialogComponent } from 'src/app/shared/components/dialog/dialog-compone
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, switchMap, from, EMPTY, Subject } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { Observable, switchMap, from, EMPTY, Subject, take, filter } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { DialogWrapperService } from 'src/app/shared/components/dialog/dialog-wrapper/dialog-wrapper.service';
 import { DialogData } from 'src/app/shared/components/dialog/dialog-data';
+import {
+  RevokeCredentialDialogComponent,
+  RevokeCredentialDialogData,
+  RevokeCredentialDialogResult
+} from '../components/revoke-credential-dialog/revoke-credential-dialog.component';
 
 /** Panel class of the confirmation and success dialogs below (see styles/ng-material/_dialog.scss). */
 const ACTION_DIALOG_STYLE = 'credential-action-dialog';
@@ -17,36 +23,47 @@ export class CredentialActionsService {
 
   /**
    * Emits once a revoke / withdraw / archive action has actually hit the
-   * backend and the user dismissed the success dialog. Consumers that stay mounted
-   * across the action — the credential-details drawer and the list behind it — use
-   * it to refresh; the details PAGE does not need it because the navigation below
-   * remounts the list.
+   * backend (for withdraw and archive, once the user dismissed the success dialog). Consumers that
+   * stay mounted across the action — the list behind the credential-details drawer — use
+   * it to refresh; withdraw and archive also navigate to the list, which remounts it.
    */
   public readonly actionCompleted$ = new Subject<void>();
 
+  /**
+   * Emits the issuance id once its revocation was accepted, or the API said it was already revoked.
+   * Unlike withdraw and archive, a revocation leaves the drawer open, so the one that shows that
+   * attestation reads its detail again to show it as Revoked.
+   */
+  public readonly credentialRevoked$ = new Subject<string>();
+
   private readonly credentialProcedureService = inject(CredentialProcedureService);
   private readonly dialog = inject(DialogWrapperService);
+  private readonly matDialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
 
   // REVOKE CREDENTIAL
 
   public openRevokeCredentialDialog(issuanceId: string): void {
-
-    const dialogData: DialogData = {
-      title: this.translate.instant("credentialDetails.revokeCredentialConfirm.title"),
-      message: this.translate.instant("credentialDetails.revokeCredentialConfirm.message"),
-      confirmationLabel: this.translate.instant("credentialDetails.revokeCredentialConfirm.confirm"),
-      style: ACTION_DIALOG_STYLE,
-      confirmationType: 'async',
-      status: 'default'
+    const data: RevokeCredentialDialogData = {
+      submit: (reason) => this.credentialProcedureService.revokeCredential(issuanceId, reason)
     };
 
-    const revokeCredentialAfterConfirm = (): Observable<boolean> => {
-      return this.revokeCredential(issuanceId);
-    }
-
-    this.dialog.openDialogWithCallback(DialogComponent, dialogData, revokeCredentialAfterConfirm);
+    this.matDialog
+      .open<RevokeCredentialDialogComponent, RevokeCredentialDialogData, RevokeCredentialDialogResult>(
+        RevokeCredentialDialogComponent,
+        { data, autoFocus: false, panelClass: ['dialog-custom', ACTION_DIALOG_STYLE] }
+      )
+      .afterClosed()
+      .pipe(
+        take(1),
+        filter((result): result is RevokeCredentialDialogResult => !!result)
+      )
+      .subscribe(result => {
+        this.credentialRevoked$.next(issuanceId);
+        this.actionCompleted$.next();
+        this.showRevocationResult(result);
+      });
   }
 
   // WITHDRAW CREDENTIAL
@@ -131,28 +148,18 @@ export class CredentialActionsService {
     return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
   }
 
-  private executeActionByCredentialProcedureId(
-    procedureId: string,
-    action: (procedureId: string) => Observable<void>,
-    titleKey: string,
-    messageKey: string
-  ): Observable<boolean> {
-    if(!procedureId){
-      console.error("Couldn't get credential list from credential.");
-      return EMPTY;
-    }
-
-    return this.executeCredentialBackendAction(procedureId, action, titleKey, messageKey);
-  }
-
-  private revokeCredential(issuanceId: string): Observable<boolean> {
-
-    return this.executeActionByCredentialProcedureId(
-      issuanceId,
-      (id) => this.credentialProcedureService.revokeCredential(id),
-      "credentialDetails.revokeCredentialSuccess.title",
-      "credentialDetails.revokeCredentialSuccess.message"
-    );
+  private showRevocationResult(result: RevokeCredentialDialogResult): void {
+    const messageKey = result === 'alreadyRevoked'
+      ? 'credentialDetails.revokeCredentialSuccess.alreadyRevoked'
+      : 'credentialDetails.revokeCredentialSuccess.message';
+    const dialogData: DialogData = {
+      title: this.translate.instant('credentialDetails.revokeCredentialSuccess.title'),
+      message: this.translate.instant(messageKey),
+      style: ACTION_DIALOG_STYLE,
+      confirmationType: 'none',
+      status: 'default'
+    };
+    this.dialog.openDialog(DialogComponent, dialogData);
   }
 
   private withdrawCredential(procedureId: string): Observable<boolean> {

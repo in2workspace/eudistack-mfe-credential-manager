@@ -378,6 +378,54 @@ it('should handle errors silently for IAM endpoint and rethrow error', done => {
     });
   });
 
+  // EUD-371: the revocation dialog shows its own message for every problem type of the API, so a generic
+  // dialog on top would put two windows in front of the operator.
+  describe('revocation endpoint', () => {
+    const issuanceId = '3f2b8c1e-0a52-4d0e-9b7a-0a1b2c3d4e5f';
+    const revocationUrl = `https://sandbox.eudistack.net/issuer${API_PATH.PROCEDURES}/${issuanceId}/revocation`;
+
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it.each([400, 401, 403, 404, 409, 429, 500, 503])('should rethrow a failed POST with status %s without a dialog', (status: number) => {
+      const httpErrorResponse = new HttpErrorResponse({ status, url: revocationUrl });
+      httpHandler.handle.mockReturnValue(throwError(() => httpErrorResponse));
+
+      let seen: HttpErrorResponse | undefined;
+      interceptor.intercept({ url: revocationUrl, method: 'POST' } as HttpRequest<any>, httpHandler).subscribe({
+        next: () => fail('expected an error, not a response'),
+        error: (err: HttpErrorResponse) => (seen = err),
+      });
+
+      expect(seen?.status).toBe(status);
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it('should recognise the route by a relative URL', () => {
+      const relativeUrl = `${API_PATH.PROCEDURES}/${issuanceId}/revocation`;
+      httpHandler.handle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+
+      interceptor.intercept({ url: relativeUrl, method: 'POST' } as HttpRequest<any>, httpHandler).subscribe({ error: () => undefined });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['a GET of the same path', `${revocationUrl}`, 'GET'],
+      ['the detail of the issuance', `https://sandbox.eudistack.net/issuer${API_PATH.PROCEDURES}/${issuanceId}`, 'POST'],
+      ['a deeper path ending in revocation', `${revocationUrl}/extra`, 'POST'],
+      ['another action of the issuance', `https://sandbox.eudistack.net/issuer${API_PATH.PROCEDURES}/${issuanceId}/archive`, 'POST'],
+    ])('should still show the dialog for %s', (_label: string, url: string, method: string) => {
+      httpHandler.handle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500, url })));
+      translateServiceSpy.instant.mockReturnValue('error.internal_server');
+
+      interceptor.intercept({ url, method } as HttpRequest<any>, httpHandler).subscribe({ error: () => undefined });
+
+      expect(dialogServiceSpy.openErrorInfoDialog).toHaveBeenCalledWith(DialogComponent, 'error.internal_server');
+    });
+  });
+
   // The credential offer refresh screen renders its own outcome (generic error or a
   // functional one such as credential_offer_gone), so no
   // global dialog may cover it.

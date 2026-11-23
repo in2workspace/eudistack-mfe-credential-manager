@@ -92,7 +92,6 @@ describe('CredentialDetailsDrawerComponent', () => {
       sideViewModel$: sideModel$,
       showSideTemplateCard$: showSide$,
       showRevokeCredentialButton$: showRevoke$,
-      enableRevokeCredentialButton$: signal(true),
       showWithdrawCredentialButton$: showWithdraw$,
       showArchiveCredentialButton$: showArchive$,
       setProcedureId: jest.fn(),
@@ -367,6 +366,15 @@ describe('CredentialDetailsDrawerComponent', () => {
     button.click();
 
     expect(detailsService[method]).toHaveBeenCalled();
+  });
+
+  it('offers Revoke enabled, with nothing wrapped around it: the Issuer decides what can be revoked', async () => {
+    showRevoke$.set(true);
+    await createComponent();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('#drawer-revoke');
+    expect(button.disabled).toBe(false);
+    expect(button.parentElement?.classList.contains('drawer__footer')).toBe(true);
   });
 
   it('does not offer a credential-status check — that action is wallet-only', async () => {

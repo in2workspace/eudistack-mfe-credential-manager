@@ -190,15 +190,26 @@
     "revoke": "revocar",
     "withdraw": "retirar",
     "archive": "archivar",
-    "revokeTooltip": "Esta credencial no puede ser revocada porque es de tipo legacy. Para consultar cómo revocar este tipo de credencial, consulte nuestra <a href='{{url}}' style='color: white; font-weight:700' target='_blank' rel='noopener noreferrer'>guía</a>.",
-    "revokeCredentialConfirm": {
-      "title": "¿Revocar credencial?",
-      "message": "Esta acción no se puede deshacer.",
-      "confirm": "Sí, revocar"
+    "revokeDialog": {
+      "title": "Revocar atestación",
+      "warning": "Esta acción no se puede deshacer.",
+      "reasonLabel": "Motivo de la revocación",
+      "remaining": "{{count}} caracteres restantes",
+      "internalNote": "El motivo es interno: queda registrado y no se comunica al titular.",
+      "confirm": "Revocar"
     },
     "revokeCredentialSuccess": {
-      "title": "Credencial revocada",
-      "message": "La credencial ha quedado revocada."
+      "title": "Atestación revocada",
+      "message": "La atestación ha quedado revocada.",
+      "alreadyRevoked": "Esta atestación ya estaba revocada. El detalle se actualiza."
+    },
+    "revokeError": {
+      "notRevocable": "Esta atestación no se puede revocar en su estado actual.",
+      "forbidden": "No puedes revocar esta atestación.",
+      "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
+      "badRequest": "Revisa el motivo: es obligatorio y admite hasta 280 caracteres.",
+      "retryLater": "No se ha podido revocar ahora. Inténtalo de nuevo en unos minutos.",
+      "generic": "No se ha podido revocar la atestación. No se ha cambiado nada."
     },
     "withdrawCredentialConfirm": {
       "title": "¿Retirar credencial?",
@@ -515,10 +526,6 @@
       "unexpected": "Se produjo un error inesperado. Inténtalo de nuevo más tarde o contacta con el Representante Legal de tu empresa para obtener una nueva credencial.",
       "not-found": "Esta oferta de credencial no es válida. Puede que ya se haya descargado, haya caducado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico. Si ha caducado o no puedes encontrar una válida, contacta con el Representante Legal de tu empresa para solicitar una nueva.",
       "conflict": "La oferta de credencial no es válida. Puede que ya se haya descargado o haya sido reemplazada por una nueva. Si has recibido una nueva oferta, revisa tu correo electrónico."
-    },
-    "revocation": {
-      "notRevocable": "Esta credencial ya está revocada o ha expirado y no puede revocarse de nuevo.",
-      "forbidden": "No tienes permiso para revocar esta credencial."
     },
     "serverMailError": {
       "title": "Error del Servidor de Correo",

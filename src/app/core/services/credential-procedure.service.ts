@@ -13,7 +13,6 @@ import { Router } from "@angular/router";
 import { IssuanceLEARCredentialRequestDto, IssuanceResponseDto } from '../models/dto/lear-credential-issuance-request.dto';
 import { LEARCredentialDataNormalizer } from 'src/app/features/credential-details/utils/lear-credential-data-normalizer';
 import { API_PATH } from '../constants/api-paths.constants';
-import { CredentialRevokeRequestDto } from '../models/dto/credential-revoke-request.dto';
 import { CredentialProcedureDetailsResponse } from '../models/dto/credential-procedure-details-response';
 import { TenantService } from './tenant.service';
 
@@ -32,7 +31,6 @@ export class CredentialProcedureService {
   private get organizationProcedures() { return `${this.tenantService.serverUrl}${API_PATH.PROCEDURES}`; }
   private get saveCredential() { return `${this.tenantService.serverUrl}${API_PATH.SAVE_CREDENTIAL}`; }
   private get credentialOfferUrl() { return `${this.tenantService.serverUrl}${API_PATH.CREDENTIAL_OFFER}`; }
-  private get revokeCredentialUrl() { return `${this.tenantService.serverUrl}${API_PATH.REVOKE}`; }
 
   public fetchCredentialProcedures(): Observable<CredentialProceduresResponse> {
     return this.http.get<CredentialProceduresResponse>(this.organizationProcedures).pipe(
@@ -77,12 +75,9 @@ export class CredentialProcedureService {
     );
   }
 
-  public revokeCredential(issuanceId: string): Observable<void>{
-    const body: CredentialRevokeRequestDto = { issuanceId };
-    return this.http.post<void>(this.revokeCredentialUrl, body).pipe(
-      catchError(this.handleError),
-      catchError(this.handleRevocationError)
-    );
+  // The errors reach the caller untouched: the revocation dialog translates the problem `type` itself.
+  public revokeCredential(issuanceId: string, reason: string): Observable<void> {
+    return this.http.post<void>(`${this.organizationProcedures}/${encodeURIComponent(issuanceId)}/revocation`, { reason });
   }
 
   public withdrawCredential(procedureId: string): Observable<void> {
@@ -172,21 +167,6 @@ export class CredentialProcedureService {
     setTimeout(()=>{
       this.router.navigate(['/home']);
     }, 0);
-
-    return throwError(() => error);
-  };
-
-  // 409: credential not in a revocable status (already revoked/expired). 403: out of scope
-  // or missing capability. Per AC-07/AC-08 the operator stays on the current view — no
-  // redirect — so the reason for the denial remains visible.
-  private readonly handleRevocationError = (error: HttpErrorResponse): Observable<never> => {
-    const errorStatus = error?.status ?? error?.error?.status ?? 0;
-
-    if (errorStatus === 409) {
-      this.dialog.openErrorInfoDialog(DialogComponent, this.translate.instant('error.revocation.notRevocable'));
-    } else if (errorStatus === 403) {
-      this.dialog.openErrorInfoDialog(DialogComponent, this.translate.instant('error.revocation.forbidden'));
-    }
 
     return throwError(() => error);
   };

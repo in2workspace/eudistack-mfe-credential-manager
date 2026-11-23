@@ -6,16 +6,13 @@ import { MatIcon } from '@angular/material/icon';
 import { PortalModule } from '@angular/cdk/portal';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
-import { CustomTooltipDirective } from 'src/app/shared/directives/custom-tooltip.directive';
 import { AddPrefixPipe } from 'src/app/shared/pipes/add-prefix.pipe';
 import { CapitalizePipe } from 'src/app/shared/pipes/capitalize.pipe';
 import { LocalizedDatePipe } from 'src/app/shared/pipes/localized-date.pipe';
 import { LoaderService } from 'src/app/shared/services/loader.service';
-import { KNOWLEDGEBASE_PATH } from 'src/app/core/constants/knowledge.constants';
 import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import { EvaluatedExtendedDetailsField } from 'src/app/core/models/entity/lear-credential-details';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { ThemeService } from 'src/app/core/services/theme.service';
 import { CredentialDetailsService, CredentialFormatDisplay } from '../services/credential-details.service';
 
 export interface CredentialDetailsDrawerData {
@@ -32,7 +29,6 @@ export interface CredentialDetailsDrawerData {
     CapitalizePipe,
     AsyncPipe,
     DatePipe,
-    CustomTooltipDirective,
     LocalizedDatePipe,
     MatButton,
     MatIcon,
@@ -61,14 +57,10 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   public readonly mainViewModel$: WritableSignal<EvaluatedExtendedDetailsField[] | undefined>;
 
   public readonly showRevokeCredentialButton$: Signal<boolean>;
-  public readonly enableRevokeCredentialButton$: Signal<boolean>;
   public readonly showWithdrawCredentialButton$: Signal<boolean>;
   public readonly showArchiveCredentialButton$: Signal<boolean>;
 
   public readonly isLoading$: Observable<boolean>;
-
-  public readonly tooltipText = 'credentialDetails.revokeTooltip';
-  public readonly knowledgeBaseUrl: string;
 
   public readonly revokedAt$: Signal<string | undefined>;
   public readonly missingCredential$: Signal<boolean>;
@@ -76,13 +68,11 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   private readonly data = inject<CredentialDetailsDrawerData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<CredentialDetailsDrawerComponent>>(MatDialogRef);
   private readonly detailsService = inject(CredentialDetailsService);
-  private readonly themeService = inject(ThemeService);
   private readonly injector = inject(Injector);
   private readonly loader = inject(LoaderService);
 
   public constructor() {
     this.isLoading$ = this.loader.isLoading$;
-    this.knowledgeBaseUrl =this.themeService.knowledgeBaseUrl + KNOWLEDGEBASE_PATH.ISSUER + KNOWLEDGEBASE_PATH.ISSUER_REVOKATION;
     this.credentialValidFrom$ = this.detailsService.credentialValidFrom$;
     this.credentialValidUntil$ = this.detailsService.credentialValidUntil$;
     this.credentialDisplayName$ = this.detailsService.credentialDisplayName$;
@@ -94,7 +84,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
     this.credentialFormat$ = this.detailsService.credentialFormat$;
     this.mainViewModel$ = this.detailsService.mainViewModel$;
     this.showRevokeCredentialButton$ = this.detailsService.showRevokeCredentialButton$;
-    this.enableRevokeCredentialButton$ = this.detailsService.enableRevokeCredentialButton$;
     this.showWithdrawCredentialButton$ = this.detailsService.showWithdrawCredentialButton$;
     this.showArchiveCredentialButton$ = this.detailsService.showArchiveCredentialButton$;
 
