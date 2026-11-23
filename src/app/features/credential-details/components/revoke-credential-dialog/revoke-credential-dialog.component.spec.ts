@@ -50,7 +50,7 @@ describe('RevokeCredentialDialogComponent', () => {
   }
 
   beforeEach(() => {
-    submit = jest.fn(() => of(undefined as void));
+    submit = jest.fn((_reason: string) => of(undefined as void));
   });
 
   afterEach(() => TestBed.resetTestingModule());

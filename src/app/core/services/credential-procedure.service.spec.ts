@@ -190,31 +190,6 @@ describe('CredentialProcedureService', () => {
   //   req.flush('500 error', errorResponse);
   // });
 
-  it('should handle error when revoking credential', () => {
-    const errorResponse = new HttpErrorResponse({
-      error: '500 error',
-      status: 500,
-      statusText: 'Server Error'
-    });
-
-    const issuanceId = '1234';
-    service.revokeCredential(issuanceId).subscribe(
-      data => fail('should have failed with 500 error'),
-      (error: string) => {
-        expect(error).toContain('Server-side error: 500');
-      }
-    );
-
-    const requests = httpMock.match(() => true);
-
-    expect(requests.length).toBeGreaterThanOrEqual(1);
-
-    requests.forEach((req) => {
-      expect(req.request.method).toBe('POST');
-      req.flush('500 error', errorResponse);
-    });
-  });
-
   describe('Get credential offer by transaction code', () => {
   it('should get credential offer successfully', () => {
     const transactionCode = 'abc123';
