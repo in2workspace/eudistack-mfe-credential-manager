@@ -12,7 +12,7 @@ import { HolderKeyGenerationError } from 'src/app/core/models/entity/holder-key-
  * pair it produces and routes each to its own destination (AD-6's "un paso, tres consumidores") --
  * `did:key` travels back to the caller as part of a `HolderBinding` for `mandatee.id`, the public
  * JWK is written to `HolderKeyStoreService` (unchanged mechanism from EUD-168, only its writer
- * changes) for `holder_key.jwk`, and the private half is sealed into `HolderPrivateKeyStore` under
+ * changes) for `holder_key`, and the private half is sealed into `HolderPrivateKeyStore` under
  * (`credentialConfigurationId`, `submissionId`). Clears `KeyGeneratorService`'s own state in the
  * same tick regardless of outcome (hardens `NFR-S-EUD168-04(a)`, AD-6 cleanup point 5), and on
  * failure leaves a diagnostic trace for engineering only, before throwing a typed error the generic

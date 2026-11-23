@@ -47,7 +47,8 @@ export function buildOidcConfig(tenant: string, serverUrl: string, iamUrl: strin
     // callback — which used to surface as a silent redirect to /home. The OIDC
     // replay-window check stays ON: `disableIatOffsetValidation` is unset.
     maxIdTokenIatOffsetAllowedInSeconds: environment.max_id_token_iat_offset_seconds,
-    // The audit API (EUD-293) accepts the session token, so it is a secure route too.
-    secureRoutes: [serverUrl || '/', auditUrl].filter((r): r is string => !!r),
+    // The audit API (EUD-293) accepts the session token, so it is a secure route too. Routes match by prefix:
+    // the trailing slash keeps a path that merely starts with /audit (/audit-foo) from receiving the token.
+    secureRoutes: [serverUrl || '/', auditUrl && `${auditUrl}/`].filter((r): r is string => !!r),
   };
 }

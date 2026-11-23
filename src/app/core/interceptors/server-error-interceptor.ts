@@ -73,7 +73,7 @@ export class ServeErrorInterceptor implements HttpInterceptor {
         // The audit section (EUD-293) renders its own message for every error the API answers,
         // rate limiting included, so a dialog on top would hide it.
         if (this.isAuditEndpoint(request.url)) {
-          this.logHandledSilentlyError(error);
+          this.logAuditError(error);
           return throwError(() => error);
         }
         let errorMessage: string;
@@ -143,6 +143,15 @@ export class ServeErrorInterceptor implements HttpInterceptor {
       default:
         return 'error.unknown_error';
     }
+  }
+
+  /**
+   * The audit API's errors can carry the tenant, the organization or the actor, and the request its period and
+   * its cursor, so only the status and the problem type reach the console.
+   */
+  private logAuditError(error: HttpErrorResponse): void {
+    const type: unknown = error.error?.type;
+    console.error('Handled silently (audit API):', error.status, typeof type === 'string' ? type : undefined);
   }
 
   private logHandledSilentlyError(error: Error): void{

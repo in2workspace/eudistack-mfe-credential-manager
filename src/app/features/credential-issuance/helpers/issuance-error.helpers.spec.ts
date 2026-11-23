@@ -1,4 +1,4 @@
-import { LEAR_ISSUANCE_POLICY_REASONS, resolveIssuanceBusinessError, toMandatorOrganizationId } from './issuance-error.helpers';
+import { ISSUANCE_REJECTION_TYPES, LEAR_ISSUANCE_POLICY_REASONS, resolveIssuanceBusinessError, toMandatorOrganizationId } from './issuance-error.helpers';
 
 // Jest resolves JSON modules natively; the spec tsconfig has no node typings nor resolveJsonModule.
 declare const require: (id: string) => any;
@@ -53,6 +53,34 @@ describe('issuance-error.helpers', () => {
       expect(resolveIssuanceBusinessError({ status: 400, error: { type: 'payload_validation_error', violations: [{ field: '$' }] } })).toBeNull();
       expect(resolveIssuanceBusinessError({ status: 400, error: { type: 'invalid_request' } })).toBeNull();
     });
+
+    it.each(['unsupported_credential_type', 'unknown_organization'])('resolves a 400 %s as a rejection (EUD-268)', type => {
+      expect(resolveIssuanceBusinessError({ status: 400, error: { type, detail: 'x' } })).toEqual({ kind: 'rejection', type });
+    });
+
+    it('no longer resolves the retired 403 credential_type_not_enabled reason (EUD-268: now a 400)', () => {
+      const error = { status: 403, error: { type: 'insufficient_permission', reason: 'credential_type_not_enabled' } };
+
+      expect(resolveIssuanceBusinessError(error)).toBeNull();
+    });
+
+    it.each(['signing_failed', 'status_list_unavailable', 'wallet_delivery_timeout'])(
+      'resolves a 503 %s as a retryable delivery failure', type => {
+        expect(resolveIssuanceBusinessError({ status: 503, error: { type } })).toEqual({ kind: 'delivery', retryable: true });
+      });
+
+    it.each(['delivery_failed', 'persistence_failed'])('resolves a 500 %s as a final delivery failure', type => {
+      expect(resolveIssuanceBusinessError({ status: 500, error: { type } })).toEqual({ kind: 'delivery', retryable: false });
+    });
+
+    it.each([
+      ['a rejection type on another status', { status: 403, error: { type: 'unknown_organization' } }],
+      ['a retryable delivery type on a 500', { status: 500, error: { type: 'signing_failed' } }],
+      ['a final delivery type on a 503', { status: 503, error: { type: 'delivery_failed' } }],
+      ['a 503 with no known type', { status: 503, error: { type: 'service_unavailable' } }],
+    ])('falls back to the generic message for %s', (_label, error) => {
+      expect(resolveIssuanceBusinessError(error)).toBeNull();
+    });
   });
 
   describe('LEAR_ISSUANCE_POLICY_REASONS', () => {
@@ -62,7 +90,6 @@ describe('issuance-error.helpers', () => {
         'authorization_rule_missing',
         'certification_delegation_requires_tenant_admin',
         'certification_power_required',
-        'credential_type_not_enabled',
         'foreign_domain_delegation_requires_platform_admin',
         'on_behalf_requires_tenant_admin',
         'onboarding_delegation_requires_tenant_admin',
@@ -79,6 +106,17 @@ describe('issuance-error.helpers', () => {
       for (const reason of LEAR_ISSUANCE_POLICY_REASONS) {
         expect(reasons[reason]).toEqual(expect.any(String));
       }
+      expect(reasons['credential_type_not_enabled']).toBeUndefined();
+    });
+
+    it.each(['en', 'es', 'ca'])('has a %s translation for every rejection and delivery outcome', lang => {
+      const dialog = require(`../../../../assets/i18n/${lang}.json`).credentialIssuance['create-error-dialog'];
+
+      for (const type of ISSUANCE_REJECTION_TYPES) {
+        expect(dialog.rejections[type]).toEqual(expect.any(String));
+      }
+      expect(dialog.delivery.retryable).toEqual(expect.any(String));
+      expect(dialog.delivery.final).toEqual(expect.any(String));
     });
   });
 

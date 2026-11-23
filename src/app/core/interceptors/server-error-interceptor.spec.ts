@@ -67,6 +67,29 @@ describe('ServeErrorInterceptor', () => {
       });
     });
 
+    it('logs only the status and the type of the error, not the request or the body', done => {
+      const request = { url: 'https://sandbox.dev.eudistack.net/audit/api/v1/events?cursor=signed-secret', method: 'GET' } as HttpRequest<unknown>;
+      const error = new HttpErrorResponse({
+        status: 403,
+        url: request.url,
+        error: { type: 'forbidden', detail: 'tenant sandbox, organization VATES-B00000000, actor jane@example.com' },
+      });
+      httpHandler.handle.mockReturnValue(throwError(() => error));
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      interceptor.intercept(request, httpHandler).subscribe({
+        error: () => {
+          const logged = JSON.stringify(consoleError.mock.calls);
+          expect(logged).toContain('403');
+          expect(logged).toContain('forbidden');
+          expect(logged).not.toContain('signed-secret');
+          expect(logged).not.toContain('VATES-B00000000');
+          expect(logged).not.toContain('jane@example.com');
+          done();
+        }
+      });
+    });
+
     it('also recognises the audit API by a relative URL', done => {
       const request = { url: '/audit/api/v1/events', method: 'GET' } as HttpRequest<unknown>;
       httpHandler.handle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
