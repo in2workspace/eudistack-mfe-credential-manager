@@ -334,63 +334,23 @@ describe('CredentialDetailsService', () => {
     });
 
       describe('revoke credential validation', () => {
-        it('showRevokeCredentialButton$() returns true for VALID and BitstringStatusListEntry', () => {
+        // dc+sd-jwt credentials carry an IETF Token Status List, and for a legacy status list (PlainListEntity)
+        // the Issuer answers `not_revocable`: it decides what can be revoked, so the button shows for all of them.
+        it.each([
+          ['BitstringStatusListEntry', { type: 'BitstringStatusListEntry' }],
+          ['TokenStatusListEntry', { type: 'TokenStatusListEntry' }],
+          ['PlainListEntity', { type: 'PlainListEntity' }],
+          ['no credential status', undefined],
+        ])('showRevokeCredentialButton$() returns true for VALID and %s', (_label: string, credentialStatus: object | undefined) => {
           service.credentialProcedureDetails$.set({
             lifeCycleStatus: 'VALID',
             credential: {
               vc: {
                 validFrom: '',
                 validUntil: '',
-                credentialStatus: {
-                  type: 'BitstringStatusListEntry',
-                },
+                credentialStatus,
               },
             },
-          } as any);
-
-          expect(service.showRevokeCredentialButton$()).toBe(true);
-        });
-
-        // dc+sd-jwt credentials carry an IETF Token Status List; the button must show for them.
-        it('showRevokeCredentialButton$() returns true for VALID and TokenStatusListEntry', () => {
-          service.credentialProcedureDetails$.set({
-            lifeCycleStatus: 'VALID',
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'TokenStatusListEntry',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.showRevokeCredentialButton$()).toBe(true);
-        });
-
-        // The Issuer decides what can be revoked: for a legacy status list it answers `not_revocable`.
-        it('showRevokeCredentialButton$() returns true for VALID and PlainListEntity', () => {
-          service.credentialProcedureDetails$.set({
-            lifeCycleStatus: 'VALID',
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'PlainListEntity',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.showRevokeCredentialButton$()).toBe(true);
-        });
-
-        it('showRevokeCredentialButton$() returns true for VALID when the credential carries no status', () => {
-          service.credentialProcedureDetails$.set({
-            lifeCycleStatus: 'VALID',
-            credential: { vc: { validFrom: '', validUntil: '' } },
           } as any);
 
           expect(service.showRevokeCredentialButton$()).toBe(true);

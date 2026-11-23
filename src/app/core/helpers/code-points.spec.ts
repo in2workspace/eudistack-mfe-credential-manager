@@ -15,7 +15,7 @@ describe('code points', () => {
     });
 
     it('differs from the UTF-16 length exactly where the Issuer would not count two', () => {
-      expect(EMOJI.length).toBe(2);
+      expect(EMOJI).toHaveLength(2);
       expect(countCodePoints(EMOJI)).toBe(1);
     });
   });
