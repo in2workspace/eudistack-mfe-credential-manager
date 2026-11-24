@@ -684,7 +684,7 @@
     "description": "Audit events of your scope, from the most recent to the oldest.",
     "consult": "Search",
     "login": "Sign in",
-    "next-page": "Next page",
+    "next-page": "Show more results",
     "empty": "There are no events in this period.",
     "change-period": "Change period",
     "footer": "Your queries are recorded.",

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.1] - 2026-11-24
+
+### Changed
+- **EUD-293 — audit listing button**: the button that adds the older events now reads "Mostrar más resultados" / "Show more results" instead of "Página siguiente" / "Next page", since it adds rows to the ones on screen and does not replace them with another page. Only the texts change.
+
 ## [3.11.0] - 2026-11-19
 
 ### Added
