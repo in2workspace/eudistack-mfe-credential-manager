@@ -115,6 +115,24 @@ describe('ThemeService', () => {
     });
   });
 
+  describe('accent (EC-03, EC-04)', () => {
+    it('publishes the secondary as accent when the primary is near white', async () => {
+      await loadWith(CGCOM_THEME);
+
+      expect(rootStyle().getPropertyValue('--brand-accent')).toBe('#F9B000');
+      expect(rootStyle().getPropertyValue('--brand-accent-contrast')).toBe('#46484C');
+    });
+
+    it('publishes the EUDIStack primary as accent with the EUDIStack theme', async () => {
+      tenant = '';
+
+      await service.load();
+
+      expect(rootStyle().getPropertyValue('--brand-accent')).toBe('#0F2B5B');
+      expect(rootStyle().getPropertyValue('--brand-accent-contrast')).toBe('#ffffff');
+    });
+  });
+
   describe('language (AC-04)', () => {
     it('offers the tenant languages and defaults to the tenant default', async () => {
       await loadWith(CGCOM_THEME);

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 import { Theme } from '../models/theme.model';
+import { deriveAccent } from '../theme/brand-colors';
 import { defaultTheme } from '../theme/default-theme';
 import { resolveTenantTheme } from '../theme/resolve-tenant-theme';
 import { TenantService } from './tenant.service';
@@ -142,6 +143,11 @@ export class ThemeService {
     root.setProperty('--primary-contrast-color', theme.branding.primaryContrastColor);
     root.setProperty('--secondary-color', theme.branding.secondaryColor);
     root.setProperty('--secondary-contrast-color', theme.branding.secondaryContrastColor);
+
+    // Brand color inside the content (EUD-341): the primary can be a near-white header surface.
+    const { accent, accentContrast } = deriveAccent(theme.branding);
+    root.setProperty('--brand-accent', accent);
+    root.setProperty('--brand-accent-contrast', accentContrast);
 
     const rgb = this.hexToRgb(theme.branding.primaryColor);
     if (rgb) {
