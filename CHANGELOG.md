@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.12.0] - 2026-11-25
 
 ### Added
 - **EUD-341 — The portal wears the tenant's brand**: the theme is loaded from `/assets/tenants/{tenant}/theme.json` of the shared platform assets, like the Login, the Wallet and the issuance portal, with the tenant `TenantService` already resolves. The paths `assets/tenant/...` of the logo, the dark logo and the favicon point to the tenant's folder. Title, favicon, colours and languages are the tenant's; the revocation help link stays EUDIStack's.
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **EUD-293 — the session token reaches the audit API**: `<page origin>/audit/` is a secure route, with the trailing slash so a path that merely starts with `/audit` gets no token (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`), and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself; it logs only their status and problem type to the console. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
 - Needs `eudistack-core-audit` 0.2.0 (descending order, system administrator from a tenant host, audience of the portal's client) and `AUDIT_SECURITY_AUDIENCE` in the IaC: deploy the API first, then the IaC, then this portal.
-## [Unreleased]
+## [3.12.0] - 2026-11-25
 
 ## [3.10.1] - 2026-11-18
 
