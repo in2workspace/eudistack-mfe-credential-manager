@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **EUD-293 — the session token reaches the audit API**: `<page origin>/audit/` is a secure route, with the trailing slash so a path that merely starts with `/audit` gets no token (`buildOidcConfig` takes the audit URL, `TenantService.auditUrl`), and `ServeErrorInterceptor` opens no dialog for `/audit/...`, whose errors the section shows itself; it logs only their status and problem type to the console. `AuthService.canAccessAudit()` reads the powers of the ID token and gates the menu entry and the route guard.
 - Needs `eudistack-core-audit` 0.2.0 (descending order, system administrator from a tenant host, audience of the portal's client) and `AUDIT_SECURITY_AUDIENCE` in the IaC: deploy the API first, then the IaC, then this portal.
-## [3.12.0] - 2026-11-25
+## [Unreleased]
 
 ## [3.10.1] - 2026-11-18
 

@@ -70,7 +70,7 @@ function languages(value: unknown): Theme['i18n'] | null {
  * without invalidating the rest.
  *
  * `content` always stays EUDIStack's: the portal takes only the brand and the languages
- * from the tenant (EUD-341, decision P-6 pending with the order's author). Today that
+ * from the tenant (EUD-341, decision P-6). That
  * keeps the revocation help link on the EUDIStack knowledge base.
  */
 export function resolveTenantTheme(descriptor: unknown, tenant: string): Theme {

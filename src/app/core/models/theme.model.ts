@@ -6,7 +6,7 @@ export interface Theme {
     secondaryColor: string;
     secondaryContrastColor: string;
     logoUrl: string | null;
-    /** Logo for a white background. Not shown by this portal today; kept so the paths match the other interfaces. */
+    /** Rewritten like the other images so the paths match the other interfaces; this portal does not show it (EUD-341, P-7). */
     logoDarkUrl: string | null;
     faviconUrl: string | null;
   };
