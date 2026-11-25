@@ -40,6 +40,7 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--status-error':         '#DC2626',
   '--status-info':          '#2563EB',
   '--status-neutral':       '#6B7280',
+  '--status-contrast':      '#FFFFFF',
 
   '--radius-sm':            '4px',
   '--radius-md':            '8px',
@@ -49,6 +50,8 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--shadow-sm':            '0 1px 2px rgba(0,0,0,0.05)',
   '--shadow-md':            '0 4px 6px rgba(0,0,0,0.07)',
   '--shadow-lg':            '0 10px 15px rgba(0,0,0,0.1)',
+  '--shadow-glow':          '0 0 8px 0 #2D58A71A',
+  '--shadow-bar-top':       '0 -2px 12px 0 #00000026',
 };
 
 /**
