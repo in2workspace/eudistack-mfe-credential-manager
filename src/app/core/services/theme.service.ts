@@ -28,9 +28,6 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--border-default':       '#D1D5DB',
   '--border-strong':        '#9CA3AF',
 
-  '--action-primary':       '#2563EB',
-  '--action-primary-hover': '#1D4ED8',
-  '--action-primary-contrast': '#FFFFFF',
   '--action-secondary':     '#F3F4F6',
   '--action-secondary-hover': '#E5E7EB',
   '--action-secondary-text': '#374151',
@@ -53,16 +50,6 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--shadow-glow':          '0 0 8px 0 #2D58A71A',
   '--shadow-bar-top':       '0 -2px 12px 0 #00000026',
 };
-
-/**
- * Hue range considered "safe" for action buttons (blue–indigo–violet).
- * The color must also have enough lightness to stand out on white backgrounds.
- * If checks fail, we keep the neutral default (#2563EB).
- */
-const SAFE_HUE_MIN = 200;
-const SAFE_HUE_MAX = 280;
-const SAFE_LIGHTNESS_MIN = 0.35;
-const SAFE_LIGHTNESS_MAX = 0.65;
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -148,9 +135,10 @@ export class ThemeService {
     root.setProperty('--secondary-contrast-color', theme.branding.secondaryContrastColor);
 
     // Brand color inside the content (EUD-341): the primary can be a near-white header surface.
-    const { accent, accentContrast } = deriveAccent(theme.branding);
+    const { accent, accentContrast, accentOnWhite } = deriveAccent(theme.branding);
     root.setProperty('--brand-accent', accent);
     root.setProperty('--brand-accent-contrast', accentContrast);
+    root.setProperty('--brand-accent-on-white', accentOnWhite);
 
     const rgb = this.hexToRgb(theme.branding.primaryColor);
     if (rgb) {
@@ -162,11 +150,10 @@ export class ThemeService {
       root.setProperty(prop, value);
     }
 
-    // Smart action-primary: use tenant color only if its hue is "safe" (blue range)
-    if (this.isSafeHue(theme.branding.primaryColor)) {
-      root.setProperty('--action-primary', theme.branding.primaryColor);
-      root.setProperty('--action-primary-contrast', theme.branding.primaryContrastColor);
-    }
+    // Action color = the brand accent (EUD-341, P-1): one criterion for every button.
+    root.setProperty('--action-primary', accent);
+    root.setProperty('--action-primary-contrast', accentContrast);
+    root.setProperty('--action-primary-hover', `color-mix(in srgb, ${accent} 85%, black)`);
 
     // Compute RGB channels for status colors (useful for rgba() variants)
     for (const status of ['success', 'warning', 'error', 'info', 'neutral']) {
@@ -177,9 +164,7 @@ export class ThemeService {
       }
     }
 
-    // Compute RGB channels for action-primary
-    const actionHex = root.getPropertyValue('--action-primary').trim();
-    const actionRgb = this.hexToRgb(actionHex);
+    const actionRgb = this.hexToRgb(accent);
     if (actionRgb) {
       root.setProperty('--action-primary-rgb', `${actionRgb.r} ${actionRgb.g} ${actionRgb.b}`);
     }
@@ -191,39 +176,6 @@ export class ThemeService {
     if (theme.branding.faviconUrl) {
       this.setFavicon(theme.branding.faviconUrl);
     }
-  }
-
-  /**
-   * Returns true if the hex color is suitable as an action button color:
-   * - Hue falls in the blue–indigo–violet range [200–280]
-   * - Lightness is between 35–65% (not too dark, not too washed out)
-   */
-  private isSafeHue(hex: string): boolean {
-    const rgb = this.hexToRgb(hex);
-    if (!rgb) return false;
-
-    const r = rgb.r / 255;
-    const g = rgb.g / 255;
-    const b = rgb.b / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const d = max - min;
-
-    if (d === 0) return false; // achromatic — not safe
-
-    let h = 0;
-    switch (max) {
-      case r: h = ((g - b) / d) % 6; break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4; break;
-    }
-    h *= 60;
-    if (h < 0) h += 360;
-
-    const l = (max + min) / 2;
-
-    return h >= SAFE_HUE_MIN && h <= SAFE_HUE_MAX
-        && l >= SAFE_LIGHTNESS_MIN && l <= SAFE_LIGHTNESS_MAX;
   }
 
   private setFavicon(url: string): void {

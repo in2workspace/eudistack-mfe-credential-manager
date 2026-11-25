@@ -28,8 +28,8 @@
     }
 
     button.primary {
-      background-color: var(--primary-color);
-      color: var(--primary-contrast-color, #fff);
+      background-color: var(--action-primary);
+      color: var(--action-primary-contrast);
       border: none;
       border-radius: var(--radius-md, 8px);
       padding: 12px 24px;

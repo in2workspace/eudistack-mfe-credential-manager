@@ -7,11 +7,25 @@ import { Theme } from '../models/theme.model';
  */
 export const NEAR_WHITE_LUMINANCE = 0.9;
 
+/**
+ * Minimum contrast against white for the accent to be used on its own on the white content
+ * (WCAG 2.x 1.4.11, non-text: selected controls, focus, icons).
+ */
+export const ON_WHITE_MIN_CONTRAST = 3;
+
+const WHITE = '#ffffff';
+
 export interface AccentColors {
   /** Color of the brand inside the content: buttons, selected controls. */
   accent: string;
   /** Text and icons on top of {@link accent}. */
   accentContrast: string;
+  /**
+   * The accent when it shows on white; otherwise its contrast color, which is dark when the
+   * theme gives every color a contrast of 4.5:1 (EUD-353). Selected controls, focus, icons
+   * and accent text on the white content.
+   */
+  accentOnWhite: string;
 }
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` color, from 0 (black) to 1 (white). */
@@ -25,15 +39,24 @@ export function isNearWhite(hex: string): boolean {
   return relativeLuminance(hex) > NEAR_WHITE_LUMINANCE;
 }
 
+/** WCAG 2.x contrast ratio between two `#RRGGBB` colors, from 1 to 21. */
+export function contrastRatio(a: string, b: string): number {
+  const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 /**
- * Accent color for the content (EUD-341, scope item 5): the primary unless it is near
- * white, as CGCOM's `#ffffff`, which is meant as a header surface; then the secondary.
- * Each comes with its own contrast color.
+ * Accent colors for the content (EUD-341, scope items 5 and 6): the primary unless it is
+ * near white, as CGCOM's `#ffffff`, which is meant as a header surface; then the secondary.
+ * Each comes with its own contrast color. On white, the accent only when it reaches
+ * {@link ON_WHITE_MIN_CONTRAST}; otherwise its contrast color (CGCOM: `#46484C`).
  *
  * Expects colors already validated as `#RRGGBB` (`resolveTenantTheme`).
  */
 export function deriveAccent(branding: Theme['branding']): AccentColors {
-  return isNearWhite(branding.primaryColor)
-    ? { accent: branding.secondaryColor, accentContrast: branding.secondaryContrastColor }
-    : { accent: branding.primaryColor, accentContrast: branding.primaryContrastColor };
+  const [accent, accentContrast] = isNearWhite(branding.primaryColor)
+    ? [branding.secondaryColor, branding.secondaryContrastColor]
+    : [branding.primaryColor, branding.primaryContrastColor];
+  const accentOnWhite = contrastRatio(accent, WHITE) >= ON_WHITE_MIN_CONTRAST ? accent : accentContrast;
+  return { accent, accentContrast, accentOnWhite };
 }

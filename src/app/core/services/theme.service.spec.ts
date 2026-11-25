@@ -130,6 +130,22 @@ describe('ThemeService', () => {
 
       expect(rootStyle().getPropertyValue('--brand-accent')).toBe('#0F2B5B');
       expect(rootStyle().getPropertyValue('--brand-accent-contrast')).toBe('#ffffff');
+      expect(rootStyle().getPropertyValue('--brand-accent-on-white')).toBe('#0F2B5B');
+    });
+
+    it('publishes the accent contrast as the accent on white when the accent is too light (EC-07)', async () => {
+      await loadWith(CGCOM_THEME);
+
+      expect(rootStyle().getPropertyValue('--brand-accent-on-white')).toBe('#46484C');
+    });
+
+    it('makes the action color the accent, whatever its hue (P-1)', async () => {
+      await loadWith(CGCOM_THEME);
+
+      expect(rootStyle().getPropertyValue('--action-primary')).toBe('#F9B000');
+      expect(rootStyle().getPropertyValue('--action-primary-contrast')).toBe('#46484C');
+      expect(rootStyle().getPropertyValue('--action-primary-rgb')).toBe('249 176 0');
+      expect(rootStyle().getPropertyValue('--action-primary-hover')).toContain('#F9B000');
     });
   });
 

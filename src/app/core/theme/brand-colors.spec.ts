@@ -1,5 +1,5 @@
 import { Theme } from '../models/theme.model';
-import { deriveAccent, isNearWhite, relativeLuminance } from './brand-colors';
+import { contrastRatio, deriveAccent, isNearWhite, relativeLuminance } from './brand-colors';
 import { defaultTheme } from './default-theme';
 
 function branding(overrides: Partial<Theme['branding']>): Theme['branding'] {
@@ -32,6 +32,22 @@ describe('brand colors', () => {
     });
   });
 
+  describe('contrastRatio', () => {
+    it.each([
+      ['#000000', '#ffffff', 21],
+      ['#ffffff', '#000000', 21],
+      ['#F9B000', '#ffffff', 1.87],
+      ['#46484C', '#F9B000', 4.9],
+      ['#46484C', '#ffffff', 9.16],
+    ])('is %s on %s ≈ %p', (a, b, expected) => {
+      expect(contrastRatio(a, b)).toBeCloseTo(expected, 1);
+    });
+
+    it('is 1 for the same color', () => {
+      expect(contrastRatio('#0F2B5B', '#0F2B5B')).toBe(1);
+    });
+  });
+
   describe('deriveAccent', () => {
     it('uses the secondary when the primary is near white (CGCOM, EC-03)', () => {
       const accent = deriveAccent(branding({
@@ -41,7 +57,7 @@ describe('brand colors', () => {
         secondaryContrastColor: '#46484C',
       }));
 
-      expect(accent).toEqual({ accent: '#F9B000', accentContrast: '#46484C' });
+      expect(accent).toEqual({ accent: '#F9B000', accentContrast: '#46484C', accentOnWhite: '#46484C' });
     });
 
     it('uses the primary when it is usable (KPMG, EC-04)', () => {
@@ -52,11 +68,27 @@ describe('brand colors', () => {
         secondaryContrastColor: '#000000',
       }));
 
-      expect(accent).toEqual({ accent: '#00338D', accentContrast: '#ffffff' });
+      expect(accent).toEqual({ accent: '#00338D', accentContrast: '#ffffff', accentOnWhite: '#00338D' });
     });
 
     it('uses the EUDIStack primary for the EUDIStack theme', () => {
-      expect(deriveAccent(defaultTheme().branding)).toEqual({ accent: '#0F2B5B', accentContrast: '#ffffff' });
+      expect(deriveAccent(defaultTheme().branding))
+        .toEqual({ accent: '#0F2B5B', accentContrast: '#ffffff', accentOnWhite: '#0F2B5B' });
+    });
+
+    it('keeps an accent of exactly 3:1 on white (EC-07)', () => {
+      // #949494 is the lightest gray that still reaches 3:1 against white.
+      expect(contrastRatio('#949494', '#ffffff')).toBeGreaterThanOrEqual(3);
+      const accent = deriveAccent(branding({ primaryColor: '#949494', primaryContrastColor: '#000000' }));
+
+      expect(accent.accentOnWhite).toBe('#949494');
+    });
+
+    it('falls back to the contrast color when a usable primary is too light for white (EC-07)', () => {
+      // Light green: not near white, but under 3:1 against white.
+      const accent = deriveAccent(branding({ primaryColor: '#7ED957', primaryContrastColor: '#1A1A2E' }));
+
+      expect(accent).toEqual({ accent: '#7ED957', accentContrast: '#1A1A2E', accentOnWhite: '#1A1A2E' });
     });
   });
 });
