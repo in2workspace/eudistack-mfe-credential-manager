@@ -68,6 +68,7 @@ describe('RevokeCredentialDialogComponent', () => {
 
     it('marks the reason as required and describes it by the counter and the note', () => {
       expect(field().required).toBe(true);
+      expect(el().querySelector('.revoke-dialog__required')?.textContent?.trim()).toBe('*');
       expect(field().getAttribute('aria-describedby')).toBe('revoke-reason-counter revoke-reason-note');
     });
 
@@ -183,6 +184,17 @@ describe('RevokeCredentialDialogComponent', () => {
       expect(alert()).toBeNull();
     });
 
+    it('sends a single request when confirm is pressed twice in a row', () => {
+      submit.mockReturnValue(new Subject<void>().asObservable());
+      type('reason');
+      const button = confirmButton();
+
+      button.click();
+      button.click();
+
+      expect(submit).toHaveBeenCalledTimes(1);
+    });
+
     describe('while the request is in flight', () => {
       let inFlight$: Subject<void>;
 
@@ -194,18 +206,26 @@ describe('RevokeCredentialDialogComponent', () => {
         fixture.detectChanges();
       });
 
-      it('disables confirm, cancel and the field, and blocks closing', () => {
-        expect(confirmButton().disabled).toBe(true);
-        expect(cancelButton().disabled).toBe(true);
-        expect(field().disabled).toBe(true);
+      it('shows the loading spinner of the other actions instead of the form', () => {
+        expect(el().querySelector('mat-spinner')).not.toBeNull();
+        expect(el().textContent).toContain('dialog.loading-default-title');
+        expect(field()).toBeNull();
+        expect(confirmButton()).toBeNull();
+        expect(cancelButton()).toBeNull();
+      });
+
+      it('blocks closing', () => {
         expect(dialogRef.disableClose).toBe(true);
       });
 
-      it('sends a single request when confirm is pressed twice', () => {
-        confirmButton().click();
-        confirmButton().click();
+      it('brings the form back with the reason and the message when the request fails', () => {
+        inFlight$.error(problem('rate_limited', 429));
+        fixture.detectChanges();
 
-        expect(submit).toHaveBeenCalledTimes(1);
+        expect(el().querySelector('mat-spinner')).toBeNull();
+        expect(field().value).toBe('reason');
+        expect(alert()?.textContent).toContain('credentialDetails.revokeError.retryLater');
+        expect(dialogRef.disableClose).toBe(false);
       });
 
       it('does not even call confirm() a second time', () => {

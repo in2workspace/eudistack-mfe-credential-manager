@@ -2,6 +2,7 @@ import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import { countCodePoints, truncateToCodePoints } from 'src/app/core/helpers/code-points';
@@ -20,7 +21,7 @@ export const MAX_REVOCATION_REASON_LENGTH = 280;
 
 @Component({
   selector: 'app-revoke-credential-dialog',
-  imports: [MatButton, MatDialogTitle, MatDialogContent, MatDialogActions, TranslatePipe],
+  imports: [MatButton, MatDialogTitle, MatDialogContent, MatDialogActions, MatProgressSpinner, TranslatePipe],
   templateUrl: './revoke-credential-dialog.component.html',
   styleUrl: './revoke-credential-dialog.component.scss',
 })

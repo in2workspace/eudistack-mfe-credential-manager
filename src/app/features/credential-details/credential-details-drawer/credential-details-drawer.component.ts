@@ -1,5 +1,5 @@
 import { AsyncPipe, DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, Injector, OnInit, Signal, WritableSignal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, Signal, WritableSignal } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -68,7 +68,6 @@ export class CredentialDetailsDrawerComponent implements OnInit {
   private readonly data = inject<CredentialDetailsDrawerData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<CredentialDetailsDrawerComponent>>(MatDialogRef);
   private readonly detailsService = inject(CredentialDetailsService);
-  private readonly injector = inject(Injector);
   private readonly loader = inject(LoaderService);
 
   public constructor() {
@@ -105,7 +104,7 @@ export class CredentialDetailsDrawerComponent implements OnInit {
 
   public ngOnInit(): void {
     this.detailsService.setProcedureId(this.data.procedureId);
-    this.detailsService.loadCredentialModels(this.injector);
+    this.detailsService.loadCredentialModels();
   }
 
   public close(): void {

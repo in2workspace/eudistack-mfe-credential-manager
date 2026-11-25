@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.12.0] - 2026-11-25
+## [3.11.2] - 2026-11-25
 
 ### Added
-- **EUD-371 — Revocation dialog with a reason**: "Revoke" opens its own dialog that warns the action cannot be undone and asks for a free-text reason, required and up to 280 characters counted as code points like the Issuer does (an emoji counts as one), with the characters left and a note that the reason is internal and not shared with the holder. Confirm is disabled without a reason (or with only spaces) and while the request is in progress; cancelling or closing makes no request.
+- **EUD-371 — Revocation dialog with a reason**: "Revoke" opens its own dialog that warns the action cannot be undone and asks for a free-text reason, required and up to 280 characters counted as code points like the Issuer does (an emoji counts as one), with the characters left and a note that the reason is internal and not shared with the holder. The field is marked as required and Confirm is disabled, and looks so, without a reason (or with only spaces). While the request is in progress the dialog shows the loading spinner of the other actions; cancelling or closing makes no request.
 - **EUD-371 — A message for each answer of the revocation API**: the problem `type` decides it — revoked, already revoked, not revocable, no permission or scope, expired session, invalid reason, try again later, and a generic one for any other error. The message shows inside the dialog, which stays open so the reason can be corrected. Texts in Spanish, Catalan, English and Finnish.
 
 ### Changed

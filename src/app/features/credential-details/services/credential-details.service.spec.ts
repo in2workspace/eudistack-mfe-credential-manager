@@ -482,7 +482,7 @@ describe('after a revocation', () => {
     jest.spyOn(svc, 'resolveSchema').mockReturnValue({ schema: {}, vcForEvaluation: vc });
     jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue({});
     jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
-    svc.loadCredentialModels(TestBed.inject(Injector));
+    svc.loadCredentialModels();
     return svc;
   }
 
@@ -538,13 +538,12 @@ describe('Load models', () => {
     const evaluateSpy = jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue(evaluated);
     const templateSpy = jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
 
-    const injector = TestBed.inject(Injector);
-    svc.loadCredentialModels(injector);
+    svc.loadCredentialModels();
 
     expect(svc.loadCredentialDetails).toHaveBeenCalled();
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
-    expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+    expect(templateSpy).toHaveBeenCalledWith(evaluated, svc.injector);
     expect(svc.loadError$()).toBeUndefined();
   });
 
@@ -552,7 +551,7 @@ describe('Load models', () => {
     const svc: any = service;
     jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(throwError(() => new Error('404')));
 
-    svc.loadCredentialModels(TestBed.inject(Injector));
+    svc.loadCredentialModels();
 
     expect(svc.loadError$()).toBe('request');
   });
@@ -562,7 +561,7 @@ describe('Load models', () => {
     jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of({ credential: {} }));
     const templateSpy = jest.spyOn(svc, 'setViewModels');
 
-    svc.loadCredentialModels(TestBed.inject(Injector));
+    svc.loadCredentialModels();
 
     expect(svc.loadError$()).toBe('missingCredential');
     expect(templateSpy).not.toHaveBeenCalled();

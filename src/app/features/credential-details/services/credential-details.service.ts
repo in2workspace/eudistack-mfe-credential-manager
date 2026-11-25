@@ -143,7 +143,7 @@ export class CredentialDetailsService {
   private readonly dialog = inject(DialogWrapperService);
   private readonly statusService = inject(LifeCycleStatusService);
   private readonly destroyRef = inject(DestroyRef);
-  private injector?: Injector;
+  private readonly injector = inject(Injector);
 
   public constructor(){
     this.lifeCycleStatusClass$ = computed<StatusClass | undefined>(() => {
@@ -158,19 +158,14 @@ export class CredentialDetailsService {
         filter(issuanceId => issuanceId === this.credentialProcedureDetails$()?.procedure_id),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(() => {
-        if (this.injector) {
-          this.loadCredentialModels(this.injector);
-        }
-      });
+      .subscribe(() => this.loadCredentialModels());
   }
 
   public setProcedureId(id: string) {
     this.procedureId$.set(id);
   }
 
-  public loadCredentialModels(injector: Injector): void {
-    this.injector = injector;
+  public loadCredentialModels(): void {
     forkJoin([
       this.loadCredentialDetails(),
       this.metadataService.loadMetadata(),
@@ -186,7 +181,7 @@ export class CredentialDetailsService {
         // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
         const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
         const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
-        this.setViewModels(mappedSchema, injector);
+        this.setViewModels(mappedSchema, this.injector);
       },
       error: () => this.loadError$.set('request'),
     });
