@@ -691,7 +691,7 @@
     "description": "Eventos de auditoría de tu ámbito, del más reciente al más antiguo.",
     "consult": "Consultar",
     "login": "Iniciar sesión",
-    "next-page": "Página siguiente",
+    "next-page": "Mostrar más resultados",
     "empty": "No hay eventos en este periodo.",
     "change-period": "Cambiar periodo",
     "footer": "Tus consultas quedan registradas.",

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.11.1] - 2026-11-23
+## [3.12.0] - 2026-11-25
 
 ### Added
 - **EUD-371 — Revocation dialog with a reason**: "Revoke" opens its own dialog that warns the action cannot be undone and asks for a free-text reason, required and up to 280 characters counted as code points like the Issuer does (an emoji counts as one), with the characters left and a note that the reason is internal and not shared with the holder. Confirm is disabled without a reason (or with only spaces) and while the request is in progress; cancelling or closing makes no request.
@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **EUD-371 — A revocation error opens a single message**: `ServeErrorInterceptor` no longer opens its generic dialog on the revocation route, and the service no longer opens a second one.
+
+## [3.11.1] - 2026-11-24
+
+### Changed
+- **EUD-293 — audit listing button**: the button that adds the older events now reads "Mostrar más resultados" / "Show more results" instead of "Página siguiente" / "Next page", since it adds rows to the ones on screen and does not replace them with another page. Only the texts change.
 
 ## [3.11.0] - 2026-11-19
 
