@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 import { Theme } from '../models/theme.model';
-import { deriveAccent } from '../theme/brand-colors';
+import { deriveAccent, isNearWhite } from '../theme/brand-colors';
 import { defaultTheme } from '../theme/default-theme';
 import { resolveTenantTheme } from '../theme/resolve-tenant-theme';
 import { TenantService } from './tenant.service';
@@ -139,6 +139,12 @@ export class ThemeService {
     root.setProperty('--brand-accent', accent);
     root.setProperty('--brand-accent-contrast', accentContrast);
     root.setProperty('--brand-accent-on-white', accentOnWhite);
+
+    // Brand zones (header, home bands, footer) are the primary: a near-white one needs a line
+    // to stand apart from the white or light-grey page around it (EUD-341, P-3).
+    root.setProperty('--brand-zone-border', isNearWhite(theme.branding.primaryColor)
+      ? '1px solid var(--border-default, #D1D5DB)'
+      : 'none');
 
     const rgb = this.hexToRgb(theme.branding.primaryColor);
     if (rgb) {

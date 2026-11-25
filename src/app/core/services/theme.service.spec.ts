@@ -139,6 +139,20 @@ describe('ThemeService', () => {
       expect(rootStyle().getPropertyValue('--brand-accent-on-white')).toBe('#46484C');
     });
 
+    it('outlines the brand zones when the primary is near white (P-3)', async () => {
+      await loadWith(CGCOM_THEME);
+
+      expect(rootStyle().getPropertyValue('--brand-zone-border')).toContain('1px solid');
+    });
+
+    it('leaves the brand zones without outline when the primary is dark (P-3)', async () => {
+      tenant = '';
+
+      await service.load();
+
+      expect(rootStyle().getPropertyValue('--brand-zone-border')).toBe('none');
+    });
+
     it('makes the action color the accent, whatever its hue (P-1)', async () => {
       await loadWith(CGCOM_THEME);
 
