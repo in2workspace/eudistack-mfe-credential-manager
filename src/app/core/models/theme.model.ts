@@ -6,6 +6,8 @@ export interface Theme {
     secondaryColor: string;
     secondaryContrastColor: string;
     logoUrl: string | null;
+    /** Logo for a white background. Not shown by this portal today; kept so the paths match the other interfaces. */
+    logoDarkUrl: string | null;
     faviconUrl: string | null;
   };
   content: {

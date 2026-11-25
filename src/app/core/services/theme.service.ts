@@ -1,9 +1,14 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 import { Theme } from '../models/theme.model';
+import { defaultTheme } from '../theme/default-theme';
+import { resolveTenantTheme } from '../theme/resolve-tenant-theme';
 import { TenantService } from './tenant.service';
+
+/** Same budget as the Login: past it, the portal starts with the EUDIStack theme instead of waiting. */
+export const THEME_TIMEOUT_MS = 800;
 
 /** Default semantic tokens — neutral, brand-independent colors for content areas. */
 const SEMANTIC_DEFAULTS: Record<string, string> = {
@@ -65,17 +70,37 @@ export class ThemeService {
     private readonly translate: TranslateService
   ) {}
 
+  /**
+   * Loads the tenant's theme from the shared platform assets and applies it (EUD-341,
+   * SAD §8.8). Never rejects: without a tenant, or when its `theme.json` is missing,
+   * invalid or slower than {@link THEME_TIMEOUT_MS}, the bundled EUDIStack theme applies
+   * and start-up continues.
+   */
   async load(): Promise<void> {
-    const theme = await firstValueFrom(this.http.get<Theme>('assets/theme.json'));
+    const theme = await this.fetchTheme();
     this.theme$.next(theme);
     this.applyTheme(theme);
 
-    if (theme.i18n) {
-      this.translate.addLangs(theme.i18n.available);
-      this.translate.setDefaultLang(theme.i18n.defaultLang);
+    this.translate.addLangs(theme.i18n.available);
+    this.translate.setDefaultLang(theme.i18n.defaultLang);
 
-      const browserLang = this.detectBrowserLanguage(theme.i18n.available);
-      this.translate.use(browserLang ?? theme.i18n.defaultLang);
+    const browserLang = this.detectBrowserLanguage(theme.i18n.available);
+    this.translate.use(browserLang ?? theme.i18n.defaultLang);
+  }
+
+  private async fetchTheme(): Promise<Theme> {
+    const tenant = this.tenantService.tenant();
+    if (!tenant) {
+      return defaultTheme();
+    }
+    try {
+      const descriptor = await firstValueFrom(
+        this.http.get<unknown>(`/assets/tenants/${tenant}/theme.json`).pipe(timeout(THEME_TIMEOUT_MS))
+      );
+      return resolveTenantTheme(descriptor, tenant);
+    } catch (error) {
+      console.error(`[ThemeService] Theme of tenant "${tenant}" not loaded; applying the EUDIStack theme`, error);
+      return defaultTheme();
     }
   }
 
