@@ -298,11 +298,17 @@
       }
     }
 
+    // The GitHub mark is a white PNG: used as a mask so it takes the footer text colour,
+    // which is dark on a near-white primary (EUD-341).
     .footer-logo {
-      padding-left: 0.5rem;
-      padding-bottom: 0.313rem;
+      display: inline-block;
+      margin-left: 0.5rem;
+      margin-bottom: 0.313rem;
       width: 1.5rem;
-      height: auto;
+      height: 1.5rem;
+      vertical-align: middle;
+      background-color: var(--primary-contrast-color, #ffffff);
+      mask: url('../../../assets/icons/github.png') center / contain no-repeat;
     }
   }
 }
