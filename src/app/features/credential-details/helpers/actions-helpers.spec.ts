@@ -1,10 +1,5 @@
+import { LifeCycleStatus } from 'src/app/core/models/entity/lear-credential';
 import {
-  CredentialStatus,
-  CredentialStatusType,
-  LifeCycleStatus,
-} from 'src/app/core/models/entity/lear-credential';
-import {
-  credentialStatusHasRevokeCredentialButton,
   statusHasArchiveCredentialButton,
   statusHasRevokeCredentialButton,
   statusHasWithdrawCredentialButton,
@@ -18,50 +13,6 @@ describe('Credential Helpers', () => {
 
     it('returns false for DRAFT', () => {
       expect(statusHasRevokeCredentialButton('DRAFT')).toBeFalsy();
-    });
-  });
-
-  describe('credentialStatusHasRevokeCredentialButton', () => {
-    function createCredentialStatus(type: CredentialStatusType): CredentialStatus {
-      return { type } as CredentialStatus;
-    }
-
-    it('returns true for BitstringStatusListEntry', () => {
-      const credentialStatus = createCredentialStatus(
-        'BitstringStatusListEntry',
-      );
-
-      expect(
-        credentialStatusHasRevokeCredentialButton(credentialStatus),
-      ).toBeTruthy();
-    });
-
-    it('returns true for TokenStatusListEntry (dc+sd-jwt credentials)', () => {
-      const credentialStatus = createCredentialStatus('TokenStatusListEntry');
-
-      expect(
-        credentialStatusHasRevokeCredentialButton(credentialStatus),
-      ).toBeTruthy();
-    });
-
-    it('returns false for PlainListEntity', () => {
-      const credentialStatus = createCredentialStatus('PlainListEntity');
-
-      expect(
-        credentialStatusHasRevokeCredentialButton(credentialStatus),
-      ).toBeFalsy();
-    });
-
-    it('returns false when credential status carries no type', () => {
-      expect(
-        credentialStatusHasRevokeCredentialButton({} as CredentialStatus),
-      ).toBeFalsy();
-    });
-
-    it('returns false when credential status is undefined', () => {
-      expect(
-        credentialStatusHasRevokeCredentialButton(undefined),
-      ).toBeFalsy();
     });
   });
 

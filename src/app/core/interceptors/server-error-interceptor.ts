@@ -56,6 +56,13 @@ export class ServeErrorInterceptor implements HttpInterceptor {
           return throwError(() => error);
         }
 
+        // The revocation (POST /api/v1/issuances/<id>/revocation) shows its own message for every problem
+        // type the API answers (EUD-371); a generic dialog on top would put two windows in front of the operator.
+        if (this.isRevocationSubmit(request)) {
+          this.logHandledSilentlyError(error);
+          return throwError(() => error);
+        }
+
         // The credential offer refresh screen renders its own outcome for every failure —
         // including functional ones such as credential_offer_gone — so a generic
         // "unknown error" dialog on top of it would contradict the in-page message.
@@ -105,6 +112,12 @@ export class ServeErrorInterceptor implements HttpInterceptor {
     if (request.method !== 'POST') return false;
     const path = /^https?:\/\//.test(request.url) ? new URL(request.url).pathname : request.url;
     return path.endsWith(API_PATH.PROCEDURES);
+  }
+
+  private isRevocationSubmit(request: HttpRequest<unknown>): boolean {
+    if (request.method !== 'POST') return false;
+    const path = /^https?:\/\//.test(request.url) ? new URL(request.url).pathname : request.url;
+    return new RegExp(`${API_PATH.PROCEDURES}/[^/]+/revocation$`).test(path);
   }
 
   private isCredentialOfferRefreshEndpoint(url: string): boolean {

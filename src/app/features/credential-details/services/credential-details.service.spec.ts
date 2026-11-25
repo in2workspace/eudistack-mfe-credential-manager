@@ -10,7 +10,7 @@ import { CredentialActionsService } from './credential-actions.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { Injector } from '@angular/core';
 import { DetailsKeyValueField, DetailsGroupField, ViewModelSchema } from 'src/app/core/models/entity/lear-credential-details';
 import { ComponentPortal } from '@angular/cdk/portal';
@@ -25,6 +25,7 @@ describe('CredentialDetailsService', () => {
   };
 
   const mockCredentialActionsService = {
+    credentialRevoked$: new Subject<string>(),
     openRevokeCredentialDialog: jest.fn(),
     openArchiveCredentialDialog: jest.fn(),
   };
@@ -333,78 +334,21 @@ describe('CredentialDetailsService', () => {
     });
 
       describe('revoke credential validation', () => {
-        it('enableRevokeCredentialButton$() returns false when credentialStatus is undefined', () => {
-          service.credentialProcedureDetails$.set({
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: undefined,
-              },
-            },
-          } as any);
-
-          expect(service.enableRevokeCredentialButton$()).toBe(false);
-        });
-
-        it('enableRevokeCredentialButton$() returns true for BitstringStatusListEntry', () => {
-          service.credentialProcedureDetails$.set({
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'BitstringStatusListEntry',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.enableRevokeCredentialButton$()).toBe(true);
-        });
-
-        it('enableRevokeCredentialButton$() returns true for TokenStatusListEntry', () => {
-          service.credentialProcedureDetails$.set({
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'TokenStatusListEntry',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.enableRevokeCredentialButton$()).toBe(true);
-        });
-
-        it('enableRevokeCredentialButton$() returns false for PlainListEntity', () => {
-          service.credentialProcedureDetails$.set({
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'PlainListEntity',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.enableRevokeCredentialButton$()).toBe(false);
-        });
-
-        it('showRevokeCredentialButton$() returns true for VALID and BitstringStatusListEntry', () => {
+        // dc+sd-jwt credentials carry an IETF Token Status List, and for a legacy status list (PlainListEntity)
+        // the Issuer answers `not_revocable`: it decides what can be revoked, so the button shows for all of them.
+        it.each([
+          ['BitstringStatusListEntry', { type: 'BitstringStatusListEntry' }],
+          ['TokenStatusListEntry', { type: 'TokenStatusListEntry' }],
+          ['PlainListEntity', { type: 'PlainListEntity' }],
+          ['no credential status', undefined],
+        ])('showRevokeCredentialButton$() returns true for VALID and %s', (_label: string, credentialStatus: object | undefined) => {
           service.credentialProcedureDetails$.set({
             lifeCycleStatus: 'VALID',
             credential: {
               vc: {
                 validFrom: '',
                 validUntil: '',
-                credentialStatus: {
-                  type: 'BitstringStatusListEntry',
-                },
+                credentialStatus,
               },
             },
           } as any);
@@ -412,39 +356,15 @@ describe('CredentialDetailsService', () => {
           expect(service.showRevokeCredentialButton$()).toBe(true);
         });
 
-        // dc+sd-jwt credentials carry an IETF Token Status List; the button must show for them.
-        it('showRevokeCredentialButton$() returns true for VALID and TokenStatusListEntry', () => {
-          service.credentialProcedureDetails$.set({
-            lifeCycleStatus: 'VALID',
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'TokenStatusListEntry',
-                },
-              },
-            },
-          } as any);
+        it('showRevokeCredentialButton$() returns false for VALID when the role is read only', () => {
+          mockAuthService.roleType.set(RoleType.SYSADMIN_READONLY);
+          try {
+            service.credentialProcedureDetails$.set({ lifeCycleStatus: 'VALID', credential: { vc: {} } } as any);
 
-          expect(service.showRevokeCredentialButton$()).toBe(true);
-        });
-
-        it('showRevokeCredentialButton$() returns false for VALID and PlainListEntity', () => {
-          service.credentialProcedureDetails$.set({
-            lifeCycleStatus: 'VALID',
-            credential: {
-              vc: {
-                validFrom: '',
-                validUntil: '',
-                credentialStatus: {
-                  type: 'PlainListEntity',
-                },
-              },
-            },
-          } as any);
-
-          expect(service.showRevokeCredentialButton$()).toBe(false);
+            expect(service.showRevokeCredentialButton$()).toBe(false);
+          } finally {
+            mockAuthService.roleType.set(RoleType.LEAR);
+          }
         });
 
         it('showRevokeCredentialButton$() returns false for a non-VALID lifecycle status', () => {
@@ -529,6 +449,81 @@ describe('CredentialDetailsService', () => {
   });
 
 
+describe('openRevokeCredentialDialog', () => {
+  it('opens the revocation dialog of the issuance for a VALID credential, whatever its status list type', () => {
+    service.credentialProcedureDetails$.set({
+      procedure_id: 'issuance-1',
+      lifeCycleStatus: 'VALID',
+      credential: { vc: { credentialStatus: { type: 'PlainListEntity' } } },
+    } as any);
+
+    service.openRevokeCredentialDialog();
+
+    expect(mockCredentialActionsService.openRevokeCredentialDialog).toHaveBeenCalledWith('issuance-1');
+    expect(mockDialogWrapperService.openErrorInfoDialog).not.toHaveBeenCalled();
+  });
+
+  it('does not open the dialog when the credential is not VALID', () => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    service.credentialProcedureDetails$.set({ procedure_id: 'issuance-1', lifeCycleStatus: 'REVOKED', credential: { vc: {} } } as any);
+
+    service.openRevokeCredentialDialog();
+
+    expect(mockCredentialActionsService.openRevokeCredentialDialog).not.toHaveBeenCalled();
+    expect(mockDialogWrapperService.openErrorInfoDialog).toHaveBeenCalled();
+  });
+});
+
+describe('after a revocation', () => {
+  function loadProcedure(procedureId: string) {
+    const svc: any = service;
+    const vc = { foo: 'bar' };
+    jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of({ procedure_id: procedureId, credential: { vc } }));
+    jest.spyOn(svc, 'resolveSchema').mockReturnValue({ schema: {}, vcForEvaluation: vc });
+    jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue({});
+    jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
+    svc.loadCredentialModels();
+    return svc;
+  }
+
+  it('reads the detail of its own attestation again, without leaving the drawer', () => {
+    const svc = loadProcedure('issuance-1');
+    svc.loadCredentialDetails.mockClear();
+
+    mockCredentialActionsService.credentialRevoked$.next('issuance-1');
+
+    expect(svc.loadCredentialDetails).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the revocation of another attestation', () => {
+    const svc = loadProcedure('issuance-1');
+    svc.loadCredentialDetails.mockClear();
+
+    mockCredentialActionsService.credentialRevoked$.next('issuance-2');
+
+    expect(svc.loadCredentialDetails).not.toHaveBeenCalled();
+  });
+
+  it('flags a failed second read like any other failed request', () => {
+    const svc = loadProcedure('issuance-1');
+    svc.loadCredentialDetails.mockReturnValue(throwError(() => new Error('500')));
+
+    mockCredentialActionsService.credentialRevoked$.next('issuance-1');
+
+    expect(svc.loadError$()).toBe('request');
+  });
+
+  it('stops listening once the service is destroyed', () => {
+    const svc = loadProcedure('issuance-1');
+    svc.loadCredentialDetails.mockClear();
+
+    TestBed.resetTestingModule();
+    mockCredentialActionsService.credentialRevoked$.next('issuance-1');
+
+    expect(svc.loadCredentialDetails).not.toHaveBeenCalled();
+  });
+});
+
 describe('Load models', () => {
   it('should load and evaluate credential models correctly', () => {
     const svc: any = service;
@@ -543,13 +538,12 @@ describe('Load models', () => {
     const evaluateSpy = jest.spyOn(svc, 'evaluateSchemaValues').mockReturnValue(evaluated);
     const templateSpy = jest.spyOn(svc, 'setViewModels').mockImplementation(() => {});
 
-    const injector = TestBed.inject(Injector);
-    svc.loadCredentialModels(injector);
+    svc.loadCredentialModels();
 
     expect(svc.loadCredentialDetails).toHaveBeenCalled();
     expect(resolveSchemaSpy).toHaveBeenCalledWith(mockData, vc);
     expect(evaluateSpy).toHaveBeenCalledWith(schemaResult.schema, vc);
-    expect(templateSpy).toHaveBeenCalledWith(evaluated, injector);
+    expect(templateSpy).toHaveBeenCalledWith(evaluated, svc.injector);
     expect(svc.loadError$()).toBeUndefined();
   });
 
@@ -557,7 +551,7 @@ describe('Load models', () => {
     const svc: any = service;
     jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(throwError(() => new Error('404')));
 
-    svc.loadCredentialModels(TestBed.inject(Injector));
+    svc.loadCredentialModels();
 
     expect(svc.loadError$()).toBe('request');
   });
@@ -567,7 +561,7 @@ describe('Load models', () => {
     jest.spyOn(svc, 'loadCredentialDetails').mockReturnValue(of({ credential: {} }));
     const templateSpy = jest.spyOn(svc, 'setViewModels');
 
-    svc.loadCredentialModels(TestBed.inject(Injector));
+    svc.loadCredentialModels();
 
     expect(svc.loadError$()).toBe('missingCredential');
     expect(templateSpy).not.toHaveBeenCalled();

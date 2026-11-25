@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.2] - 2026-11-25
+
+### Added
+- **EUD-371 — Revocation dialog with a reason**: "Revoke" opens its own dialog that warns the action cannot be undone and asks for a free-text reason, required and up to 280 characters counted as code points like the Issuer does (an emoji counts as one), with the characters left and a note that the reason is internal and not shared with the holder. The field is marked as required and Confirm is disabled, and looks so, without a reason (or with only spaces). While the request is in progress the dialog shows the loading spinner of the other actions; cancelling or closing makes no request.
+- **EUD-371 — A message for each answer of the revocation API**: the problem `type` decides it — revoked, already revoked, not revocable, no permission or scope, expired session, invalid reason, try again later, and a generic one for any other error. The message shows inside the dialog, which stays open so the reason can be corrected. Texts in Spanish, Catalan, English and Finnish.
+
+### Changed
+- **EUD-371 — The portal calls the new revocation route**: `POST /api/v1/issuances/<id>/revocation` with the reason in the body, instead of `POST /w3c/v1/credentials/status/revoke`; `API_PATH.REVOKE` and `CredentialRevokeRequestDto` are removed. Needs the Issuer with that route (EUD-271); the old one stays there for other clients.
+- **EUD-371 — After a revocation the detail stays open and shows the attestation as Revoked**: when the revocation is accepted, or it was already done, the drawer reads the detail again and the list refreshes, instead of going to the list. With any other error the state does not change.
+- **EUD-371 — "Revoke" is offered for every Valid attestation the operator can write to**: the exception for legacy status lists (`PlainListEntity`) and its tooltip are removed; the Issuer answers `not_revocable` when one cannot be revoked.
+
+### Fixed
+- **EUD-371 — A revocation error opens a single message**: `ServeErrorInterceptor` no longer opens its generic dialog on the revocation route, and the service no longer opens a second one.
+
 ## [3.11.1] - 2026-11-24
 
 ### Changed

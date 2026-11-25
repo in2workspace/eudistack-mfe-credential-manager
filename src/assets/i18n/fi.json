@@ -34,5 +34,28 @@
       "email-required": "Sähköposti vaaditaan",
       "email-invalid": "Virheellinen sähköpostimuoto"
     }
+  },
+  "credentialDetails": {
+    "revokeDialog": {
+      "title": "Mitätöi todistus",
+      "warning": "Tätä toimintoa ei voi kumota.",
+      "reasonLabel": "Mitätöinnin syy",
+      "remaining": "{{count}} merkkiä jäljellä",
+      "internalNote": "Syy on sisäinen: se tallennetaan, eikä sitä kerrota haltijalle.",
+      "confirm": "Mitätöi"
+    },
+    "revokeCredentialSuccess": {
+      "title": "Todistus mitätöity",
+      "message": "Todistus on mitätöity.",
+      "alreadyRevoked": "Tämä todistus oli jo mitätöity. Tiedot päivitetään."
+    },
+    "revokeError": {
+      "notRevocable": "Tätä todistusta ei voi mitätöidä nykytilassaan.",
+      "forbidden": "Et voi mitätöidä tätä todistusta.",
+      "sessionExpired": "Istuntosi on vanhentunut. Kirjaudu sisään uudelleen.",
+      "badRequest": "Tarkista syy: se on pakollinen ja enintään 280 merkkiä pitkä.",
+      "retryLater": "Mitätöinti ei onnistunut juuri nyt. Yritä uudelleen muutaman minuutin kuluttua.",
+      "generic": "Todistuksen mitätöinti ei onnistunut. Mitään ei muutettu."
+    }
   }
 }

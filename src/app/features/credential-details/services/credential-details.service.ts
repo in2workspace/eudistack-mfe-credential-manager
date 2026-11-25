@@ -1,5 +1,6 @@
-import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal } from '@angular/core';
-import { forkJoin, Observable } from 'rxjs';
+import { computed, DestroyRef, inject, Injectable, Injector, Signal, signal, WritableSignal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter, forkJoin, Observable } from 'rxjs';
 import { CredentialProcedureService } from 'src/app/core/services/credential-procedure.service';
 import { CredentialIssuerMetadataService } from 'src/app/core/services/credential-issuer-metadata.service';
 import { CredentialConfigurationDto } from 'src/app/core/models/dto/credential-issuer-metadata.dto';
@@ -13,7 +14,7 @@ import { RoleType } from 'src/app/core/models/enums/auth-rol-type.enum';
 import { CredentialActionsService } from './credential-actions.service';
 import { DynamicSchemaBuilder } from './dynamic-schema-builder.service';
 import { StatusClass } from 'src/app/core/models/entity/lear-credential-management';
-import { statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton, credentialStatusHasRevokeCredentialButton } from '../helpers/actions-helpers';
+import { statusHasRevokeCredentialButton, statusHasWithdrawCredentialButton, statusHasArchiveCredentialButton } from '../helpers/actions-helpers';
 import { DialogComponent } from 'src/app/shared/components/dialog/dialog-component/dialog.component';
 import { matchLegacyConfig, normalizeLegacyCredential } from '../legacy/legacy-credential-support';
 import { readSpecificCredentialType } from '../fallback/lear-credential-fallback-schema';
@@ -118,13 +119,7 @@ export class CredentialDetailsService {
 
   public showRevokeCredentialButton$ = computed<boolean>(() => {
     const status = this.lifeCycleStatus$();
-    return this.canWrite() && !!status && statusHasRevokeCredentialButton(status) && credentialStatusHasRevokeCredentialButton(this.credentialStatus$());
-  });
-
-  public enableRevokeCredentialButton$ = computed<boolean>(() => {
-    return credentialStatusHasRevokeCredentialButton(
-      this.credentialStatus$(),
-    );
+    return this.canWrite() && !!status && statusHasRevokeCredentialButton(status);
   });
 
   public showWithdrawCredentialButton$ = computed<boolean>(() => {
@@ -147,6 +142,8 @@ export class CredentialDetailsService {
   private readonly dynamicSchemaBuilder = inject(DynamicSchemaBuilder);
   private readonly dialog = inject(DialogWrapperService);
   private readonly statusService = inject(LifeCycleStatusService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   public constructor(){
     this.lifeCycleStatusClass$ = computed<StatusClass | undefined>(() => {
@@ -154,13 +151,21 @@ export class CredentialDetailsService {
       if(!status) return 'status-default';
       return this.statusService.mapStatusToClass(status)
     });
+
+    // A revocation leaves the drawer open: read the detail again so it shows the attestation as Revoked.
+    this.actionsService.credentialRevoked$
+      .pipe(
+        filter(issuanceId => issuanceId === this.credentialProcedureDetails$()?.procedure_id),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => this.loadCredentialModels());
   }
 
   public setProcedureId(id: string) {
     this.procedureId$.set(id);
   }
 
-  public loadCredentialModels(injector: Injector): void {
+  public loadCredentialModels(): void {
     forkJoin([
       this.loadCredentialDetails(),
       this.metadataService.loadMetadata(),
@@ -176,7 +181,7 @@ export class CredentialDetailsService {
         // Dynamic schemas use rawVc (format-aware paths); hardcoded schemas use normalized vc
         const { schema, vcForEvaluation } = this.resolveSchema(data, vc);
         const mappedSchema = this.evaluateSchemaValues(schema, vcForEvaluation);
-        this.setViewModels(mappedSchema, injector);
+        this.setViewModels(mappedSchema, this.injector);
       },
       error: () => this.loadError$.set('request'),
     });
@@ -251,21 +256,6 @@ export class CredentialDetailsService {
     if(this.lifeCycleStatus$() !== 'VALID'){
       console.error("Only credentials with status VALID can be revoked.");
       this.dialog.openErrorInfoDialog(DialogComponent, 'error.unknown_error');
-      return;
-    }
-
-    if (
-    !credentialStatusHasRevokeCredentialButton(
-      this.credentialStatus$(),
-    )
-    ) {
-      console.error(
-        'Only credentials with a supported credential status can be revoked.',
-      );
-      this.dialog.openErrorInfoDialog(
-        DialogComponent,
-        'error.unknown_error',
-      );
       return;
     }
 
