@@ -1,7 +1,7 @@
 /**
  * THE ONLY PLACE THAT KNOWS WHERE THE ISSUANCE UI POLICY COMES FROM.
  *
- * Changing the source — a per-tenant `theme.json` once EUD-217 migrates branding, an issuer
+ * Changing the source — a field of the tenant's `theme.json` (loaded by `ThemeService` since EUD-341), an issuer
  * endpoint, anything else — means rewriting the body of `loadIssuanceUiPolicy` and nothing
  * else in the application: the signature below is the contract, and it is expressed in domain
  * terms (`IssuanceUiPolicy`), not in the shape of any particular document.

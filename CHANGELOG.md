@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.12.0] - 2026-11-25
+## [3.12.0] - 2026-11-26
 
 ### Added
 - **EUD-341 — The portal wears the tenant's brand**: the theme is loaded from `/assets/tenants/{tenant}/theme.json` of the shared platform assets, like the Login, the Wallet and the issuance portal, with the tenant `TenantService` already resolves. The paths `assets/tenant/...` of the logo, the dark logo and the favicon point to the tenant's folder. Title, favicon, colours and languages are the tenant's; the revocation help link stays EUDIStack's.
