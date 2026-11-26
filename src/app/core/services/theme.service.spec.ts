@@ -90,7 +90,6 @@ describe('ThemeService', () => {
 
       expect(rootStyle().getPropertyValue('--primary-color')).toBe('#ffffff');
       expect(rootStyle().getPropertyValue('--primary-contrast-color')).toBe('#46484C');
-      expect(rootStyle().getPropertyValue('--secondary-color')).toBe('#F9B000');
     });
 
     it('sets the tab title and the favicon from the tenant folder', async () => {
@@ -129,8 +128,8 @@ describe('ThemeService', () => {
     it('publishes the secondary as accent when the primary is near white', async () => {
       await loadWith(CGCOM_THEME);
 
-      expect(rootStyle().getPropertyValue('--brand-accent')).toBe('#F9B000');
-      expect(rootStyle().getPropertyValue('--brand-accent-contrast')).toBe('#46484C');
+      expect(rootStyle().getPropertyValue('--action-primary')).toBe('#F9B000');
+      expect(rootStyle().getPropertyValue('--action-primary-contrast')).toBe('#46484C');
     });
 
     it('publishes the EUDIStack primary as accent with the EUDIStack theme', async () => {
@@ -138,8 +137,8 @@ describe('ThemeService', () => {
 
       await service.load();
 
-      expect(rootStyle().getPropertyValue('--brand-accent')).toBe('#0F2B5B');
-      expect(rootStyle().getPropertyValue('--brand-accent-contrast')).toBe('#ffffff');
+      expect(rootStyle().getPropertyValue('--action-primary')).toBe('#0F2B5B');
+      expect(rootStyle().getPropertyValue('--action-primary-contrast')).toBe('#ffffff');
       expect(rootStyle().getPropertyValue('--brand-accent-on-white')).toBe('#0F2B5B');
     });
 
@@ -270,6 +269,6 @@ describe('ThemeService', () => {
     await loadWith({ ...CGCOM_THEME, branding: { ...CGCOM_THEME.branding, primaryColor: 'red; background:url(x)' } });
 
     expect(rootStyle().getPropertyValue('--primary-color')).toBe('#0F2B5B');
-    expect(rootStyle().getPropertyValue('--secondary-color')).toBe('#F9B000');
+    expect(service.snapshot?.branding.secondaryColor).toBe('#F9B000');
   });
 });

@@ -131,13 +131,11 @@ export class ThemeService {
     // ── Layer 1: Brand tokens (header/footer only) ──
     root.setProperty('--primary-color', theme.branding.primaryColor);
     root.setProperty('--primary-contrast-color', theme.branding.primaryContrastColor);
-    root.setProperty('--secondary-color', theme.branding.secondaryColor);
-    root.setProperty('--secondary-contrast-color', theme.branding.secondaryContrastColor);
 
-    // Brand color inside the content (EUD-341): the primary can be a near-white header surface.
+    // Brand color inside the content (EUD-341): the primary can be a near-white header surface,
+    // so the accent is the primary or, then, the secondary. It reaches the content as the action
+    // color (Layer 2) and, for what sits on white, as its on-white version.
     const { accent, accentContrast, accentOnWhite } = deriveAccent(theme.branding);
-    root.setProperty('--brand-accent', accent);
-    root.setProperty('--brand-accent-contrast', accentContrast);
     root.setProperty('--brand-accent-on-white', accentOnWhite);
 
     // Brand zones (header, home bands, footer) are the primary: a near-white one needs a line
@@ -145,11 +143,6 @@ export class ThemeService {
     root.setProperty('--brand-zone-border', isNearWhite(theme.branding.primaryColor)
       ? '1px solid var(--border-default, #D1D5DB)'
       : 'none');
-
-    const rgb = this.hexToRgb(theme.branding.primaryColor);
-    if (rgb) {
-      root.setProperty('--primary-color-rgb', `${rgb.r} ${rgb.g} ${rgb.b}`);
-    }
 
     // ── Layer 2: Semantic tokens (content area) ──
     for (const [prop, value] of Object.entries(SEMANTIC_DEFAULTS)) {
