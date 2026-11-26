@@ -5,7 +5,6 @@
 
   .container-nav {
     background: var(--primary-color);
-    border-bottom: var(--brand-zone-border, none);
     padding: 1rem 0;
     background-repeat: no-repeat;
     background-position: 50% 0;
@@ -15,7 +14,6 @@
       position: fixed;
       top: 0;
       background: var(--primary-color);
-      border-bottom: var(--brand-zone-border, none);
       padding: 3rem 0;
       margin-top: 0;
       width: 100%;
