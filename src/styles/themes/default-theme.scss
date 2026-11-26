@@ -23,7 +23,7 @@
 // ── Material palette (build time) ──
 // Material bakes these colours at build time. The overrides at the end of this file
 // replace them at runtime with the tenant accent (EUD-341): --action-primary for
-// buttons, --brand-accent-on-white for selected controls, focus, icons and spinners.
+// filled buttons, --brand-accent-on-white for everything else drawn on white.
 $action-color: #2563EB;
 
 @include mat.elevation-classes();
@@ -116,8 +116,8 @@ $custom-theme: mat.m2-define-light-theme((
 }
 
 // ── Override Material primary → tenant accent (EUD-341) ───────────
-// Buttons: --action-primary (the accent) with its contrast colour.
-// Selected controls, focus, icons and spinners: --brand-accent-on-white, the accent
+// Filled buttons: --action-primary (the accent) with its contrast colour.
+// Outlined and text buttons, selected controls, focus, icons and spinners: --brand-accent-on-white, the accent
 // when it shows on white, otherwise its contrast colour. It is always dark (EC-07),
 // so what sits on top of it (checkmark, switch handle, stepper number) is white.
 $on-accent-on-white: #ffffff;

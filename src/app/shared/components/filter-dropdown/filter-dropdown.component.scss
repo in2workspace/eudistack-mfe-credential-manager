@@ -10,7 +10,7 @@
   white-space: nowrap;
 
   &:hover, &--active {
-    border-color: var(--action-primary);
+    border-color: var(--brand-accent-on-white);
   }
 
   &:has(.filter-dropdown-trigger:focus-visible) {

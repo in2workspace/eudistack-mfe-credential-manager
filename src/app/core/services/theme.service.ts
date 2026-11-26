@@ -149,7 +149,7 @@ export class ThemeService {
       root.setProperty(prop, value);
     }
 
-    // Action color = the brand accent (EUD-341, P-1): one criterion for every button.
+    // Action color = the brand accent (EUD-341, P-1): the fill of every filled button.
     root.setProperty('--action-primary', accent);
     root.setProperty('--action-primary-contrast', accentContrast);
     root.setProperty('--action-primary-hover', `color-mix(in srgb, ${accent} 85%, black)`);
