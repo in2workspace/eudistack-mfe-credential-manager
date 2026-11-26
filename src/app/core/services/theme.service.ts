@@ -192,6 +192,9 @@ export class ThemeService {
       document.head.appendChild(link);
     }
     link.href = url;
+    // index.html declares the bundled SVG; a tenant favicon may be PNG or ICO, sometimes with
+    // an extension that does not match. Without a type the browser decides from the file itself.
+    link.removeAttribute('type');
 
     let appleLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
     if (!appleLink) {

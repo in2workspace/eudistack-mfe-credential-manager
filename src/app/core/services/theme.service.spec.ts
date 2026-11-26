@@ -102,6 +102,16 @@ describe('ThemeService', () => {
         .toBe('/assets/tenants/cgcom/favicon.png');
     });
 
+    it('drops the SVG type of the bundled favicon when it applies the tenant one', async () => {
+      document.head.insertAdjacentHTML('beforeend', '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">');
+
+      await loadWith(CGCOM_THEME);
+
+      const link = document.querySelector("link[rel~='icon']");
+      expect(link?.getAttribute('href')).toBe('/assets/tenants/cgcom/favicon.png');
+      expect(link?.hasAttribute('type')).toBe(false);
+    });
+
     it('exposes the logo rewritten to the tenant folder', async () => {
       await loadWith(CGCOM_THEME);
 

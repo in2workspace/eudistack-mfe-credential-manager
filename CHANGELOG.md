@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EUD-341 — Brand zones use only the primary and its contrast**: header, home bands, footer and the offer renewal header no longer use fixed white or the secondary, so a near-white primary does not give white on white. With a near-white primary these zones get a thin border.
 - **EUD-341 — Start-up never waits for the theme**: without a tenant, or when its `theme.json` is missing, invalid or slower than 800 ms, the EUDIStack theme bundled in the code applies and the portal starts. Each colour is validated on its own (`#RGB` or `#RRGGBB`); an invalid one falls back to EUDIStack's without discarding the rest.
 
+### Fixed
+- **EUD-341 — Tenant favicons in PNG or ICO**: `index.html` declares the bundled favicon as `image/svg+xml`; when the tenant's favicon replaces it, the `type` attribute is now removed, so the browser takes the format from the file itself instead of an SVG type on a PNG or ICO.
+
 ### Removed
 - **EUD-341**: `assets/theme.json`, the deprecated `theme-loader.ts`, and the logos and favicons of other tenants bundled in `assets/logos` and `assets/icons`.
 
