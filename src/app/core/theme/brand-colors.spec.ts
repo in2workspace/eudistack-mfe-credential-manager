@@ -1,5 +1,5 @@
 import { Theme } from '../models/theme.model';
-import { contrastRatio, deriveAccent, isNearWhite, relativeLuminance } from './brand-colors';
+import { NEUTRAL_ON_WHITE, contrastRatio, deriveAccent, isNearWhite, relativeLuminance } from './brand-colors';
 import { defaultTheme } from './default-theme';
 
 function branding(overrides: Partial<Theme['branding']>): Theme['branding'] {
@@ -89,6 +89,14 @@ describe('brand colors', () => {
       const accent = deriveAccent(branding({ primaryColor: '#7ED957', primaryContrastColor: '#1A1A2E' }));
 
       expect(accent).toEqual({ accent: '#7ED957', accentContrast: '#1A1A2E', accentOnWhite: '#1A1A2E' });
+    });
+
+    it('falls back to the neutral text colour when the contrast colour does not show on white either (EC-07)', () => {
+      // Wrong theme data: a light primary with white text (1.76:1), against the 4.5:1 rule.
+      const accent = deriveAccent(branding({ primaryColor: '#7ED957', primaryContrastColor: '#ffffff' }));
+
+      expect(accent.accentOnWhite).toBe(NEUTRAL_ON_WHITE);
+      expect(contrastRatio(NEUTRAL_ON_WHITE, '#ffffff')).toBeGreaterThanOrEqual(3);
     });
   });
 });

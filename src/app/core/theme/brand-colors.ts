@@ -15,6 +15,13 @@ export const ON_WHITE_MIN_CONTRAST = 3;
 
 const WHITE = '#ffffff';
 
+/**
+ * Last resort for the accent on white when neither the accent nor its contrast colour shows on
+ * white, which only happens with a theme that breaks the 4.5:1 rule between a colour and its
+ * contrast (EUD-353). Same value as the portal's neutral `--text-primary`.
+ */
+export const NEUTRAL_ON_WHITE = '#1A1A2E';
+
 export interface AccentColors {
   /** Color of the brand inside the content: buttons, selected controls. */
   accent: string;
@@ -22,8 +29,9 @@ export interface AccentColors {
   accentContrast: string;
   /**
    * The accent when it shows on white; otherwise its contrast color, which is dark when the
-   * theme gives every color a contrast of 4.5:1 (EUD-353). Selected controls, focus, icons
-   * and accent text on the white content.
+   * theme gives every color a contrast of 4.5:1 (EUD-353); otherwise {@link NEUTRAL_ON_WHITE}.
+   * Always at least 3:1 on white. Selected controls, focus, icons and accent text on the white
+   * content.
    */
   accentOnWhite: string;
 }
@@ -49,7 +57,8 @@ export function contrastRatio(a: string, b: string): number {
  * Accent colors for the content (EUD-341, scope items 5 and 6): the primary unless it is
  * near white, as CGCOM's `#ffffff`, which is meant as a header surface; then the secondary.
  * Each comes with its own contrast color. On white, the accent only when it reaches
- * {@link ON_WHITE_MIN_CONTRAST}; otherwise its contrast color (CGCOM: `#46484C`).
+ * {@link ON_WHITE_MIN_CONTRAST}; otherwise its contrast color (CGCOM: `#46484C`); and when that
+ * does not reach it either (a theme with a wrong contrast colour), {@link NEUTRAL_ON_WHITE}.
  *
  * Expects colors already validated as `#RRGGBB` (`resolveTenantTheme`).
  */
@@ -57,6 +66,7 @@ export function deriveAccent(branding: Theme['branding']): AccentColors {
   const [accent, accentContrast] = isNearWhite(branding.primaryColor)
     ? [branding.secondaryColor, branding.secondaryContrastColor]
     : [branding.primaryColor, branding.primaryContrastColor];
-  const accentOnWhite = contrastRatio(accent, WHITE) >= ON_WHITE_MIN_CONTRAST ? accent : accentContrast;
+  const showsOnWhite = (color: string) => contrastRatio(color, WHITE) >= ON_WHITE_MIN_CONTRAST;
+  const accentOnWhite = [accent, accentContrast].find(showsOnWhite) ?? NEUTRAL_ON_WHITE;
   return { accent, accentContrast, accentOnWhite };
 }
