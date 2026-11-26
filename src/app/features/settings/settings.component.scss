@@ -21,7 +21,7 @@
   
 .settings__nav-link--active {
   font-weight: bold !important;
-  background-color: var(--secondary-contrast-color) !important;
+  background-color: var(--surface-card, #FFFFFF) !important;
 }
 
 .settings__nav-item {

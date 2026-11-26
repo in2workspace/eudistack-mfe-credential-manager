@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] - 2026-11-26
+
+### Added
+- **EUD-341 — The portal wears the tenant's brand**: the theme is loaded from `/assets/tenants/{tenant}/theme.json` of the shared platform assets, like the Login, the Wallet and the issuance portal, with the tenant `TenantService` already resolves. The paths `assets/tenant/...` of the logo, the dark logo and the favicon point to the tenant's folder. Title, favicon, colours and languages are the tenant's; the revocation help link stays EUDIStack's.
+- **EUD-341 — Accent colours derived from the theme**: the accent is the primary, or the secondary when the primary is near white (relative luminance above 0.9, as CGCOM's `#ffffff`), with its own contrast colour, the same rule as the issuance portal; it reaches the content as `--action-primary` and `--action-primary-contrast`. `--brand-accent-on-white` is the accent when it reaches 3:1 against white, otherwise its contrast colour (CGCOM: `#46484C`), and the neutral text colour `#1A1A2E` if a theme's contrast colour does not show on white either.
+
+### Changed
+- **EUD-341 — The content follows the accent**: filled buttons use the accent (`--action-primary`, which no longer keeps the neutral blue `#2563EB` for non-blue tenants) with its contrast colour; outlined and text buttons, the filter border, checkboxes, radios, switches, focus, icons, accent texts, spinners and the stepper use the accent on white. This covers the Angular Material overrides and the hover tints. Neutral surfaces, texts and borders do not change.
+- **EUD-341 — Brand zones use only the primary and its contrast**: header, home bands, footer and the offer renewal header no longer use fixed white or the secondary, so a near-white primary does not give white on white. With a near-white primary these zones get a thin border, except the home header over its white cover.
+- **EUD-341 — Start-up never waits for the theme**: without a tenant, or when its `theme.json` is missing, invalid or slower than 800 ms, the EUDIStack theme bundled in the code applies and the portal starts. Each colour is validated on its own (`#RGB` or `#RRGGBB`); an invalid one falls back to EUDIStack's without discarding the rest.
+
+### Fixed
+- **EUD-341 — Tenant favicons in PNG or ICO**: `index.html` declares the bundled favicon as `image/svg+xml`; when the tenant's favicon replaces it, the `type` attribute is now removed, so the browser takes the format from the file itself instead of an SVG type on a PNG or ICO.
+
+### Removed
+- **EUD-341**: `assets/theme.json`, the deprecated `theme-loader.ts`, and the logos and favicons of other tenants bundled in `assets/logos` and `assets/icons`.
+- **EUD-341**: the CSS variables `--secondary-color`, `--secondary-contrast-color` and `--primary-color-rgb`, which no stylesheet reads any longer.
+
 ## [3.11.2] - 2026-11-25
 
 ### Added

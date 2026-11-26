@@ -1,9 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 import { Theme } from '../models/theme.model';
+import { deriveAccent, isNearWhite } from '../theme/brand-colors';
+import { defaultTheme } from '../theme/default-theme';
+import { resolveTenantTheme } from '../theme/resolve-tenant-theme';
 import { TenantService } from './tenant.service';
+
+/** Same budget as the Login: past it, the portal starts with the EUDIStack theme instead of waiting. */
+export const THEME_TIMEOUT_MS = 800;
 
 /** Default semantic tokens — neutral, brand-independent colors for content areas. */
 const SEMANTIC_DEFAULTS: Record<string, string> = {
@@ -22,9 +28,6 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--border-default':       '#D1D5DB',
   '--border-strong':        '#9CA3AF',
 
-  '--action-primary':       '#2563EB',
-  '--action-primary-hover': '#1D4ED8',
-  '--action-primary-contrast': '#FFFFFF',
   '--action-secondary':     '#F3F4F6',
   '--action-secondary-hover': '#E5E7EB',
   '--action-secondary-text': '#374151',
@@ -34,6 +37,7 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--status-error':         '#DC2626',
   '--status-info':          '#2563EB',
   '--status-neutral':       '#6B7280',
+  '--status-contrast':      '#FFFFFF',
 
   '--radius-sm':            '4px',
   '--radius-md':            '8px',
@@ -43,17 +47,9 @@ const SEMANTIC_DEFAULTS: Record<string, string> = {
   '--shadow-sm':            '0 1px 2px rgba(0,0,0,0.05)',
   '--shadow-md':            '0 4px 6px rgba(0,0,0,0.07)',
   '--shadow-lg':            '0 10px 15px rgba(0,0,0,0.1)',
+  '--shadow-glow':          '0 0 8px 0 #2D58A71A',
+  '--shadow-bar-top':       '0 -2px 12px 0 #00000026',
 };
-
-/**
- * Hue range considered "safe" for action buttons (blue–indigo–violet).
- * The color must also have enough lightness to stand out on white backgrounds.
- * If checks fail, we keep the neutral default (#2563EB).
- */
-const SAFE_HUE_MIN = 200;
-const SAFE_HUE_MAX = 280;
-const SAFE_LIGHTNESS_MIN = 0.35;
-const SAFE_LIGHTNESS_MAX = 0.65;
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -65,17 +61,37 @@ export class ThemeService {
     private readonly translate: TranslateService
   ) {}
 
+  /**
+   * Loads the tenant's theme from the shared platform assets and applies it (EUD-341,
+   * SAD §8.8). Never rejects: without a tenant, or when its `theme.json` is missing,
+   * invalid or slower than {@link THEME_TIMEOUT_MS}, the bundled EUDIStack theme applies
+   * and start-up continues.
+   */
   async load(): Promise<void> {
-    const theme = await firstValueFrom(this.http.get<Theme>('assets/theme.json'));
+    const theme = await this.fetchTheme();
     this.theme$.next(theme);
     this.applyTheme(theme);
 
-    if (theme.i18n) {
-      this.translate.addLangs(theme.i18n.available);
-      this.translate.setDefaultLang(theme.i18n.defaultLang);
+    this.translate.addLangs(theme.i18n.available);
+    this.translate.setDefaultLang(theme.i18n.defaultLang);
 
-      const browserLang = this.detectBrowserLanguage(theme.i18n.available);
-      this.translate.use(browserLang ?? theme.i18n.defaultLang);
+    const browserLang = this.detectBrowserLanguage(theme.i18n.available);
+    this.translate.use(browserLang ?? theme.i18n.defaultLang);
+  }
+
+  private async fetchTheme(): Promise<Theme> {
+    const tenant = this.tenantService.tenant();
+    if (!tenant) {
+      return defaultTheme();
+    }
+    try {
+      const descriptor = await firstValueFrom(
+        this.http.get<unknown>(`/assets/tenants/${tenant}/theme.json`).pipe(timeout(THEME_TIMEOUT_MS))
+      );
+      return resolveTenantTheme(descriptor, tenant);
+    } catch (error) {
+      console.error(`[ThemeService] Theme of tenant "${tenant}" not loaded; applying the EUDIStack theme`, error);
+      return defaultTheme();
     }
   }
 
@@ -115,24 +131,28 @@ export class ThemeService {
     // ── Layer 1: Brand tokens (header/footer only) ──
     root.setProperty('--primary-color', theme.branding.primaryColor);
     root.setProperty('--primary-contrast-color', theme.branding.primaryContrastColor);
-    root.setProperty('--secondary-color', theme.branding.secondaryColor);
-    root.setProperty('--secondary-contrast-color', theme.branding.secondaryContrastColor);
 
-    const rgb = this.hexToRgb(theme.branding.primaryColor);
-    if (rgb) {
-      root.setProperty('--primary-color-rgb', `${rgb.r} ${rgb.g} ${rgb.b}`);
-    }
+    // Brand color inside the content (EUD-341): the primary can be a near-white header surface,
+    // so the accent is the primary or, then, the secondary. It reaches the content as the action
+    // color (Layer 2) and, for what sits on white, as its on-white version.
+    const { accent, accentContrast, accentOnWhite } = deriveAccent(theme.branding);
+    root.setProperty('--brand-accent-on-white', accentOnWhite);
+
+    // Brand zones (header, home bands, footer) are the primary: a near-white one needs a line
+    // to stand apart from the white or light-grey page around it (EUD-341, P-3).
+    root.setProperty('--brand-zone-border', isNearWhite(theme.branding.primaryColor)
+      ? '1px solid var(--border-default, #D1D5DB)'
+      : 'none');
 
     // ── Layer 2: Semantic tokens (content area) ──
     for (const [prop, value] of Object.entries(SEMANTIC_DEFAULTS)) {
       root.setProperty(prop, value);
     }
 
-    // Smart action-primary: use tenant color only if its hue is "safe" (blue range)
-    if (this.isSafeHue(theme.branding.primaryColor)) {
-      root.setProperty('--action-primary', theme.branding.primaryColor);
-      root.setProperty('--action-primary-contrast', theme.branding.primaryContrastColor);
-    }
+    // Action color = the brand accent (EUD-341, P-1): the fill of every filled button.
+    root.setProperty('--action-primary', accent);
+    root.setProperty('--action-primary-contrast', accentContrast);
+    root.setProperty('--action-primary-hover', `color-mix(in srgb, ${accent} 85%, black)`);
 
     // Compute RGB channels for status colors (useful for rgba() variants)
     for (const status of ['success', 'warning', 'error', 'info', 'neutral']) {
@@ -143,9 +163,7 @@ export class ThemeService {
       }
     }
 
-    // Compute RGB channels for action-primary
-    const actionHex = root.getPropertyValue('--action-primary').trim();
-    const actionRgb = this.hexToRgb(actionHex);
+    const actionRgb = this.hexToRgb(accent);
     if (actionRgb) {
       root.setProperty('--action-primary-rgb', `${actionRgb.r} ${actionRgb.g} ${actionRgb.b}`);
     }
@@ -159,39 +177,6 @@ export class ThemeService {
     }
   }
 
-  /**
-   * Returns true if the hex color is suitable as an action button color:
-   * - Hue falls in the blue–indigo–violet range [200–280]
-   * - Lightness is between 35–65% (not too dark, not too washed out)
-   */
-  private isSafeHue(hex: string): boolean {
-    const rgb = this.hexToRgb(hex);
-    if (!rgb) return false;
-
-    const r = rgb.r / 255;
-    const g = rgb.g / 255;
-    const b = rgb.b / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const d = max - min;
-
-    if (d === 0) return false; // achromatic — not safe
-
-    let h = 0;
-    switch (max) {
-      case r: h = ((g - b) / d) % 6; break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4; break;
-    }
-    h *= 60;
-    if (h < 0) h += 360;
-
-    const l = (max + min) / 2;
-
-    return h >= SAFE_HUE_MIN && h <= SAFE_HUE_MAX
-        && l >= SAFE_LIGHTNESS_MIN && l <= SAFE_LIGHTNESS_MAX;
-  }
-
   private setFavicon(url: string): void {
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (!link) {
@@ -200,6 +185,9 @@ export class ThemeService {
       document.head.appendChild(link);
     }
     link.href = url;
+    // index.html declares the bundled SVG; a tenant favicon may be PNG or ICO, sometimes with
+    // an extension that does not match. Without a type the browser decides from the file itself.
+    link.removeAttribute('type');
 
     let appleLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
     if (!appleLink) {

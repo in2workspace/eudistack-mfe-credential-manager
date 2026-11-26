@@ -89,18 +89,18 @@ $action-dialog-font: 'Blinker', 'Arial', sans-serif;
         text-transform: none;
       }
 
-      // Cancel: white with primary text. Confirm / Close: primary with white text, whatever the
+      // Cancel: white with the accent-on-white text. Confirm / Close: accent with its contrast text, whatever the
       // action -- except an error dialog's (mat-warn) Close, e.g. a failed revoke reusing this
       // dialog, which keeps the theme's red like every other error dialog. A disabled confirm is
       // left to the theme, so it looks disabled.
       &.mat-cancel {
         background-color: var(--surface-card, #FFFFFF);
-        color: var(--primary-color);
+        color: var(--brand-accent-on-white);
       }
 
       &:not(.mat-cancel):not(.mat-warn):not(:disabled) {
-        background-color: var(--primary-color);
-        color: var(--primary-contrast-color, #FFFFFF);
+        background-color: var(--action-primary);
+        color: var(--action-primary-contrast);
       }
     }
   }

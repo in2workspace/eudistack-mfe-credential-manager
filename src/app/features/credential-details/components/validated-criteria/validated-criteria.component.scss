@@ -20,7 +20,7 @@
   text-overflow: ellipsis;
 
   &:focus {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--brand-accent-on-white);
     outline-offset: -1px;
     text-overflow: clip;
   }

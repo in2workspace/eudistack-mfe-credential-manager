@@ -95,7 +95,7 @@ export class ServeErrorInterceptor implements HttpInterceptor {
    *
    * Covers the three shapes in use: absolute paths under the shared tenant prefix
    * (`/assets/tenants/issuance-ui.json`), paths relative to this app's base href
-   * (`assets/theme.json`, resolved as `/issuer/assets/...`), and fully qualified URLs. The
+   * (`assets/i18n/es.json`, resolved as `/issuer/assets/...`), and fully qualified URLs. The
    * segment boundaries keep it from matching an API path that merely contains the word.
    */
   private isStaticAsset(url: string): boolean {

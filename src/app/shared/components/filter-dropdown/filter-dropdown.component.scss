@@ -10,11 +10,11 @@
   white-space: nowrap;
 
   &:hover, &--active {
-    border-color: var(--primary-color);
+    border-color: var(--brand-accent-on-white);
   }
 
   &:has(.filter-dropdown-trigger:focus-visible) {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--brand-accent-on-white);
     outline-offset: 2px;
   }
 }
@@ -66,7 +66,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--brand-accent-on-white);
     outline-offset: 1px;
   }
 }
@@ -91,8 +91,8 @@
   padding: 0 4px;
   border-radius: 999px;
   line-height: 1;
-  background: var(--secondary-color, #6B7280);
-  color: var(--secondary-contrast-color, #fff);
+  background: var(--action-primary);
+  color: var(--action-primary-contrast);
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -186,7 +186,7 @@
 
 .filter-dropdown-close {
   background: var(--surface-card, #fff);
-  color: var(--primary-color);
+  color: var(--brand-accent-on-white);
   border: none;
   padding: 0 12px;
   font: inherit;
