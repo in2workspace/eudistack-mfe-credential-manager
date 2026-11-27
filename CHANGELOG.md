@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Grid tooltips open right below their text**: the Organization ID and Type tooltips are anchored to the text instead of the whole cell, as Subject and Status already were, so they no longer open centered on the cell and below the row.
+
 ## [3.11.2] - 2026-11-25
 
 ### Added
